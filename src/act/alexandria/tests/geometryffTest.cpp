@@ -76,8 +76,8 @@ TEST_F(GeometryFFTest, AlcoholAndAcetone)
     auto output = fileManager().getTemporaryFilePath("geometry.xml");
     gmx::test::CommandLine cmd;
     cmd.append("geometry_ff");
-    cmd.addOption("-mp", fileManager().getInputFilePath("../../molprop/tests/molprop.xml"));
-    cmd.addOption("-ff", fileManager().getInputFilePath("ACS-g.xml"));
+    cmd.addOption("-mp", fileManager().getInputFilePath("molprop/molprop.xml"));
+    cmd.addOption("-ff", fileManager().getInputFilePath("forcefields/ACS-g1.xml"));
     cmd.addOption("-o", output);
     cmd.addOption("-g", fileManager().getTemporaryFilePath("geometry.log"));
     ASSERT_EQ(0, geometry_ff(cmd.argc(), cmd.argv()));

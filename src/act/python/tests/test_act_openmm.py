@@ -52,6 +52,8 @@ except ImportError:
     haveOpenMM = False
 
 testDir    = os.path.dirname(os.path.abspath(__file__))
+# The input files of the tests, see src/act/testdata/README.md
+testData   = os.path.join(testDir, "..", "..", "testdata")
 sys.path.insert(0, os.path.dirname(testDir))
 alexandria = os.environ.get("ACT_ALEXANDRIA", shutil.which("alexandria"))
 available  = haveOpenMM and alexandria is not None
@@ -168,7 +170,7 @@ class LongRangeCorrectionTest(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.workDir = tempfile.mkdtemp()
-        spce = os.path.join(testDir, "..", "..", "properties", "tests", "SPCE.xml")
+        spce = os.path.join(testData, "forcefields", "SPCE.xml")
         with open(spce) as inf:
             ff = inf.read()
         # Only the oxygens have Lennard-Jones, such that the arithmetic
@@ -327,11 +329,11 @@ class ResidueBondsTest(unittest.TestCase):
     def check(self, ff:str, resnames:list):
         """ Make a box of methanol and four waters with force field ff """
         from act_openmm import loadResidueBonds
-        mols    = os.path.join(testDir, "..", "..", "alexandria", "tests")
+
         xmlFile = os.path.join(self.workDir, ff + "_openmm.xml")
         pdbFile = os.path.join(self.workDir, ff + ".pdb")
-        result  = subprocess.run([ alexandria, "gentop", "-ff", os.path.join(mols, ff + ".xml"),
-                                   "-f", os.path.join(mols, "mols", "methanol#water.pdb"),
+        result  = subprocess.run([ alexandria, "gentop", "-ff", os.path.join(testData, "forcefields", ff + ".xml"),
+                                   "-f", os.path.join(testData, "molecules", "methanol#water.pdb"),
                                    "-openmm", xmlFile, "-c", pdbFile ] + resnames,
                                  cwd=self.workDir, capture_output=True, text=True)
         self.assertEqual(0, result.returncode, result.stdout + result.stderr)
@@ -358,12 +360,12 @@ class ResidueBondsTest(unittest.TestCase):
 
     def test_generated(self):
         """ The residue names are made from the IUPAC names """
-        self.assertEqual([ "ME1" ] + 4*[ "OXI" ], self.check("ACS-g", []))
+        self.assertEqual([ "ME1" ] + 4*[ "OXI" ], self.check("ACS-g1", []))
 
     def test_user_polarizable(self):
         """ The residue names given by the user, with shells """
         self.assertEqual([ "MOH" ] + 4*[ "WTR" ],
-                         self.check("ACS-pg", [ "-resnames", "water=WTR methanol=MOH" ]))
+                         self.check("ACS-pg1", [ "-resnames", "water=WTR methanol=MOH" ]))
 
 @unittest.skipUnless(haveOpenMM, "OpenMM not available")
 class SlaterScreeningTest(unittest.TestCase):

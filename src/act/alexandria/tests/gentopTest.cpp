@@ -274,7 +274,7 @@ protected:
     void run(const std::string &ffName, const std::string &molecule,
              std::map<std::string, std::string> *files)
     {
-        run(ffName, { { "-f", fileManager().getInputFilePath("mols/" + molecule) } }, files);
+        run(ffName, { { "-f", fileManager().getInputFilePath("molecules/" + molecule) } }, files);
     }
 
     /*! \brief Run gentop
@@ -354,7 +354,7 @@ protected:
 TEST_F(GentopTest, GromacsTopology)
 {
     std::map<std::string, std::string> files = { { "-p", "acetone.top" }, { "-c", "acetone.pdb" } };
-    run("ACS-g.xml", "acetone.sdf", &files);
+    run("forcefields/ACS-g1.xml", "acetone.sdf", &files);
     auto top = readTopology(files["-p"]);
     checkBondeds(top);
     for (const char *s : { "defaults", "atomtypes", "moleculetype", "atoms", "bonds", "angles", "dihedrals" })
@@ -375,7 +375,7 @@ TEST_F(GentopTest, GromacsTopology)
     EXPECT_FALSE(exclusionPairs(top).empty());
     EXPECT_EQ(expectedExclusionPairs(top), exclusionPairs(top));
     ForceField pd;
-    readForceField(fileManager().getInputFilePath("ACS-g.xml"), &pd);
+    readForceField(fileManager().getInputFilePath("forcefields/ACS-g1.xml"), &pd);
     auto angles = section(top, "angles");
     EXPECT_EQ(15u, angles.size());
     for (const auto &a : angles)
@@ -442,7 +442,7 @@ TEST_F(GentopTest, GromacsTopology)
 TEST_F(GentopTest, GromacsTopologyShells)
 {
     std::map<std::string, std::string> files = { { "-p", "acetone.top" } };
-    run("ACS-pg.xml", "acetone.sdf", &files);
+    run("forcefields/ACS-pg1.xml", "acetone.sdf", &files);
     auto top = readTopology(files["-p"]);
     ASSERT_EQ(20u, section(top, "atoms").size());
     ASSERT_EQ(10u, section(top, "polarization").size());
@@ -481,7 +481,7 @@ TEST_F(GentopTest, ChargesRead)
 {
     MsgHandler           msghandler;
     std::vector<MolProp> mps;
-    auto molpropFile = fileManager().getInputFilePath("../../molprop/tests/molprop.xml");
+    auto molpropFile = fileManager().getInputFilePath("molprop/molprop.xml");
     MolPropRead(&msghandler, molpropFile.c_str(), &mps);
     std::vector<double> mulliken;
     for (const auto &mp : mps)
@@ -496,7 +496,7 @@ TEST_F(GentopTest, ChargesRead)
         }
     }
     ASSERT_EQ(3u, mulliken.size());
-    for (const char *ffName : { "ACS-g.xml", "ACS-pg.xml" })
+    for (const char *ffName : { "forcefields/ACS-g1.xml", "forcefields/ACS-pg1.xml" })
     {
         std::map<std::string, std::string> files = { { "-p", "water.top" } };
         run(ffName, { { "-charges", molpropFile }, { "-db", "water" }, { "-qqm", "qMulliken" } }, &files);
@@ -513,9 +513,9 @@ TEST_F(GentopTest, ChargesRead)
 // The space keeps the command line parser from taking the charges for an option.
 TEST_F(GentopTest, ChargesCustom)
 {
-    auto molpropFile = fileManager().getInputFilePath("../../molprop/tests/molprop.xml");
+    auto molpropFile = fileManager().getInputFilePath("molprop/molprop.xml");
     std::map<std::string, std::string> files = { { "-p", "water.top" } };
-    run("ACS-g.xml", { { "-charges", molpropFile }, { "-db", "water" }, { "-qcustom", " -0.8 0.4 0.4" } }, &files);
+    run("forcefields/ACS-g1.xml", { { "-charges", molpropFile }, { "-db", "water" }, { "-qcustom", " -0.8 0.4 0.4" } }, &files);
     std::vector<double> expected = { -0.8, 0.4, 0.4 };
     auto charges = atomCharges(readTopology(files["-p"]));
     ASSERT_EQ(expected.size(), charges.size());
@@ -524,15 +524,15 @@ TEST_F(GentopTest, ChargesCustom)
         EXPECT_NEAR(expected[i], charges[i], 1e-6) << "atom " << i;
     }
     files = { { "-p", "water2.top" } };
-    EXPECT_NE(0, status("ACS-g.xml", { { "-charges", molpropFile }, { "-db", "water" }, { "-qcustom", " -0.8 0.8" } }, &files));
+    EXPECT_NE(0, status("forcefields/ACS-g1.xml", { { "-charges", molpropFile }, { "-db", "water" }, { "-qcustom", " -0.8 0.8" } }, &files));
 }
 
 // Test: The charges of the particle types in the force field
 TEST_F(GentopTest, ChargesNone)
 {
     std::map<std::string, std::string> files = { { "-p", "water.top" } };
-    run("../../properties/tests/SPCE.xml",
-        { { "-f", fileManager().getInputFilePath("mols/water_dimer.pdb") }, { "-qalg", "None" } }, &files);
+    run("forcefields/SPCE.xml",
+        { { "-f", fileManager().getInputFilePath("molecules/water_dimer.pdb") }, { "-qalg", "None" } }, &files);
     std::vector<double> expected = { -0.8476, 0.4238, 0.4238, -0.8476, 0.4238, 0.4238 };
     auto charges = atomCharges(readTopology(files["-p"]));
     ASSERT_EQ(expected.size(), charges.size());
@@ -547,7 +547,7 @@ TEST_F(GentopTest, ChargesNone)
 TEST_F(GentopTest, OtherFunctions)
 {
     std::map<std::string, std::string> files = { { "-p", "acetone.top" } };
-    run("ACS-g-dih.xml", "acetone.sdf", &files);
+    run("forcefields/ACS-g-dih.xml", "acetone.sdf", &files);
     auto top = readTopology(files["-p"]);
     checkBondeds(top);
     for (const auto &b : section(top, "bonds"))
@@ -559,7 +559,7 @@ TEST_F(GentopTest, OtherFunctions)
         EXPECT_EQ("5", a.fields[3]);
     }
     ForceField pd;
-    readForceField(fileManager().getInputFilePath("ACS-g-dih.xml"), &pd);
+    readForceField(fileManager().getInputFilePath("forcefields/ACS-g-dih.xml"), &pd);
     int nfourier = 0;
     for (const auto &d : section(top, "dihedrals"))
     {
@@ -583,7 +583,7 @@ TEST_F(GentopTest, OtherFunctions)
 TEST_F(GentopTest, IncludeTopology)
 {
     std::map<std::string, std::string> files = { { "-oi", "acetone.itp" } };
-    run("ACS-g.xml", "acetone.sdf", &files);
+    run("forcefields/ACS-g1.xml", "acetone.sdf", &files);
     auto top = readTopology(files["-oi"]);
     EXPECT_TRUE(section(top, "defaults").empty());
     EXPECT_TRUE(section(top, "atomtypes").empty());
@@ -598,14 +598,14 @@ TEST_F(GentopTest, IncludeTopology)
 TEST_F(GentopTest, Cubes)
 {
     std::vector<std::pair<std::string, std::string>> water = {
-        { "-charges", fileManager().getInputFilePath("../../molprop/tests/molprop.xml") },
+        { "-charges", fileManager().getInputFilePath("molprop/molprop.xml") },
         { "-db", "water" }, { "-spacing", "0.01" }
     };
     std::map<std::string, std::string> files = {
         { "-c", "water.pdb" }, { "-pot", "pot.cub" }, { "-rho", "rho.cub" },
         { "-his", "his.xvg" }, { "-pc", "pc.xvg" }, { "-pdbdiff", "diff.pdb" }
     };
-    run("ACS-g.xml", water, &files);
+    run("forcefields/ACS-g1.xml", water, &files);
     auto pot = readCube(files["-pot"]);
     ASSERT_EQ(3u, pot.atoms.size());
     double qtot = 0;
@@ -649,7 +649,7 @@ TEST_F(GentopTest, Cubes)
     std::map<std::string, std::string> diffFiles = {
         { "-c", "water2.pdb" }, { "-diff", "diff.cub" }, { "-diffhist", "diffhist.xvg" }
     };
-    run("ACS-g.xml", water, &diffFiles);
+    run("forcefields/ACS-g1.xml", water, &diffFiles);
     auto diff = readCube(diffFiles["-diff"]);
     ASSERT_EQ(pot.values.size(), diff.values.size());
     // The differences are due to the six digits of the values in the file
@@ -682,7 +682,7 @@ protected:
                                        int *status)
     {
         ForceField pd;
-        readForceField(fileManager().getInputFilePath("ACS-pg.xml"), &pd);
+        readForceField(fileManager().getInputFilePath("forcefields/ACS-pg1.xml"), &pd);
         auto propers = pd.findForces(InteractionType::PROPER_DIHEDRALS)->parameters();
         for (auto p = propers->begin(); p != propers->end(); ++p)
         {
@@ -706,7 +706,7 @@ protected:
         gmx::test::CommandLine cmd;
         cmd.append("gentop");
         cmd.addOption("-ff", ffName);
-        cmd.addOption("-f", fileManager().getInputFilePath("mols/acetone.sdf"));
+        cmd.addOption("-f", fileManager().getInputFilePath("molecules/acetone.sdf"));
         cmd.addOption("-c", fileManager().getTemporaryFilePath("missing.pdb"));
         cmd.addOption("-g", logName);
         *status = gentop(cmd.argc(), cmd.argv());
@@ -760,7 +760,7 @@ TEST_F(GentopMissingTest, Parameter)
 TEST_F(GentopMissingTest, BondCorrection)
 {
     ForceField pd;
-    readForceField(fileManager().getInputFilePath("ACS-g.xml"), &pd);
+    readForceField(fileManager().getInputFilePath("forcefields/ACS-g1.xml"), &pd);
     ASSERT_EQ(ChargeGenerationAlgorithm::SQE, pd.chargeGenerationAlgorithm());
     auto   *bcc     = pd.findForces(InteractionType::BONDCORRECTIONS)->parameters();
     size_t  nerased = 0;
@@ -789,7 +789,7 @@ TEST_F(GentopMissingTest, BondCorrection)
         gmx::test::CommandLine cmd;
         cmd.append(program.first.c_str());
         cmd.addOption("-ff", ffName);
-        cmd.addOption("-charges", fileManager().getInputFilePath("../../molprop/tests/molprop.xml"));
+        cmd.addOption("-charges", fileManager().getInputFilePath("molprop/molprop.xml"));
         cmd.addOption("-db", "water");
         cmd.addOption("-g", logName);
         if (program.first == "gentop")

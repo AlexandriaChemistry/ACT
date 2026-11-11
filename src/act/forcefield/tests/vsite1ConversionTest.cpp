@@ -55,7 +55,7 @@ protected:
 
     void SetUp() override
     {
-        auto fn = gmx::test::TestFileManager::getInputFilePath("../../alexandria/tests/PG-pol-ions.xml");
+        auto fn = gmx::test::TestFileManager::getInputFilePath("forcefields/PG-pol-ions.xml");
         readForceField(fn, &pd_, nullptr, false);
         ASSERT_TRUE(pd_.hasParticleType("v1Na+"));
         ASSERT_TRUE(pd_.hasParticleType("v1K+"));

@@ -65,7 +65,7 @@ protected:
     ForceFieldMpiTest()
     {
         cr_.init(cr_.size());
-        readForceField(fileManager_.getInputFilePath("ACM-pg.xml"), &ref_);
+        readForceField(fileManager_.getInputFilePath("forcefields/ACM-pg1.xml"), &ref_);
     }
 
     //! \return the contents of the force field written to a file of this rank

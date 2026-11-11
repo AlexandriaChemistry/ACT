@@ -72,7 +72,7 @@ protected:
         pd = getForceField("ff-hh");
         qopt_.assign("-charges");
         fopt_.assign("-f");
-        charges_ = gmx::test::TestFileManager::getInputFilePath("mp2-hh.xml");
+        charges_ = gmx::test::TestFileManager::getInputFilePath("molprop/mp2-hh.xml");
     }
 
     //! Static initiation, only run once every test.
@@ -141,7 +141,7 @@ protected:
         std::vector<const char *> desc;
         CompoundReader            compR_;
 
-        std::string dirinput("../../alexandria/tests/mols/");
+        std::string dirinput("molecules/");
         dirinput += input;
         std::string infile = gmx::test::TestFileManager::getInputFilePath(dirinput);
         compR_.addOptions(&pargs, &filenm, &desc);

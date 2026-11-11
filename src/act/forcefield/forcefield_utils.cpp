@@ -47,7 +47,7 @@ alexandria::ForceField *getForceField(const std::string &qdist)
 {
     if (pdTest.count(qdist) == 0)
     {
-        std::string baseName = gmx::formatString("%s.xml", qdist.c_str());
+        std::string baseName = gmx::formatString("forcefields/%s.xml", qdist.c_str());
         std::string dataName = gmx::test::TestFileManager::getInputFilePath(baseName);
         try
         {

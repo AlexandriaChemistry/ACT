@@ -95,7 +95,7 @@ protected:
                  bool                             oneH = true)
     {
         const char           *conf      = (char *)"minimum";
-        std::string           fileName(molname);
+        std::string           fileName("molecules/" + molname);
         std::vector<alexandria::MolProp> molprops;
         
         if (inputformat == inputFormat::PDB)
@@ -258,49 +258,49 @@ protected:
 TEST_F (InteractionEnergyTest, WaterDimerACSg)
 {
     std::vector<double> qcustom;
-    testAcm("ACS-g", inputFormat::PDB, "water_dimer", {0,0}, qcustom);
+    testAcm("ACS-g4", inputFormat::PDB, "water_dimer", {0,0}, qcustom);
 }
 
 TEST_F (InteractionEnergyTest, WaterIodideACSg)
 {
     std::vector<double> qcustom;
-    testAcm("ACS-g", inputFormat::SDF, "water_I", {0,-1}, qcustom);
+    testAcm("ACS-g4", inputFormat::SDF, "water_I", {0,-1}, qcustom);
 }
 
 TEST_F (InteractionEnergyTest, WaterDimerACSpg)
 {
     std::vector<double> qcustom;
-    testAcm("ACS-pg", inputFormat::PDB, "water_dimer", {0,0}, qcustom);
+    testAcm("ACS-pg2", inputFormat::PDB, "water_dimer", {0,0}, qcustom);
 }
 
 TEST_F (InteractionEnergyTest, WaterIodideACSpg)
 {
     std::vector<double> qcustom;
-    testAcm("ACS-pg", inputFormat::SDF, "water_I", {0, -1}, qcustom);
+    testAcm("ACS-pg2", inputFormat::SDF, "water_I", {0, -1}, qcustom);
 }
 
 TEST_F (InteractionEnergyTest, MethanolWaterACSg)
 {
     std::vector<double> qcustom;
-    testAcm("ACS-g", inputFormat::SDF, "methanol-water", {0,0}, qcustom);
+    testAcm("ACS-g4", inputFormat::SDF, "methanol-water", {0,0}, qcustom);
 }
 
 TEST_F (InteractionEnergyTest, MethanolWaterACSpg)
 {
     std::vector<double> qcustom;
-    testAcm("ACS-pg", inputFormat::SDF, "methanol-water", {0,0}, qcustom);
+    testAcm("ACS-pg2", inputFormat::SDF, "methanol-water", {0,0}, qcustom);
 }
 
 TEST_F (InteractionEnergyTest, AcetateWaterACSg)
 {
     std::vector<double> qcustom;
-    testAcm("ACS-g", inputFormat::SDF, "acetate-water", {-1,0}, qcustom);
+    testAcm("ACS-g4", inputFormat::SDF, "acetate-water", {-1,0}, qcustom);
 }
 
 TEST_F (InteractionEnergyTest, AcetateWaterACSpg)
 {
     std::vector<double> qcustom;
-    testAcm("ACS-pg", inputFormat::SDF, "acetate-water", {-1,0}, qcustom);
+    testAcm("ACS-pg2", inputFormat::SDF, "acetate-water", {-1,0}, qcustom);
 }
 
 TEST_F (InteractionEnergyTest, HydrogenFluorideDimerACSps)

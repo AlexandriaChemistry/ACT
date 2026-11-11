@@ -75,7 +75,7 @@ bool readMolecule(MsgHandler        *msghandler,
     std::vector<MolProp> molprops;
     bool   userqtot   = false;
     double qtot_babel = 0;
-    auto   dataName   = gmx::test::TestFileManager::getInputFilePath(molName + ".sdf");
+    auto   dataName   = gmx::test::TestFileManager::getInputFilePath("molecules/" + molName + ".sdf");
     importFile(msghandler, pd, dataName.c_str(), &molprops,
                "minimum", JobType::OPT, userqtot, &qtot_babel, true);
     if (!msghandler->ok() || molprops.size() != 1)
@@ -435,14 +435,14 @@ TEST_F(ComputeTotalTest, PolarizableWater)
 
 TEST_F(ComputeTotalTest, HyperpolarizableDimer)
 {
-    testTotal("water_hyperpol", "water_dimer", 3, ShellOptions());
+    testTotal("water_hyperpol2", "water_dimer", 3, ShellOptions());
 }
 
 // Test: The maximum distance between shells and cores is an option of the
 // polarization in the force field, 0.02 nm if it is not there.
 TEST_F(ComputeTotalTest, ShellMaxDistanceOption)
 {
-    auto pd0 = getForceField("water_hyperpol");
+    auto pd0 = getForceField("water_hyperpol2");
     ASSERT_NE(nullptr, pd0);
     ForceField pd = *pd0;
     auto       fs = pd.findForces(InteractionType::POLARIZATION);
@@ -458,7 +458,7 @@ TEST_F(ComputeTotalTest, ShellMaxDistanceOption)
 // to it, which is taken into account in the step.
 TEST_F(ComputeTotalTest, HyperpolarizableConvergence)
 {
-    auto pd0 = getForceField("water_hyperpol");
+    auto pd0 = getForceField("water_hyperpol2");
     ASSERT_NE(nullptr, pd0);
     // Without a maximum shell distance
     ForceField pd = *pd0;
@@ -707,12 +707,12 @@ TEST_F(ComputeTotalTest, InteractionPolarizable)
 
 TEST_F(ComputeTotalTest, InteractionHyperpolarizable)
 {
-    testInteraction("water_hyperpol", "water_dimer", 3);
+    testInteraction("water_hyperpol2", "water_dimer", 3);
 }
 
 TEST_F(ComputeTotalTest, InteractionNotSeparated)
 {
-    testInteraction("water_hyperpol", "water_dimer", 3, false);
+    testInteraction("water_hyperpol2", "water_dimer", 3, false);
 }
 
 TEST_F(ComputeTotalTest, InteractionCorrectionPotential)
@@ -743,7 +743,7 @@ TEST_F(ComputeTotalTest, InteractionSubsetsPolarizable)
 // Test: The same with hyperpolarizable shells
 TEST_F(ComputeTotalTest, InteractionSubsetsHyperpolarizable)
 {
-    testInteractionSubsets("water_hyperpol", "water_dimer", 13);
+    testInteractionSubsets("water_hyperpol2", "water_dimer", 13);
 }
 
 // Test: Computing with integer coordinates gives the same as with

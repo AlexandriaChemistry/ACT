@@ -67,11 +67,11 @@ protected:
     {
         cr_.init(cr_.size());
         MsgHandler msghandler;
-        auto       fileName = fileManager_.getInputFilePath("molprop.xml");
+        auto       fileName = fileManager_.getInputFilePath("molprop/molprop.xml");
         MolPropRead(&msghandler, fileName.c_str(), &ref_);
         // Alcohols with frequencies and intensities
         std::vector<MolProp> booze;
-        auto       boozeName = fileManager_.getInputFilePath("../../alexandria/tests/trainff/booze-mono.xml");
+        auto       boozeName = fileManager_.getInputFilePath("molprop/booze-mono.xml");
         MolPropRead(&msghandler, boozeName.c_str(), &booze);
         for (auto &mp : booze)
         {

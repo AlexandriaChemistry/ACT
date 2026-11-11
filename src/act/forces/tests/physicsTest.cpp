@@ -602,9 +602,9 @@ protected:
 };
 
 // The molecules of the force and charge tests
-const std::string waterDimer = "water_dimer.sdf";
-const std::string hbrHf      = "hbr-hf.sdf";
-const std::string tip5p      = "../../properties/tests/TIP5P";
+const std::string waterDimer = "molecules/water_dimer.sdf";
+const std::string hbrHf      = "molecules/hbr-hf.sdf";
+const std::string tip5p      = "TIP5P";
 
 // Test: Forces against finite differences of the energy, without shells
 // and with the virtual sites VSITE2 and VSITE3FD
@@ -648,7 +648,7 @@ TEST_F(PhysicsTest, ForcesHyperpolarizable)
 {
     if (GMX_DOUBLE)
     {
-        testForces("water_hyperpol", waterDimer);
+        testForces("water_hyperpol2", waterDimer);
     }
 }
 
@@ -675,7 +675,7 @@ TEST_F(PhysicsTest, RotationHyperpolarizable)
 {
     if (GMX_DOUBLE)
     {
-        testRotation("water_hyperpol", waterDimer);
+        testRotation("water_hyperpol2", waterDimer);
     }
 }
 
@@ -706,37 +706,37 @@ TEST_F(PhysicsTest, RenumberedShells)
 // Test: Charges of a neutral dimer with point charges, SQE
 TEST_F(PhysicsTest, ChargesMethanolWater)
 {
-    testCharges("../../qgen/tests/ACS-g", "../../qgen/tests/methanol-water.sdf", { 0, 0 });
+    testCharges("ACS-g4", "molecules/methanol-water.sdf", { 0, 0 });
 }
 
 // Test: Charges of a charged dimer with Gaussian charges and shells
 TEST_F(PhysicsTest, ChargesAcetateWaterPolarizable)
 {
-    testCharges("../../qgen/tests/ACS-pg", "../../qgen/tests/acetate-water.sdf", { -1, 0 });
+    testCharges("ACS-pg2", "molecules/acetate-water.sdf", { -1, 0 });
 }
 
 // Test: Charges of a charged molecule
 TEST_F(PhysicsTest, ChargesGuanidinium)
 {
-    testCharges("../../qgen/tests/ACS-g", "../../qgen/tests/guanidinium.sdf", { 1 });
+    testCharges("ACS-g4", "molecules/guanidinium.sdf", { 1 });
 }
 
 // Test: Reverse numbering of a charged dimer, energies, forces and charges
 TEST_F(PhysicsTest, RenumberedAcetateWater)
 {
-    testRenumbered("../../qgen/tests/ACS-pg", "../../qgen/tests/acetate-water.sdf", { -1, 0 });
+    testRenumbered("ACS-pg2", "molecules/acetate-water.sdf", { -1, 0 });
 }
 
 // Test: Reverse numbering of a neutral dimer with point charges
 TEST_F(PhysicsTest, RenumberedMethanolWater)
 {
-    testRenumbered("../../qgen/tests/ACS-g", "../../qgen/tests/methanol-water.sdf", { 0, 0 });
+    testRenumbered("ACS-g4", "molecules/methanol-water.sdf", { 0, 0 });
 }
 
 // The molecules of the topology tests
-const std::string diamine = "../../alexandria/tests/mols/ethane-12-diamine.sdf";
-const std::string water   = "water.sdf";
-const std::string acsG    = "../../alexandria/tests/ACS-g";
+const std::string diamine = "molecules/ethane-12-diamine.sdf";
+const std::string water   = "molecules/water.sdf";
+const std::string acsG    = "ACS-g1";
 
 // Test: Forces with the virtual sites VSITE3 and VSITE3OUT of water
 TEST_F(PhysicsTest, ForcesVsite3Water)
@@ -777,22 +777,22 @@ TEST_F(PhysicsTest, RenumberedExclusions)
 // Test: Charges with EEM rather than SQE
 TEST_F(PhysicsTest, ChargesEEM)
 {
-    testCharges("../../qgen/tests/ACS-g", "../../qgen/tests/methanol-water.sdf", { 0, 0 },
+    testCharges("ACS-g4", "molecules/methanol-water.sdf", { 0, 0 },
                 ChargeGenerationAlgorithm::EEM);
 }
 
 // Test: Charges of a charged dimer with EEM, Gaussian charges and shells
 TEST_F(PhysicsTest, ChargesEEMPolarizable)
 {
-    testCharges("../../qgen/tests/ACS-pg", "../../qgen/tests/acetate-water.sdf", { -1, 0 },
+    testCharges("ACS-pg2", "molecules/acetate-water.sdf", { -1, 0 },
                 ChargeGenerationAlgorithm::EEM);
 }
 
 // Test: Charges of the ACM force fields
 TEST_F(PhysicsTest, ChargesACM)
 {
-    testCharges("../../qgen/tests/ACM-g", "../../qgen/tests/acetate-water.sdf", { -1, 0 });
-    testCharges("../../qgen/tests/ACM-pg", "../../qgen/tests/methanol-water.sdf", { 0, 0 });
+    testCharges("ACM-g2", "molecules/acetate-water.sdf", { -1, 0 });
+    testCharges("ACM-pg2", "molecules/methanol-water.sdf", { 0, 0 });
 }
 
 // Test: Energies are used again when nothing changed since the previous

@@ -182,9 +182,9 @@ inline TrainOutput runTrainFF(gmx::test::TestFileManager                        
 {
     gmx::test::CommandLine cmd;
     cmd.append("train_ff");
-    cmd.addOption("-ff", ffFile.empty() ? fileManager->getInputFilePath("trainff/" + ffName) : ffFile);
-    cmd.addOption("-mp", mpFile.empty() ? fileManager->getInputFilePath("trainff/" + molName + ".xml") : mpFile);
-    cmd.addOption("-sel", selFile.empty() ? fileManager->getInputFilePath("trainff/" + molName + ".dat") : selFile);
+    cmd.addOption("-ff", ffFile.empty() ? fileManager->getInputFilePath("forcefields/" + ffName) : ffFile);
+    cmd.addOption("-mp", mpFile.empty() ? fileManager->getInputFilePath("molprop/" + molName + ".xml") : mpFile);
+    cmd.addOption("-sel", selFile.empty() ? fileManager->getInputFilePath("molprop/" + molName + ".dat") : selFile);
     std::map<std::string, std::string> out = {
         { "-o",       label + "-ff.xml" },
         { "-otest",   label + "-fftest.xml" },

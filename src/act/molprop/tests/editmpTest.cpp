@@ -127,7 +127,7 @@ protected:
 // Test: Writing the molecules of a file gives the same molecules
 TEST_F(EditMPTest, RoundTrip)
 {
-    auto input = fileManager().getInputFilePath("molprop.xml");
+    auto input = fileManager().getInputFilePath("molprop/molprop.xml");
     auto ref   = read(input);
     auto mps   = run({ input });
     ASSERT_EQ(ref.size(), mps.size());
@@ -143,8 +143,8 @@ TEST_F(EditMPTest, RoundTrip)
 // Test: Molecules of different files are combined, sorted by name
 TEST_F(EditMPTest, MergeFiles)
 {
-    auto first  = fileManager().getInputFilePath("molprop.xml");
-    auto second = fileManager().getInputFilePath("../../alexandria/tests/trainff/booze-mono.xml");
+    auto first  = fileManager().getInputFilePath("molprop/molprop.xml");
+    auto second = fileManager().getInputFilePath("molprop/booze-mono.xml");
     auto mps    = run({ first, second });
     std::vector<std::string> names;
     for (const auto &mp : mps)
@@ -159,7 +159,7 @@ TEST_F(EditMPTest, MergeFiles)
 // experiments of both
 TEST_F(EditMPTest, MergeDuplicates)
 {
-    auto input = fileManager().getInputFilePath("molprop.xml");
+    auto input = fileManager().getInputFilePath("molprop/molprop.xml");
     auto ref   = experiments(read(input));
     auto mps   = run({ input, input });
     auto n     = experiments(mps);
@@ -174,8 +174,8 @@ TEST_F(EditMPTest, MergeDuplicates)
 // the log file, and the output has all their data
 TEST_F(EditMPTest, CheckWithForceField)
 {
-    auto input = fileManager().getInputFilePath("molprop.xml");
-    auto mps   = run({ input }, { { "-ff", fileManager().getInputFilePath("../../alexandria/tests/ACS-g.xml") } });
+    auto input = fileManager().getInputFilePath("molprop/molprop.xml");
+    auto mps   = run({ input }, { { "-ff", fileManager().getInputFilePath("forcefields/ACS-g1.xml") } });
     // Checking does not change the compounds
     EXPECT_EQ(read(input).size(), mps.size());
     EXPECT_EQ(experiments(read(input)), experiments(mps));
@@ -189,7 +189,7 @@ TEST_F(EditMPTest, CheckWithForceField)
 // compound that has them, the range is reported in the log file
 TEST_F(EditMPTest, EnergyHistogram)
 {
-    auto input = fileManager().getInputFilePath("../../alexandria/tests/trainff/hf-hf.xml");
+    auto input = fileManager().getInputFilePath("molprop/hf-hf.xml");
     run({ input }, { { "-ehisto", "" } });
     auto histo = std::filesystem::path(fileManager().getTemporaryFilePath("out.xml")).parent_path() /
         "hydrogen-fluoride#hydrogen-fluoride-InteractionEnergy.xvg";

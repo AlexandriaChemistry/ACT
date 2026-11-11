@@ -72,7 +72,7 @@ class ForceFieldTest : public gmx::test::CommandLineTestBase
         // Static initiation, only run once every test.
         static void SetUpTestCase()
         {
-            ForceField *mypd     = getForceField("ACM-g");
+            ForceField *mypd     = getForceField("ACM-g1");
             for (const auto &iter : mypd->particleTypesConst())
             {
                 atomNames.push_back(iter.second.id().id());
@@ -108,7 +108,7 @@ std::vector<std::string> ForceFieldTest::atomNames;
 std::string              ForceFieldTest::atomName;
 
 TEST_F (ForceFieldTest, getAtype){
-    auto aType = getForceField("ACM-g")->findParticleType("h");
+    auto aType = getForceField("ACM-g1")->findParticleType("h");
 
     checker_.checkString(aType->element(), "element");
     checker_.checkString(aType->description(), "description");
@@ -124,13 +124,13 @@ TEST_F (ForceFieldTest, getAtype){
 
 TEST_F(ForceFieldTest, addingParticleTypeTwiceThrows)
 {
-    alexandria::ForceField *pd = getForceField("ACM-g");
+    alexandria::ForceField *pd = getForceField("ACM-g1");
     addAtype(pd);
     EXPECT_THROW(addAtype(pd), gmx::InvalidInputError);
 }
 
 TEST_F(ForceFieldTest, addAtype){
-    alexandria::ForceField *pd = getForceField("ACM-g");
+    alexandria::ForceField *pd = getForceField("ACM-g1");
     std::string          atype("U");
     // For some reason this test "inherits" the same ForceField as the previous test
     //addAtype(pd);
@@ -151,7 +151,7 @@ TEST_F (ForceFieldTest, chi)
 {
     std::vector<double>      chi0s;
     std::string              atoms[]  = { "h", "f", "p2", "br" };
-    std::vector<std::string> eqd = { "ACM-g", "ACM-pg" };
+    std::vector<std::string> eqd = { "ACM-g1", "ACM-pg1" };
 
     for (auto &atom : atoms)
     {
@@ -171,7 +171,7 @@ TEST_F (ForceFieldTest, alpha)
 {
     std::vector<double>      alphas;
     std::string              atoms[]  = { "h", "c2", "f", "p2", "br" };
-    std::vector<std::string> eqd = { "ACM-pg" };
+    std::vector<std::string> eqd = { "ACM-pg1" };
 
     for (auto &atom : atoms)
     {
@@ -191,7 +191,7 @@ TEST_F (ForceFieldTest, row)
 {
     std::vector<int> rows;
     std::string      atoms[]  = { "h", "n2", "s2", "br" };
-    std::string      models[] = { "ACM-g", "ACM-pg" };
+    std::string      models[] = { "ACM-g1", "ACM-pg1" };
 
     for (auto &atom : atoms)
     {
@@ -210,7 +210,7 @@ TEST_F (ForceFieldTest, zeta)
 {
     std::vector<double>      zetas;
     std::string              atoms[]  = { "h", "c3", "s2", "br" };
-    std::vector<std::string> eqd = { "ACM-pg" };
+    std::vector<std::string> eqd = { "ACM-pg1" };
 
     for (auto &atom : atoms)
     {
@@ -229,7 +229,7 @@ TEST_F (ForceFieldTest, zeta)
 // the former Free, cannot be read
 TEST(ForceFieldSimpleTest, unknownMutabilityThrows)
 {
-    std::string dataName = gmx::test::TestFileManager::getInputFilePath("ACM-g.xml");
+    std::string dataName = gmx::test::TestFileManager::getInputFilePath("forcefields/ACM-g1.xml");
     std::ifstream in(dataName);
     std::stringstream buffer;
     buffer << in.rdbuf();
@@ -251,7 +251,7 @@ TEST(ForceFieldSimpleTest, unknownMutabilityThrows)
 static std::string modifiedForceField(gmx::test::TestFileManager       *fileManager,
                                       const std::string                &name,
                                       std::function<void(std::string *)> edit,
-                                      const std::string                &base = "ACM-g.xml")
+                                      const std::string                &base = "forcefields/ACM-g1.xml")
 {
     std::ifstream     in(gmx::test::TestFileManager::getInputFilePath(base));
     std::stringstream buffer;
@@ -330,13 +330,13 @@ TEST(ForceFieldSimpleTest, pointChargesWithZetaThrowOldStyle)
         auto        pos = xml->find(gaussian);
         ASSERT_NE(std::string::npos, pos);
         xml->replace(pos, gaussian.size(), "<interaction type=\"COULOMB\" function=\"COULOMB_POINT\"");
-    }, "../../qgen/tests/ACM-g.xml");
+    }, "forcefields/ACM-g2.xml");
     ForceField pd;
     EXPECT_THROW(readForceField(fileName, &pd), gmx::InvalidInputError);
 }
 
 //! A force field file in which the charge distributions are those of COULOMB
-static const char oldStyle[] = "../../qgen/tests/ACM-g.xml";
+static const char oldStyle[] = "forcefields/ACM-g2.xml";
 
 //! Replace the first occurrence of a text, which has to be present
 static void replaceFirst(std::string *xml, const std::string &from, const std::string &to)
@@ -503,7 +503,7 @@ TEST(ForceFieldSimpleTest, NewStyleInvalidOptionThrows)
 TEST(ForceFieldSimpleTest, changeChargeMinMaxForFixedParticle)
 {
     // Load a fresh copy to avoid mutating the shared singleton
-    std::string dataName = gmx::test::TestFileManager::getInputFilePath("ACM-g.xml");
+    std::string dataName = gmx::test::TestFileManager::getInputFilePath("forcefields/ACM-g1.xml");
     ForceField pd;
     readForceField(dataName, &pd);
 

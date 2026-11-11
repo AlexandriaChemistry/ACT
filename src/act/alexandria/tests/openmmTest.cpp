@@ -84,7 +84,7 @@ class OpenMMXmlTest : public gmx::test::CommandLineTestBase
         double rmsToler = 0.0000001;
         ForceComputer fcomp(rmsToler, 25, 1.0);
         std::vector<ACTMol> mps;
-        std::string molfn("mols/");
+        std::string molfn("molecules/");
         molfn += fileName;
         auto dataName = gmx::test::TestFileManager::getInputFilePath(molfn);
         initACTMol(&msghandler, dataName, ff, &fcomp, &mps);
@@ -115,54 +115,54 @@ class OpenMMXmlTest : public gmx::test::CommandLineTestBase
 
 TEST_F(OpenMMXmlTest, Sulfate)
 {
-    testOpenMM("ACS-g", "sulfate.sdf", true);
+    testOpenMM("ACS-g1", "sulfate.sdf", true);
 }
 
 TEST_F(OpenMMXmlTest, Furan)
 {
-    testOpenMM("ACS-g", "furan.sdf", true);
+    testOpenMM("ACS-g1", "furan.sdf", true);
 }
 
 TEST_F(OpenMMXmlTest, Acetone)
 {
-    testOpenMM("ACS-g", "acetone.sdf", true);
+    testOpenMM("ACS-g1", "acetone.sdf", true);
 }
 
 TEST_F(OpenMMXmlTest, AcetonePolMDrude)
 {
-    testOpenMM("ACS-pg", "acetone.sdf", true, 0.2);
+    testOpenMM("ACS-pg1", "acetone.sdf", true, 0.2);
 }
 
 TEST_F(OpenMMXmlTest, SulfatePol)
 {
-    testOpenMM("ACS-pg", "sulfate.sdf", true);
+    testOpenMM("ACS-pg1", "sulfate.sdf", true);
 }
 
 TEST_F(OpenMMXmlTest, FuranPol)
 {
-    testOpenMM("ACS-pg", "furan.sdf", true);
+    testOpenMM("ACS-pg1", "furan.sdf", true);
 }
 
 TEST_F(OpenMMXmlTest, FuranPolNoNum)
 {
-    testOpenMM("ACS-pg", "furan.sdf", false);
+    testOpenMM("ACS-pg1", "furan.sdf", false);
 }
 
 TEST_F(OpenMMXmlTest, AcetonePol)
 {
-    testOpenMM("ACS-pg", "acetone.sdf", true);
+    testOpenMM("ACS-pg1", "acetone.sdf", true);
 }
 
 TEST_F(OpenMMXmlTest, Merged)
 {
-    testOpenMM("ACS-g", "merged.pdb", true);
+    testOpenMM("ACS-g1", "merged.pdb", true);
 }
 
 // Test: Water and methanol have the same shell type on their oxygens,
 // which needs different OpenMM shell types for the two parents
 TEST_F(OpenMMXmlTest, MethanolWaterPol)
 {
-    testOpenMM("ACS-pg", "methanol#water.pdb", true);
+    testOpenMM("ACS-pg1", "methanol#water.pdb", true);
 }
 
 // Test: Without numbering the atom types this cannot be written
@@ -170,10 +170,10 @@ TEST(OpenMMXmlNoNumberTest, MethanolWaterPol)
 {
     MsgHandler msghandler;
     msghandler.setPrintLevel(ACTStatus::Fatal);
-    auto          ff = getForceField("ACS-pg");
+    auto          ff = getForceField("ACS-pg1");
     ForceComputer fcomp(1e-7, 25, 1.0);
     std::vector<ACTMol> mps;
-    auto dataName = gmx::test::TestFileManager::getInputFilePath("mols/methanol#water.pdb");
+    auto dataName = gmx::test::TestFileManager::getInputFilePath("molecules/methanol#water.pdb");
     initACTMol(&msghandler, dataName, ff, &fcomp, &mps);
     ASSERT_TRUE(msghandler.ok());
     gmx::test::TestFileManager tfm;
@@ -183,25 +183,25 @@ TEST(OpenMMXmlNoNumberTest, MethanolWaterPol)
 
 TEST_F(OpenMMXmlTest, WaterHyperPol)
 {
-    testOpenMM("water_hyperpol", "water_dimer.pdb", true);
+    testOpenMM("water_hyperpol1", "water_dimer.pdb", true);
 }
 
 // Test: Lennard-Jones and point charges, the NonbondedForce of OpenMM only
 TEST_F(OpenMMXmlTest, WaterSPCE)
 {
-    testOpenMM("../../properties/tests/SPCE", "water_dimer.pdb", true);
+    testOpenMM("SPCE", "water_dimer.pdb", true);
 }
 
 // Test: The lone pairs of TIP5P, VSITE3OUT
 TEST_F(OpenMMXmlTest, WaterTIP5P)
 {
-    testOpenMM("../../properties/tests/TIP5P", "water_dimer.pdb", true);
+    testOpenMM("TIP5P", "water_dimer.pdb", true);
 }
 
 // Test: The Buckingham potential and VSITE3S of BK3
 TEST_F(OpenMMXmlTest, WaterBK3)
 {
-    testOpenMM("../../properties/tests/BK3", "water_dimer.pdb", true);
+    testOpenMM("BK3", "water_dimer.pdb", true);
 }
 
 // Test: The generalized Buckingham potential
@@ -213,7 +213,7 @@ TEST_F(OpenMMXmlTest, AcetoneGBHam)
 // Test: The buffered 14-7 potential
 TEST_F(OpenMMXmlTest, HydrogenFluorideLJ147)
 {
-    testOpenMM("../../properties/tests/HF-LJ14-7", "../../../properties/tests/hydrogen-fluoride#hydrogen-fluoride.pdb", true);
+    testOpenMM("HF-LJ14-7", "hydrogen-fluoride#hydrogen-fluoride.pdb", true);
 }
 
 // Test: Urey-Bradley angles
@@ -237,13 +237,13 @@ TEST_F(OpenMMXmlTest, SodiumWaterVsite1)
 // Test: Hua bonds
 TEST_F(OpenMMXmlTest, AcetateHua)
 {
-    testOpenMM("../../constraints/tests/PC+GV-elec", "acetate.sdf", true);
+    testOpenMM("PC+GV-elec", "acetate.sdf", true);
 }
 
 // Test: VSITE3 on water
 TEST_F(OpenMMXmlTest, WaterVsite3)
 {
-    testOpenMM("../../forces/tests/ACS-pg-vs3", "water_dimer.pdb", true);
+    testOpenMM("ACS-pg-vs3", "water_dimer.pdb", true);
 }
 
 // Test: OpenMM has no four particle virtual sites, hence the amine of
@@ -252,10 +252,10 @@ TEST(OpenMMXmlVsite4Test, Methylamine)
 {
     MsgHandler msghandler;
     msghandler.setPrintLevel(ACTStatus::Fatal);
-    auto          ff = getForceField("../../forces/tests/ACS-pg-vs3");
+    auto          ff = getForceField("ACS-pg-vs3");
     ForceComputer fcomp(1e-7, 25, 1.0);
     std::vector<ACTMol> mps;
-    auto dataName = gmx::test::TestFileManager::getInputFilePath("../../forces/tests/methylamine.sdf");
+    auto dataName = gmx::test::TestFileManager::getInputFilePath("molecules/methylamine.sdf");
     initACTMol(&msghandler, dataName, ff, &fcomp, &mps);
     ASSERT_TRUE(msghandler.ok());
     gmx::test::TestFileManager tfm;
@@ -267,10 +267,10 @@ TEST(OpenMMXmlVsite4Test, Methylamine)
 static std::map<std::string, std::string> methanolWaterNames(MsgHandler        *msghandler,
                                                              const std::string &userNames)
 {
-    auto          ff = getForceField("ACS-g");
+    auto          ff = getForceField("ACS-g1");
     ForceComputer fcomp(1e-7, 25, 1.0);
     std::vector<ACTMol> mps;
-    auto dataName = gmx::test::TestFileManager::getInputFilePath("mols/methanol#water.pdb");
+    auto dataName = gmx::test::TestFileManager::getInputFilePath("molecules/methanol#water.pdb");
     initACTMol(msghandler, dataName, ff, &fcomp, &mps);
     EXPECT_TRUE(msghandler->ok());
     auto names = openMMResidueNames(msghandler, mps, userNames);
@@ -331,10 +331,10 @@ TEST(ParticleNamesTest, NumberedInResidue)
 {
     MsgHandler msghandler;
     msghandler.setPrintLevel(ACTStatus::Fatal);
-    auto          ff = getForceField("ACS-pg");
+    auto          ff = getForceField("ACS-pg1");
     ForceComputer fcomp(1e-7, 25, 1.0);
     std::vector<ACTMol> mps;
-    auto dataName = gmx::test::TestFileManager::getInputFilePath("mols/methanol#water.pdb");
+    auto dataName = gmx::test::TestFileManager::getInputFilePath("molecules/methanol#water.pdb");
     initACTMol(&msghandler, dataName, ff, &fcomp, &mps);
     ASSERT_TRUE(msghandler.ok());
     // The shells get the number of their atom, the water starts at one again
@@ -348,14 +348,14 @@ TEST(IonChargesTest, SodiumWater)
 {
     // The charge of the polarizable sodium is split over the core, the shell
     // and a virtual site, but only the atom gets the formal charge
-    for (const auto &ffName : { "ACS-g", "PG-pol-ions" })
+    for (const auto &ffName : { "ACS-g1", "PG-pol-ions" })
     {
         MsgHandler msghandler;
         msghandler.setPrintLevel(ACTStatus::Fatal);
         auto          ff = getForceField(ffName);
         ForceComputer fcomp(1e-7, 25, 1.0);
         std::vector<ACTMol> mps;
-        auto dataName = gmx::test::TestFileManager::getInputFilePath("mols/sodium#water.pdb");
+        auto dataName = gmx::test::TestFileManager::getInputFilePath("molecules/sodium#water.pdb");
         initACTMol(&msghandler, dataName, ff, &fcomp, &mps);
         ASSERT_TRUE(msghandler.ok()) << ffName;
         const auto &atoms   = mps[0].atomsConst();

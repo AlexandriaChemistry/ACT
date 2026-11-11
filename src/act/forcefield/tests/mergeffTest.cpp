@@ -58,7 +58,7 @@ protected:
     //! The force field the tests start from
     std::string input_;
 
-    MergeFFTest() : input_(fileManager().getInputFilePath("ACM-g.xml")) {}
+    MergeFFTest() : input_(fileManager().getInputFilePath("forcefields/ACM-g1.xml")) {}
 
     //! \return a parameter of an ACM type, such as chi or eta
     static const ForceFieldParameter &acm(const ForceField &pd, const std::string &acmtype,

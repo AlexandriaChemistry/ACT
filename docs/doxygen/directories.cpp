@@ -32,6 +32,11 @@ Doxygen documentation file for directories in the source tree.
  */
 /*!
 \libinternal
+\dir src/act/testdata
+\brief Input files of the tests: force fields, molprop files with their selections, and molecules, see README.md there
+ */
+/*!
+\libinternal
 \dir src/act/basics
 \brief Source code for ACT
  */

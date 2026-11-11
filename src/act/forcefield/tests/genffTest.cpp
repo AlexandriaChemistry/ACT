@@ -71,7 +71,7 @@ protected:
     {
         gmx::test::CommandLine cmd;
         cmd.append("gen_ff");
-        cmd.addOption("-f", fileManager().getInputFilePath("genff-atomtypes.csv"));
+        cmd.addOption("-f", fileManager().getInputFilePath("forcefields/genff-atomtypes.csv"));
         if (!vsites.empty())
         {
             cmd.addOption("-vs", vsites[0] == '/' ? vsites : fileManager().getInputFilePath(vsites));
@@ -92,7 +92,7 @@ protected:
 
     //! \return the force field generated with the options and virtual sites, see commandLine
     ForceField generate(const std::vector<std::pair<std::string, std::string>> &options,
-                        const std::string &vsites = "genff-vsites.csv")
+                        const std::string &vsites = "forcefields/genff-vsites.csv")
     {
         auto output = fileManager().getTemporaryFilePath("generated.xml");
         auto cmd    = commandLine(options, vsites);

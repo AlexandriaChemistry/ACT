@@ -89,7 +89,7 @@ protected:
         std::vector<ACTMol> mps;
         MsgHandler msghandler;
         msghandler.setPrintLevel(ACTStatus::Warning);
-        std::string dirmolname("../../alexandria/tests/mols/");
+        std::string dirmolname("molecules/");
         dirmolname += molname;
         auto dataName = gmx::test::TestFileManager::getInputFilePath(dirmolname);
         initACTMol(&msghandler, dataName, pd, &forceComp, &mps);
@@ -212,7 +212,7 @@ static void loadMolecule(ForceField          *pd,
     ForceComputer forceComp;
     MsgHandler    msghandler;
     msghandler.setPrintLevel(ACTStatus::Warning);
-    auto dataName = gmx::test::TestFileManager::getInputFilePath("../../alexandria/tests/mols/" + molname);
+    auto dataName = gmx::test::TestFileManager::getInputFilePath("molecules/" + molname);
     initACTMol(&msghandler, dataName, pd, &forceComp, mps);
 }
 

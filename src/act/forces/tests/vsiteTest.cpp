@@ -70,7 +70,7 @@ protected:
                const std::string &molName,
                ACTMol            *mol)
     {
-        std::string fileName = gmx::formatString("%s.sdf", molName.c_str());
+        std::string fileName = gmx::formatString("molecules/%s.sdf", molName.c_str());
         return setupFile(ff, gmx::test::TestFileManager::getInputFilePath(fileName), mol);
     }
 
@@ -310,25 +310,25 @@ protected:
 
 TEST_F (VsiteHandlerTest, SpreadVsite2HF)
 {
-    testSpread("ACS-pg-vs2", gmx::test::TestFileManager::getInputFilePath("hydrogen-fluoride.sdf"),
+    testSpread("ACS-pg-vs2", gmx::test::TestFileManager::getInputFilePath("molecules/hydrogen-fluoride.sdf"),
                { InteractionType::VSITE1, InteractionType::VSITE2 });
 }
 
 TEST_F (VsiteHandlerTest, SpreadVsite3Water)
 {
-    testSpread("ACS-pg-vs3", gmx::test::TestFileManager::getInputFilePath("water.sdf"),
+    testSpread("ACS-pg-vs3", gmx::test::TestFileManager::getInputFilePath("molecules/water.sdf"),
                { InteractionType::VSITE3, InteractionType::VSITE3OUT });
 }
 
 TEST_F (VsiteHandlerTest, SpreadVsite3SWater)
 {
-    testSpread("water_hyperpol", gmx::test::TestFileManager::getInputFilePath("water.sdf"),
+    testSpread("water_hyperpol2", gmx::test::TestFileManager::getInputFilePath("molecules/water.sdf"),
                { InteractionType::VSITE3S });
 }
 
 TEST_F (VsiteHandlerTest, SpreadVsite3FDWater)
 {
-    testSpread("ACS-v3fds", gmx::test::TestFileManager::getInputFilePath("water.sdf"),
+    testSpread("ACS-v3fds", gmx::test::TestFileManager::getInputFilePath("molecules/water.sdf"),
                { InteractionType::VSITE3FD });
 }
 
@@ -368,7 +368,7 @@ TEST_F (VsiteHandlerTest, Vsite4S3Ammonia)
 {
     ACTMol                 mol;
     std::vector<gmx::RVec> x;
-    constructVsite4(gmx::test::TestFileManager::getInputFilePath("../../alexandria/tests/mols/ammonia.sdf"),
+    constructVsite4(gmx::test::TestFileManager::getInputFilePath("molecules/ammonia.sdf"),
                     &mol, &x);
     auto top = mol.topology();
     ASSERT_TRUE(top->hasEntry(InteractionType::VSITE4S3));
@@ -393,7 +393,7 @@ TEST_F (VsiteHandlerTest, Vsite4Methylamine)
 {
     ACTMol                 mol;
     std::vector<gmx::RVec> x;
-    constructVsite4(gmx::test::TestFileManager::getInputFilePath("methylamine.sdf"), &mol, &x);
+    constructVsite4(gmx::test::TestFileManager::getInputFilePath("molecules/methylamine.sdf"), &mol, &x);
     auto top = mol.topology();
     EXPECT_FALSE(top->hasEntry(InteractionType::VSITE4S3));
     ASSERT_TRUE(top->hasEntry(InteractionType::VSITE4));

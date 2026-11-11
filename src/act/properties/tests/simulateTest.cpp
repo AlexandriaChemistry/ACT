@@ -195,17 +195,17 @@ struct SimulateFiles
 class SimulateTest : public gmx::test::CommandLineTestBase
 {
 protected:
-    //! \return path to an input file in the alexandria tests
+    //! \return path to an input file in src/act/testdata
     std::string alexandriaFile(const std::string &name)
     {
-        return fileManager().getInputFilePath("../../alexandria/tests/" + name);
+        return fileManager().getInputFilePath(name);
     }
 
     /*! \brief Make a command line for simulate
-     * \param[in]  molFile Molecule file in the alexandria/tests/mols directory, or an absolute path
+     * \param[in]  molFile Molecule file in src/act/testdata/molecules, or an absolute path
      * \param[in]  label   Unique label for the output files of this run
      * \param[out] files   The output file names
-     * \param[in]  ffFile  Force field file, ACS-g.xml from alexandria/tests if empty
+     * \param[in]  ffFile  Force field file, forcefields/ACS-g1.xml from src/act/testdata if empty
      * \return The command line
      */
     gmx::test::CommandLine baseCommand(const std::string &molFile,
@@ -215,8 +215,8 @@ protected:
     {
         gmx::test::CommandLine cmd;
         cmd.append("simulate");
-        cmd.addOption("-ff", ffFile.empty() ? alexandriaFile("ACS-g.xml") : ffFile);
-        cmd.addOption("-f", molFile[0] == '/' ? molFile : alexandriaFile("mols/" + molFile));
+        cmd.addOption("-ff", ffFile.empty() ? alexandriaFile("forcefields/ACS-g1.xml") : ffFile);
+        cmd.addOption("-f", molFile[0] == '/' ? molFile : alexandriaFile("molecules/" + molFile));
         files->energy     = fileManager().getTemporaryFilePath(label + "-energy.xvg");
         files->trajectory = fileManager().getTemporaryFilePath(label + "-traj.pdb");
         files->log        = fileManager().getTemporaryFilePath(label + ".log");
@@ -445,7 +445,7 @@ TEST_F(SimulateTest, Reproducibility)
 // model needs much shorter time steps.
 TEST_F(SimulateTest, MDShells)
 {
-    auto ffFile = fileManager().getInputFilePath("SWM4-NDP.xml");
+    auto ffFile = fileManager().getInputFilePath("forcefields/SWM4-NDP.xml");
     SimulateFiles sp;
     auto cmdsp = baseCommand("water_dimer.pdb", "shells-sp", &sp, ffFile);
     cmdsp.append("-sp");
@@ -519,14 +519,14 @@ TEST_F(SimulateTest, RerunShellsVsites)
 {
     for (const std::string model : { "SWM4-NDP", "TIP5P" })
     {
-        auto ffFile = fileManager().getInputFilePath(model + ".xml");
+        auto ffFile = fileManager().getInputFilePath("forcefields/" + model + ".xml");
         SimulateFiles sp;
         auto cmd = baseCommand("water_dimer.pdb", model + "-sp", &sp, ffFile);
         cmd.append("-sp");
         ASSERT_EQ(0, run(&cmd)) << model;
         SimulateFiles rerun;
         auto cmd2 = baseCommand("water_dimer.pdb", model + "-rerun", &rerun, ffFile);
-        cmd2.addOption("-traj", alexandriaFile("mols/water_dimer.pdb"));
+        cmd2.addOption("-traj", alexandriaFile("molecules/water_dimer.pdb"));
         ASSERT_EQ(0, run(&cmd2)) << model;
         auto epot = rerunEpot(rerun.log);
         ASSERT_EQ(1u, epot.size()) << model;
@@ -539,7 +539,7 @@ TEST_F(SimulateTest, RerunShellsVsites)
 // given file, and without it no such file is written
 TEST_F(SimulateTest, JsonFile)
 {
-    auto ffFile = fileManager().getInputFilePath("SWM4-NDP.xml");
+    auto ffFile = fileManager().getInputFilePath("forcefields/SWM4-NDP.xml");
     SimulateFiles sp;
     auto cmd  = baseCommand("water_dimer.pdb", "json-sp", &sp, ffFile);
     auto json = fileManager().getTemporaryFilePath("json-sp.json");
@@ -928,7 +928,7 @@ TEST_F(SimulateTest, MinimizeFreezeConstrained)
     cmd.addOption("-freeze", ndx);
     cmd.addOption("-constrain", "angles");
     ASSERT_EQ(0, run(&cmd));
-    auto xin  = readPdbCoordinates(alexandriaFile("mols/" + molFile));
+    auto xin  = readPdbCoordinates(alexandriaFile("molecules/" + molFile));
     auto xout = readPdbCoordinates(confout);
     ASSERT_EQ(xin.size(), xout.size());
     for(size_t i = 0; i < 2; i++)
@@ -1045,7 +1045,7 @@ TEST_F(SimulateTest, MinimizeFreeze)
     cmd.addOption("-c", confout);
     cmd.addOption("-freeze", ndx);
     ASSERT_EQ(0, run(&cmd));
-    auto xin  = readPdbCoordinates(alexandriaFile("mols/" + molFile));
+    auto xin  = readPdbCoordinates(alexandriaFile("molecules/" + molFile));
     auto xout = readPdbCoordinates(confout);
     ASSERT_EQ(xin.size(), xout.size());
     // Coordinates are written with three decimals
@@ -1078,7 +1078,7 @@ TEST_F(SimulateTest, PositionRestraints)
     // The water dimer moved from the origin
     auto molFile = fileManager().getTemporaryFilePath("shifted.pdb");
     {
-        std::ifstream in(alexandriaFile("mols/water_dimer.pdb"));
+        std::ifstream in(alexandriaFile("molecules/water_dimer.pdb"));
         std::ofstream out(molFile);
         for (std::string line; std::getline(in, line); )
         {
@@ -1185,8 +1185,8 @@ TEST_F(SimulateTest, MinimizeTool)
         ASSERT_EQ(0, run(&cmd));
 
         auto minout  = fileManager().getTemporaryFilePath("minimize" + constrain + "-confout.pdb");
-        auto mincmd  = minimizeCommand(alexandriaFile("ACS-g.xml"),
-                                       alexandriaFile("mols/" + molFile), minout,
+        auto mincmd  = minimizeCommand(alexandriaFile("forcefields/ACS-g1.xml"),
+                                       alexandriaFile("molecules/" + molFile), minout,
                                        fileManager().getTemporaryFilePath("minimize" + constrain + ".log"));
         mincmd.addOption("-constrain", constrain);
         ASSERT_EQ(0, minimize(mincmd.argc(), mincmd.argv()));
@@ -1213,8 +1213,8 @@ TEST_F(SimulateTest, MinimizeToolNotConverged)
     {
         auto confout = fileManager().getTemporaryFilePath("notconverged" + alg + "-confout.pdb");
         auto log     = fileManager().getTemporaryFilePath("notconverged" + alg + ".log");
-        auto cmd     = minimizeCommand(alexandriaFile("ACS-g.xml"),
-                                       alexandriaFile("mols/acetone.sdf"), confout, log);
+        auto cmd     = minimizeCommand(alexandriaFile("forcefields/ACS-g1.xml"),
+                                       alexandriaFile("molecules/acetone.sdf"), confout, log);
         cmd.addOption("-minalg", alg);
         cmd.addOption("-maxiter", 2);
         EXPECT_EQ(1, minimize(cmd.argc(), cmd.argv())) << alg;
@@ -1246,8 +1246,8 @@ TEST_F(SimulateTest, MinimizeToolShells)
 {
     auto confout = fileManager().getTemporaryFilePath("shells-confout.pdb");
     auto log     = fileManager().getTemporaryFilePath("minimize-shells.log");
-    auto cmd     = minimizeCommand(fileManager().getInputFilePath("SWM4-NDP.xml"),
-                                   alexandriaFile("mols/water_dimer.pdb"), confout, log);
+    auto cmd     = minimizeCommand(fileManager().getInputFilePath("forcefields/SWM4-NDP.xml"),
+                                   alexandriaFile("molecules/water_dimer.pdb"), confout, log);
     ASSERT_EQ(0, minimize(cmd.argc(), cmd.argv()));
     std::vector<double> induction;
     std::ifstream       in(log);
@@ -1271,8 +1271,8 @@ TEST_F(SimulateTest, MinimizeToolShells)
 // Test: alexandria minimize fails for a missing molecule
 TEST_F(SimulateTest, MinimizeToolMissingMolecule)
 {
-    auto cmd = minimizeCommand(alexandriaFile("ACS-g.xml"),
-                               alexandriaFile("mols/does-not-exist.sdf"),
+    auto cmd = minimizeCommand(alexandriaFile("forcefields/ACS-g1.xml"),
+                               alexandriaFile("molecules/does-not-exist.sdf"),
                                fileManager().getTemporaryFilePath("missing-confout.pdb"),
                                fileManager().getTemporaryFilePath("minimize-missing.log"));
     EXPECT_EQ(1, minimize(cmd.argc(), cmd.argv()));

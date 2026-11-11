@@ -93,7 +93,7 @@ class AcmTest : public gmx::test::CommandLineTestBase
                      const std::vector<double>       &qcustom)
         {
             const char           *conf      = (char *)"minimum";
-            std::string           fileName(molname);
+            std::string           fileName("molecules/" + molname);
             std::vector<alexandria::MolProp> molprops;
             
             if (inputformat == inputFormat::PDB)
@@ -206,37 +206,37 @@ class AcmTest : public gmx::test::CommandLineTestBase
 TEST_F (AcmTest, WaterDimerACSg)
 {
     std::vector<double> qcustom;
-    testAcm("ACS-g", inputFormat::PDB, "water_dimer", {0,0}, qcustom);
+    testAcm("ACS-g4", inputFormat::PDB, "water_dimer", {0,0}, qcustom);
 }
 
 TEST_F (AcmTest, AXpgPDB)
 {
     std::vector<double> qcustom;
-    testAcm("ACM-pg", inputFormat::PDB, "1-butanol", {0}, qcustom);
+    testAcm("ACM-pg2", inputFormat::PDB, "1-butanol", {0}, qcustom);
 }
 
 TEST_F (AcmTest, AXpgNoSymmPDB)
 {
     std::vector<double> qcustom;
-    testAcm("ACM-pg", inputFormat::PDB, "1-butanol", {0}, qcustom);
+    testAcm("ACM-pg2", inputFormat::PDB, "1-butanol", {0}, qcustom);
 }
 
 TEST_F (AcmTest, AXgPDB)
 {
     std::vector<double> qcustom;
-    testAcm("ACM-g", inputFormat::PDB, "1-butanol", {0}, qcustom);
+    testAcm("ACM-g2", inputFormat::PDB, "1-butanol", {0}, qcustom);
 }
 
 TEST_F (AcmTest, AXgNoSymmPDB)
 {
     std::vector<double> qcustom;
-    testAcm("ACM-g", inputFormat::PDB, "1-butanol", {0}, qcustom);
+    testAcm("ACM-g2", inputFormat::PDB, "1-butanol", {0}, qcustom);
 }
 
 TEST_F (AcmTest, AXgPositive)
 {
     std::vector<double> qcustom;
-    testAcm("ACM-g", inputFormat::SDF, "guanidinium", {1}, qcustom);
+    testAcm("ACM-g2", inputFormat::SDF, "guanidinium", {1}, qcustom);
 }
 
 TEST_F (AcmTest, AXgPositive_FixedQ)
@@ -249,73 +249,73 @@ TEST_F (AcmTest, AXgPositive_FixedQ)
 TEST_F (AcmTest, AXpgPositive)
 {
     std::vector<double> qcustom;
-    testAcm("ACM-pg", inputFormat::SDF, "guanidinium", {1}, qcustom);
+    testAcm("ACM-pg2", inputFormat::SDF, "guanidinium", {1}, qcustom);
 }
 
 TEST_F (AcmTest, SQEgNeutral)
 {
     std::vector<double> qcustom;
-    testAcm("ACS-g", inputFormat::PDB, "1-butanol", {0}, qcustom);
+    testAcm("ACS-g4", inputFormat::PDB, "1-butanol", {0}, qcustom);
 }
 
 TEST_F (AcmTest, SQEgPositive)
 {
     std::vector<double> qcustom;
-    testAcm("ACS-g", inputFormat::SDF, "guanidinium", {1}, qcustom);
+    testAcm("ACS-g4", inputFormat::SDF, "guanidinium", {1}, qcustom);
 }
 
 TEST_F (AcmTest, SQEpgNeutral)
 {
     std::vector<double> qcustom;
-    testAcm("ACS-pg", inputFormat::PDB, "1-butanol", {0}, qcustom);
+    testAcm("ACS-pg2", inputFormat::PDB, "1-butanol", {0}, qcustom);
 }
 
 TEST_F (AcmTest, SQEpgPositive)
 {
     std::vector<double> qcustom;
-    testAcm("ACS-pg", inputFormat::SDF, "guanidinium", {1}, qcustom);
+    testAcm("ACS-pg2", inputFormat::SDF, "guanidinium", {1}, qcustom);
 }
 
 TEST_F (AcmTest, WaterDimerACSpg)
 {
     std::vector<double> qcustom;
-    testAcm("ACS-pg", inputFormat::PDB, "water_dimer", {0,0}, qcustom);
+    testAcm("ACS-pg2", inputFormat::PDB, "water_dimer", {0,0}, qcustom);
 }
 
 TEST_F (AcmTest, CustomButanolPDB)
 {
     std::vector<double> qcustom = { -0.18, 0.06, 0.06, 0.06, -0.12, 0.06, 0.06,  -0.12, 0.06, 0.06, -0.12, 0.06, 0.06, -0.4, 0.4};
-    testAcm("ACM-g", inputFormat::PDB, "1-butanol", {0}, qcustom);
+    testAcm("ACM-g2", inputFormat::PDB, "1-butanol", {0}, qcustom);
 }
 
 TEST_F (AcmTest, CustomGuanidiniumSDF)
 {
     std::vector<double> qcustom = { -0.3, -0.3, -0.3, 0.1, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3 };
-    testAcm("ACM-g", inputFormat::SDF, "guanidinium", {1}, qcustom);
+    testAcm("ACM-g2", inputFormat::SDF, "guanidinium", {1}, qcustom);
 }
 
 TEST_F (AcmTest, MethanolWaterACSg)
 {
     std::vector<double> qcustom;
-    testAcm("ACS-g", inputFormat::SDF, "methanol-water", {0,0}, qcustom);
+    testAcm("ACS-g4", inputFormat::SDF, "methanol-water", {0,0}, qcustom);
 }
 
 TEST_F (AcmTest, MethanolWaterACSpg)
 {
     std::vector<double> qcustom;
-    testAcm("ACS-pg", inputFormat::SDF, "methanol-water", {0,0}, qcustom);
+    testAcm("ACS-pg2", inputFormat::SDF, "methanol-water", {0,0}, qcustom);
 }
 
 TEST_F (AcmTest, AcetateWaterACSg)
 {
     std::vector<double> qcustom;
-    testAcm("ACS-g", inputFormat::SDF, "acetate-water", {-1,0}, qcustom);
+    testAcm("ACS-g4", inputFormat::SDF, "acetate-water", {-1,0}, qcustom);
 }
 
 TEST_F (AcmTest, AcetateWaterACSpg)
 {
     std::vector<double> qcustom;
-    testAcm("ACS-pg", inputFormat::SDF, "acetate-water", {-1,0}, qcustom);
+    testAcm("ACS-pg2", inputFormat::SDF, "acetate-water", {-1,0}, qcustom);
 }
 
 
@@ -326,7 +326,7 @@ static std::vector<double> butanolSQE(ForceField *pd, bool ok)
     msghandler.setPrintLevel(ACTStatus::Warning);
     std::vector<MolProp> molprops;
     double qtot = 0;
-    importFile(&msghandler, pd, gmx::test::TestFileManager::getInputFilePath("1-butanol.pdb"),
+    importFile(&msghandler, pd, gmx::test::TestFileManager::getInputFilePath("molecules/1-butanol.pdb"),
                &molprops, "minimum", JobType::OPT, false, &qtot, true);
     EXPECT_TRUE(msghandler.ok());
     ACTMol mol;
@@ -353,7 +353,7 @@ static std::vector<double> butanolSQE(ForceField *pd, bool ok)
 TEST(AcmBondCorrectionTest, MissingBondCorrection)
 {
     ForceField pd;
-    readForceField(gmx::test::TestFileManager::getInputFilePath("ACS-g.xml"), &pd);
+    readForceField(gmx::test::TestFileManager::getInputFilePath("forcefields/ACS-g4.xml"), &pd);
     ASSERT_EQ(ChargeGenerationAlgorithm::SQE, pd.chargeGenerationAlgorithm());
     auto &bcc = pd.findForcesConst(InteractionType::BONDCORRECTIONS);
     ASSERT_EQ(CanSwap::No, bcc.canSwap());

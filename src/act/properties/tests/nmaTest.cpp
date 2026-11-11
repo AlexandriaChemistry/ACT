@@ -253,7 +253,7 @@ double rigidRotor(const std::vector<PdbAtom> &atoms, bool linear, double sigma, 
 //! Description of a test molecule
 struct NmaMolecule
 {
-    //! File in alexandria/tests/mols
+    //! File in src/act/testdata/molecules
     std::string file;
     //! Number of normal modes, 3N-6 or 3N-5
     size_t      nModes;
@@ -290,14 +290,14 @@ struct NmaOutput
 class NmaTest : public gmx::test::CommandLineTestBase
 {
 protected:
-    //! \return path to an input file in the alexandria tests
+    //! \return path to an input file in src/act/testdata
     std::string alexandriaFile(const std::string &name)
     {
-        return fileManager().getInputFilePath("../../alexandria/tests/" + name);
+        return fileManager().getInputFilePath(name);
     }
 
     /*! \brief Run the nma tool
-     * \param[in]  molFile Molecule file in alexandria/tests/mols
+     * \param[in]  molFile Molecule file in src/act/testdata/molecules
      * \param[in]  label   Unique label for the output files
      * \param[in]  extra   Extra command line options
      * \param[out] output  The output
@@ -310,8 +310,8 @@ protected:
     {
         gmx::test::CommandLine cmd;
         cmd.append("nma");
-        cmd.addOption("-ff", alexandriaFile("ACS-g.xml"));
-        cmd.addOption("-f", alexandriaFile("mols/" + molFile));
+        cmd.addOption("-ff", alexandriaFile("forcefields/ACS-g1.xml"));
+        cmd.addOption("-f", alexandriaFile("molecules/" + molFile));
         output->confout  = fileManager().getTemporaryFilePath(label + "-confout.pdb");
         output->spectrum = fileManager().getTemporaryFilePath(label + "-ir.xvg");
         cmd.addOption("-c", output->confout);
@@ -644,7 +644,7 @@ TEST_F(NmaTest, ConfOut)
     std::string molFile("water-3-oep.log.pdb");
     NmaOutput   out;
     ASSERT_EQ(0, runNma(molFile, "confout", {}, &out));
-    auto xin  = readPdb(alexandriaFile("mols/" + molFile));
+    auto xin  = readPdb(alexandriaFile("molecules/" + molFile));
     auto xout = readPdb(out.confout);
     ASSERT_EQ(xin.size(), xout.size());
     double maxMove = 0;
@@ -686,9 +686,9 @@ protected:
 
     void SetUp() override
     {
-        auto pd = getForceField("../../alexandria/tests/ACS-g2");
+        auto pd = getForceField("ACS-g2");
         std::vector<MolProp> mps;
-        MolPropRead(&msghandler_, fileManager().getInputFilePath("../../molprop/tests/molprop.xml").c_str(), &mps);
+        MolPropRead(&msghandler_, fileManager().getInputFilePath("molprop/molprop.xml").c_str(), &mps);
         for(auto &mp : mps)
         {
             if (mp.getMolname() == "water")
