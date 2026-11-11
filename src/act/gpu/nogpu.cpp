@@ -109,10 +109,6 @@ void destroySystem(System *system)
     delete system;
 }
 
-void updateList(System *, size_t, size_t, const PairEntry *, const BondedEntry *, size_t)
-{
-}
-
 void updateShells(System *, size_t, const MovingShell *, size_t)
 {
 }
