@@ -40,7 +40,7 @@ std::string act_welcome()
 {
     return gmx::formatString("\n     Welcome to the Alexandria Chemistry Toolkit\n\n"
                              "       Version %s\n\n"
-                             "              Copyright (c) 2014-2025\n\n"
+                             "              Copyright (c) 2014-2026\n\n"
                              "Mohammad M. Ghahremanpour, Paul J. van Maaren and David van der Spoel\n\n"
                              "See https://github.com/AlexandriaChemistry/ACT for details.\n\n"
                              "The Alexandria Chemistry Toolkit (ACT) is free software under the GNU Public License v 2.\n"
