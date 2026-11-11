@@ -194,7 +194,7 @@ std::vector<std::string> explainNoGpu(const NoGpuFacts &facts);
  * kept, and without such a list on a node with several NVIDIA GPUs,
  * CUDA_VISIBLE_DEVICES is set to it. Otherwise, the GPU runtime makes a
  * context on each GPU in each process, and the NVIDIA multi-process
- * service takes only 48 processes per GPU. Must be called before anything
+ * service takes only 48 or 60 processes per GPU. Must be called before anything
  * else uses the GPU, at the start of main.
  */
 void selectGpuOfProcess();
