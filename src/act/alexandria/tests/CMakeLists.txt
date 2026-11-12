@@ -52,6 +52,7 @@ act_add_gpu_unit_test(
     molselectTest.cpp
     openmmTest.cpp
     optimizationindexTest.cpp
+    parameterUpdateTest.cpp
     queuebalanceTest.cpp
     mcmcmutatorTest.cpp
     nonbondedpairsTest.cpp

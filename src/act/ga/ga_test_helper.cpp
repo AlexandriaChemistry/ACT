@@ -53,17 +53,28 @@ namespace alexandria
 GaTestHelper::GaTestHelper(int                                  nmiddlemen,
                            const std::vector<std::string>      &fitstrings,
                            const std::vector<alexandria::eRMS> &erms)
+    : GaTestHelper(nmiddlemen, fitstrings, erms, GaTestFiles())
+{
+}
+
+GaTestHelper::GaTestHelper(int                                  nmiddlemen,
+                           const std::vector<std::string>      &fitstrings,
+                           const std::vector<alexandria::eRMS> &erms,
+                           const GaTestFiles                   &files,
+                           ForceComputer                       *fc)
 {
     cr.init(nmiddlemen);
     msghandler = new MsgHandler;
     msghandler->setPrintLevel(alexandria::ACTStatus::Warning);
 
     sii = new StaticIndividualInfo(&cr);
-    std::string ffName("forcefields/ACS-g3.xml");
-    std::string ffDataName = gmx::test::TestFileManager::getInputFilePath(ffName);
+    std::string ffName(files.forceField);
+    // An absolute path is used as it is, for instance a temporary file
+    std::string ffDataName = ffName.empty() || ffName[0] == '/' ? ffName :
+        gmx::test::TestFileManager::getInputFilePath(ffName);
     sii->fillForceField(msghandler, ffDataName.c_str());
     molgen = new MolGen(&cr);
-    std::string mpName("molprop/testAlcohol.xml");
+    std::string mpName(files.molprop);
     std::string mpDataName = gmx::test::TestFileManager::getInputFilePath(mpName);
     for(const auto &fs : fitstrings)
     {
@@ -74,18 +85,18 @@ GaTestHelper::GaTestHelper(int                                  nmiddlemen,
     std::vector<t_pargs>       pa;
     std::vector<t_filenm>      fnms;
     compR.addOptions(&pa, &fnms, &desc);
-    // We have an old molprop file
-    compR.setOneH(true);
+    // Whether we have an old molprop file
+    compR.setOneH(files.oneH);
     // Add molgen options
     molgen->addFilenames(&fnms);
     // Hack structure to add a file name
     fnms.back().filenames.push_back(mpDataName);
     // Selection file
-    std::string selName("molprop/testAlcohol.dat");
+    std::string selName(files.selection);
     std::string selDataName = gmx::test::TestFileManager::getInputFilePath(selName);
     alexandria::MolSelect gms;
     // ForceComputer
-    forceComputer   = new ForceComputer();
+    forceComputer   = fc ? fc : new ForceComputer();
     gms.read(selDataName.c_str());
     //! \todo  check return value
     (void) molgen->Read(msghandler, fnms, sii->forcefield(),
