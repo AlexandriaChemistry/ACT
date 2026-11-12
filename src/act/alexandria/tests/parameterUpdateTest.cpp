@@ -48,6 +48,7 @@
  */
 #include "actpre.h"
 
+#include <array>
 #include <cmath>
 #include <cstdlib>
 #include <functional>
@@ -66,10 +67,13 @@
 #include "act/basics/msg_handler.h"
 #include "act/forcefield/forcefield.h"
 #include "act/forcefield/forcefield_xml.h"
+#include "act/forcefield/parameterrecipes.h"
 #include "act/forcefield/potential.h"
 #include "act/forces/forcecomputer.h"
 #include "act/ga/ga_test_helper.h"
 #include "act/gpu/gpu.h"
+#include "act/topology/actmol.h"
+#include "act/topology/topology.h"
 #include "act/utility/units.h"
 #include "gromacs/math/units.h"
 #include "gromacs/utility/stringutil.h"
@@ -437,6 +441,41 @@ void setCombinationRules(ForceField *pd, const std::map<std::string, std::string
     }
 }
 
+/*! \brief The force field of a case with random values of its parameters, as train_ff -random_init
+ * \param[in]  fileManager For temporary files
+ * \param[in]  uc          The force field and molecules, changed by uc.modify if set
+ * \param[in]  gpu         Whether to compute on the GPU
+ * \param[out] fit         The names of the parameters that can be trained
+ * \param[out] baseFiles   The input files, with the force field with random values
+ */
+void baseForceField(gmx::test::TestFileManager *fileManager,
+                    const UpdateCase           &uc,
+                    bool                        gpu,
+                    std::vector<std::string>   *fit,
+                    GaTestFiles                *baseFiles)
+{
+    auto files0 = uc.files;
+    if (uc.modify)
+    {
+        ForceField pd;
+        readForceField(ffPath(uc.files.forceField), &pd);
+        uc.modify(&pd);
+        files0.forceField = fileManager->getTemporaryFilePath("modified.xml");
+        writeForceField(files0.forceField, &pd, false);
+    }
+    *fit = trainableNames(files0.forceField);
+    ASSERT_FALSE(fit->empty());
+    auto fc = new ForceComputer();
+    fc->setKeepShells(false);
+    fc->setGpuResident(gpu);
+    *baseFiles = files0;
+    GaTestHelper original(1, *fit, uc.targets, files0, fc);
+    ASSERT_FALSE(original.sii->optIndex().empty()) << "No parameters to train in " << uc.files.forceField;
+    baseFiles->forceField = fileManager->getTemporaryFilePath("base.xml");
+    writeValues(files0.forceField, original.sii->optIndex(), randomValues(original.sii),
+                baseFiles->forceField);
+}
+
 /*! \brief Change the parameters one at a time, compared with evaluating them from scratch
  * \param[in] fileManager For temporary files
  * \param[in] label       The name of the case
@@ -450,17 +489,6 @@ void checkUpdates(gmx::test::TestFileManager *fileManager,
                   bool                        gpu,
                   double                      tolerance)
 {
-    auto files0 = uc.files;
-    if (uc.modify)
-    {
-        ForceField pd;
-        readForceField(ffPath(uc.files.forceField), &pd);
-        uc.modify(&pd);
-        files0.forceField = fileManager->getTemporaryFilePath("modified.xml");
-        writeForceField(files0.forceField, &pd, false);
-    }
-    auto fit = trainableNames(files0.forceField);
-    ASSERT_FALSE(fit.empty());
     // The shells start from the same positions each time, otherwise the
     // results depend on the evaluations before, see setKeepShells
     auto makeForceComputer = [gpu]()
@@ -470,15 +498,10 @@ void checkUpdates(gmx::test::TestFileManager *fileManager,
         fc->setGpuResident(gpu);
         return fc;
     };
-    // The force field with random values of the parameters, the start of both
-    auto baseFiles = files0;
-    {
-        GaTestHelper original(1, fit, uc.targets, files0, makeForceComputer());
-        ASSERT_FALSE(original.sii->optIndex().empty()) << "No parameters to train in " << uc.files.forceField;
-        baseFiles.forceField = fileManager->getTemporaryFilePath("base.xml");
-        writeValues(files0.forceField, original.sii->optIndex(), randomValues(original.sii),
-                    baseFiles.forceField);
-    }
+    std::vector<std::string> fit;
+    GaTestFiles              baseFiles;
+    baseForceField(fileManager, uc, gpu, &fit, &baseFiles);
+    ASSERT_FALSE(fit.empty());
     GaTestHelper incremental(1, fit, uc.targets, baseFiles, makeForceComputer());
     ASSERT_TRUE(incremental.msghandler->ok());
     auto *sii = incremental.sii;
@@ -693,6 +716,152 @@ TEST_F(ParameterUpdateTest, OneAtATimeGpu)
     auto cases = updateCases();
     SCOPED_TRACE("alc-pol-wbh");
     checkUpdates(&fileManager_, "alc-pol-wbh", cases["alc-pol-wbh"], true, 1e-6);
+}
+
+/*! \brief Whether two sets of parameters are the same, bit for bit, where NaN equals NaN
+ * Pairs of particle types with a zero epsilon get NaN from some combination
+ * rules, such as 0/0 of HogervorstEpsilon, which the kernels leave out.
+ * \param[in] a One
+ * \param[in] b The other
+ * \return whether they are the same
+ */
+bool sameParameters(const std::vector<double> &a, const std::vector<double> &b)
+{
+    if (a.size() != b.size())
+    {
+        return false;
+    }
+    for (size_t k = 0; k < a.size(); k++)
+    {
+        if (!(a[k] == b[k] || (std::isnan(a[k]) && std::isnan(b[k]))))
+        {
+            return false;
+        }
+    }
+    return true;
+}
+
+//! \return the parameters as text, for messages
+std::string parametersText(const std::vector<double> &p)
+{
+    std::string text;
+    for (auto v : p)
+    {
+        text += gmx::formatString(" %.17g", v);
+    }
+    return text;
+}
+
+/*! \brief Compare the parameters of the topologies of the molecules with their recipes
+ * Only the molecules for training, since evaluating them does not fill
+ * the parameters of the others.
+ * \param[in]    pd      The force field
+ * \param[in]    mols    The molecules
+ * \param[inout] recipes The recipes, made as needed, with the values of the force field
+ * \param[inout] counts  The number of entries and type pairs compared
+ */
+void compareRecipes(const ForceField          *pd,
+                    const std::vector<ACTMol> &mols,
+                    ParameterRecipes          *recipes,
+                    std::array<size_t, 2>     *counts)
+{
+    for (const auto &mol : mols)
+    {
+        if (mol.datasetType() != iMolSelect::Train)
+        {
+            continue;
+        }
+        std::vector<const Topology *> tops = { mol.topology() };
+        for (const auto &ft : mol.fragmentHandler()->topologies())
+        {
+            tops.push_back(&ft);
+        }
+        for (const auto *top : tops)
+        {
+            for (const auto &entry : top->entries())
+            {
+                if (!pd->interactionPresent(entry.first))
+                {
+                    continue;
+                }
+                for (const auto &topentry : entry.second)
+                {
+                    int set = recipes->directSet(pd, entry.first, topentry->id());
+                    ASSERT_GE(set, 0) << interactionTypeToString(entry.first) << " " << topentry->id().id();
+                    auto fromRecipe = recipes->evaluate(set);
+                    EXPECT_TRUE(sameParameters(topentry->params(), fromRecipe))
+                        << interactionTypeToString(entry.first) << " " << topentry->id().id()
+                        << ": topology" << parametersText(topentry->params())
+                        << ", recipe" << parametersText(fromRecipe);
+                    (*counts)[0] += 1;
+                }
+            }
+            for (auto itype : { InteractionType::VDW, InteractionType::VDWCORRECTION,
+                                InteractionType::INDUCTIONCORRECTION })
+            {
+                const auto *pt = top->nonBondedPairs().pairTypes(itype);
+                if (nullptr == pt)
+                {
+                    continue;
+                }
+                for (size_t t = 0; t < pt->ids.size(); t++)
+                {
+                    if (pt->ids[t].atoms().empty() || pt->params[t].empty())
+                    {
+                        continue;
+                    }
+                    int set = recipes->pairSet(pd, itype, pt->ids[t]);
+                    ASSERT_GE(set, 0) << interactionTypeToString(itype) << " " << pt->ids[t].id();
+                    auto fromRecipe = recipes->evaluate(set);
+                    EXPECT_TRUE(sameParameters(pt->params[t], fromRecipe))
+                        << interactionTypeToString(itype) << " " << pt->ids[t].id()
+                        << ": topology" << parametersText(pt->params[t])
+                        << ", recipe" << parametersText(fromRecipe);
+                    (*counts)[1] += 1;
+                }
+            }
+        }
+    }
+}
+
+// Test: The recipes of the parameters give exactly the parameters of the
+// topologies, of the entries from the values of the force field and of the
+// pairs of particle types from the combination rules, for all potentials
+// and combination rules of the cases, also after the parameters change one
+// at a time as in training. The GPU will compute the parameters with them.
+TEST_F(ParameterUpdateTest, RecipesGiveTopologyParameters)
+{
+    for (const auto &uc : updateCases())
+    {
+        SCOPED_TRACE(uc.first);
+        std::vector<std::string> fit;
+        GaTestFiles              baseFiles;
+        baseForceField(&fileManager_, uc.second, false, &fit, &baseFiles);
+        auto fc = new ForceComputer();
+        fc->setKeepShells(false);
+        GaTestHelper     helper(1, fit, uc.second.targets, baseFiles, fc);
+        auto            *sii    = helper.sii;
+        auto             values = parameterValues(sii);
+        (void) evaluate(&helper, values, {}, false);
+        ParameterRecipes      recipes;
+        std::array<size_t, 2> counts = { 0, 0 };
+        compareRecipes(sii->forcefield(), helper.molgen->actmols(), &recipes, &counts);
+        EXPECT_GT(counts[0], 0u);
+        // Changes of the parameters one at a time, as accepted MCMC steps
+        std::mt19937 gen(1995);
+        std::uniform_int_distribution<size_t> pick(0, values.size() - 1);
+        for (int step = 0; step < 10; step++)
+        {
+            size_t k = pick(gen);
+            auto   p = parameter(sii, k);
+            values[k] = otherValue(*p);
+            (void) evaluate(&helper, values, { static_cast<int>(k) }, false);
+            recipes.update();
+            compareRecipes(sii->forcefield(), helper.molgen->actmols(), &recipes, &counts);
+        }
+        printf("%s: %zu entries and %zu pairs of particle types compared\n",
+               uc.first.c_str(), counts[0], counts[1]);
+    }
 }
 
 /*! \brief Write a force field with sigma in Angstrom and epsilon in kcal/mol
