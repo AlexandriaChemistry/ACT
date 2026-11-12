@@ -385,7 +385,7 @@ static size_t mpiTimer(MpiTime kind)
     }
     if (t[slot] == unset)
     {
-        std::string in = (parent == Timings::none ? "main" : timings.names()[parent]);
+        const std::string in = (parent == Timings::none ? "main" : timings.names()[parent]);
         t[slot] = timings.index(gmx::formatString("%s in %s", kindNames[static_cast<int>(kind)], in.c_str()));
     }
     return t[slot];
@@ -393,7 +393,7 @@ static size_t mpiTimer(MpiTime kind)
 
 void CommunicationRecord::send_low(int dest, const void *buf, int bufsize) const
 {
-    ScopedTimer scoped(mpiTimer(MpiTime::Send));
+    const ScopedTimer scoped(mpiTimer(MpiTime::Send));
     int         tag = 0;
     MPI_Status  status;
     MPI_Request req;
@@ -414,10 +414,10 @@ void CommunicationRecord::recv_low( int src, void *buf, int bufsize) const
     check_init_done();
     {
         // Waiting for the message is timed apart from receiving it
-        ScopedTimer waiting(mpiTimer(MpiTime::Wait));
+        const ScopedTimer waiting(mpiTimer(MpiTime::Wait));
         check_return("MPI_Probe failed", MPI_Probe(src, tag, mpi_act_world_, &status));
     }
-    ScopedTimer scoped(mpiTimer(MpiTime::Receive));
+    const ScopedTimer scoped(mpiTimer(MpiTime::Receive));
     check_return ("MPI_Irecv Failed",
                   MPI_Irecv(buf, bufsize, MPI_BYTE, src, tag,
                             mpi_act_world_, &req));
@@ -429,7 +429,7 @@ int CommunicationRecord::probeAny() const
     int        tag = 0;
     MPI_Status status;
     check_init_done();
-    ScopedTimer waiting(mpiTimer(MpiTime::Wait));
+    const ScopedTimer waiting(mpiTimer(MpiTime::Wait));
     check_return("MPI_Probe failed", MPI_Probe(MPI_ANY_SOURCE, tag, mpi_act_world_, &status));
     return status.MPI_SOURCE;
 }
@@ -439,7 +439,7 @@ void CommunicationRecord::bcast_low(void *buf, size_t nbytes, MPI_Comm comm, int
     check_init_done();
     if (!packing_)
     {
-        ScopedTimer scoped(mpiTimer(MpiTime::Collective));
+        const ScopedTimer scoped(mpiTimer(MpiTime::Collective));
         if (nbytes > static_cast<size_t>(std::numeric_limits<int>::max()))
         {
             GMX_THROW(gmx::InternalError("Too much data for a broadcast"));
@@ -868,7 +868,7 @@ template <> void CommunicationRecord::recv<std::vector<int>>(int src,
 void CommunicationRecord::sumd_helpers(int    nr, 
                                        double r[]) const
 {
-    ScopedTimer scoped(mpiTimer(MpiTime::Collective));
+    const ScopedTimer scoped(mpiTimer(MpiTime::Collective));
     if (nhelper_per_middleman_ == 0)
     {
         return;
@@ -885,7 +885,7 @@ void CommunicationRecord::sumd_helpers(int    nr,
 void CommunicationRecord::sumd_master(int    nr,
                                       double r[]) const
 {
-    ScopedTimer scoped(mpiTimer(MpiTime::Collective));
+    const ScopedTimer scoped(mpiTimer(MpiTime::Collective));
     if (size_ <= 1)
     {
         return;

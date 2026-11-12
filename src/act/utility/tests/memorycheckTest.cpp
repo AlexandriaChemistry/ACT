@@ -45,14 +45,14 @@
 
 TEST(MemoryCheckTest, MemoryUsageLowReturnsValidContent)
 {
-    std::string result = memory_usage_low("testfile.cpp", 10);
+    const std::string result = memory_usage_low("testfile.cpp", 10);
     // The result is either empty (RSS unavailable) or contains "VMEM"
     EXPECT_TRUE(result.empty() || result.find("VMEM") != std::string::npos);
 }
 
 TEST(MemoryCheckTest, MemoryUsageLowContainsFileAndLine)
 {
-    std::string result = memory_usage_low("myfile.cpp", 99);
+    const std::string result = memory_usage_low("myfile.cpp", 99);
     if (!result.empty())
     {
         EXPECT_NE(std::string::npos, result.find("myfile.cpp"));
@@ -63,7 +63,7 @@ TEST(MemoryCheckTest, MemoryUsageLowContainsFileAndLine)
 TEST(MemoryCheckTest, MemoryUsageMacroWorks)
 {
     // Just verify the macro expands and doesn't crash
-    std::string result = memory_usage();
+    const std::string result = memory_usage();
     EXPECT_TRUE(result.empty() || result.find("VMEM") != std::string::npos);
 }
 
@@ -77,7 +77,7 @@ TEST(MemoryCheckTest, PrintMemoryUsageLowNullFpDoesNotCrash)
 TEST(MemoryCheckTest, PrintMemoryUsageLowWritesToFile)
 {
     gmx::test::TestFileManager files;
-    std::string path = files.getTemporaryFilePath(".txt");
+    const std::string path = files.getTemporaryFilePath(".txt");
     FILE *fp = fopen(path.c_str(), "w");
     ASSERT_NE(nullptr, fp);
     print_memory_usage_low(fp, "source.cpp", 42);
@@ -102,7 +102,7 @@ TEST(MemoryCheckTest, PrintMemoryUsageLowWritesToFile)
 TEST(MemoryCheckTest, PrintMemoryUsageMacroWorks)
 {
     gmx::test::TestFileManager files;
-    std::string path = files.getTemporaryFilePath(".txt");
+    const std::string path = files.getTemporaryFilePath(".txt");
     FILE *fp = fopen(path.c_str(), "w");
     ASSERT_NE(nullptr, fp);
     // print_memory_usage expands to print_memory_usage_low(fp, __FILE__, __LINE__)

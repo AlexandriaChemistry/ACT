@@ -96,7 +96,7 @@ private:
     std::vector<Active>      active_;
 
     //! Use instance() instead
-    Timings() {}
+    Timings() = default;
 public:
     //! \return the timings of this process
     static Timings &instance();

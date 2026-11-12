@@ -52,7 +52,7 @@ namespace
 
 TEST(JsonTreeTest, KeyOnlyConstructorIsEmpty)
 {
-    JsonTree jt("myKey");
+    const JsonTree jt("myKey");
     EXPECT_EQ("myKey", jt.key());
     EXPECT_TRUE(jt.value().empty());
     EXPECT_TRUE(jt.objects().empty());
@@ -62,7 +62,7 @@ TEST(JsonTreeTest, KeyOnlyConstructorIsEmpty)
 
 TEST(JsonTreeTest, StringValueConstructorAccessors)
 {
-    JsonTree jt("molecule", std::string("water"));
+    const JsonTree jt("molecule", std::string("water"));
     EXPECT_EQ("molecule", jt.key());
     EXPECT_EQ("water", jt.value());
     EXPECT_FALSE(jt.empty());
@@ -72,7 +72,7 @@ TEST(JsonTreeTest, StringValueConstructorAccessors)
 
 TEST(JsonTreeTest, DoubleValueConstructorNotEmpty)
 {
-    JsonTree jt("pi", 3.14);
+    const JsonTree jt("pi", 3.14);
     EXPECT_EQ("pi", jt.key());
     EXPECT_FALSE(jt.value().empty());
     EXPECT_FALSE(jt.empty());
@@ -81,7 +81,7 @@ TEST(JsonTreeTest, DoubleValueConstructorNotEmpty)
 
 TEST(JsonTreeTest, IntValueConstructorStoresAsString)
 {
-    JsonTree jt("count", 42);
+    const JsonTree jt("count", 42);
     EXPECT_EQ("count", jt.key());
     EXPECT_EQ("42", jt.value());
     EXPECT_FALSE(jt.empty());
@@ -118,7 +118,7 @@ TEST(JsonTreeTest, AddObjectDoubleMakesBranched)
 TEST(JsonTreeTest, AddObjectJsonTreeMakesBranched)
 {
     JsonTree jt("parent");
-    JsonTree child("child", std::string("val"));
+    const JsonTree child("child", std::string("val"));
     jt.addObject(child);
     EXPECT_TRUE(jt.branched());
     ASSERT_EQ(1u, jt.objects().size());
@@ -171,18 +171,18 @@ TEST(JsonTreeTest, AddValueUnitCreatesSubstructure)
 
 TEST(JsonTreeTest, WriteStringJsonSimpleValue)
 {
-    JsonTree jt("name", std::string("water"));
+    const JsonTree jt("name", std::string("water"));
     int indent = -1;
-    std::string result = jt.writeString(true, &indent);
+    const std::string result = jt.writeString(true, &indent);
     EXPECT_EQ(R"({"name":"water"})", result);
     EXPECT_EQ(-1, indent);
 }
 
 TEST(JsonTreeTest, WriteStringJsonIntValue)
 {
-    JsonTree jt("count", 7);
+    const JsonTree jt("count", 7);
     int indent = -1;
-    std::string result = jt.writeString(true, &indent);
+    const std::string result = jt.writeString(true, &indent);
     EXPECT_EQ(R"({"count":"7"})", result);
     EXPECT_EQ(-1, indent);
 }
@@ -193,10 +193,10 @@ TEST(JsonTreeTest, WriteStringJsonNestedLeaves)
     jt.addObject("name", std::string("water"));
     jt.addObject("formula", std::string("H2O"));
     int indent = -1;
-    std::string result = jt.writeString(true, &indent);
+    const std::string result = jt.writeString(true, &indent);
     // Proper JSON: children become members of an object
-    std::string expected =
-        "{\"molecule\":{\"name\":\"water\",\"formula\":\"H2O\"}}";
+    const std::string expected =
+              "{\"molecule\":{\"name\":\"water\",\"formula\":\"H2O\"}}";
     EXPECT_EQ(expected, result);
     EXPECT_EQ(-1, indent);
 }
@@ -206,7 +206,7 @@ TEST(JsonTreeTest, WriteStringJsonValueUnitStructure)
     JsonTree jt("data");
     jt.addValueUnit("energy", "42.0", "kJ/mol");
     int indent = 0;
-    std::string result = jt.writeString(true, &indent);
+    const std::string result = jt.writeString(true, &indent);
     EXPECT_NE(std::string::npos, result.find("\"energy\""));
     EXPECT_NE(std::string::npos, result.find("\"value\""));
     EXPECT_NE(std::string::npos, result.find("\"42.0\""));
@@ -219,9 +219,9 @@ TEST(JsonTreeTest, WriteStringJsonValueUnitStructure)
 
 TEST(JsonTreeTest, WriteStringTextSimpleValue)
 {
-    JsonTree jt("name", std::string("water"));
+    const JsonTree jt("name", std::string("water"));
     int indent = 0;
-    std::string result = jt.writeString(false, &indent);
+    const std::string result = jt.writeString(false, &indent);
     EXPECT_EQ("name: water", result);
     EXPECT_EQ(0, indent);
 }
@@ -232,7 +232,7 @@ TEST(JsonTreeTest, WriteStringTextNestedLeaves)
     jt.addObject("name", std::string("water"));
     jt.addObject("formula", std::string("H2O"));
     int indent = 0;
-    std::string result = jt.writeString(false, &indent);
+    const std::string result = jt.writeString(false, &indent);
     // Leaf children are joined inline after the parent key
     EXPECT_NE(std::string::npos, result.find("molecule:"));
     EXPECT_NE(std::string::npos, result.find("name: water"));
@@ -245,7 +245,7 @@ TEST(JsonTreeTest, WriteStringTextDeepTree)
     JsonTree jt("properties");
     jt.addValueUnit("energy", "-285.8", "kJ/mol");
     int indent = 0;
-    std::string result = jt.writeString(false, &indent);
+    const std::string result = jt.writeString(false, &indent);
     EXPECT_NE(std::string::npos, result.find("properties:"));
     EXPECT_NE(std::string::npos, result.find("energy:"));
     EXPECT_NE(std::string::npos, result.find("-285.8"));
@@ -258,7 +258,7 @@ TEST(JsonTreeTest, WriteStringTextDeepTree)
 TEST(JsonTreeTest, WriteJsonToFileProducesContent)
 {
     gmx::test::TestFileManager files;
-    std::string tmpFile = files.getTemporaryFilePath(".json");
+    const std::string tmpFile = files.getTemporaryFilePath(".json");
 
     JsonTree jt("molecule");
     jt.addObject("name", std::string("ethanol"));
@@ -267,8 +267,8 @@ TEST(JsonTreeTest, WriteJsonToFileProducesContent)
 
     std::ifstream ifs(tmpFile);
     ASSERT_TRUE(ifs.good()) << "File should be readable: " << tmpFile;
-    std::string content((std::istreambuf_iterator<char>(ifs)),
-                         std::istreambuf_iterator<char>());
+    const std::string content((std::istreambuf_iterator<char>(ifs)),
+                               std::istreambuf_iterator<char>());
     EXPECT_FALSE(content.empty());
     EXPECT_NE(std::string::npos, content.find("\"molecule\""));
     EXPECT_NE(std::string::npos, content.find("\"ethanol\""));
@@ -277,7 +277,7 @@ TEST(JsonTreeTest, WriteJsonToFileProducesContent)
 TEST(JsonTreeTest, WriteTextToFileProducesContent)
 {
     gmx::test::TestFileManager files;
-    std::string tmpFile = files.getTemporaryFilePath(".txt");
+    const std::string tmpFile = files.getTemporaryFilePath(".txt");
 
     JsonTree jt("molecule");
     jt.addObject("name", std::string("methane"));
@@ -285,8 +285,8 @@ TEST(JsonTreeTest, WriteTextToFileProducesContent)
 
     std::ifstream ifs(tmpFile);
     ASSERT_TRUE(ifs.good()) << "File should be readable: " << tmpFile;
-    std::string content((std::istreambuf_iterator<char>(ifs)),
-                         std::istreambuf_iterator<char>());
+    const std::string content((std::istreambuf_iterator<char>(ifs)),
+                               std::istreambuf_iterator<char>());
     EXPECT_FALSE(content.empty());
     EXPECT_NE(std::string::npos, content.find("molecule:"));
     EXPECT_NE(std::string::npos, content.find("methane"));

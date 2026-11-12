@@ -69,8 +69,8 @@ const std::vector<const char *> &xmltypes() { return xml_types; }
 
 void add_xml_int(xmlNodePtr ptr, const std::string &name, int val)
 {
-    auto buf = gmx::formatString("%d", val);
-    if (xmlSetProp(ptr, (xmlChar *)name.c_str(), (xmlChar *)buf.c_str()) == 0)
+    const auto buf = gmx::formatString("%d", val);
+    if (xmlSetProp(ptr, (xmlChar *)name.c_str(), (xmlChar *)buf.c_str()) == nullptr)
     {
         gmx_fatal(FARGS, "XML problem setting %s to %d", name.c_str(), val);
     }
@@ -78,8 +78,8 @@ void add_xml_int(xmlNodePtr ptr, const std::string &name, int val)
 
 void add_xml_double(xmlNodePtr ptr, const std::string &name, double val)
 {
-    std::string buf = gmx::formatString("%.13g", val);
-    if (xmlSetProp(ptr, (xmlChar *)name.c_str(), (xmlChar *)buf.c_str()) == 0)
+    const std::string buf = gmx::formatString("%.13g", val);
+    if (xmlSetProp(ptr, (xmlChar *)name.c_str(), (xmlChar *)buf.c_str()) == nullptr)
     {
         gmx_fatal(FARGS, "XML problem setting %s to %g", name.c_str(), val);
     }
@@ -87,7 +87,7 @@ void add_xml_double(xmlNodePtr ptr, const std::string &name, double val)
 
 void add_xml_char(xmlNodePtr ptr, const std::string &name, const char *val)
 {
-    if (xmlSetProp(ptr, (xmlChar *)name.c_str(), (xmlChar *)val) == 0)
+    if (xmlSetProp(ptr, (xmlChar *)name.c_str(), (xmlChar *)val) == nullptr)
     {
         gmx_fatal(FARGS, "XML problem setting %s to %s", name.c_str(), val);
     }
@@ -95,7 +95,7 @@ void add_xml_char(xmlNodePtr ptr, const std::string &name, const char *val)
 
 void add_xml_string(xmlNodePtr ptr, const std::string &name, const std::string &val)
 {
-    if (xmlSetProp(ptr, xmlCharStrdup(name.c_str()), xmlCharStrdup(val.c_str())) == 0)
+    if (xmlSetProp(ptr, xmlCharStrdup(name.c_str()), xmlCharStrdup(val.c_str())) == nullptr)
     {
         gmx_fatal(FARGS, "XML problem setting %s to %s", name.c_str(), val.c_str());
     }
@@ -105,7 +105,7 @@ xmlNodePtr add_xml_child(xmlNodePtr parent, const std::string &type)
 {
     xmlNodePtr child;
 
-    if ((child = xmlNewChild(parent, NULL, (xmlChar *)type.c_str(), NULL)) == NULL)
+    if ((child = xmlNewChild(parent, nullptr, (xmlChar *)type.c_str(), nullptr)) == nullptr)
     {
         gmx_fatal(FARGS, "Creating element %s", type.c_str());
     }
@@ -117,7 +117,7 @@ xmlNodePtr add_xml_child_val(xmlNodePtr parent, const std::string &type, const c
 {
     xmlNodePtr child;
 
-    if ((child = xmlNewChild(parent, NULL, (xmlChar *)type.c_str(), (xmlChar *)value)) == NULL)
+    if ((child = xmlNewChild(parent, nullptr, (xmlChar *)type.c_str(), (xmlChar *)value)) == nullptr)
     {
         gmx_fatal(FARGS, "Creating element %s with value %s", (char *)type.c_str(), value);
     }
@@ -131,12 +131,12 @@ xmlNodePtr add_xml_comment(xmlDocPtr   doc,
 {
     xmlNodePtr comm, ptr;
 
-    if ((comm = xmlNewComment((const xmlChar *)comment)) == NULL)
+    if ((comm = xmlNewComment((const xmlChar *)comment)) == nullptr)
     {
         gmx_fatal(FARGS, "Creating doc comment element %s", "");
     }
     ptr = prev;
-    while (ptr->next != NULL)
+    while (ptr->next != nullptr)
     {
         ptr = ptr->next;
     }

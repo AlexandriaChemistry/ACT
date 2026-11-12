@@ -133,7 +133,7 @@ public:
      */
     void addObject(const std::string &key, const std::string &value)
     {
-        objects_.push_back(JsonTree(key, value));
+        objects_.emplace_back(key, value);
     }
 
     /*! \brief Add a tree element
@@ -142,7 +142,7 @@ public:
      */
     void addObject(const std::string &key, double value)
     {
-        objects_.push_back(JsonTree(key, std::to_string(value)));
+        objects_.emplace_back(key, std::to_string(value));
     }
     
     /*! \brief Add a tree element with a subelement

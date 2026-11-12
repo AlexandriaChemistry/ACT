@@ -67,7 +67,7 @@ Timings &Timings::instance()
 
 size_t Timings::index(const std::string &name)
 {
-    auto it = std::find(names_.begin(), names_.end(), name);
+    const auto it = std::find(names_.begin(), names_.end(), name);
     if (it != names_.end())
     {
         return it - names_.begin();
@@ -91,7 +91,7 @@ void Timings::stop(size_t id)
         GMX_THROW(gmx::InternalError(gmx::formatString("Stopping timer %s, which is not the last one started",
                                                        id < names_.size() ? names_[id].c_str() : "unknown")));
     }
-    auto   &a       = active_.back();
+    const auto   &a       = active_.back();
     double  elapsed = std::chrono::duration<double>(Clock::now() - a.start).count();
     seconds_[id]   += elapsed - a.children;
     calls_[id]     += 1;
@@ -195,10 +195,10 @@ void printTimings(const CommunicationRecord *cr,
                   JsonTree                  *jtree,
                   const PeakPerformance     *peak)
 {
-    auto          &timings = Timings::instance();
-    ProcessTimings mine    = { cr->nodeType(), wallTime, timings.names(),
-                               timings.seconds(), timings.calls(), timings.flops(),
-                               timings.untimedFlops() };
+    const auto    &timings = Timings::instance();
+    const ProcessTimings mine    = { cr->nodeType(), wallTime, timings.names(),
+                                     timings.seconds(), timings.calls(), timings.flops(),
+                                     timings.untimedFlops() };
     std::vector<ProcessTimings> all;
     if (!cr->isParallel())
     {
@@ -217,24 +217,24 @@ void printTimings(const CommunicationRecord *cr,
         std::vector<double> infos(root ? ninfo*nproc : 0);
         MPI_Gather(info, ninfo, MPI_DOUBLE, infos.data(), ninfo, MPI_DOUBLE, 0, comm);
         // Gather a vector of variable length per process
-        auto gather = [comm, nproc, root](const auto &mydata, MPI_Datatype type,
-                                          std::vector<int> *counts, auto *alldata)
-        {
-            int count = mydata.size();
-            counts->resize(root ? nproc : 0);
-            MPI_Gather(&count, 1, MPI_INT, counts->data(), 1, MPI_INT, 0, comm);
-            std::vector<int> displs(counts->size(), 0);
-            for (size_t i = 1; i < counts->size(); i++)
-            {
-                displs[i] = displs[i-1] + (*counts)[i-1];
-            }
-            if (root)
-            {
-                alldata->resize(displs.empty() ? 0 : displs.back() + counts->back());
-            }
-            MPI_Gatherv(mydata.data(), count, type, alldata->data(), counts->data(),
-                        displs.data(), type, 0, comm);
-        };
+        const auto gather = [comm, nproc, root](const auto &mydata, MPI_Datatype type,
+                                                std::vector<int> *counts, auto *alldata)
+              {
+                  int count = mydata.size();
+                  counts->resize(root ? nproc : 0);
+                  MPI_Gather(&count, 1, MPI_INT, counts->data(), 1, MPI_INT, 0, comm);
+                  std::vector<int> displs(counts->size(), 0);
+                  for (size_t i = 1; i < counts->size(); i++)
+                  {
+                      displs[i] = displs[i-1] + (*counts)[i-1];
+                  }
+                  if (root)
+                  {
+                      alldata->resize(displs.empty() ? 0 : displs.back() + counts->back());
+                  }
+                  MPI_Gatherv(mydata.data(), count, type, alldata->data(), counts->data(),
+                              displs.data(), type, 0, comm);
+              };
         std::string names;
         for (const auto &name : mine.names)
         {
@@ -258,7 +258,7 @@ void printTimings(const CommunicationRecord *cr,
             pt.role         = static_cast<NodeType>(static_cast<int>(infos[ninfo*p]));
             pt.wallTime     = infos[ninfo*p+1];
             pt.untimedFlops = infos[ninfo*p+2];
-            std::string pnames = allNames.substr(nameOffset, nameCounts[p]);
+            const std::string pnames = allNames.substr(nameOffset, nameCounts[p]);
             size_t      begin  = 0;
             for (size_t end = pnames.find(nameSeparator); end != std::string::npos;
                  end = pnames.find(nameSeparator, begin))
@@ -382,7 +382,7 @@ void printTimings(const CommunicationRecord *cr,
         {
             if (nproc[roles[r]] > 0)
             {
-                auto   pr      = s.perRole.find(roles[r]);
+                const auto   pr      = s.perRole.find(roles[r]);
                 double average = (pr == s.perRole.end() ? 0.0 : pr->second)/nproc[roles[r]];
                 line += gmx::formatString(" %10.3f", average);
                 jrow.addObject(roleNames[r], gmx::formatString("%.3f", average));
@@ -417,27 +417,27 @@ void printTimings(const CommunicationRecord *cr,
         printRow(row.first, row.second);
     }
     // Subtotals of the potentials and of MPI
-    auto subtotal = [&rows, &printRow](const std::string &prefix, const std::string &name)
-    {
-        Sum sum;
-        for (const auto &row : rows)
-        {
-            if (row.first.compare(0, prefix.size(), prefix) == 0)
-            {
-                sum.seconds += row.second.seconds;
-                sum.calls   += row.second.calls;
-                sum.flops   += row.second.flops;
-                for (const auto &pr : row.second.perRole)
-                {
-                    sum.perRole[pr.first] += pr.second;
-                }
-            }
-        }
-        if (sum.seconds > 0)
-        {
-            printRow(name, sum);
-        }
-    };
+    const auto subtotal = [&rows, &printRow](const std::string &prefix, const std::string &name)
+          {
+              Sum sum;
+              for (const auto &row : rows)
+              {
+                  if (row.first.compare(0, prefix.size(), prefix) == 0)
+                  {
+                      sum.seconds += row.second.seconds;
+                      sum.calls   += row.second.calls;
+                      sum.flops   += row.second.flops;
+                      for (const auto &pr : row.second.perRole)
+                      {
+                          sum.perRole[pr.first] += pr.second;
+                      }
+                  }
+              }
+              if (sum.seconds > 0)
+              {
+                  printRow(name, sum);
+              }
+          };
     subtotal("Potential ", "All potentials");
     subtotal("MPI ", "All MPI");
     Sum total;

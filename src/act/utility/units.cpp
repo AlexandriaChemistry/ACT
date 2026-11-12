@@ -111,7 +111,7 @@ const static std::map<const std::string, std::pair<const std::string, double> > 
 // wrong results.
 std::string gromacsUnit(const std::string &unit)
 {
-    auto uc = unitConversion.find(unit);
+    const auto uc = unitConversion.find(unit);
     if (uc  == unitConversion.end())
     {
         GMX_THROW(gmx::InternalError(gmx::formatString("Unknown unit '%s'\n", unit.c_str()).c_str()));
@@ -122,7 +122,7 @@ std::string gromacsUnit(const std::string &unit)
 
 double convertToGromacs(double x, const std::string &unit)
 {
-    auto uc = unitConversion.find(unit);
+    const auto uc = unitConversion.find(unit);
     if (uc  == unitConversion.end())
     {
         GMX_THROW(gmx::InternalError(gmx::formatString("Unknown unit '%s'\n", unit.c_str()).c_str()));
@@ -132,7 +132,7 @@ double convertToGromacs(double x, const std::string &unit)
 
 double convertFromGromacs(double x, const std::string &unit)
 {
-    auto uc = unitConversion.find(unit);
+    const auto uc = unitConversion.find(unit);
     if (uc  == unitConversion.end())
     {
         GMX_THROW(gmx::InternalError(gmx::formatString("Unknown unit %s\n", unit.c_str()).c_str()));

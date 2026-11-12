@@ -58,7 +58,7 @@ void diagonalizeSymmetric(const double A[DIM][DIM],
         }
     }
     // The eigenvalues are in increasing order, the eigenvectors in the columns
-    Eigen::SelfAdjointEigenSolver<Eigen::Matrix3d> solver(M);
+    const Eigen::SelfAdjointEigenSolver<Eigen::Matrix3d> solver(M);
     GMX_RELEASE_ASSERT(solver.info() == Eigen::Success, "Diagonalization failed");
     Eigen::Matrix3d v = solver.eigenvectors();
     // A unique choice of the signs, the largest component positive
@@ -96,14 +96,14 @@ void calcFitRotation(const std::vector<real>      &weight,
     {
         if (weight[i] != 0)
         {
-            Eigen::Vector3d a(x[i][XX], x[i][YY], x[i][ZZ]);
+            const Eigen::Vector3d a(x[i][XX], x[i][YY], x[i][ZZ]);
             Eigen::Vector3d b(xref[i][XX], xref[i][YY], xref[i][ZZ]);
             H += weight[i] * a * b.transpose();
         }
     }
     Eigen::JacobiSVD<Eigen::Matrix3d, Eigen::ComputeFullU | Eigen::ComputeFullV> svd(H);
     Eigen::Matrix3d U = svd.matrixU();
-    Eigen::Matrix3d V = svd.matrixV();
+    const Eigen::Matrix3d V = svd.matrixV();
     // Change the sign of the axis with the smallest singular value if the
     // rotation would be a reflection
     Eigen::Matrix3d D = Eigen::Matrix3d::Identity();

@@ -166,8 +166,8 @@ TEST(SimpsonTest, EvenVectorCosine)
 TEST(SimpsonTest, OddVectorLastPointSpherical)
 {
     // Simpson integration is exact for 4 pi x^2
-    std::vector<double> x = { 0, 0.5, 1 };
-    std::vector<double> y = { 1, 1, 1 };
+    const std::vector<double> x = { 0, 0.5, 1 };
+    const std::vector<double> y = { 1, 1, 1 };
     alexandria::MsgHandler mh;
     auto integral = simpsonIntegrate(&mh, true, x, y);
     EXPECT_TRUE(mh.ok());
@@ -177,7 +177,7 @@ TEST(SimpsonTest, OddVectorLastPointSpherical)
 TEST(SimpsonTest, EvenVectorLastPoint)
 {
     // With the zero added at x = 1, Simpson integration is exact for 1 - x
-    std::vector<double> x = { 0, 0.25, 0.5, 0.75 };
+    const std::vector<double> x = { 0, 0.25, 0.5, 0.75 };
     std::vector<double> y;
     for(auto xx : x)
     {
@@ -195,7 +195,7 @@ TEST(SimpsonTest, NonUniformSpacing)
     for(const std::vector<double> &x : { std::vector<double>{ 0, 0.1, 0.3, 0.4, 0.5 },
                                          std::vector<double>{ 0, 0.2, 0.3, 0.5, 0.7 } })
     {
-        std::vector<double> y(x.size(), 1.0);
+        const std::vector<double> y(x.size(), 1.0);
         alexandria::MsgHandler mh;
         (void) simpsonIntegrate(&mh, false, x, y);
         EXPECT_FALSE(mh.ok());
