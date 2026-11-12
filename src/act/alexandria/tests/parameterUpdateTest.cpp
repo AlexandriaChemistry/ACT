@@ -70,6 +70,8 @@
 #include "act/forces/forcecomputer.h"
 #include "act/ga/ga_test_helper.h"
 #include "act/gpu/gpu.h"
+#include "act/topology/topology.h"
+#include "act/topology/actmol.h"
 #include "act/utility/units.h"
 #include "gromacs/math/units.h"
 #include "gromacs/utility/stringutil.h"
@@ -790,6 +792,70 @@ bool needChargeProperties(const GaTestFiles &files, const std::vector<eRMS> &tar
                                                                      iMolSelect::Train);
     *chi2 = evaluate(&helper, parameterValues(helper.sii), {}, false).chi2;
     return need;
+}
+
+//! \return the number of van der Waals pairs of the molecules for training, intra- and intermolecular
+size_t vdwPairs(const std::vector<ACTMol> &mols)
+{
+    size_t n = 0;
+    for (const auto &mol : mols)
+    {
+        if (mol.datasetType() == iMolSelect::Train)
+        {
+            n += mol.topology()->nonBondedPairs().range(InteractionType::VDW).size();
+        }
+    }
+    return n;
+}
+
+// Test: Pairs of particle types with a zero epsilon that cannot change,
+// since the epsilons of both types are fixed, are left out of the pairs,
+// with the same energies, as when those epsilons may be trained but are zero.
+// In the polarizable force field these are the shells and the hydrogens.
+TEST_F(ParameterUpdateTest, FixedZeroEpsilonLeftOut)
+{
+    GaTestFiles fixed;
+    fixed.forceField = "forcefields/alc-pol-wbh.xml";
+    fixed.molprop    = "molprop/booze-inter.xml";
+    fixed.selection  = "molprop/booze-inter.dat";
+    fixed.oneH       = false;
+    // The same force field with the fixed epsilons bounded, but still zero
+    auto   bounded = fixed;
+    size_t nfixed  = 0;
+    {
+        ForceField pd;
+        readForceField(ffPath(fixed.forceField), &pd);
+        for (auto &entry : *pd.findForces(InteractionType::VDW)->parametersNoRemoval())
+        {
+            auto eps = entry.second.find("epsilon");
+            if (entry.first.atoms().size() == 1 && entry.second.end() != eps &&
+                eps->second.mutability() == Mutability::Fixed && eps->second.value() == 0)
+            {
+                eps->second.setMutability(Mutability::Bounded);
+                nfixed += 1;
+            }
+        }
+        bounded.forceField = fileManager_.getTemporaryFilePath("bounded.xml");
+        writeForceField(bounded.forceField, &pd, false);
+    }
+    ASSERT_GT(nfixed, 0u);
+    const std::vector<eRMS> targets = { eRMS::Interaction, eRMS::Electrostatics, eRMS::Exchange,
+                                        eRMS::Dispersion, eRMS::Induction };
+    std::vector<Evaluation> results;
+    std::vector<size_t>     npairs;
+    for (const auto *files : { &fixed, &bounded })
+    {
+        auto fc = new ForceComputer();
+        fc->setKeepShells(false);
+        // Only the charges are trained, such that both have the same parameters
+        GaTestHelper helper(1, { "chi" }, targets, *files, fc);
+        results.push_back(evaluate(&helper, parameterValues(helper.sii), {}, true));
+        npairs.push_back(vdwPairs(helper.molgen->actmols()));
+    }
+    printf("Van der Waals pairs: %zu with fixed zero epsilons left out, %zu with them\n", npairs[0], npairs[1]);
+    EXPECT_LT(npairs[0], npairs[1]);
+    EXPECT_GT(npairs[0], 0u);
+    compare(results[0], results[1], 0);
 }
 
 // Test: The charge properties are only needed for the targets of the ESP

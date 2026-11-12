@@ -31,12 +31,15 @@
  */
 #include "nonbondedpairs.h"
 
+
 #include <algorithm>
+#include <cmath>
 #include <numeric>
 #include <string>
 
 #include "act/basics/msg_handler.h"
 #include "act/forcefield/forcefield.h"
+#include "act/forcefield/forcefield_parametername.h"
 #include "act/forcefield/potential.h"
 #include "act/topology/actatom.h"
 #include "gromacs/utility/exceptions.h"
@@ -123,6 +126,63 @@ void NonBondedPairs::addType(const ForceField           *pd,
     types_[itype] = std::move(tp);
 }
 
+/*! \brief The position of epsilon among the parameters of a potential whose energy is proportional to it
+ * \param[in] pot The potential
+ * \return The position, -1 if the energy does not vanish with epsilon, such
+ *         as for LJ12_6_4 with its term in gamma, or the potential has none
+ */
+static int vanishingEpsilon(Potential pot)
+{
+    switch (pot)
+    {
+    case Potential::LJ12_6:                 return lj12_6EPSILON;
+    case Potential::LJ8_6:                  return lj8_6EPSILON;
+    case Potential::LJ14_7:                 return lj14_7EPSILON;
+    case Potential::WANG_BUCKINGHAM:        return wbhEPSILON;
+    case Potential::GENERALIZED_BUCKINGHAM: return gbhEPSILON;
+    default:                                return -1;
+    }
+}
+
+/*! \brief Whether a pair of particle types does not interact, and cannot during training
+ * Its epsilon is zero, or not a number, as 0/0 of HogervorstEpsilon, and
+ * the epsilons of both particle types are fixed, and so is the exponent of
+ * GeneralizedMean, which could make it differ from zero otherwise.
+ * \param[in] fs      The parameters of the interaction type
+ * \param[in] pair    The identifier of the pair
+ * \param[in] name    The name of epsilon
+ * \param[in] epsilon The epsilon of the pair
+ * \return whether the pair can be left out
+ */
+static bool fixedZeroEpsilon(const ForceFieldParameterList &fs,
+                             const Identifier              &pair,
+                             const char                    *name,
+                             double                         epsilon)
+{
+    if (!(epsilon == 0 || std::isnan(epsilon)) || pair.atoms().size() != 2)
+    {
+        return false;
+    }
+    const auto &params = fs.parametersConst();
+    for (const auto &atom : pair.atoms())
+    {
+        auto single = params.find(Identifier(atom));
+        if (params.end() == single)
+        {
+            return false;
+        }
+        auto eps = single->second.find(name);
+        if (single->second.end() == eps || eps->second.mutability() != Mutability::Fixed)
+        {
+            return false;
+        }
+    }
+    const auto &rules = fs.combinationRules();
+    auto        rule  = rules.find(name);
+    return !(rules.end() != rule && CombRule::GeneralizedMean == rule->second.rule() &&
+             rule->second.ffplConst().mutability() != Mutability::Fixed);
+}
+
 bool NonBondedPairs::fillParameters(MsgHandler       *msghandler,
                                     const ForceField *pd,
                                     InteractionType   itype,
@@ -154,7 +214,15 @@ bool NonBondedPairs::fillParameters(MsgHandler       *msghandler,
         tp.entries.assign(ntype, nullptr);
         tp.entriesVersion = fs.structureVersion();
     }
-    bool anyMissing = false;
+    // Which type pairs can be left out, see fixedZeroEpsilon, decided again
+    // when the entries are looked up
+    int  epsilonIndex = vanishingEpsilon(fs.potential());
+    bool decideDrop   = refind || tp.dropped.size() != ntype;
+    if (decideDrop)
+    {
+        tp.dropped.assign(ntype, 0);
+    }
+    bool anyMissing = false, anyDropped = false;
     for (size_t t = 0; t < ntype; t++)
     {
         // As fillParams in topology.cpp, for each type pair rather than each pair
@@ -208,11 +276,21 @@ bool NonBondedPairs::fillParameters(MsgHandler       *msghandler,
                                               potentialToString(fs.potential()).c_str(),
                                               tp.types.ids[t].id().c_str(), found, names.size()));
         }
+        if (decideDrop && epsilonIndex >= 0)
+        {
+            tp.dropped[t] = fixedZeroEpsilon(fs, tp.types.ids[t], names[epsilonIndex], param[epsilonIndex]) ? 1 : 0;
+        }
+        if (tp.dropped[t])
+        {
+            // Without parameters, such that its pairs are left out below
+            param.clear();
+            anyDropped = true;
+        }
     }
     // Pairs without parameters are left out, as are such TopologyEntry
     // objects, which also keeps the positions of the separations right.
     // Once all type pairs had parameters no pairs are left out any more.
-    if (!anyMissing && !tp.mayRemove)
+    if (!anyMissing && !tp.mayRemove && !(anyDropped && !tp.droppedApplied))
     {
         return changed;
     }
@@ -237,6 +315,7 @@ bool NonBondedPairs::fillParameters(MsgHandler       *msghandler,
     tp.intermolecularStart = intermolecularStart;
     tp.shellStart          = shellStart;
     tp.mayRemove           = anyMissing;
+    tp.droppedApplied      = tp.droppedApplied || anyDropped;
     return changed;
 }
 

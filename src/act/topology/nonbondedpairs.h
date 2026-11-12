@@ -342,6 +342,13 @@ private:
         size_t                entriesVersion = 0;
         //! Whether pairs without parameters may still have to be left out, see fillParameters
         bool                  mayRemove = true;
+        /*! \brief Whether each type pair is left out since it does not interact and cannot
+         * Its epsilon is zero, and so it stays since the epsilons of its
+         * particle types are fixed, see fillParameters. Its pairs are
+         * removed once, after which droppedApplied is true.
+         */
+        std::vector<char>     dropped;
+        bool                  droppedApplied = false;
     };
     //! The particles of each pair
     std::vector<std::array<int, 2>>        pairs_;
