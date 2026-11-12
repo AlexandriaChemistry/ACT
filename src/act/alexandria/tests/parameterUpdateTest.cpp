@@ -693,6 +693,47 @@ TEST_F(ParameterUpdateTest, OneAtATimeGpu)
     checkUpdates(&fileManager_, "alc-pol-wbh", cases["alc-pol-wbh"], true, 1e-6);
 }
 
+/*! \brief Whether the charge properties are needed for targets of a force field and molecules
+ * \param[in]  files   The input files
+ * \param[in]  targets The fitting targets with a weight
+ * \param[out] chi2    The objective function
+ * \return whether the charge properties are needed
+ */
+bool needChargeProperties(const GaTestFiles &files, const std::vector<eRMS> &targets, double *chi2)
+{
+    auto         fc = new ForceComputer();
+    GaTestHelper helper(1, { "chi" }, targets, files, fc);
+    auto         need = helper.fitnessComputer->needChargeProperties(helper.msghandler,
+                                                                     helper.sii->fittingTargetsConst(iMolSelect::Train),
+                                                                     iMolSelect::Train);
+    *chi2 = evaluate(&helper, parameterValues(helper.sii), {}, false).chi2;
+    return need;
+}
+
+// Test: The charge properties are only needed for the targets of the ESP
+// and the multipoles if the molecules have data for them. Otherwise, as for
+// the energies of the BFdb set with -fc_mu and -fc_quad, the targets add
+// nothing, but kept the charges on the processor instead of the GPU.
+TEST(ChargePropertiesTest, OnlyWithData)
+{
+    GaTestFiles booze;
+    booze.forceField = "forcefields/alc-pol-wbh.xml";
+    booze.molprop    = "molprop/booze-inter.xml";
+    booze.selection  = "molprop/booze-inter.dat";
+    booze.oneH       = false;
+    double chi2Without = 0, chi2With = 0;
+    EXPECT_FALSE(needChargeProperties(booze, { eRMS::Interaction }, &chi2Without));
+    EXPECT_FALSE(needChargeProperties(booze, { eRMS::Interaction, eRMS::MU, eRMS::QUAD }, &chi2With));
+    EXPECT_GT(chi2Without, 0);
+    EXPECT_EQ(chi2Without, chi2With);
+    // The alcohols have dipoles, quadrupoles and electrostatic potentials
+    GaTestFiles alcohols;
+    double      chi2 = 0;
+    EXPECT_TRUE(needChargeProperties(alcohols, { eRMS::EPOT, eRMS::MU }, &chi2));
+    EXPECT_TRUE(needChargeProperties(alcohols, { eRMS::EPOT, eRMS::ESP }, &chi2));
+    EXPECT_FALSE(needChargeProperties(alcohols, { eRMS::EPOT }, &chi2));
+}
+
 // Test: The processor and the GPU give the same objective function for the
 // same sequence of parameters, as the MCMC steps of a training, within
 // single precision. The sequence is fixed, a random walk in which half of

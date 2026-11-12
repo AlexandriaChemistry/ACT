@@ -112,6 +112,9 @@ private:
     size_t                                         cacheVersion_ = 0;
     //! The number of molecules computed and skipped, for the log
     size_t                                         nComputedMol_ = 0, nSkippedMol_ = 0;
+    //! For each dataset, whether its molecules have data of the targets of the charge properties, see needChargeProperties
+    std::map<iMolSelect, std::map<eRMS, bool>>     qPropsData_;
+
 
     /*! \brief Update the topology and the charges of a molecule for the parameters now
      * As in prepareDeviation.
@@ -171,6 +174,21 @@ public:
      * For developers, with the environment variable ACT_GPU_DEVIATION_CHECK.
      */
     static bool compactCheck();
+
+    /*! \brief Whether the charge properties of the molecules are needed
+     * They are needed for the targets of the ESP and the multipoles that
+     * have a weight, if the molecules of the dataset have data for them. A
+     * target without data adds nothing to the objective function, but would
+     * keep the charges on the processor, see prepareDeviation, which is said
+     * once.
+     * \param[in] msghandler For the warning
+     * \param[in] targets    The fitting targets of the dataset
+     * \param[in] ims        The dataset
+     * \return whether they are needed
+     */
+    bool needChargeProperties(MsgHandler                          *msghandler,
+                              const std::map<eRMS, FittingTarget> &targets,
+                              iMolSelect                           ims);
 
     //! \brief Constructor
     ACMFitnessComputer() {}
