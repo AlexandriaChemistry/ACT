@@ -139,8 +139,11 @@ double combineTwo(CombRule comb, double x1, double x2)
         // Qi2016a Eqn. 2 
         return (x1*x1*x1+x2*x2*x2)/(x1*x1+x2*x2);
     case CombRule::HalgrenEpsilon:
-        // Halgren1992a, Eqn. 14
-        return 4*x1*x2/sqr(std::sqrt(x1) + std::sqrt(x2));
+    {
+        // Halgren1992a, Eqn. 14, with the square of the sum of the roots
+        double s = std::sqrt(x1) + std::sqrt(x2);
+        return 4*x1*x2/(s*s);
+    }
     default: // throws
         GMX_THROW(gmx::InternalError(gmx::formatString("Unknown combination rule %s",
                                                        combRuleName.find(comb)->second.c_str()).c_str()));
