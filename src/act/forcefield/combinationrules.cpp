@@ -41,8 +41,6 @@
 namespace alexandria
 {
 
-#define sqr(x) (x*x)
-
 const std::map<CombRule, const std::string> combRuleName = 
     {
         { CombRule::Geometric, "Geometric" },
@@ -96,59 +94,18 @@ ParamCombRule::ParamCombRule(const std::string &rule)
     rule_ = c;
 }
 
+// The formulas are in combinationkernels.h, here the input is checked
+
 double combineTwo(CombRule comb, double x1, double x2)
 {
-    switch (comb)
+    bool   ok    = false;
+    double value = combination::two<combination::StdMath>(comb, x1, x2, &ok);
+    if (!ok)
     {
-    case CombRule::Geometric:
-        return std::sqrt(x1*x2);
-    case CombRule::Arithmetic:
-        return 0.5 * (x1 + x2);
-    case CombRule::HogervorstEpsilon:
-        return (2.0 * x1 * x2)/( x1 + x2 );
-    case CombRule::Yang:
-        if (x1*x2 == 0)
-        {
-            return 0;
-        }
-        else
-        {
-            return ( x1 * x2 ) * ( x1 + x2 ) / (sqr(x1) + sqr(x2) );
-        }
-    case CombRule::WaldmanSigma:
-        return std::pow(0.5*(std::pow(x1, 6) + std::pow(x2, 6)), (1.0/6.0));
-    case CombRule::Volumetric:
-        // Kriz2024a Eqn. 20
-        return std::pow(0.5*(x1*x1*x1 + x2*x2*x2), (1.0/3.0));
-    case CombRule::InverseSquare:
-        // Kriz2024a Eqn. 21
-        if (x1 == 0 || x2 == 0)
-        {
-            return 0;
-        }
-        else
-        {
-            double denom = 1/sqr(x1) + 1/sqr(x2);
-            return std::sqrt(2/denom);
-        }
-    case CombRule::QiSigma:
-        if (x1 == 0 && x2 == 0)
-        {
-            return 0;
-        }
-        // Qi2016a Eqn. 2 
-        return (x1*x1*x1+x2*x2*x2)/(x1*x1+x2*x2);
-    case CombRule::HalgrenEpsilon:
-    {
-        // Halgren1992a, Eqn. 14, with the square of the sum of the roots
-        double s = std::sqrt(x1) + std::sqrt(x2);
-        return 4*x1*x2/(s*s);
-    }
-    default: // throws
         GMX_THROW(gmx::InternalError(gmx::formatString("Unknown combination rule %s",
                                                        combRuleName.find(comb)->second.c_str()).c_str()));
     }
-    return 0;
+    return value;
 }
 
 double combineHogervorstSigma(double e1, double e2, double g1, double g2, double s1, double s2)
@@ -157,78 +114,23 @@ double combineHogervorstSigma(double e1, double e2, double g1, double g2, double
     {
         GMX_THROW(gmx::InvalidInputError("Combination rule HogervorstSigma not defined if gamma1 or gamma2 <= 6"));
     }
-    double tempi = std::abs(e1 * g1 * (std::pow(s1, 6)) /(g1 - 6 ));
-    double tempj = std::abs(e2 * g2 * (std::pow(s2, 6)) /(g2 - 6  ));
-    double gam12 = combineTwo(CombRule::Arithmetic, g1, g2);
-    double eps12 = combineTwo(CombRule::HogervorstEpsilon, e1, e2);
-    if (0 == eps12)
-    {
-        return 0;
-    }
-    return std::pow((std::sqrt( tempi * tempj ) )* std::abs(gam12 - 6) / (gam12 * eps12), 1.0/6.0);
+    return combination::hogervorstSigma<combination::StdMath>(e1, e2, g1, g2, s1, s2);
 }
 
 double combineWaldmanEpsilon(double e1, double e2, double s1, double s2)
 {
-    // Qi2106 Eqn 3.
-    double s13 = s1*s1*s1;
-    double s23 = s2*s2*s2;
-    if (s13 == 0 && s23 == 0)
-    {
-        return 0;
-    }
-    return std::sqrt( e1 * e2 ) * ( 2 * s13 * s23 / (sqr(s13) + sqr(s23)));
+    return combination::waldmanEpsilon<combination::StdMath>(e1, e2, s1, s2);
 }
 
-/*! \brief Combination rule using GeneralizedMean
- * Mathematical background at https://en.wikipedia.org/wiki/Generalized_mean
- * \param[in] x1       First value
- * \param[in] x2       Second value
- * \param[in] exponent Power to use
- * \return the combined value
- */
 double combineGeneralizedMean(double x1, double x2, double exponent)
 {
-    // See https://en.wikipedia.org/wiki/Generalized_mean
-    // The paper by Hohm points out that for very small exponents,
-    // double precision is not good enough, however the analytical
-    // result converges to the geometric mean. Therefore we approximate
-    // the result for small exponents by that.
-    const double tolerance = 0.1;
-    if (std::abs(exponent) < tolerance)
-    {
-        return std::sqrt(x1*x2);
-    }
-    double sum = 0;
-    if (x1 > 0)
-    {
-        sum += std::pow(x1, exponent);
-    }
-    if (x2 > 0)
-    {
-        sum += std::pow(x2, exponent);
-    }
-    if (sum > 0)
-    {
-        return std::pow(0.5*sum, 1/exponent);
-    }
-    else
-    {
-        return 0;
-    }
+    return combination::generalizedMean<combination::StdMath>(x1, x2, exponent);
 }
 
-/*! \brief Execute a combination rule according to Mason1955a https://doi.org/10.1063/1.1740561
- * \param[in] g1 First gamma
- * \param[in] g2 Second gamma
- * \param[in] s1 First sigma
- * \param[in] s2 Second sigma
- * \return The combined value
- */
+//! \return the gamma of Mason1955a, see combination::masonGamma
 static double combineMasonGamma(double g1, double g2, double s1, double s2)
 {
-    double sigmaIJ = combineTwo(CombRule::Geometric, s1, s2);
-    return sigmaIJ * (0.5*((g1/s1)+(g2/s2)));
+    return combination::masonGamma<combination::StdMath>(g1, g2, s1, s2);
 }
 
 void evalCombinationRule(Potential                     ftype,
