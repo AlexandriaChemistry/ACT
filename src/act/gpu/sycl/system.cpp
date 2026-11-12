@@ -587,6 +587,13 @@ public:
     uint64_t                        nacmValue_ = 0;
     //! Whether the values or coordinates changed since the charges were generated
     bool                            acmChanged_ = false;
+    //! The structures and virtual sites of the charge generation, see createAcmVsites
+    int64_t                        *acmRefX_       = nullptr;
+    uint32_t                       *acmVsiteStart_ = nullptr;
+    AcmVsite                       *acmVsites_     = nullptr;
+    uint64_t                        nacmVsite_     = 0;
+    //! Whether the coordinates of the charge generation are to be constructed, see acmVsitesChanged
+    bool                            acmVsitesChanged_ = false;
     //! Work space: the charges of each molecule and the matrices of each fragment
     double                         *acmCharges_   = nullptr;
     char                           *acmDone_      = nullptr;
@@ -1588,6 +1595,28 @@ void updateAcm(System *sys, const double *values)
     sys->acmChanged_ = true;
 }
 
+void createAcmVsites(System *sys, const int64_t *x, const uint32_t *vsiteStart,
+                     const AcmVsite *vsites, size_t nvsite)
+{
+    sys->release(sys->acmRefX_);
+    sys->release(sys->acmVsiteStart_);
+    sys->release(sys->acmVsites_);
+    sys->nacmVsite_     = nvsite;
+    sys->acmRefX_       = sys->allocate<int64_t>(std::max<size_t>(3*sys->nacmAtom_, 1));
+    sys->acmVsiteStart_ = sys->allocate<uint32_t>(sys->nacmMolecule_ + 1);
+    sys->acmVsites_     = sys->allocate<AcmVsite>(std::max<size_t>(nvsite, 1));
+    sys->upload(sys->acmRefX_, x, 3*sys->nacmAtom_);
+    sys->upload(sys->acmVsiteStart_, vsiteStart, sys->nacmMolecule_ + 1);
+    sys->upload(sys->acmVsites_, vsites, nvsite);
+    sys->queue_->wait_and_throw();
+    sys->acmVsitesChanged_ = true;
+}
+
+void acmVsitesChanged(System *sys)
+{
+    sys->acmVsitesChanged_ = true;
+}
+
 void updateAcmCoordinates(System *sys, const double *x)
 {
     sys->upload(sys->acmX_, x, 3*sys->nacm_);
@@ -1659,10 +1688,97 @@ void updateRecipeValues(System *sys, const double *values)
     sys->recipeValuesChanged_ = true;
 }
 
-/*! \brief Make the rows of the recipes from the values, see createRowRecipes
- * First the sets of parameters of all replicas, then the rows from them, as
- * gpuPairEntry and gpuBondedEntry do on the processor, with the charges of
- * the shells as they are on the device.
+/*! \brief Make the sets of parameters of all replicas from the values, see createRowRecipes
+ * \param[in] sys The system
+ */
+static void computeRecipeSets(System *sys)
+{
+    uint64_t nset = sys->nset_;
+    uint64_t nv   = sys->nrecipeValue_;
+    auto     dR   = sys->recipes_;
+    auto     dF   = sys->recipeFactors_;
+    auto     dV   = sys->recipeValues_;
+    auto     dS   = sys->setValues_;
+    if (nset > 0)
+    {
+        sys->queue_->parallel_for(sycl::range<1>(nset*sys->nrecipeReplica_), [=](sycl::id<1> id)
+        {
+            uint64_t w = id[0];
+            uint64_t r = w / nset;
+            (void) evaluateRecipe<SyclMath>(dR[w - r*nset], dV + r*nv, dF, dS + maxSetParameters*w);
+        });
+    }
+}
+
+/*! \brief Construct the coordinates of the charge generation, see createAcmVsites
+ * One work item per molecule, which constructs its virtual sites in the
+ * order of the processor, see constructStrided in forces/vsitehandler.cpp,
+ * such that sites built from others are right too.
+ * \param[in] sys The system
+ */
+static void computeAcmCoordinates(System *sys)
+{
+    auto     dM    = sys->acmMolecules_;
+    auto     dF    = sys->acmFragments_;
+    auto     dA    = sys->acmParticles_;
+    auto     dX    = sys->acmX_;
+    auto     dRef  = sys->acmRefX_;
+    auto     dVS   = sys->acmVsiteStart_;
+    auto     dVs   = sys->acmVsites_;
+    auto     dS    = sys->setValues_;
+    uint64_t nset  = sys->nset_;
+    sys->queue_->parallel_for(sycl::range<1>(sys->nacmMolecule_), [=](sycl::id<1> id)
+    {
+        const AcmMolecule &m   = dM[id[0]];
+        int64_t           *ref = dRef + 3*static_cast<uint64_t>(m.firstAtom);
+        for (uint32_t v = dVS[id[0]]; v < dVS[id[0] + 1]; v++)
+        {
+            const AcmVsite   &av = dVs[v];
+            const VsiteEntry &e  = av.entry;
+            const double     *p  = dS + maxSetParameters*(av.replica*nset + av.set);
+            float             pv[3];
+            for (int k = 0; k < 3; k++)
+            {
+                // As VsiteRecipe
+                pv[k] = av.index[k] >= 0 ? static_cast<float>(av.factor[k]*p[av.index[k]]) : e.p[k];
+            }
+            // As constructVsites
+            uint32_t p0      = e.parent[0];
+            float    r[3][3] = { { 0, 0, 0 }, { 0, 0, 0 }, { 0, 0, 0 } };
+            for (uint32_t k = 1; k < e.nparent; k++)
+            {
+                for (int d = 0; d < 3; d++)
+                {
+                    r[k-1][d] = differenceNm(ref[3*e.parent[k]+d], ref[3*p0+d]);
+                }
+            }
+            float xs[3];
+            vsitePosition(e.kind, pv, r, xs);
+            for (int d = 0; d < 3; d++)
+            {
+                ref[3*e.site+d] = ref[3*p0+d] + static_cast<int64_t>(sycl::rint(static_cast<double>(xs[d])*coordinateScaleNm));
+            }
+        }
+        // The ACM particles in nm, as Coordinates::toRVec in single precision
+        for (uint32_t f = m.firstFragment; f < m.firstFragment + m.nfragment; f++)
+        {
+            const AcmFragment &fr = dF[f];
+            for (uint32_t i = fr.firstAcm; i < fr.firstAcm + fr.nacm; i++)
+            {
+                const int64_t *c = ref + 3*(fr.atomStart + dA[i]);
+                for (int d = 0; d < 3; d++)
+                {
+                    dX[3*i+d] = static_cast<double>(static_cast<float>(c[d])*static_cast<float>(coordinateUnitNm));
+                }
+            }
+        }
+    });
+}
+
+/*! \brief Make the rows of the recipes from the sets, see computeRecipeSets
+ * The rows as gpuPairEntry and gpuBondedEntry do on the processor, with the
+ * charges of the shells as they are on the device, then the moving shells
+ * and the virtual sites.
  * \param[in] sys     The system
  * \param[in] coulomb The Coulomb constant
  */
@@ -1670,20 +1786,8 @@ static void computeRecipeRows(System *sys, double coulomb)
 {
     auto    *queue = sys->queue_;
     uint64_t nset  = sys->nset_;
-    uint64_t nv    = sys->nrecipeValue_;
     auto     dR    = sys->recipes_;
-    auto     dF    = sys->recipeFactors_;
-    auto     dV    = sys->recipeValues_;
     auto     dS    = sys->setValues_;
-    if (nset > 0)
-    {
-        queue->parallel_for(sycl::range<1>(nset*sys->nrecipeReplica_), [=](sycl::id<1> id)
-        {
-            uint64_t w = id[0];
-            uint64_t r = w / nset;
-            (void) evaluateRecipe<SyclMath>(dR[w - r*nset], dV + r*nv, dF, dS + maxSetParameters*w);
-        });
-    }
     auto dRR = sys->rowRecipes_;
     auto dT  = sys->tables_;
     auto dQ  = sys->charges_;
@@ -1757,9 +1861,21 @@ void updateParameters(System *sys, const float *tables, const double *charges,
         sys->upload(sys->tables_, tables, 8*sys->ntable_);
     }
     sys->upload(sys->charges_, charges, 4*sys->ncharge_);
+    // The sets of the recipes, of which the coordinates of the charge
+    // generation may follow, and the rows after the charges of the shells
+    bool recipes = sys->recipeValuesChanged_;
+    if (recipes)
+    {
+        computeRecipeSets(sys);
+    }
+    if (recipes && sys->acmVsitesChanged_ && sys->nacmMolecule_ > 0)
+    {
+        computeAcmCoordinates(sys);
+        sys->acmVsitesChanged_ = false;
+        sys->acmChanged_       = true;
+    }
     generateAcmCharges(sys);
-    // The rows of the recipes, after the charges of the shells are known
-    if (sys->recipeValuesChanged_)
+    if (recipes)
     {
         computeRecipeRows(sys, coulomb);
     }

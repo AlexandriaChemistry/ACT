@@ -126,6 +126,10 @@ void updateRecipeValues(System *, const double *) {}
 
 void createShellVsiteRecipes(System *, const ShellRecipe *, size_t, const VsiteRecipe *, size_t) {}
 
+void createAcmVsites(System *, const int64_t *, const uint32_t *, const AcmVsite *, size_t) {}
+
+void acmVsitesChanged(System *) {}
+
 void updateMovingShells(System *, const MovingShell *, size_t) {}
 
 void updateVsites(System *, const VsiteEntry *, size_t) {}

@@ -301,17 +301,17 @@ std::vector<double> ACMFitnessComputer::calcDeviations(MsgHandler               
 }
 
 /*! \brief Whether the processor needs the parameters of an interaction type in the topology
- * When the GPU makes the rows of its parameter tables, the moving shells and
- * the virtual sites from the force field, see ForceComputer::gpuRecipeRows,
- * the processor needs only some. The virtual sites are needed for the coordinates of the charge generation,
- * see GpuTrainingSystem::stageParameters, the polarization only if the
- * processor generates the charges, which relaxes the shells.
+ * When the GPU makes the rows of its parameter tables, the moving shells,
+ * the virtual sites and the structures of the charge generation from the
+ * force field, see ForceComputer::gpuRecipeRows, the processor only needs
+ * the polarization and the virtual sites if it generates the charges of the
+ * molecule, which relaxes the shells.
  * \param[in] itype       The interaction type
  * \param[in] hostCharges Whether the processor generates the charges
  */
 static bool hostNeedsParameters(InteractionType itype, bool hostCharges)
 {
-    return (hostCharges && InteractionType::POLARIZATION == itype) || isVsite(itype);
+    return hostCharges && (InteractionType::POLARIZATION == itype || isVsite(itype));
 }
 
 void ACMFitnessComputer::updateMolecule(MsgHandler                      *msghandler,

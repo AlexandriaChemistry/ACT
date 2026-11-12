@@ -844,6 +844,48 @@ void updateAcm(System *sys, const double *values);
  */
 void updateAcmCoordinates(System *sys, const double *x);
 
+/*! \brief A virtual site of the structure of a molecule for the charge generation
+ * Its parameters follow from a set of the recipes as those of VsiteRecipe,
+ * see createAcmVsites.
+ */
+struct AcmVsite
+{
+    //! The construction, with the particles of the molecule, see AcmMolecule
+    VsiteEntry entry;
+    //! The replica, of which the values are used
+    uint32_t   replica  = 0;
+    //! The set of parameters, see SetRecipe
+    int32_t    set      = 0;
+    //! The parameter of the set of each parameter of the site, -1 if unused
+    int32_t    index[3] = { -1, -1, -1 };
+    //! The factor of each
+    double     factor[3] = { 1, 1, 1 };
+};
+
+/*! \brief Let the device construct the virtual sites of the structures of the charge generation
+ * After createRowRecipes, the device makes the coordinates of the ACM
+ * particles, see updateAcmCoordinates, from the structures of the molecules
+ * and their virtual sites, with the parameters of the recipes, when
+ * acmVsitesChanged asks for it. As ActMol::GenerateAcmCharges, the virtual
+ * sites are constructed in fixed point and converted to nm in single
+ * precision.
+ * \param[in] sys        The system
+ * \param[in] x          The structures of the molecules in fixed point, three
+ *                       per particle, in the order of AcmMolecule::firstAtom
+ * \param[in] vsiteStart The first virtual site of each molecule, and the number
+ *                       of sites after the last, AcmSystem::nmolecule + 1 numbers
+ * \param[in] vsites     The virtual sites
+ * \param[in] nvsite     Their number
+ */
+void createAcmVsites(System *sys, const int64_t *x, const uint32_t *vsiteStart,
+                     const AcmVsite *vsites, size_t nvsite);
+
+/*! \brief Construct the coordinates of the charge generation again, see createAcmVsites
+ * At the next updateParameters, after the parameters of the recipes.
+ * \param[in] sys The system
+ */
+void acmVsitesChanged(System *sys);
+
 /*! \brief Download the charges and widths, as updateParameters takes them
  * \param[in]  sys     The system
  * \param[out] charges Four per particle of all blocks

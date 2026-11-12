@@ -644,13 +644,22 @@ std::map<std::string, UpdateCase> updateCases()
     {
         // Polarizable, with virtual sites, with Gaussian charges and
         // Wang-Buckingham instead of the Slater charges and the generalized
-        // Buckingham potential, which the GPU does not have
+        // Buckingham potential, which the GPU does not have. The charges of
+        // the virtual sites are generated, such that the charge generation
+        // depends on their parameters too.
         UpdateCase uc;
         uc.files.forceField = "forcefields/ACS-ps.xml";
         uc.modify           = [](ForceField *pd)
         {
             pd->setChargeDistribution(ChargeDistributionType::Gaussian);
             replaceVdw(pd, Potential::WANG_BUCKINGHAM);
+            for (const std::string vs : { "v2f1", "v2f2", "v2f3" })
+            {
+                auto pt = pd->findParticleType(vs);
+                ASSERT_TRUE(pt != nullptr) << vs;
+                pt->setOption("acmtype", vs + "_z");
+                pt->parameter("charge")->setMutability(Mutability::ACM);
+            }
         };
         uc.files.molprop    = "molprop/hf-hf.xml";
         uc.files.selection  = "molprop/hf-hf.dat";

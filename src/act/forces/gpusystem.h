@@ -268,7 +268,10 @@ public:
     //! \return a number that changes when the system is made again, see prepare
     size_t version() const;
 
-    //! \return whether the GPU makes the rows of the parameter tables from recipes, see gpu::createRowRecipes
+    /*! \return whether the GPU makes the rows of the parameter tables from
+     * recipes, see gpu::createRowRecipes, and the moving shells, the virtual
+     * sites and the structures of the charge generation as well
+     */
     bool recipeRows() const;
 
     //! \return a number that changes when the system or the deviations are made again, see setDeviations
