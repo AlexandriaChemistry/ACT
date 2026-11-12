@@ -74,7 +74,7 @@ ChargeDistributionType name2ChargeDistributionType(const std::string &name)
             name2CT.emplace(k.second, k.first);
         }
     }
-    auto cc = name2CT.find(name);
+    const auto cc = name2CT.find(name);
     if (cc == name2CT.end())
     {
         GMX_THROW(gmx::InvalidInputError(gmx::formatString("Unknown charge type %s. Note that input is case-sensitive.\n", name.c_str()).c_str()));
@@ -84,7 +84,7 @@ ChargeDistributionType name2ChargeDistributionType(const std::string &name)
 
 const std::string &chargeDistributionTypeName(ChargeDistributionType ct)
 {
-    auto cc = ct2Name.find(ct);
+    const auto cc = ct2Name.find(ct);
 
     if (cc == ct2Name.end())
     {
@@ -117,7 +117,7 @@ ChargeGenerationAlgorithm nameToChargeGenerationAlgorithm(const std::string &nam
             name2CG.emplace(k.second, k.first);
         }
     }
-    auto cc = name2CG.find(name);
+    const auto cc = name2CG.find(name);
     if (cc == name2CG.end())
     {
         GMX_THROW(gmx::InvalidInputError(gmx::formatString("Unknown charge generation algorithm %s. Note that input is case-sensitive.\n",
@@ -128,7 +128,7 @@ ChargeGenerationAlgorithm nameToChargeGenerationAlgorithm(const std::string &nam
 
 const std::string &chargeGenerationAlgorithmName(ChargeGenerationAlgorithm cg)
 {
-    auto cc = cg2Name.find(cg);
+    const auto cc = cg2Name.find(cg);
 
     GMX_RELEASE_ASSERT(cc != cg2Name.end(), "Internal error.");
     

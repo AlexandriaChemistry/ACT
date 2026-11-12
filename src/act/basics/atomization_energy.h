@@ -52,7 +52,7 @@ namespace alexandria
     {
     public:
         //! Constructor
-        AtomizationEnergy() {}
+        AtomizationEnergy() = default;
 
         /*! Reads input file and stores it
          * \param[in] msg_handler Will be used for information if not nullptr

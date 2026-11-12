@@ -47,7 +47,7 @@ namespace
 
 TEST(ChargeDistributionTypeTest, qdnamesHasThreeEntries)
 {
-    auto names = qdnames();
+    const auto names = qdnames();
     EXPECT_EQ(3u, names.size());
 }
 

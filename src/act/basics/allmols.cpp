@@ -49,16 +49,16 @@ AlexandriaMol::AlexandriaMol(const std::vector<std::string> &line)
     {
         iupac    = line[2];
         formula  = line[3];
-        charge   = my_atoi(line[4].c_str(), "charge");
-        mult     = my_atoi(line[5].c_str(), "multiplicity");
-        mass     = my_atof(line[6].c_str(), "mass");
+        charge   = my_atoi(line[4], "charge");
+        mult     = my_atoi(line[5], "multiplicity");
+        mass     = my_atof(line[6], "mass");
         cas      = line[7];
-        csid     = my_atoi(line[8].c_str(), "chemspider");
-        pubid    = my_atoi(line[9].c_str(), "pubchem");
+        csid     = my_atoi(line[8], "chemspider");
+        pubid    = my_atoi(line[9], "pubchem");
         inchi    = line[10];
         inchikey = line[11];
         pointGroup     = line[15];
-        symmetryNumber = my_atoi(line[16].c_str(), "symmetry number");
+        symmetryNumber = my_atoi(line[16], "symmetry number");
         for(auto ss : split(line[12], ';'))
         {
             classid.insert(ss);
@@ -79,8 +79,8 @@ AlexandriaMol::AlexandriaMol(const std::vector<std::string> &line)
             synonyms.insert(ss);
         }
         // Add the filename as well
-        auto fn = line[14].substr(0, line[14].size()-4);
-        if (fn.size() > 0)
+        const auto fn = line[14].substr(0, line[14].size()-4);
+        if (!fn.empty())
         {
             synonyms.insert(fn);
         }
@@ -90,7 +90,7 @@ AlexandriaMol::AlexandriaMol(const std::vector<std::string> &line)
 AlexandriaMols::AlexandriaMols()
 {
     bool useCWD = false;
-    auto alexandria = findLibrary("alexandria.csv", useCWD);
+    const auto alexandria = findLibrary("alexandria.csv", useCWD);
     if (alexandria.empty())
     {
         return;
@@ -99,10 +99,10 @@ AlexandriaMols::AlexandriaMols()
     std::string line;
     while (tr.readLine(&line))
     {
-        auto words = gmx::splitDelimitedString(line, '|');
+        const auto words = gmx::splitDelimitedString(line, '|');
         if (words.size() >= 20)
         {
-            AlexandriaMol am(words);
+            const AlexandriaMol am(words);
             if (!am.inchi.empty())
             {
                 mols_.insert( { am.inchi, am } );
@@ -129,11 +129,11 @@ void AlexandriaMols::dump(FILE *fp)
       
 const AlexandriaMol *AlexandriaMols::findInChi(const std::string &inchi) const
 {
-    if (inchi.size() == 0)
+    if (inchi.empty())
     {
         return nullptr;
     }
-    auto mptr = mols_.find(inchi);
+    const auto mptr = mols_.find(inchi);
     if (mols_.end() == mptr)
     {
         return nullptr;
@@ -143,12 +143,12 @@ const AlexandriaMol *AlexandriaMols::findInChi(const std::string &inchi) const
 
 const AlexandriaMol *AlexandriaMols::findMol(const std::string &name) const
 {
-    auto n2i = nameToInChi_.find(name);
+    const auto n2i = nameToInChi_.find(name);
     if (n2i == nameToInChi_.end())
     {
         return nullptr;
     }
-    auto mptr = mols_.find(n2i->second);
+    const auto mptr = mols_.find(n2i->second);
     if (mols_.end() == mptr)
     {
         return nullptr;

@@ -103,7 +103,7 @@ std::map<ACTStatus, const char *> statnm = {
 
 const std::string &actMessage(ACTMessage actm)
 {
-    auto m = ACTMessages.find(actm);
+    const auto m = ACTMessages.find(actm);
     if (ACTMessages.end() == m)
     {
         return ACTMessages[ACTMessage::Unknown];
@@ -187,7 +187,7 @@ void MsgHandler::setPrintLevel(ACTStatus level)
     {
         if (twdebug_ == nullptr)
         {
-            std::string debugfn("act00000.debug");
+            const std::string debugfn("act00000.debug");
             twdebug_ = new gmx::TextWriter(debugfn);
         }
     }
@@ -242,7 +242,7 @@ void MsgHandler::optionsFinished(const std::vector<t_filenm> &filenm,
     {
         gpu::turnOffGpu();
     }
-    auto i2 = i2s.find(ilevel_);
+    const auto i2 = i2s.find(ilevel_);
     if (i2s.end() != i2)
     {
         printLevel_ = i2->second;
@@ -272,7 +272,7 @@ void MsgHandler::optionsFinished(const std::vector<t_filenm> &filenm,
     }
     if (printLevel_ == ACTStatus::Debug)
     {
-        std::string debugfn = gmx::formatString("act%05d.debug", cr->rank());
+        const std::string debugfn = gmx::formatString("act%05d.debug", cr->rank());
         twdebug_ = new gmx::TextWriter(debugfn);
     }
 }
@@ -310,14 +310,14 @@ void MsgHandler::msg(ACTStatus         level,
 {
     if (level == ACTStatus::Fatal)
     {
-        fatal(actm, msg.c_str());
+        fatal(actm, msg);
     }
     if (level < status_)
     {
         status_ = level;
     }
     last_ = actm;
-    print(level, actm, msg.c_str());
+    print(level, actm, msg);
     wcount_.find(actm)->second++;
 }
 
@@ -327,13 +327,13 @@ void MsgHandler::msg(ACTStatus         level,
     auto actm = ACTMessage::Silent;
     if (level == ACTStatus::Fatal)
     {
-        fatal(actm, msg.c_str());
+        fatal(actm, msg);
     }
     if (level < status_)
     {
         status_ = level;
     }
-    print(level, actm, msg.c_str());
+    print(level, actm, msg);
     wcount_.find(actm)->second++;
 }
 

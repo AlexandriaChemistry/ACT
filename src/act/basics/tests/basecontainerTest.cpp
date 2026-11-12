@@ -49,7 +49,7 @@ namespace
 class TopologyEntry
 {
 public:
-    TopologyEntry() {};
+    TopologyEntry() = default;
     
     const TopologyEntry *self() const { return this; }
     
@@ -62,7 +62,7 @@ public:
 class TopologyInherited : public TopologyEntry
 {
 public:
-    TopologyInherited() {}
+    TopologyInherited() = default;
     
     int koko() const
     {
@@ -77,8 +77,8 @@ protected:
     std::vector<BaseContainer<TopologyEntry>> entries_;
     BaseContainerTest ()
     {
-        entries_.push_back(TopologyEntry{});
-        entries_.push_back(TopologyInherited{});
+        entries_.emplace_back(TopologyEntry{});
+        entries_.emplace_back(TopologyInherited{});
     }
     
     // Static initiation, only run once every test.

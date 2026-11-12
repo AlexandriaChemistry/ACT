@@ -128,7 +128,7 @@ const std::string &Identifier::swapped() const
 
 void Identifier::orderAtoms()
 {
-    if ((canSwap_ == CanSwap::Yes && atoms_.size() > 0) ||
+    if ((canSwap_ == CanSwap::Yes && !atoms_.empty()) ||
         (canSwap_ == CanSwap::Linear && atoms_.size() == 3))
     {
         std::string swapped = atoms_[atoms_.size()-1];
@@ -144,7 +144,7 @@ void Identifier::orderAtoms()
         else
         {
             // Reverse the order on things
-            auto tmpid = ids_[0];
+            const auto tmpid = ids_[0];
             ids_[0] = swapped;
             ids_.push_back(tmpid);
             auto tmpat = atoms_;
@@ -163,7 +163,7 @@ void Identifier::orderAtoms()
     }
     else if (canSwap_ == CanSwap::Vsite2 && atoms_.size() == 3)
     {
-        std::string swapped = atoms_[1] + BondOrderDelimeter[bondOrders_[0]] + atoms_[0] + BondOrderDelimeter[bondOrders_[1]] + atoms_[2];
+        const std::string swapped = atoms_[1] + BondOrderDelimeter[bondOrders_[0]] + atoms_[0] + BondOrderDelimeter[bondOrders_[1]] + atoms_[2];
         ids_.push_back(swapped);
     }
     else if (canSwap_ == CanSwap::Idih && atoms_.size() == 4)
@@ -196,7 +196,7 @@ void Identifier::orderAtoms()
         if (smallest > 0)
         {
             // Reverse the order on things
-            auto tmpid = ids_[0];
+            const auto tmpid = ids_[0];
             ids_[0] = ids_[smallest];
             ids_[smallest] = tmpid;
             auto tmpat = atoms_;
@@ -234,7 +234,7 @@ Identifier::Identifier(InteractionType    iType,
     size_t c0 = 0;
     for (size_t c = 0; c < id.size(); c++)
     {
-        auto ptr = ReverseBondOrderDelimeter.find(id[c]);
+        const auto ptr = ReverseBondOrderDelimeter.find(id[c]);
         if (ptr != ReverseBondOrderDelimeter.end())
         {
             atoms_.push_back(id.substr(c0,c-c0));
@@ -316,7 +316,7 @@ CommunicationStatus Identifier::Send(const CommunicationRecord *cr, int dest) co
     {
         cr->send(dest, ii);
     }
-    auto tmp = canSwapToString(canSwap_);
+    const auto tmp = canSwapToString(canSwap_);
     cr->send(dest, tmp);
     cr->send(dest, atoms_.size());
     for(auto &a : atoms_)
