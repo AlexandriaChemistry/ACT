@@ -31,15 +31,21 @@
 
 #include "actpre.h"
 
+#include <cmath>
+#include <map>
 #include <vector>
 
 #include <gtest/gtest.h>
 
+#include "act/basics/msg_handler.h"
 #include "act/forcefield/combinationrules.h"
 #include "act/forcefield/combruleutil.h"
 #include "act/forcefield/forcefield.h"
 #include "act/forcefield/forcefield_xml.h"
+#include "act/forcefield/generate_dependent.h"
+#include "act/forcefield/potential.h"
 #include "gromacs/commandline/pargs.h"
+#include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/stringutil.h"
 
 #include "testutils/cmdlinetest.h"
@@ -290,6 +296,82 @@ TEST_F (CombinationRuleTest, GeneralizedMean_1_4_QuiteSmall)
 
 // Test: The number of combination rules from the command line that change
 // those of the force field
+/*! \brief Combine the van der Waals parameters of the hydrogen fluoride force field with a rule for epsilon
+ * \param[in]  rule    The combination rule of epsilon
+ * \param[out] mixed   The epsilon of the pair f and hf
+ * \param[out] same    The epsilon of the pair f and f
+ */
+void combineEpsilon(const std::string &rule, double *mixed, double *same)
+{
+    ForceField pd;
+    readForceField(gmx::test::TestFileManager::getInputFilePath("forcefields/HF-LJ14-7.xml"), &pd);
+    auto *vdw = pd.findForces(InteractionType::VDW);
+    ASSERT_EQ(Potential::LJ14_7, vdw->potential());
+    // Different sigma and epsilon for the two particle types
+    const std::map<std::string, std::pair<double, double>> sigmaEpsilon = {
+        { "f", { 0.32, 0.6 } }, { "hf", { 0.21, 0.15 } }
+    };
+    for (const auto &se : sigmaEpsilon)
+    {
+        auto *params = vdw->findParameters(Identifier(se.first));
+        ASSERT_TRUE(params != nullptr) << se.first;
+        params->find("sigma")->second.forceSetValue(se.second.first);
+        params->find("epsilon")->second.forceSetValue(se.second.second);
+    }
+    vdw->addCombinationRule("epsilon", rule);
+    MsgHandler msghandler;
+    generateDependentParameter(&msghandler, &pd, true);
+    EXPECT_TRUE(msghandler.ok());
+    auto *pairFHf = vdw->findParameters(Identifier({ "f", "hf" }, { 1 }, CanSwap::Yes));
+    auto *pairFF  = vdw->findParameters(Identifier({ "f", "f" }, { 1 }, CanSwap::Yes));
+    ASSERT_TRUE(pairFHf != nullptr && pairFF != nullptr);
+    *mixed = pairFHf->find("epsilon")->second.value();
+    *same  = pairFF->find("epsilon")->second.value();
+}
+
+// Test: QiEpsilon, the epsilon of Qi et al. (Eqn. cr_whepsilon of the
+// manual), from the sigma and epsilon of both particle types, as
+// WaldmanEpsilon, when the pairs of a force field are made
+TEST(CombinationRuleForceFieldTest, QiEpsilon)
+{
+    double s1 = 0.32, e1 = 0.6, s2 = 0.21, e2 = 0.15;
+    double s13 = s1*s1*s1, s23 = s2*s2*s2;
+    double expected = std::sqrt(e1*e2)*2*s13*s23/(s13*s13 + s23*s23);
+    double mixed = 0, same = 0;
+    combineEpsilon("QiEpsilon", &mixed, &same);
+    EXPECT_NEAR(expected, mixed, 1e-12*expected);
+    // The same particle types keep their epsilon
+    EXPECT_NEAR(e1, same, 1e-12*e1);
+    double waldman = 0, waldmanSame = 0;
+    combineEpsilon("WaldmanEpsilon", &waldman, &waldmanSame);
+    EXPECT_EQ(waldman, mixed);
+    // Clearly not the geometric mean
+    EXPECT_GT(std::abs(mixed - std::sqrt(e1*e2)), 0.01*mixed);
+}
+
+// Test: A potential without sigma and epsilon cannot use QiEpsilon
+TEST(CombinationRuleForceFieldTest, QiEpsilonNeedsSigma)
+{
+    ForceField pd;
+    readForceField(gmx::test::TestFileManager::getInputFilePath("forcefields/HF-LJ14-7.xml"), &pd);
+    ForceFieldParameterList buckingham("BUCKINGHAM", CanSwap::Yes);
+    for (const std::string type : { "f", "hf" })
+    {
+        buckingham.addParameter(Identifier(type), "Abh",
+                                ForceFieldParameter("kJ/mol", 5e4, 0, 1, 1e4, 1e5, Mutability::Bounded, true, true));
+        buckingham.addParameter(Identifier(type), "bbh",
+                                ForceFieldParameter("1/nm", 35, 0, 1, 30, 45, Mutability::Bounded, true, true));
+        buckingham.addParameter(Identifier(type), "c6bh",
+                                ForceFieldParameter("kJ/mol nm6", 2e-3, 0, 1, 1e-3, 4e-3, Mutability::Bounded, true, true));
+    }
+    buckingham.addCombinationRule("Abh", "QiEpsilon");
+    buckingham.addCombinationRule("bbh", "Arithmetic");
+    buckingham.addCombinationRule("c6bh", "Geometric");
+    (*pd.forces())[InteractionType::VDW] = buckingham;
+    MsgHandler msghandler;
+    EXPECT_THROW(generateDependentParameter(&msghandler, &pd, true), gmx::InvalidInputError);
+}
+
 TEST(CombRuleUtilTest, Extract)
 {
     ForceField pd;

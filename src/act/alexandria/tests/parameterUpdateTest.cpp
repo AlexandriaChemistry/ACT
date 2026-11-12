@@ -628,8 +628,7 @@ std::map<std::string, UpdateCase> updateCases()
                                         { "gamma", "Arithmetic" } } },
         { Potential::LJ14_7, { { "sigma", "WaldmanSigma" }, { "epsilon", "WaldmanEpsilon" },
                                { "gamma", "Yang" }, { "delta", "InverseSquare" } } },
-        // QiEpsilon is not implemented, see combineTwo in combinationrules.cpp
-        { Potential::GENERALIZED_BUCKINGHAM, { { "rmin", "QiSigma" }, { "epsilon", "Geometric" },
+        { Potential::GENERALIZED_BUCKINGHAM, { { "rmin", "QiSigma" }, { "epsilon", "QiEpsilon" },
                                                { "gamma", "MasonGamma" }, { "delta", "Volumetric" } } },
         { Potential::LJ12_6, { { "sigma", "GeneralizedMean" }, { "epsilon", "HalgrenEpsilon" } } },
         { Potential::LJ14_7, { { "sigma", "Arithmetic" }, { "epsilon", "Geometric" },

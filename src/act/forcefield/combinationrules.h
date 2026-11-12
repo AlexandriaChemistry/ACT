@@ -118,6 +118,7 @@ double combineGeneralizedMean(double x1, double x2, double exponent);
 double combineTwo(CombRule comb, double x1, double x2);
 
 /*! \brief Execute a combination rule according to Waldman & Hagler https://doi.org/10.1002/jcc.540140909
+ * which Qi et al. use for epsilon too, CombRule::WaldmanEpsilon and CombRule::QiEpsilon
  * \param[in] e1 First epsilon
  * \param[in] e2 Second epsilon
  * \param[in] s1 First sigma
