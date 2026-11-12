@@ -31,6 +31,7 @@
 #include <array>
 #include <limits>
 #include <optional>
+#include <set>
 #include <string>
 #include <type_traits>
 
@@ -3478,6 +3479,45 @@ struct GpuRelaxMolecule
     std::vector<char>                        computed;
 };
 
+/*! \brief Whether a particle of the charge generation of a molecule is a virtual site
+ * Only then do the coordinates of the charge generation depend on the
+ * parameters of the virtual sites, since those of the particles with fixed
+ * charges are not used, see GpuTrainingSystem::Impl::acmCoordinates.
+ * \param[in] molptr The molecule
+ * \return whether one is
+ */
+static bool acmHasVsites(const ACTMol *molptr)
+{
+    const auto *top = molptr->topology();
+    if (!top->hasVsites())
+    {
+        return false;
+    }
+    std::set<int> sites;
+    for (const auto &entry : top->entries())
+    {
+        if (isVsite(entry.first))
+        {
+            for (const auto &vs : entry.second)
+            {
+                sites.insert(vs->atomIndices().back());
+            }
+        }
+    }
+    const auto *fh = molptr->fragmentHandler();
+    for (size_t f = 0; f < fh->topologies().size(); f++)
+    {
+        for (auto a : fh->acmParticles(f))
+        {
+            if (sites.count(fh->atomStart()[f] + a) > 0)
+            {
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
 /*! \brief The shells of a monomer for the GPU, see ForceComputer::updateShells
  * \param[in]    top               The topology of the monomer
  * \param[in]    pol               Which particles are shells
@@ -4209,6 +4249,19 @@ public:
     std::vector<const ForceFieldParameter *> acmValues;
     //! Whether the structures of the charge generation have virtual sites
     bool                  acmVsites = false;
+    //! The molecule, replica and first particle of each molecule of the charge generation, in the order of gpu::createAcm
+    struct AcmMoleculeOf
+    {
+        size_t mol = 0, replica = 0, firstAtom = 0;
+    };
+    std::vector<AcmMoleculeOf> acmMolOf;
+    /*! \brief The values of the recipes of the virtual sites of the charge
+     * generation, and those last sent, if the GPU constructs them, see
+     * makeAcmVsites
+     */
+    std::vector<size_t>   acmVsiteSlots;
+    std::vector<double>   acmVsiteLast;
+    bool                  acmVsitesOnGpu = false;
     //! The values and coordinates last sent, and whether the charges were generated since copied
     std::vector<double>   acmLastValues, acmLastX;
     bool                  acmGenerated = false;
@@ -4443,8 +4496,90 @@ public:
                               recipes.values().size(), nreplica);
         gpu::createShellVsiteRecipes(system, shellRecipes.data(), shellRecipes.size(),
                                      vsiteRecipes.data(), vsiteRecipes.size());
+        if (!makeAcmVsites(pd))
+        {
+            return false;
+        }
         recipeValues.assign(nreplica*recipes.values().size(), 0.0);
         recipeStaged.assign(nreplica, 0);
+        return true;
+    }
+
+    /*! \brief Let the GPU construct the virtual sites of the charge generation, see gpu::createAcmVsites
+     * As acmCoordinates, from the original structures, with the parameters
+     * of the recipes, in the order of the processor, see constructStrided in
+     * vsitehandler.cpp.
+     * \param[in] pd The force field
+     * \return whether all virtual sites have a recipe
+     */
+    bool makeAcmVsites(const ForceField *pd)
+    {
+        acmVsiteSlots.clear();
+        acmVsiteLast.clear();
+        acmVsitesOnGpu = false;
+        if (!acmVsites || acmMolOf.empty())
+        {
+            return true;
+        }
+        std::vector<int64_t>         x;
+        std::vector<uint32_t>        start;
+        std::vector<gpu::AcmVsite>   vsites;
+        std::set<size_t>             slots;
+        size_t                       nvalue = recipes.values().size();
+        for (const auto &am : acmMolOf)
+        {
+            auto        molptr = mols[am.mol];
+            const auto *top    = molptr->topology();
+            Coordinates cx(molptr->xOriginal());
+            const auto *c      = cx.view().data();
+            GMX_RELEASE_ASSERT(3*am.firstAtom == x.size(), "The molecules of the charge generation are not in order");
+            x.insert(x.end(), c, c + 3*molptr->xOriginal().size());
+            start.push_back(vsites.size());
+            for (const auto &entry : top->entries())
+            {
+                if (!isVsite(entry.first))
+                {
+                    continue;
+                }
+                for (const auto &vs : entry.second)
+                {
+                    gpu::AcmVsite av;
+                    av.replica = static_cast<uint32_t>(am.replica);
+                    double factor[3];
+                    if (!gpuVsiteEntry(entry.first, *vs.operator->(), &av.entry) ||
+                        !gpuVsiteParameters(entry.first, *vs.operator->(), av.index, factor))
+                    {
+                        return false;
+                    }
+                    std::copy(factor, factor + 3, av.factor);
+                    if (std::any_of(av.index, av.index + 3, [](int i) { return i >= 0; }))
+                    {
+                        av.set = recipes.directSet(pd, entry.first, vs->id());
+                        if (av.set < 0)
+                        {
+                            return false;
+                        }
+                        const auto &sr = recipes.recipes()[av.set];
+                        for (int k = 0; k < sr.n; k++)
+                        {
+                            if (sr.slotI[k] >= 0)
+                            {
+                                slots.insert(am.replica*nvalue + sr.slotI[k]);
+                            }
+                        }
+                    }
+                    else
+                    {
+                        av.set = 0;
+                    }
+                    vsites.push_back(av);
+                }
+            }
+        }
+        start.push_back(vsites.size());
+        gpu::createAcmVsites(system, x.data(), start.data(), vsites.data(), vsites.size());
+        acmVsiteSlots.assign(slots.begin(), slots.end());
+        acmVsitesOnGpu = true;
         return true;
     }
 
@@ -4916,10 +5051,11 @@ bool GpuTrainingSystem::prepare(const ForceField *pd, const std::vector<ACTMol *
                 sym.push_back(sc.size() == m.natom ? sc[i] : -1 - static_cast<int32_t>(i));
             }
             am.push_back(m);
+            im.acmMolOf.push_back({ k, replica, m.firstAtom });
             if (replica == 0)
             {
                 im.acmMols.push_back(k);
-                im.acmVsites = im.acmVsites || molptr->topology()->hasVsites();
+                im.acmVsites = im.acmVsites || acmHasVsites(molptr);
             }
         }
         if (nreplica == 1)
@@ -5087,6 +5223,8 @@ void GpuTrainingSystem::stageParameters(size_t replica, const ForceField *pd, co
     double epsilonr = pd->epsilonr();
     auto  &st       = im.staged[replica];
     size_t b0       = replica*im.nblockReplica;
+    // Whether the GPU makes the parameters from the recipes, see makeRowRecipes
+    bool   gpuMakes = im.stagedAll[replica] && im.recipeRows == 1 && !im.hostRows;
     if (!im.stagedAll[replica])
     {
         st.tables.clear();
@@ -5165,8 +5303,9 @@ void GpuTrainingSystem::stageParameters(size_t replica, const ForceField *pd, co
         {
             st.acmValues.push_back(p->value());
         }
-        if (im.acmVsites)
+        if (im.acmVsites && !(gpuMakes && im.acmVsitesOnGpu))
         {
+            // Unless the GPU constructs them, see makeAcmVsites
             ScopedTimer acmXTimer(acmXT);
             st.acmX = im.acmCoordinates(fc);
         }
@@ -5297,7 +5436,22 @@ void GpuTrainingSystem::uploadParameters(const ForceField *pd)
             im.acmLastValues = values;
             im.acmGenerated  = true;
         }
-        if (im.acmVsites && (every || xa != im.acmLastX))
+        if (gpuMakes && im.acmVsitesOnGpu)
+        {
+            // The GPU constructs the virtual sites again if their values changed
+            std::vector<double> v;
+            for (auto k : im.acmVsiteSlots)
+            {
+                v.push_back(im.recipeValues[k]);
+            }
+            if (v != im.acmVsiteLast)
+            {
+                gpu::acmVsitesChanged(im.system);
+                im.acmVsiteLast = std::move(v);
+                im.acmGenerated = true;
+            }
+        }
+        else if (im.acmVsites && (every || xa != im.acmLastX))
         {
             gpu::updateAcmCoordinates(im.system, xa.data());
             im.acmLastX     = xa;
