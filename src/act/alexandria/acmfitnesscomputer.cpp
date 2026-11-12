@@ -322,14 +322,18 @@ void ACMFitnessComputer::updateMolecule(MsgHandler                      *msghand
                                         bool                             needQProps,
                                         bool                             allTypes)
 {
+    // Whether the processor generates the charges, to be safe also when the
+    // charge properties are computed
+    bool gpuSqe      = gpuCharges && actmol->fragmentHandler()->sqeOnGpu(sii_->forcefield());
+    bool hostCharges = needQProps || !gpuSqe;
+    // Without anything to fill, see hostNeedsParameters
+    if (allTypes || hostCharges)
     {
         // Now update the topology, only the interaction types of
         // which parameters changed since the last time.
         static const size_t timer = Timings::instance().index("Topology parameter update");
         ScopedTimer         scoped(timer);
         auto                &filled = filledVersion_[imol];
-        // To be safe, also when the charge properties are computed
-        bool                 hostCharges = (needQProps || !(gpuCharges && actmol->fragmentHandler()->sqeOnGpu(sii_->forcefield())));
         std::set<InteractionType> itFill;
         for(auto itype : itUpdate)
         {
@@ -358,13 +362,20 @@ void ACMFitnessComputer::updateMolecule(MsgHandler                      *msghand
             }
         }
     }
+    // The GPU generates the charges and makes the fixed ones, see
+    // ForceComputer::gpuChargeRecipes. The charges of the processor stay
+    // outdated, the next evaluation on the processor makes them.
+    if (gpuSqe && !allTypes && forceComp_->gpuChargeRecipes())
+    {
+        return;
+    }
     if (chargeVersion_[imol] != sii_->chargeParameterVersion())
     {
         // Run charge generation including shell minimization,
         // only if parameters changed that the charges depend on.
         static const size_t timer = Timings::instance().index("Charge generation");
         ScopedTimer         scoped(timer);
-        if (gpuCharges && actmol->fragmentHandler()->sqeOnGpu(sii_->forcefield()))
+        if (gpuSqe)
         {
             // The charges of the processor stay outdated, the next
             // evaluation on the processor generates them
@@ -884,6 +895,14 @@ double ACMFitnessComputer::finishDeviation(MsgHandler *msghandler, DeviationTask
 {
     static const size_t timer = Timings::instance().index("Fitness computation overhead");
     ScopedTimer         scoped(timer);
+    if (!gpuWhyNotReported_ && !forceComp_->gpuResidentWhyNot().empty())
+    {
+        // Once, such that it is clear why the processor computes everything
+        msghandler->msg(ACTStatus::Warning,
+                        gmx::formatString("The GPU does not compute the molecules of the training, since %s. The processor computes them.",
+                                          forceComp_->gpuResidentWhyNot().c_str()));
+        gpuWhyNotReported_ = true;
+    }
     auto  task     = dt->task;
     auto  ims      = dt->ims;
     auto *targets  = dt->targets;

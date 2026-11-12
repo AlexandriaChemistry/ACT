@@ -126,6 +126,10 @@ void updateRecipeValues(System *, const double *) {}
 
 void createShellVsiteRecipes(System *, const ShellRecipe *, size_t, const VsiteRecipe *, size_t) {}
 
+void createChargeRecipes(System *, const ChargeRecipe *, size_t) {}
+
+void acmChargesChanged(System *) {}
+
 void createAcmVsites(System *, const int64_t *, const uint32_t *, const AcmVsite *, size_t) {}
 
 void acmVsitesChanged(System *) {}

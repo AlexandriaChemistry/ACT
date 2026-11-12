@@ -3903,10 +3903,11 @@ struct GpuSystemTopology
  * \param[in]  top      The topology
  * \param[in]  cdata    Its conformations
  * \param[out] t        The description
+ * \param[out] why      If not nullptr, why the GPU cannot compute it
  * \return false if the GPU does not have a potential
  */
 bool describeGpuTopology(const ForceField *pd, const Topology *top, ConformationData *cdata,
-                         GpuSystemTopology *t)
+                         GpuSystemTopology *t, std::string *why = nullptr)
 {
     t->top   = top;
     t->cdata = cdata;
@@ -3920,6 +3921,11 @@ bool describeGpuTopology(const ForceField *pd, const Topology *top, Conformation
                 gpu::VsiteEntry ve;
                 if (!gpuVsiteEntry(itype, *b.operator->(), &ve))
                 {
+                    if (why)
+                    {
+                        *why = gmx::formatString("no virtual sites of type %s, or without parameters",
+                                                 interactionTypeToString(itype).c_str());
+                    }
                     return false;
                 }
                 t->vsites.push_back(ve);
@@ -3944,6 +3950,11 @@ bool describeGpuTopology(const ForceField *pd, const Topology *top, Conformation
         if ((!pair && !bonded) ||
             energyTypes(mypot, itype).size() > static_cast<size_t>(gpu::pairEnergyTerms))
         {
+            if (why)
+            {
+                *why = gmx::formatString("no potential %s for %s", potentialToString(mypot).c_str(),
+                                         interactionTypeToString(itype).c_str());
+            }
             return false;
         }
         uint32_t energyIndex = t->potentials.size();
@@ -4196,6 +4207,12 @@ void GpuTrainingSystem::setActiveMolecules(int, const std::vector<char> &) {}
 std::vector<uint64_t> GpuTrainingSystem::moleculeSignatures(const ForceField *, const ForceComputer *) { return {}; }
 size_t GpuTrainingSystem::version() const { return 0; }
 bool GpuTrainingSystem::recipeRows() const { return false; }
+bool GpuTrainingSystem::chargeRecipes() const { return false; }
+const std::string &GpuTrainingSystem::whyNot() const
+{
+    static const std::string none;
+    return none;
+}
 size_t GpuTrainingSystem::deviationsVersion() const { return 0; }
 void GpuTrainingSystem::compute(int, bool, bool) {}
 void GpuTrainingSystem::computeForces(int) {}
@@ -4206,6 +4223,9 @@ void GpuTrainingSystem::saveDimers() {}
 void GpuTrainingSystem::restoreDimers() {}
 
 #else
+
+// The topology of a block, see GpuTrainingSystem::Impl::Block
+static const Topology *blockTopology(const ACTMol *molptr, int what);
 
 class GpuTrainingSystem::Impl
 {
@@ -4262,6 +4282,13 @@ public:
     std::vector<size_t>   acmVsiteSlots;
     std::vector<double>   acmVsiteLast;
     bool                  acmVsitesOnGpu = false;
+    //! Whether the GPU makes the fixed parts of the charges, see makeChargeRecipes
+    bool                  chargeRecipes = false;
+    //! Why prepare failed, see GpuTrainingSystem::whyNot
+    std::string           whyNot;
+    //! The values of its fixed charges, and those last sent
+    std::vector<size_t>   chargeSlots;
+    std::vector<double>   chargeLast;
     //! The values and coordinates last sent, and whether the charges were generated since copied
     std::vector<double>   acmLastValues, acmLastX;
     bool                  acmGenerated = false;
@@ -4491,15 +4518,17 @@ public:
                 vsiteRecipes.push_back(vr);
             }
         }
+        // These may add sets and values, so before the recipes are sent
+        if (!makeAcmVsites(pd))
+        {
+            return false;
+        }
+        makeChargeRecipes(pd, chargesReplica);
         gpu::createRowRecipes(system, recipes.recipes().data(), recipes.recipes().size(),
                               rowRecipes.data(), rowRecipes.size(), recipes.factors().data(),
                               recipes.values().size(), nreplica);
         gpu::createShellVsiteRecipes(system, shellRecipes.data(), shellRecipes.size(),
                                      vsiteRecipes.data(), vsiteRecipes.size());
-        if (!makeAcmVsites(pd))
-        {
-            return false;
-        }
         recipeValues.assign(nreplica*recipes.values().size(), 0.0);
         recipeStaged.assign(nreplica, 0);
         return true;
@@ -4581,6 +4610,85 @@ public:
         acmVsiteSlots.assign(slots.begin(), slots.end());
         acmVsitesOnGpu = true;
         return true;
+    }
+
+    /*! \brief Let the GPU make the fixed parts of the charges, see gpu::createChargeRecipes
+     * As FragmentHandler::updateFixedCharges: the fixed charges of the
+     * particles whose charges are not generated, and the widths of the
+     * distributions. Only if the GPU generates the charges of all molecules,
+     * or they are not those of the force field, and no particle has a second
+     * charge, otherwise chargeRecipes stays false and the processor stages
+     * the charges.
+     * \param[in] pd             The force field
+     * \param[in] chargesReplica The number of particles of each replica
+     */
+    void makeChargeRecipes(const ForceField *pd, size_t chargesReplica)
+    {
+        chargeRecipes = false;
+        chargeSlots.clear();
+        chargeLast.clear();
+        if (acmMols.empty())
+        {
+            return;
+        }
+        std::set<size_t> acm(acmMols.begin(), acmMols.end());
+        for (size_t k = 0; k < mols.size(); k++)
+        {
+            if (acm.count(k) == 0 && !mols[k]->fragmentHandler()->fixedCharges())
+            {
+                return;
+            }
+        }
+        std::vector<gpu::ChargeRecipe> cr;
+        // The replica and the value of each fixed charge
+        std::set<std::pair<size_t, int32_t>> slots;
+        for (size_t b = 0; b < blocks.size(); b++)
+        {
+            const auto &bl     = blocks[b];
+            const auto &seg    = segments[b - bl.replica*nblockReplica];
+            const auto &atoms  = blockTopology(mols[bl.mol], bl.what)->atoms();
+            bool        fixedQ = mols[bl.mol]->fragmentHandler()->fixedCharges();
+            for (size_t a = 0; a < atoms.size(); a++)
+            {
+                auto pt = pd->findParticleType(atoms[a].ffType());
+                if (!pt)
+                {
+                    continue;
+                }
+                if (pt->hasChargeVS())
+                {
+                    return;
+                }
+                gpu::ChargeRecipe r;
+                r.replica  = static_cast<uint32_t>(bl.replica);
+                r.position = 4*(bl.replica*chargesReplica + seg.charge/4 + a);
+                // As QgenAcm: the charge is fixed unless it is generated
+                const auto &q   = pt->parameterConst("charge");
+                bool        gen = (pt->hasInteractionType(InteractionType::ELECTRONEGATIVITYEQUALIZATION) &&
+                                   q.mutability() == Mutability::ACM);
+                if (!fixedQ && !gen)
+                {
+                    r.slot     = recipes.slot(&q);
+                    r.internal = 0;
+                    cr.push_back(r);
+                    slots.insert({ bl.replica, r.slot });
+                }
+                if (pt->hasParameter(zetaName))
+                {
+                    r.position += 2;
+                    r.slot      = recipes.slot(&pt->parameterConst(zetaName));
+                    r.internal  = 1;
+                    cr.push_back(r);
+                }
+            }
+        }
+        gpu::createChargeRecipes(system, cr.data(), cr.size());
+        // In the values of all replicas, which are known only now, see makeRowRecipes
+        for (const auto &rs : slots)
+        {
+            chargeSlots.push_back(rs.first*recipes.values().size() + rs.second);
+        }
+        chargeRecipes = true;
     }
 
     //! Make blockIndex, after the blocks were made
@@ -4678,7 +4786,8 @@ public:
                 // Four values for each atom of the block of the fragment, see stageCharges
                 const double *q4 = nullptr;
                 int           b  = find(k, f);
-                if (st && b >= 0 && static_cast<size_t>(b) < segments.size() &&
+                if (st && !(chargeRecipes && recipeRows == 1) && b >= 0 &&
+                    static_cast<size_t>(b) < segments.size() &&
                     segments[b].ncharge == 4*fatoms->size())
                 {
                     q4 = st->charges.data() + segments[b].charge;
@@ -4837,8 +4946,11 @@ bool GpuTrainingSystem::prepare(const ForceField *pd, const std::vector<ACTMol *
     im.mols  = allmols;
     im.nconf.clear();
     im.maxShellDistance2 = maxShellDistance*maxShellDistance;
+    im.whyNot.clear();
     if (!gpu::useGpu() || !pd->polarizable())
     {
+        // Without a GPU there is nothing to explain
+        im.whyNot = gpu::useGpu() ? "the force field is not polarizable" : "";
         return false;
     }
     for (size_t k = 0; k < allmols.size(); k++)
@@ -4857,13 +4969,17 @@ bool GpuTrainingSystem::prepare(const ForceField *pd, const std::vector<ACTMol *
             auto           &ca    = cdata->arrays;
             if (cdata->useArraysDouble() || ca.nconf != cdata->nconf())
             {
+                im.whyNot = gmx::formatString("the conformations of %s are not in single precision arrays",
+                                              molptr->getMolname().c_str());
                 return false;
             }
             Impl::Block bl;
             bl.mol  = k;
             bl.what = what;
-            if (!describeGpuTopology(pd, top, cdata, &bl.desc))
+            std::string why;
+            if (!describeGpuTopology(pd, top, cdata, &bl.desc, &why))
             {
+                im.whyNot = gmx::formatString("%s: the GPU has %s", molptr->getMolname().c_str(), why.c_str());
                 return false;
             }
             im.shellsOf(bl, &bl.shells);
@@ -5279,9 +5395,12 @@ void GpuTrainingSystem::stageParameters(size_t replica, const ForceField *pd, co
                                    "The parameters of a block changed in size");
                 stageShellsVsites(bl.desc, sh, st.shells.data() + seg.shell, st.vsites.data() + seg.vsite);
             }
-            GMX_RELEASE_ASSERT(4*blockTopology(im.mols[bl.mol], bl.what)->atoms().size() == seg.ncharge,
-                               "The parameters of a block changed in size");
-            stageCharges(im.mols[bl.mol], bl.what, st.charges.data() + seg.charge);
+            if (onHost || !im.chargeRecipes)
+            {
+                GMX_RELEASE_ASSERT(4*blockTopology(im.mols[bl.mol], bl.what)->atoms().size() == seg.ncharge,
+                                   "The parameters of a block changed in size");
+                stageCharges(im.mols[bl.mol], bl.what, st.charges.data() + seg.charge);
+            }
         }
     }
     im.stagedAll[replica] = 1;
@@ -5384,6 +5503,16 @@ bool GpuTrainingSystem::recipeRows() const
     return 1 == impl_->recipeRows;
 }
 
+const std::string &GpuTrainingSystem::whyNot() const
+{
+    return impl_->whyNot;
+}
+
+bool GpuTrainingSystem::chargeRecipes() const
+{
+    return 1 == impl_->recipeRows && impl_->chargeRecipes;
+}
+
 size_t GpuTrainingSystem::deviationsVersion() const
 {
     return impl_->versionCount*1000003 + impl_->devVersionCount;
@@ -5415,7 +5544,10 @@ void GpuTrainingSystem::uploadParameters(const ForceField *pd)
             all.shells.insert(all.shells.end(), st.shells.begin(), st.shells.end());
             all.vsites.insert(all.vsites.end(), st.vsites.begin(), st.vsites.end());
         }
-        all.charges.insert(all.charges.end(), st.charges.begin(), st.charges.end());
+        if (!(gpuMakes && im.chargeRecipes))
+        {
+            all.charges.insert(all.charges.end(), st.charges.begin(), st.charges.end());
+        }
         all.acmValues.insert(all.acmValues.end(), st.acmValues.begin(), st.acmValues.end());
         all.acmX.insert(all.acmX.end(), st.acmX.begin(), st.acmX.end());
     }
@@ -5460,9 +5592,26 @@ void GpuTrainingSystem::uploadParameters(const ForceField *pd)
     }
     if (gpuMakes)
     {
-        // The GPU makes the rows, the moving shells and the virtual sites from the values
+        // The GPU makes the rows, the moving shells and the virtual sites
+        // from the values, and the fixed parts of the charges if it can,
+        // which it generates the charges again for if they changed
+        if (im.chargeRecipes)
+        {
+            std::vector<double> v;
+            for (auto k : im.chargeSlots)
+            {
+                v.push_back(im.recipeValues[k]);
+            }
+            if (v != im.chargeLast)
+            {
+                gpu::acmChargesChanged(im.system);
+                im.chargeLast   = std::move(v);
+                im.acmGenerated = true;
+            }
+        }
         gpu::updateRecipeValues(im.system, im.recipeValues.data());
-        gpu::updateParameters(im.system, nullptr, charges.data(), ONE_4PI_EPS0, pd->epsilonr());
+        gpu::updateParameters(im.system, nullptr, im.chargeRecipes ? nullptr : charges.data(),
+                              ONE_4PI_EPS0, pd->epsilonr());
     }
     else
     {

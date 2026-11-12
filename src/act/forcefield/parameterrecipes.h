@@ -106,12 +106,15 @@ public:
      */
     std::vector<double> evaluate(int set) const;
 
-private:
     /*! \brief The position of a value
+     * The value is copied by update as those of the recipes, for instance
+     * for the charges of the particles, see gpu::ChargeRecipe.
      * \param[in] p The parameter of the force field
-     * \return The position in values_, added if new
+     * \return The position in values and factors, added if new
      */
     int32_t slot(const ForceFieldParameter *p);
+
+private:
 
     //! The recipes
     std::vector<SetRecipe>                                     recipes_;

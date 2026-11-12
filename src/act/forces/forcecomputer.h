@@ -183,6 +183,8 @@ private:
     bool           keepGpuEnergies_  = false;
     //! Whether the GPU could not compute the molecules, see prepareGpuResident
     mutable bool   gpuResidentUnavailable_ = false;
+    //! Why the GPU does not compute the molecules, see gpuResidentWhyNot
+    mutable std::string gpuResidentWhyNot_;
     //! \return whether to try computing on the GPU, see setGpuResident
     bool useGpuResident() const;
     //! Steps without progress after which the shells stop, 0 for never, see setStallIterations
@@ -611,6 +613,17 @@ private:
     bool gpuRecipeRows() const
     {
         return gpuSystem_ && !gpuResidentUnavailable_ ? gpuSystem_->recipeRows() : false;
+    }
+
+    /*! \return why the GPU does not compute the molecules of the training
+     * although it was asked to, see prepareGpuResident, or an empty string
+     */
+    const std::string &gpuResidentWhyNot() const { return gpuResidentWhyNot_; }
+
+    //! \return whether the GPU makes the fixed parts of the charges, see GpuTrainingSystem::chargeRecipes
+    bool gpuChargeRecipes() const
+    {
+        return gpuSystem_ && !gpuResidentUnavailable_ ? gpuSystem_->chargeRecipes() : false;
     }
 
     //! \return a number that changes when the molecules or the deviations on the GPU are made again

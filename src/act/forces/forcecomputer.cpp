@@ -1734,6 +1734,10 @@ bool ForceComputer::prepareGpuResident(const ForceField *pd, const std::vector<A
 {
     if (!useGpuResident() || !pd->polarizable())
     {
+        if (useGpuResident() && gpu::useGpu())
+        {
+            gpuResidentWhyNot_ = "the force field is not polarizable";
+        }
         return false;
     }
     static const size_t timer = Timings::instance().index("GPU resident setup");
@@ -1746,6 +1750,7 @@ bool ForceComputer::prepareGpuResident(const ForceField *pd, const std::vector<A
     {
         // The processor computes everything from now on
         gpuResidentUnavailable_ = true;
+        gpuResidentWhyNot_      = gpuSystem_->whyNot();
         return false;
     }
     return true;

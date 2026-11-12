@@ -112,6 +112,8 @@ private:
     size_t                                         cacheVersion_ = 0;
     //! The number of molecules computed and skipped, for the log
     size_t                                         nComputedMol_ = 0, nSkippedMol_ = 0;
+    //! Whether ForceComputer::gpuResidentWhyNot was written to the log
+    bool                                           gpuWhyNotReported_ = false;
     //! For each dataset, whether its molecules have data of the targets of the charge properties, see needChargeProperties
     std::map<iMolSelect, std::map<eRMS, bool>>     qPropsData_;
 
