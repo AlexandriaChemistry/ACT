@@ -366,6 +366,63 @@ void ACMFitnessComputer::updateMolecule(MsgHandler                      *msghand
     }
 }
 
+bool ACMFitnessComputer::needChargeProperties(MsgHandler                          *msghandler,
+                                              const std::map<eRMS, FittingTarget> &targets,
+                                              iMolSelect                           ims)
+{
+    static const std::map<eRMS, MolPropObservable> multipoles = {
+        { eRMS::MU, MolPropObservable::DIPOLE }, { eRMS::QUAD, MolPropObservable::QUADRUPOLE },
+        { eRMS::OCT, MolPropObservable::OCTUPOLE }, { eRMS::HEXADEC, MolPropObservable::HEXADECAPOLE }
+    };
+    auto &data = qPropsData_[ims];
+    bool  need = false;
+    for (auto erms : { eRMS::ESP, eRMS::MU, eRMS::QUAD, eRMS::OCT, eRMS::HEXADEC })
+    {
+        auto t = targets.find(erms);
+        if (t == targets.end() || t->second.weight() <= 0)
+        {
+            continue;
+        }
+        auto d = data.find(erms);
+        if (d == data.end())
+        {
+            // As EspDevComputer and MultiPoleDevComputer find the data
+            bool found = false;
+            for (auto &mol : *molgen_->actmolsPtr())
+            {
+                if (mol.datasetType() != ims)
+                {
+                    continue;
+                }
+                for (auto &qp : *mol.qProps())
+                {
+                    if (eRMS::ESP == erms)
+                    {
+                        found = found || qp.qgenResp()->nEsp() > 0;
+                    }
+                    else
+                    {
+                        found = found || qp.qPqmConst().hasMultipole(multipoles.at(erms));
+                    }
+                }
+                if (found)
+                {
+                    break;
+                }
+            }
+            d = data.insert({ erms, found }).first;
+            if (!found && msghandler)
+            {
+                msghandler->msg(ACTStatus::Warning,
+                                gmx::formatString("The fitting target %s of the %s set has a weight, but none of its molecules has data for it. It does not change the objective function.",
+                                                  rmsName(erms), iMolSelectName(ims).c_str()));
+            }
+        }
+        need = need || d->second;
+    }
+    return need;
+}
+
 std::vector<double> ACMFitnessComputer::parameterValues()
 {
     std::vector<double> values;
@@ -513,12 +570,7 @@ bool ACMFitnessComputer::prepareDeviation(MsgHandler    *msghandler,
     }
 
     // The charge properties are only used for the ESP and the multipoles
-    bool needQProps = false;
-    for (auto erms : { eRMS::ESP, eRMS::MU, eRMS::QUAD, eRMS::OCT, eRMS::HEXADEC })
-    {
-        auto t = targets->find(erms);
-        needQProps = needQProps || (t != targets->end() && t->second.weight() > 0);
-    }
+    bool needQProps = needChargeProperties(msghandler, *targets, ims);
     // With SQE on the GPU, the processor only sets the fixed charges, as
     // long as the energies are computed there and nothing else needs them
     bool gpuCharges = false;
