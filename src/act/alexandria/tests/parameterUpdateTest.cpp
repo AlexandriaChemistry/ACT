@@ -50,6 +50,7 @@
 
 #include <cmath>
 #include <cstdlib>
+#include <functional>
 #include <map>
 #include <random>
 #include <set>
@@ -65,6 +66,7 @@
 #include "act/basics/msg_handler.h"
 #include "act/forcefield/forcefield.h"
 #include "act/forcefield/forcefield_xml.h"
+#include "act/forcefield/potential.h"
 #include "act/forces/forcecomputer.h"
 #include "act/ga/ga_test_helper.h"
 #include "act/gpu/gpu.h"
@@ -83,9 +85,11 @@ namespace
 struct UpdateCase
 {
     //! The input files
-    GaTestFiles       files;
+    GaTestFiles                      files;
     //! The fitting targets
-    std::vector<eRMS> targets;
+    std::vector<eRMS>                targets;
+    //! If not empty, changes the force field before it is used
+    std::function<void(ForceField *)> modify;
 };
 
 //! The result of an evaluation
@@ -99,15 +103,22 @@ struct Evaluation
     std::vector<double>    charges;
 };
 
+//! \return the path of a force field file, relative to the test data unless it is absolute
+std::string ffPath(const std::string &ffFile)
+{
+    return ffFile[0] == '/' ? ffFile : gmx::test::TestFileManager::getInputFilePath(ffFile);
+}
+
 /*! \brief The names of all parameters of a force field that can be trained
- * \param[in] ffFile The force field, relative to the test data
+ * \param[in] ffFile The force field, relative to the test data or absolute
  * \return The names
  */
 std::vector<std::string> trainableNames(const std::string &ffFile)
 {
     ForceField pd;
-    readForceField(gmx::test::TestFileManager::getInputFilePath(ffFile), &pd);
-    std::set<std::string> names;
+    readForceField(ffPath(ffFile), &pd);
+    // The exponents of the combination rules, of which GeneralizedMean uses them
+    std::set<std::string> names = { "exponent" };
     for (const auto &fs : pd.forcesConst())
     {
         for (const auto &fpl : fs.second.parametersConst())
@@ -276,7 +287,7 @@ void writeValues(const std::string                    &ffFile,
                  const std::string                    &fileName)
 {
     ForceField pd;
-    readForceField(ffFile[0] == '/' ? ffFile : gmx::test::TestFileManager::getInputFilePath(ffFile), &pd);
+    readForceField(ffPath(ffFile), &pd);
     for (size_t k = 0; k < optIndex.size(); k++)
     {
         OptimizationIndex mine = optIndex[k];
@@ -308,18 +319,133 @@ std::vector<double> randomValues(StaticIndividualInfo *sii)
     return values;
 }
 
+//! The unit and range of a van der Waals parameter
+struct VdwRange
+{
+    //! The unit
+    const char *unit;
+    //! The smallest value
+    double      minimum;
+    //! The largest value
+    double      maximum;
+};
+
+/*! \brief The unit and a plausible range of a van der Waals parameter
+ * \param[in] pot  The potential
+ * \param[in] name The name of the parameter
+ * \return The unit and range
+ */
+VdwRange vdwRange(Potential pot, const std::string &name)
+{
+    static const std::map<std::string, VdwRange> ranges = {
+        { "sigma", { "nm", 0.25, 0.38 } }, { "rmin", { "nm", 0.3, 0.42 } },
+        { "epsilon", { "kJ/mol", 0.1, 1.0 } },
+        { "Abh", { "kJ/mol", 1e4, 1e5 } }, { "Att", { "kJ/mol", 1e4, 1e5 } },
+        { "Att2b", { "kJ/mol", 1e4, 1e5 } }, { "A", { "kJ/mol", 1e4, 1e5 } },
+        { "bbh", { "1/nm", 30, 45 } }, { "btt", { "1/nm", 30, 45 } },
+        { "bExchtt2b", { "1/nm", 30, 45 } }, { "bDisptt2b", { "1/nm", 30, 45 } },
+        { "bExch", { "1/nm", 30, 45 } }, { "bDisp", { "1/nm", 30, 45 } },
+        { "c6bh", { "kJ/mol nm6", 1e-3, 4e-3 } }, { "c6tt", { "kJ/mol nm6", 1e-3, 4e-3 } },
+        { "c6tt2b", { "kJ/mol nm6", 1e-3, 4e-3 } }, { "c6", { "kJ/mol nm6", 1e-3, 4e-3 } },
+        { "c8tt", { "kJ/mol nm8", 1e-5, 4e-5 } }, { "c8tt2b", { "kJ/mol nm8", 1e-5, 4e-5 } },
+        { "c8", { "kJ/mol nm8", 1e-5, 4e-5 } },
+        { "c10tt", { "kJ/mol nm10", 1e-7, 4e-7 } }, { "c10tt2b", { "kJ/mol nm10", 1e-7, 4e-7 } },
+        { "c10", { "kJ/mol nm10", 1e-7, 4e-7 } }
+    };
+    if (name == "gamma")
+    {
+        switch (pot)
+        {
+        case Potential::LJ14_7:   return { "", 0.05, 0.2 };
+        case Potential::LJ12_6_4: return { "kJ/mol nm4", 1e-4, 5e-3 };
+        default:                  return { "", 8, 15 };
+        }
+    }
+    if (name == "delta")
+    {
+        return pot == Potential::LJ14_7 ? VdwRange{ "", 0.03, 0.1 } : VdwRange{ "", 4, 10 };
+    }
+    auto r = ranges.find(name);
+    GMX_RELEASE_ASSERT(r != ranges.end(), gmx::formatString("No range for %s", name.c_str()).c_str());
+    return r->second;
+}
+
+/*! \brief Replace the van der Waals potential of a force field by another one
+ * The particle types keep their identifiers, the parameters get values in
+ * the middle of plausible ranges, with geometric combination rules, of which
+ * the test makes random values.
+ * \param[inout] pd  The force field
+ * \param[in]    pot The new potential
+ */
+void replaceVdw(ForceField *pd, Potential pot)
+{
+    auto *old = pd->findForces(InteractionType::VDW);
+    ForceFieldParameterList vdw(potentialToString(pot), old->canSwap());
+    for (const auto &opt : old->option())
+    {
+        vdw.addOption(opt.first, opt.second);
+    }
+    for (const auto &entry : old->parametersConst())
+    {
+        // Only the particle types, the pairs are generated from them
+        if (entry.first.atoms().size() != 1 || entry.second.empty())
+        {
+            continue;
+        }
+        unsigned int ntrain = entry.second.begin()->second.ntrain();
+        for (const auto &name : potentialToParameterName(pot))
+        {
+            auto r = vdwRange(pot, name);
+            vdw.addParameter(entry.first, name,
+                             ForceFieldParameter(r.unit, 0.5*(r.minimum + r.maximum), 0, ntrain,
+                                                 r.minimum, r.maximum, Mutability::Bounded, true, true));
+        }
+    }
+    for (const auto &name : potentialToParameterName(pot))
+    {
+        vdw.addCombinationRule(name, "Geometric");
+    }
+    (*pd->forces())[InteractionType::VDW] = vdw;
+}
+
+/*! \brief Set the combination rules of the van der Waals parameters
+ * \param[inout] pd    The force field
+ * \param[in]    rules The rule of each parameter
+ */
+void setCombinationRules(ForceField *pd, const std::map<std::string, std::string> &rules)
+{
+    auto *vdw = pd->findForces(InteractionType::VDW);
+    for (const auto &r : rules)
+    {
+        // The exponent of GeneralizedMean is trained too
+        ForceFieldParameter exponent("", 1.5, 0, 1, -4, 4, Mutability::Bounded, true, false);
+        vdw->addCombinationRule(r.first, r.second, exponent);
+    }
+}
+
 /*! \brief Change the parameters one at a time, compared with evaluating them from scratch
  * \param[in] fileManager For temporary files
+ * \param[in] label       The name of the case
  * \param[in] uc          The force field and molecules
  * \param[in] gpu         Whether to compute on the GPU
  * \param[in] tolerance   Relative tolerance
  */
 void checkUpdates(gmx::test::TestFileManager *fileManager,
+                  const std::string          &label,
                   const UpdateCase           &uc,
                   bool                        gpu,
                   double                      tolerance)
 {
-    auto fit = trainableNames(uc.files.forceField);
+    auto files0 = uc.files;
+    if (uc.modify)
+    {
+        ForceField pd;
+        readForceField(ffPath(uc.files.forceField), &pd);
+        uc.modify(&pd);
+        files0.forceField = fileManager->getTemporaryFilePath("modified.xml");
+        writeForceField(files0.forceField, &pd, false);
+    }
+    auto fit = trainableNames(files0.forceField);
     ASSERT_FALSE(fit.empty());
     // The shells start from the same positions each time, otherwise the
     // results depend on the evaluations before, see setKeepShells
@@ -331,12 +457,12 @@ void checkUpdates(gmx::test::TestFileManager *fileManager,
         return fc;
     };
     // The force field with random values of the parameters, the start of both
-    auto baseFiles = uc.files;
+    auto baseFiles = files0;
     {
-        GaTestHelper original(1, fit, uc.targets, uc.files, makeForceComputer());
+        GaTestHelper original(1, fit, uc.targets, files0, makeForceComputer());
         ASSERT_FALSE(original.sii->optIndex().empty()) << "No parameters to train in " << uc.files.forceField;
         baseFiles.forceField = fileManager->getTemporaryFilePath("base.xml");
-        writeValues(uc.files.forceField, original.sii->optIndex(), randomValues(original.sii),
+        writeValues(files0.forceField, original.sii->optIndex(), randomValues(original.sii),
                     baseFiles.forceField);
     }
     GaTestHelper incremental(1, fit, uc.targets, baseFiles, makeForceComputer());
@@ -439,7 +565,7 @@ void checkUpdates(gmx::test::TestFileManager *fileManager,
         }
     }
     printf("%s: %zu of %zu parameters compared with evaluating from scratch, %zu of %zu kinds change the result%s%s\n",
-           uc.files.forceField.c_str(), toCompare.size(), optIndex.size(), relevant.size(), kinds.size(),
+           label.c_str(), toCompare.size(), optIndex.size(), relevant.size(), kinds.size(),
            irrelevant.empty() ? "" : ", these do not:", irrelevant.c_str());
     // Without changes of the result nothing is tested
     EXPECT_FALSE(relevant.empty());
@@ -477,6 +603,48 @@ std::map<std::string, UpdateCase> updateCases()
         uc.targets          = inter;
         cases["hf-lj14-7-vsites"] = uc;
     }
+    UpdateCase hf;
+    hf.files.forceField = "forcefields/HF-LJ14-7.xml";
+    hf.files.molprop    = "molprop/hf-hf.xml";
+    hf.files.selection  = "molprop/hf-hf.dat";
+    hf.files.oneH       = false;
+    hf.targets          = inter;
+    // The other combination rules, each with a potential for which it is
+    // defined, for instance HogervorstSigma needs a gamma larger than 6
+    const std::vector<std::pair<Potential, std::map<std::string, std::string>>> ruleSets = {
+        { Potential::WANG_BUCKINGHAM, { { "sigma", "HogervorstSigma" }, { "epsilon", "HogervorstEpsilon" },
+                                        { "gamma", "Arithmetic" } } },
+        { Potential::LJ14_7, { { "sigma", "WaldmanSigma" }, { "epsilon", "WaldmanEpsilon" },
+                               { "gamma", "Yang" }, { "delta", "InverseSquare" } } },
+        // QiEpsilon is not implemented, see combineTwo in combinationrules.cpp
+        { Potential::GENERALIZED_BUCKINGHAM, { { "rmin", "QiSigma" }, { "epsilon", "Geometric" },
+                                               { "gamma", "MasonGamma" }, { "delta", "Volumetric" } } },
+        { Potential::LJ12_6, { { "sigma", "GeneralizedMean" }, { "epsilon", "HalgrenEpsilon" } } },
+        { Potential::LJ14_7, { { "sigma", "Arithmetic" }, { "epsilon", "Geometric" },
+                               { "gamma", "GeneralizedMean" }, { "delta", "Arithmetic" } } }
+    };
+    for (size_t i = 0; i < ruleSets.size(); i++)
+    {
+        UpdateCase uc = hf;
+        auto pot      = ruleSets[i].first;
+        auto rules    = ruleSets[i].second;
+        uc.modify     = [pot, rules](ForceField *pd)
+        {
+            replaceVdw(pd, pot);
+            setCombinationRules(pd, rules);
+        };
+        cases[gmx::formatString("hf-rules%zu-%s", i, potentialToString(pot).c_str())] = uc;
+    }
+    // The other van der Waals potentials
+    for (auto pot : { Potential::LJ12_6, Potential::LJ8_6, Potential::LJ12_6_4,
+                      Potential::WANG_BUCKINGHAM, Potential::GENERALIZED_BUCKINGHAM,
+                      Potential::BUCKINGHAM, Potential::TANG_TOENNIES, Potential::TT2b,
+                      Potential::SLATER_ISA_TT })
+    {
+        UpdateCase uc = hf;
+        uc.modify     = [pot](ForceField *pd) { replaceVdw(pd, pot); };
+        cases["hf-" + potentialToString(pot)] = uc;
+    }
     return cases;
 }
 
@@ -496,7 +664,7 @@ TEST_F(ParameterUpdateTest, OneAtATime)
     for (const auto &uc : updateCases())
     {
         SCOPED_TRACE(uc.first);
-        checkUpdates(&fileManager_, uc.second, false, GMX_DOUBLE ? 1e-10 : 1e-5);
+        checkUpdates(&fileManager_, uc.first, uc.second, false, GMX_DOUBLE ? 1e-10 : 1e-5);
     }
 }
 
@@ -511,7 +679,7 @@ TEST_F(ParameterUpdateTest, OneAtATimeGpu)
     // Only the polarizable force field, the GPU computes no others
     auto cases = updateCases();
     SCOPED_TRACE("alc-pol-wbh");
-    checkUpdates(&fileManager_, cases["alc-pol-wbh"], true, 1e-6);
+    checkUpdates(&fileManager_, "alc-pol-wbh", cases["alc-pol-wbh"], true, 1e-6);
 }
 
 } // namespace
