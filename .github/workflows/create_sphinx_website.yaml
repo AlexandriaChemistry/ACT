@@ -38,6 +38,8 @@ jobs:
       - uses: conda-incubator/setup-miniconda@v4
         with:
           auto-update-conda: true
+          channels: conda-forge
+          conda-remove-defaults: "true"
           auto-activate: true
           python-version: ${{ matrix.python-version }}
       - name: Conda info
