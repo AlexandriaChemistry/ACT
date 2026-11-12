@@ -65,7 +65,7 @@ class ForceFieldTest : public gmx::test::CommandLineTestBase
 
         ForceFieldTest () : checker_(this->rootChecker())
         {
-            auto tolerance = gmx::test::relativeToleranceAsFloatingPoint(1.0, GMX_DOUBLE ? 1e-10 : 5e-2);
+            const auto tolerance = gmx::test::relativeToleranceAsFloatingPoint(1.0, GMX_DOUBLE ? 1e-10 : 5e-2);
             checker_.setDefaultTolerance(tolerance);
         }
 
@@ -85,10 +85,10 @@ class ForceFieldTest : public gmx::test::CommandLineTestBase
 
         void addAtype(alexandria::ForceField *pd)
         {
-            std::string          atype("U");
-            std::string          elem("U");
-            std::string          desc("temporary test atom");
-            Identifier   atpId("U");
+            const std::string    atype("U");
+            const std::string    elem("U");
+            const std::string    desc("temporary test atom");
+            const Identifier   atpId("U");
             ParticleType atp(atpId, desc, ActParticle::Atom);
             atp.setOption("poltype", "p_U");
             atp.setOption("zetatype", "z_U");
@@ -96,9 +96,9 @@ class ForceFieldTest : public gmx::test::CommandLineTestBase
             atp.setOption("acmtype", "z_U");
             atp.setOption("element", elem);
             atp.setOption("atomnumber", "92");
-            ForceFieldParameter mm("Da", 238.29, 0.0,  1, 230, 240, Mutability::Bounded, true, false);
+            const ForceFieldParameter mm("Da", 238.29, 0.0,  1, 230, 240, Mutability::Bounded, true, false);
             atp.addForceFieldParameter("mass", mm);
-            ForceFieldParameter rr("kJ/mol", 1000.0, 0.0,  1, 990, 1010, Mutability::Bounded, true, true);
+            const ForceFieldParameter rr("kJ/mol", 1000.0, 0.0,  1, 990, 1010, Mutability::Bounded, true, true);
             atp.addForceFieldParameter("ref_enthalpy", rr);
             pd->addParticleType(atp);
         }
@@ -131,7 +131,7 @@ TEST_F(ForceFieldTest, addingParticleTypeTwiceThrows)
 
 TEST_F(ForceFieldTest, addAtype){
     alexandria::ForceField *pd = getForceField("ACM-g1");
-    std::string          atype("U");
+    const std::string    atype("U");
     // For some reason this test "inherits" the same ForceField as the previous test
     //addAtype(pd);
 
@@ -151,16 +151,16 @@ TEST_F (ForceFieldTest, chi)
 {
     std::vector<double>      chi0s;
     std::string              atoms[]  = { "h", "f", "p2", "br" };
-    std::vector<std::string> eqd = { "ACM-g1", "ACM-pg1" };
+    const std::vector<std::string> eqd = { "ACM-g1", "ACM-pg1" };
 
     for (auto &atom : atoms)
     {
-        for (auto model : eqd)
+        for (const auto& model : eqd)
         {
             auto pd       = getForceField(model);
-            auto fa       = pd->findParticleType(atom)->interactionTypeToIdentifier(InteractionType::ELECTRONEGATIVITYEQUALIZATION);
-            auto eep      = pd->findForcesConst(InteractionType::ELECTRONEGATIVITYEQUALIZATION);
-            auto p        = eep.findParameterTypeConst(fa, "chi");
+            const auto fa       = pd->findParticleType(atom)->interactionTypeToIdentifier(InteractionType::ELECTRONEGATIVITYEQUALIZATION);
+            const auto eep      = pd->findForcesConst(InteractionType::ELECTRONEGATIVITYEQUALIZATION);
+            const auto p        = eep.findParameterTypeConst(fa, "chi");
             chi0s.push_back(p.value());
         }
     }
@@ -171,16 +171,16 @@ TEST_F (ForceFieldTest, alpha)
 {
     std::vector<double>      alphas;
     std::string              atoms[]  = { "h", "c2", "f", "p2", "br" };
-    std::vector<std::string> eqd = { "ACM-pg1" };
+    const std::vector<std::string> eqd = { "ACM-pg1" };
 
     for (auto &atom : atoms)
     {
-        for (auto model : eqd)
+        for (const auto& model : eqd)
         {
             auto pd       = getForceField(model);
-            auto fa       = pd->findParticleType(atom)->interactionTypeToIdentifier(InteractionType::POLARIZATION);
-            auto eep      = pd->findForcesConst(InteractionType::POLARIZATION);
-            auto p        = eep.findParameterTypeConst(fa, "alpha");
+            const auto fa       = pd->findParticleType(atom)->interactionTypeToIdentifier(InteractionType::POLARIZATION);
+            const auto eep      = pd->findForcesConst(InteractionType::POLARIZATION);
+            const auto p        = eep.findParameterTypeConst(fa, "alpha");
             alphas.push_back(p.value());
         }
     }
@@ -210,7 +210,7 @@ TEST_F (ForceFieldTest, zeta)
 {
     std::vector<double>      zetas;
     std::string              atoms[]  = { "h", "c3", "s2", "br" };
-    std::vector<std::string> eqd = { "ACM-pg1" };
+    const std::vector<std::string> eqd = { "ACM-pg1" };
 
     for (auto &atom : atoms)
     {
@@ -229,8 +229,8 @@ TEST_F (ForceFieldTest, zeta)
 // the former Free, cannot be read
 TEST(ForceFieldSimpleTest, unknownMutabilityThrows)
 {
-    std::string dataName = gmx::test::TestFileManager::getInputFilePath("forcefields/ACM-g1.xml");
-    std::ifstream in(dataName);
+    const std::string dataName = gmx::test::TestFileManager::getInputFilePath("forcefields/ACM-g1.xml");
+    const std::ifstream in(dataName);
     std::stringstream buffer;
     buffer << in.rdbuf();
     std::string xml = buffer.str();
@@ -238,7 +238,7 @@ TEST(ForceFieldSimpleTest, unknownMutabilityThrows)
     ASSERT_NE(std::string::npos, pos);
     xml.replace(pos, std::string("mutability=\"Bounded\"").size(), "mutability=\"Free\"");
     gmx::test::TestFileManager fileManager;
-    std::string freeName = fileManager.getTemporaryFilePath("ACM-g-free.xml");
+    const std::string freeName = fileManager.getTemporaryFilePath("ACM-g-free.xml");
     {
         std::ofstream out(freeName);
         out << xml;
@@ -253,7 +253,7 @@ static std::string modifiedForceField(gmx::test::TestFileManager       *fileMana
                                       std::function<void(std::string *)> edit,
                                       const std::string                &base = "forcefields/ACM-g1.xml")
 {
-    std::ifstream     in(gmx::test::TestFileManager::getInputFilePath(base));
+    const std::ifstream     in(gmx::test::TestFileManager::getInputFilePath(base));
     std::stringstream buffer;
     buffer << in.rdbuf();
     std::string xml = buffer.str();
@@ -269,14 +269,14 @@ static std::string modifiedForceField(gmx::test::TestFileManager       *fileMana
 TEST(ForceFieldSimpleTest, missingAcmParametersThrows)
 {
     gmx::test::TestFileManager fileManager;
-    auto fileName = modifiedForceField(&fileManager, "no-iodine.xml", [](std::string *xml)
-    {
-        auto eem   = xml->find("interaction type=\"ELECTRONEGATIVITYEQUALIZATION\"");
-        auto begin = xml->find("    <parameterlist identifier=\"i_z\">", eem);
-        auto end   = xml->find("</parameterlist>", begin);
-        ASSERT_NE(std::string::npos, begin);
-        xml->erase(begin, end + std::string("</parameterlist>\n").size() - begin);
-    });
+    const auto fileName = modifiedForceField(&fileManager, "no-iodine.xml", [](std::string *xml)
+          {
+              auto eem   = xml->find("interaction type=\"ELECTRONEGATIVITYEQUALIZATION\"");
+              auto begin = xml->find("    <parameterlist identifier=\"i_z\">", eem);
+              auto end   = xml->find("</parameterlist>", begin);
+              ASSERT_NE(std::string::npos, begin);
+              xml->erase(begin, end + std::string("</parameterlist>\n").size() - begin);
+          });
     ForceField pd;
     EXPECT_THROW(readForceField(fileName, &pd), gmx::InvalidInputError);
     ForceField incomplete;
@@ -288,15 +288,15 @@ TEST(ForceFieldSimpleTest, missingAcmParametersThrows)
 TEST(ForceFieldSimpleTest, missingAcmTypeThrows)
 {
     gmx::test::TestFileManager fileManager;
-    auto fileName = modifiedForceField(&fileManager, "no-acmtype.xml", [](std::string *xml)
-    {
-        auto        ptype  = xml->find("<particletype identifier=\"i\"");
-        std::string option("      <option key=\"acmtype\" value=\"i_z\"/>\n");
-        auto        pos    = xml->find(option, ptype);
-        ASSERT_NE(std::string::npos, ptype);
-        ASSERT_NE(std::string::npos, pos);
-        xml->erase(pos, option.size());
-    });
+    const auto fileName = modifiedForceField(&fileManager, "no-acmtype.xml", [](std::string *xml)
+          {
+              auto        ptype  = xml->find("<particletype identifier=\"i\"");
+              const std::string option("      <option key=\"acmtype\" value=\"i_z\"/>\n");
+              auto        pos    = xml->find(option, ptype);
+              ASSERT_NE(std::string::npos, ptype);
+              ASSERT_NE(std::string::npos, pos);
+              xml->erase(pos, option.size());
+          });
     ForceField pd;
     EXPECT_THROW(readForceField(fileName, &pd), gmx::InvalidInputError);
     ForceField incomplete;
@@ -308,13 +308,13 @@ TEST(ForceFieldSimpleTest, missingAcmTypeThrows)
 TEST(ForceFieldSimpleTest, pointChargesWithZetaThrow)
 {
     gmx::test::TestFileManager fileManager;
-    auto fileName = modifiedForceField(&fileManager, "point.xml", [](std::string *xml)
-    {
-        std::string gaussian("<option key=\"chargedistribution\" value=\"Gaussian\"/>");
-        auto        pos = xml->find(gaussian);
-        ASSERT_NE(std::string::npos, pos);
-        xml->replace(pos, gaussian.size(), "<option key=\"chargedistribution\" value=\"Point\"/>");
-    });
+    const auto fileName = modifiedForceField(&fileManager, "point.xml", [](std::string *xml)
+          {
+              const std::string gaussian("<option key=\"chargedistribution\" value=\"Gaussian\"/>");
+              auto        pos = xml->find(gaussian);
+              ASSERT_NE(std::string::npos, pos);
+              xml->replace(pos, gaussian.size(), "<option key=\"chargedistribution\" value=\"Point\"/>");
+          });
     ForceField pd;
     EXPECT_THROW(readForceField(fileName, &pd), gmx::InvalidInputError);
 }
@@ -324,13 +324,13 @@ TEST(ForceFieldSimpleTest, pointChargesWithZetaThrow)
 TEST(ForceFieldSimpleTest, pointChargesWithZetaThrowOldStyle)
 {
     gmx::test::TestFileManager fileManager;
-    auto fileName = modifiedForceField(&fileManager, "point-old.xml", [](std::string *xml)
-    {
-        std::string gaussian("<interaction type=\"COULOMB\" function=\"COULOMB_GAUSSIAN\"");
-        auto        pos = xml->find(gaussian);
-        ASSERT_NE(std::string::npos, pos);
-        xml->replace(pos, gaussian.size(), "<interaction type=\"COULOMB\" function=\"COULOMB_POINT\"");
-    }, "forcefields/ACM-g2.xml");
+    const auto fileName = modifiedForceField(&fileManager, "point-old.xml", [](std::string *xml)
+          {
+              const std::string gaussian("<interaction type=\"COULOMB\" function=\"COULOMB_GAUSSIAN\"");
+              auto        pos = xml->find(gaussian);
+              ASSERT_NE(std::string::npos, pos);
+              xml->replace(pos, gaussian.size(), "<interaction type=\"COULOMB\" function=\"COULOMB_POINT\"");
+          }, "forcefields/ACM-g2.xml");
     ForceField pd;
     EXPECT_THROW(readForceField(fileName, &pd), gmx::InvalidInputError);
 }
@@ -380,10 +380,10 @@ TEST(ForceFieldSimpleTest, OldStyleCoulomb)
 TEST(ForceFieldSimpleTest, OldStyleSharedZetatype)
 {
     gmx::test::TestFileManager fileManager;
-    auto fileName = modifiedForceField(&fileManager, "shared.xml", [](std::string *xml)
-    {
-        replaceFirst(xml, "<option key=\"zetatype\" value=\"Be2+_z\"/>", "<option key=\"zetatype\" value=\"c3_z\"/>");
-    }, oldStyle);
+    const auto fileName = modifiedForceField(&fileManager, "shared.xml", [](std::string *xml)
+          {
+              replaceFirst(xml, "<option key=\"zetatype\" value=\"Be2+_z\"/>", "<option key=\"zetatype\" value=\"c3_z\"/>");
+          }, oldStyle);
     ForceField pd;
     readForceField(fileName, &pd);
     auto be = pd.findParticleType("Be2+");
@@ -400,11 +400,11 @@ TEST(ForceFieldSimpleTest, OldStyleSharedZetatype)
 TEST(ForceFieldSimpleTest, OldStyleConflictingZetaThrows)
 {
     gmx::test::TestFileManager fileManager;
-    auto fileName = modifiedForceField(&fileManager, "conflict.xml", [](std::string *xml)
-    {
-        std::string zetatype("<option key=\"zetatype\" value=\"Be2+_z\"/>");
-        replaceFirst(xml, zetatype, zetatype + "\n      <parameter type=\"zeta\" unit=\"1/nm\" value=\"14\" uncertainty=\"0\" minimum=\"6\" maximum=\"20\" ntrain=\"1\" mutability=\"Bounded\" nonnegative=\"yes\"/>");
-    }, oldStyle);
+    const auto fileName = modifiedForceField(&fileManager, "conflict.xml", [](std::string *xml)
+          {
+              const std::string zetatype("<option key=\"zetatype\" value=\"Be2+_z\"/>");
+              replaceFirst(xml, zetatype, zetatype + "\n      <parameter type=\"zeta\" unit=\"1/nm\" value=\"14\" uncertainty=\"0\" minimum=\"6\" maximum=\"20\" ntrain=\"1\" mutability=\"Bounded\" nonnegative=\"yes\"/>");
+          }, oldStyle);
     ForceField pd;
     EXPECT_THROW(readForceField(fileName, &pd), gmx::InvalidInputError);
 }
@@ -414,11 +414,11 @@ TEST(ForceFieldSimpleTest, OldStyleConflictingZetaThrows)
 TEST(ForceFieldSimpleTest, OldStyleDifferentExclusionsThrow)
 {
     gmx::test::TestFileManager fileManager;
-    auto fileName = modifiedForceField(&fileManager, "nexcl.xml", [](std::string *xml)
-    {
-        // The first is that of VANDERWAALS, which precedes COULOMB
-        replaceFirst(xml, "<option key=\"nexcl\" value=\"0\"/>", "<option key=\"nexcl\" value=\"1\"/>");
-    }, oldStyle);
+    const auto fileName = modifiedForceField(&fileManager, "nexcl.xml", [](std::string *xml)
+          {
+              // The first is that of VANDERWAALS, which precedes COULOMB
+              replaceFirst(xml, "<option key=\"nexcl\" value=\"0\"/>", "<option key=\"nexcl\" value=\"1\"/>");
+          }, oldStyle);
     ForceField pd;
     EXPECT_THROW(readForceField(fileName, &pd), gmx::InvalidInputError);
 }
@@ -430,9 +430,9 @@ TEST(ForceFieldSimpleTest, OldStyleRoundTrip)
     gmx::test::TestFileManager fileManager;
     ForceField old, roundTrip;
     readForceField(gmx::test::TestFileManager::getInputFilePath(oldStyle), &old);
-    auto fileName = fileManager.getTemporaryFilePath("roundtrip.xml");
+    const auto fileName = fileManager.getTemporaryFilePath("roundtrip.xml");
     writeForceField(fileName, &old, false);
-    std::ifstream     in(fileName);
+    const std::ifstream     in(fileName);
     std::stringstream buffer;
     buffer << in.rdbuf();
     EXPECT_EQ(std::string::npos, buffer.str().find("zetatype"));
@@ -463,14 +463,14 @@ TEST(ForceFieldSimpleTest, OldStyleRoundTrip)
 TEST(ForceFieldSimpleTest, NewStyleDefaults)
 {
     gmx::test::TestFileManager fileManager;
-    auto noZeta = modifiedForceField(&fileManager, "nozeta.xml", [](std::string *xml)
-    {
-        auto be  = xml->find("identifier=\"Be2+\"");
-        ASSERT_NE(std::string::npos, be);
-        auto pos = xml->find("<parameter type=\"zeta\"", be);
-        ASSERT_LT(pos, xml->find("</particletype>", be));
-        xml->erase(pos, xml->find("/>", pos) + 2 - pos);
-    });
+    const auto noZeta = modifiedForceField(&fileManager, "nozeta.xml", [](std::string *xml)
+          {
+              auto be  = xml->find("identifier=\"Be2+\"");
+              ASSERT_NE(std::string::npos, be);
+              auto pos = xml->find("<parameter type=\"zeta\"", be);
+              ASSERT_LT(pos, xml->find("</particletype>", be));
+              xml->erase(pos, xml->find("/>", pos) + 2 - pos);
+          });
     ForceField pd;
     readForceField(noZeta, &pd);
     EXPECT_FALSE(pd.findParticleType("Be2+")->hasParameter(zetaName));
@@ -490,11 +490,11 @@ TEST(ForceFieldSimpleTest, NewStyleInvalidOptionThrows)
     for (const auto &opt : { std::pair<std::string, std::string>("unknown", "1"),
                              { "nexcl", "two" }, { "chargedistribution", "Cubic" } })
     {
-        auto fileName = modifiedForceField(&fileManager, "option.xml", [&opt](std::string *xml)
-        {
-            std::string nexcl("<option key=\"nexcl\" value=\"0\"/>");
-            replaceFirst(xml, nexcl, nexcl + "\n    <option key=\"" + opt.first + "\" value=\"" + opt.second + "\"/>");
-        });
+        const auto fileName = modifiedForceField(&fileManager, "option.xml", [&opt](std::string *xml)
+              {
+                  const std::string nexcl("<option key=\"nexcl\" value=\"0\"/>");
+                  replaceFirst(xml, nexcl, nexcl + "\n    <option key=\"" + opt.first + "\" value=\"" + opt.second + "\"/>");
+              });
         ForceField pd;
         EXPECT_THROW(readForceField(fileName, &pd), gmx::InvalidInputError) << opt.first;
     }
@@ -503,7 +503,7 @@ TEST(ForceFieldSimpleTest, NewStyleInvalidOptionThrows)
 TEST(ForceFieldSimpleTest, changeChargeMinMaxForFixedParticle)
 {
     // Load a fresh copy to avoid mutating the shared singleton
-    std::string dataName = gmx::test::TestFileManager::getInputFilePath("forcefields/ACM-g1.xml");
+    const std::string dataName = gmx::test::TestFileManager::getInputFilePath("forcefields/ACM-g1.xml");
     ForceField pd;
     readForceField(dataName, &pd);
 

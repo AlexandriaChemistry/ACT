@@ -67,7 +67,7 @@ namespace alexandria
 static void add_symm_charges(ForceField *pd)
 {
     bool useCWD = false;
-    auto filename = findLibrary("symmetric_charges.csv", useCWD);
+    const auto filename = findLibrary("symmetric_charges.csv", useCWD);
     if (filename.empty())
     {
         return;
@@ -80,7 +80,7 @@ static void add_symm_charges(ForceField *pd)
         if (3 == ptr.size())
         {
             pd->addSymcharges(ptr[0], ptr[1],
-                              my_atoi(ptr[2].c_str(), "numattch"));
+                              my_atoi(ptr[2], "numattch"));
 
         }
     }
@@ -209,11 +209,11 @@ static void add_vsites(const std::vector<std::string> &vsfiles,
     listSwap[InteractionType::VSITE3FD] = CanSwap::No;
     for (const auto &vsfile : vsfiles)
     {
-        auto error = [&vsfile](size_t index, const std::string &what)
-        {
-            GMX_THROW(gmx::InvalidInputError(gmx::formatString("Virtual site %zu in file %s: %s",
-                                                               index + 1, vsfile.c_str(), what.c_str()).c_str()));
-        };
+        const auto error = [&vsfile](size_t index, const std::string &what)
+              {
+                  GMX_THROW(gmx::InvalidInputError(gmx::formatString("Virtual site %zu in file %s: %s",
+                                                                     index + 1, vsfile.c_str(), what.c_str()).c_str()));
+              };
         nlohmann::json js;
         {
             std::ifstream in(vsfile);
@@ -251,9 +251,9 @@ static void add_vsites(const std::vector<std::string> &vsfiles,
             {
                 error(k, "\"type\" and \"interaction\" have to be strings and \"atoms\" a list");
             }
-            auto       type  = site["type"].get<std::string>();
-            auto       inter = site["interaction"].get<std::string>();
-            Identifier vsid(type);
+            const auto type  = site["type"].get<std::string>();
+            const auto inter = site["interaction"].get<std::string>();
+            const Identifier vsid(type);
             if (!pd->hasParticleType(vsid))
             {
                 error(k, gmx::formatString("unknown particle type %s", type.c_str()));
@@ -282,7 +282,7 @@ static void add_vsites(const std::vector<std::string> &vsfiles,
                 i2f.emplace(itype, ForceFieldParameterList(potentialToString(vsitePotential[itype]), listSwap[itype]));
             }
             auto       &fs    = i2f.find(itype)->second;
-            Identifier  vs(itype, atoms + "!" + type, vsiteSwap[itype]);
+            const Identifier  vs(itype, atoms + "!" + type, vsiteSwap[itype]);
             auto        names = potentialToParameterName(fs.potential());
             if (InteractionType::VSITE1 == itype)
             {
@@ -397,18 +397,18 @@ int gen_ff(int argc, char*argv[])
     }
     dihfn.push_back(nullptr);
 
-    std::vector<Potential> nbpot     = {
-        Potential::LJ12_6, Potential::LJ14_7, Potential::LJ8_6, Potential::LJ12_6_4,
-        Potential::GENERALIZED_BUCKINGHAM, Potential::WANG_BUCKINGHAM,
-        Potential::BUCKINGHAM, Potential::TANG_TOENNIES, Potential::TT2b,
-        Potential::SLATER_ISA_TT };
+    const std::vector<Potential> nbpot     = {
+              Potential::LJ12_6, Potential::LJ14_7, Potential::LJ8_6, Potential::LJ12_6_4,
+              Potential::GENERALIZED_BUCKINGHAM, Potential::WANG_BUCKINGHAM,
+              Potential::BUCKINGHAM, Potential::TANG_TOENNIES, Potential::TT2b,
+              Potential::SLATER_ISA_TT };
     std::vector<const char *> vdwfn = { nullptr };
     for(const auto &nbp : nbpot)
     {
         vdwfn.push_back(potentialToString(nbp).c_str());
     }
     vdwfn.push_back(nullptr);
-    std::vector<Potential> icfunc = { Potential::MACDANIEL_SCHMIDT, Potential::MORSE_BONDS };
+    const std::vector<Potential> icfunc = { Potential::MACDANIEL_SCHMIDT, Potential::MORSE_BONDS };
     std::vector<const char *> icfn = { nullptr };
     for(const auto &nbp : icfunc)
     {
@@ -479,12 +479,12 @@ int gen_ff(int argc, char*argv[])
 
     alexandria::ForceField pd;
     // More stuff
-    std::vector<std::string> options = {
-        "acmtype", "bondtype", "element", "poltype", "row", "zetatype", rowVSName
-    };
+    const std::vector<std::string> options = {
+              "acmtype", "bondtype", "element", "poltype", "row", "zetatype", rowVSName
+          };
 
     // Check for Point charges
-    std::string ppp("POINT");
+    const std::string ppp("POINT");
     bool bPoint = ppp.compare(qdn2[0]) == 0;
     if (bPoint)
     {
@@ -496,7 +496,7 @@ int gen_ff(int argc, char*argv[])
     {
         // Generate particle type
         auto apType = ActParticle::Atom;
-        std::string elem = table[entry.first]["element"];
+        const std::string elem = table[entry.first]["element"];
         if (elem == "X")
         {
             apType = ActParticle::Shell;
@@ -516,7 +516,7 @@ int gen_ff(int argc, char*argv[])
                 ptp.setOption(opt, table[entry.first][opt]);
             }
         }
-        auto apropsptr = aprops.find(elem);
+        const auto apropsptr = aprops.find(elem);
         if (aprops.end() == apropsptr)
         {
             GMX_THROW(gmx::InvalidInputError(gmx::formatString("Unknown element '%s' of atom type %s", elem.c_str(), entry.first.c_str()).c_str()));
@@ -531,11 +531,11 @@ int gen_ff(int argc, char*argv[])
                                    ForceFieldParameter("Da", mass, 0, 1, mass,
                                                        mass, Mutability::Fixed,
                                                        true, true));
-        double vmin = my_atof(table[entry.first][":q:min"].c_str(), ":q:min");
-        double vmax = my_atof(table[entry.first][":q:max"].c_str(), ":q:max");
-        std::string vunit = table[entry.first][":q:unit"];
+        double vmin = my_atof(table[entry.first][":q:min"], ":q:min");
+        double vmax = my_atof(table[entry.first][":q:max"], ":q:max");
+        const std::string vunit = table[entry.first][":q:unit"];
         Mutability  vmut;
-        std::string qmut(":q:mut");
+        const std::string qmut(":q:mut");
         if (!nameToMutability(table[entry.first][qmut], &vmut))
         {
             GMX_THROW(gmx::InvalidInputError(gmx::formatString("Invalid Mutability '%s' for charge in atomtype %s", table[entry.first][qmut].c_str(), entry.first.c_str()).c_str()));
@@ -552,10 +552,10 @@ int gen_ff(int argc, char*argv[])
         {
             for(const char *pname : { chargeVSName, zetaVSName })
             {
-                std::string prefix = std::string(":") + pname + ":";
+                const std::string prefix = std::string(":") + pname + ":";
                 auto       &row    = table[entry.first];
-                double      pmin   = my_atof(row[prefix+"min"].c_str(), (prefix+"min").c_str());
-                double      pmax   = my_atof(row[prefix+"max"].c_str(), (prefix+"max").c_str());
+                double      pmin   = my_atof(row[prefix+"min"], prefix+"min");
+                double      pmax   = my_atof(row[prefix+"max"], prefix+"max");
                 Mutability  pmut;
                 if (!nameToMutability(row[prefix+"mut"], &pmut))
                 {
@@ -591,7 +591,7 @@ int gen_ff(int argc, char*argv[])
                 }
                 continue;
             }
-            auto value = myatype[key.first];
+            const auto value = myatype[key.first];
             if (atomparams.find(iType) == atomparams.end())
             {
                 atomparams[iType] = {};
@@ -600,7 +600,7 @@ int gen_ff(int argc, char*argv[])
             {
                 nonNegative[iType] = {};
             }
-            auto pName = content[1];
+            const auto& pName = content[1];
             if (atomparams[iType].find(pName) == atomparams[iType].end())
             {
                 atomparams[iType][pName] = {};
@@ -627,7 +627,7 @@ int gen_ff(int argc, char*argv[])
             }
             else
             {
-                double v = my_atof(value.c_str(), content[2].c_str());
+                double v = my_atof(value, content[2]);
 
                 if (content[2] == "min")
                 {
@@ -719,15 +719,15 @@ int gen_ff(int argc, char*argv[])
         fsp->addOption(shellMaxDistanceName, gmx_ftoa(shellMaxDistance));
     }
     // Bonded functions need to be added
-    ForceFieldParameterList bonds(bondfn[0], CanSwap::Yes);
+    const ForceFieldParameterList bonds(bondfn[0], CanSwap::Yes);
     pd.addForces(InteractionType::BONDS, bonds);
-    ForceFieldParameterList angles(anglefn[0], CanSwap::Yes);
+    const ForceFieldParameterList angles(anglefn[0], CanSwap::Yes);
     pd.addForces(InteractionType::ANGLES, angles);
-    ForceFieldParameterList linang("LINEAR_ANGLES", CanSwap::Linear);
+    const ForceFieldParameterList linang("LINEAR_ANGLES", CanSwap::Linear);
     pd.addForces(InteractionType::LINEAR_ANGLES, linang);
-    ForceFieldParameterList idihs("IDIHS", CanSwap::Idih);
+    const ForceFieldParameterList idihs("IDIHS", CanSwap::Idih);
     pd.addForces(InteractionType::IMPROPER_DIHEDRALS, idihs);
-    ForceFieldParameterList pdihs(dihfn[0], CanSwap::Yes);
+    const ForceFieldParameterList pdihs(dihfn[0], CanSwap::Yes);
     pd.addForces(InteractionType::PROPER_DIHEDRALS, pdihs);
     
     // Combination rules after adding the forces and parameters only, since it will look them up.
@@ -737,7 +737,7 @@ int gen_ff(int argc, char*argv[])
     // Virtual sites
     if (opt2bSet("-vs", fnm.size(), fnm.data()))
     {
-        auto fns = opt2fns("-vs", fnm.size(), fnm.data());
+        const auto fns = opt2fns("-vs", fnm.size(), fnm.data());
         add_vsites(std::vector<std::string>(fns.begin(), fns.end()), &pd);
     }
     // The charge distributions and the options of COULOMB are those of the
@@ -751,7 +751,7 @@ int gen_ff(int argc, char*argv[])
     }
     pd.updateTimeStamp();
     pd.updateCheckSum();
-    writeForceField(opt2fn("-o", fnm.size(), fnm.data()), &pd, 0);
+    writeForceField(opt2fn("-o", fnm.size(), fnm.data()), &pd, false);
 
     return 0;
 }

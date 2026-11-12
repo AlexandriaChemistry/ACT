@@ -62,7 +62,7 @@ class ForceFieldParameter
 {
  public:
     //! \brief default constructor
-    ForceFieldParameter() {}
+    ForceFieldParameter() = default;
     
     /*! \brief Constructor initiating all parameters.
      *

@@ -78,7 +78,7 @@ static std::list<std::string> particleOptions =
 
 const std::string &ParticleType::optionValue(const std::string &type) const
 {
-    auto pm = option_.find(type);
+    const auto pm = option_.find(type);
     if (pm == option_.end())
     {
         GMX_THROW(gmx::InternalError(gmx::formatString("No such option type %s", type.c_str()).c_str()));
@@ -149,7 +149,7 @@ Identifier ParticleType::interactionTypeToIdentifier(InteractionType itype) cons
 
 double ParticleType::paramValue(const std::string &type) const
 {
-    auto pm = parameterMap_.find(type);
+    const auto pm = parameterMap_.find(type);
     if (pm == parameterMap_.end())
     {
         GMX_THROW(gmx::InternalError(gmx::formatString("No such parameter type %s", type.c_str()).c_str()));
@@ -177,7 +177,7 @@ ForceFieldParameter *ParticleType::parameter(const std::string &type)
 
 double ParticleType::mass() const
 {
-    std::string mass("mass");
+    const std::string mass("mass");
     if (hasParameter(mass))
     {
         return paramValue(mass);
@@ -187,7 +187,7 @@ double ParticleType::mass() const
 
 double ParticleType::charge() const
 {
-    std::string charge("charge");
+    const std::string charge("charge");
     if (hasParameter(charge))
     {
         return paramValue(charge);
@@ -224,7 +224,7 @@ static int myatoi(const std::string &str)
 
 int ParticleType::atomnumber() const
 {
-    std::string anr("atomnumber");
+    const std::string anr("atomnumber");
     if (hasOption(anr))
     {
         return myatoi(optionValue(anr));
@@ -234,7 +234,7 @@ int ParticleType::atomnumber() const
 
 int ParticleType::row() const
 {
-    std::string anr("row");
+    const std::string anr("row");
     if (hasOption(anr))
     {
         return myatoi(optionValue(anr));
@@ -249,7 +249,7 @@ int ParticleType::rowVS() const
 
 std::string ParticleType::element() const
 {
-    std::string elem("element");
+    const std::string elem("element");
     if (hasOption(elem))
     {
         return optionValue(elem);

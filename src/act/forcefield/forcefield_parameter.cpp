@@ -75,8 +75,8 @@ void ForceFieldParameter::setValue(double value)
             double newval = std::min(maximum_, std::max(minimum_, value));
             if (strict_)
             {
-                auto buf = gmx::formatString("Can not modify value to %g as it would be outside its bounds of %g-%g. Setting it to %g %s",
-                                             value, minimum_, maximum_, newval, unit_.c_str());
+                const auto buf = gmx::formatString("Can not modify value to %g as it would be outside its bounds of %g-%g. Setting it to %g %s",
+                                                   value, minimum_, maximum_, newval, unit_.c_str());
                 GMX_THROW(gmx::InvalidInputError(buf));
             }
             value_ = newval;
@@ -86,8 +86,8 @@ void ForceFieldParameter::setValue(double value)
     case Mutability::Fixed:
         if (strict_)
         {
-            auto buf = gmx::formatString("Cannot set parameter value to %g %s since it has mutability %s",
-                                         value, unit_.c_str(), mutabilityName(mutability_).c_str());
+            const auto buf = gmx::formatString("Cannot set parameter value to %g %s since it has mutability %s",
+                                               value, unit_.c_str(), mutabilityName(mutability_).c_str());
             GMX_THROW(gmx::InvalidInputError(buf));
         }
         break;
@@ -103,7 +103,7 @@ void ForceFieldParameter::setUncertainty(double uncertainty)
     }
     else if (strict_)
     {
-        auto buf = gmx::formatString("Cannot modify uncertainty since the parameter is fixed/dependent");
+        const auto buf = gmx::formatString("Cannot modify uncertainty since the parameter is fixed/dependent");
         GMX_THROW(gmx::InternalError(buf));
     }
 }
@@ -116,7 +116,7 @@ void ForceFieldParameter::setNtrain(unsigned int ntrain)
     }
     else if (strict_)
     {
-        auto buf = gmx::formatString("Cannot modify ntrain since the parameter is fixed/dependent");
+        const auto buf = gmx::formatString("Cannot modify ntrain since the parameter is fixed/dependent");
         GMX_THROW(gmx::InternalError(buf));
     }
 }

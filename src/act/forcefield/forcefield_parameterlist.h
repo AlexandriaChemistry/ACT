@@ -102,7 +102,7 @@ class ForceFieldParameterList
 {
  public:
     //! Empty constructor for helper nodes
-    ForceFieldParameterList() {};
+    ForceFieldParameterList() = default;
     
     /*! \brief Constructor
      *
@@ -153,7 +153,7 @@ class ForceFieldParameterList
      */
     void removeOption(const std::string &option)
     {
-        auto myopt = options_.find(option);
+        const auto myopt = options_.find(option);
         if (myopt != options_.end())
         {
             options_.erase(myopt);
@@ -168,10 +168,10 @@ class ForceFieldParameterList
      */
     const std::string &optionValue(const std::string &option) const
     {
-        auto ov = options_.find(option);
+        const auto ov = options_.find(option);
         if (ov == options_.end())
         {
-            auto buf = gmx::formatString("Unknown option %s", option.c_str());
+            const auto buf = gmx::formatString("Unknown option %s", option.c_str());
             GMX_THROW(gmx::InvalidInputError(buf.c_str()));
         }
         return ov->second;
@@ -227,10 +227,10 @@ class ForceFieldParameterList
      */
     const ParamCombRule &combinationRuleConst(const std::string &param) const
     {
-        auto ov = combrules_.find(param);
+        const auto ov = combrules_.find(param);
         if (ov == combrules_.end())
         {
-            auto buf = gmx::formatString("Unknown parameter %s", param.c_str());
+            const auto buf = gmx::formatString("Unknown parameter %s", param.c_str());
             GMX_THROW(gmx::InvalidInputError(buf.c_str()));
         }
         return ov->second;
@@ -244,10 +244,10 @@ class ForceFieldParameterList
      */
     ParamCombRule *combinationRule(const std::string &param)
     {
-        auto ov = combrules_.find(param);
+        const auto ov = combrules_.find(param);
         if (ov == combrules_.end())
         {
-            auto buf = gmx::formatString("Unknown parameter %s", param.c_str());
+            const auto buf = gmx::formatString("Unknown parameter %s", param.c_str());
             GMX_THROW(gmx::InvalidInputError(buf.c_str()));
         }
         return &ov->second;
@@ -316,7 +316,7 @@ class ForceFieldParameterList
     size_t numberOfParameters() const { return parameters_.size(); }
 
     //! \return whether or not the parameter map is empty
-    bool empty() const { return parameters_.size() == 0; }
+    bool empty() const { return parameters_.empty(); }
     
     /*! \brief Look up map of parameters
      * \param[in] identifier Name of the atomtype or bond

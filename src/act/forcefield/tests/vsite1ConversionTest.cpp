@@ -55,7 +55,7 @@ protected:
 
     void SetUp() override
     {
-        auto fn = gmx::test::TestFileManager::getInputFilePath("forcefields/PG-pol-ions.xml");
+        const auto fn = gmx::test::TestFileManager::getInputFilePath("forcefields/PG-pol-ions.xml");
         readForceField(fn, &pd_, nullptr, false);
         ASSERT_TRUE(pd_.hasParticleType("v1Na+"));
         ASSERT_TRUE(pd_.hasParticleType("v1K+"));
@@ -73,7 +73,7 @@ protected:
     ForceFieldParameter *parameter(InteractionType itype, const std::string &id, const std::string &type)
     {
         auto params = pd_.findForces(itype)->parametersNoRemoval();
-        auto pp     = params->find(Identifier(id));
+        const auto pp     = params->find(Identifier(id));
         EXPECT_TRUE(params->end() != pp) << id;
         return &pp->second.find(type)->second;
     }
@@ -143,7 +143,7 @@ TEST_F(Vsite1ConversionTest, VsiteWithShellKept)
 // Test: A virtual site that is part of another interaction is kept
 TEST_F(Vsite1ConversionTest, VsiteWithBondKept)
 {
-    ForceFieldParameter kb("kJ/mol/nm2", 1000, 0, 0, 0, 2000, Mutability::Fixed, true, true);
+    const ForceFieldParameter kb("kJ/mol/nm2", 1000, 0, 0, 0, 2000, Mutability::Fixed, true, true);
     pd_.findForces(InteractionType::BONDS)->addParameter(Identifier({ "Na+", "v1Na+" }, { 1 }, CanSwap::Yes),
                                                          "kb", kb);
     convert();
@@ -154,7 +154,7 @@ TEST_F(Vsite1ConversionTest, VsiteWithBondKept)
 // Test: A virtual site type on two atom types becomes a second charge of both
 TEST_F(Vsite1ConversionTest, SharedVsiteConverted)
 {
-    ForceFieldParameter vs1a("", 1, 0, 0, 1, 1, Mutability::Fixed, true, false);
+    const ForceFieldParameter vs1a("", 1, 0, 0, 1, 1, Mutability::Fixed, true, false);
     pd_.findForces(InteractionType::VSITE1)->addParameter(Identifier(InteractionType::VSITE1, "Li+!v1Na+", CanSwap::Yes),
                                                           "vs1a", vs1a);
     // Li+ has its own virtual site, which cannot be on it as well

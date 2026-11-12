@@ -52,10 +52,10 @@ static void checkParameter(const std::string            &where,
                            const ForceFieldParameter    &p,
                            std::vector<ForceFieldIssue> *issues)
 {
-    auto add = [&](ForceFieldIssue::Kind kind, const std::string &text, bool repaired)
-    {
-        issues->push_back({ kind, where, identifier, type, text, repaired });
-    };
+    const auto add = [&](ForceFieldIssue::Kind kind, const std::string &text, bool repaired)
+          {
+              issues->push_back({ kind, where, identifier, type, text, repaired });
+          };
     if (p.minimum() > p.maximum())
     {
         add(ForceFieldIssue::Kind::MinimumAboveMaximum,

@@ -79,14 +79,14 @@ bool ForceField::verifyCheckSum(MsgHandler        *msgHandler,
 std::vector<std::string> ForceField::info() const
 {
     std::vector<std::string> out;
-    out.push_back("");
-    out.push_back("Force field information");
-    out.push_back("=======================");
+    out.emplace_back("");
+    out.emplace_back("Force field information");
+    out.emplace_back("=======================");
     out.push_back(gmx::formatString("Filename:    %s", filename_.c_str()));
     out.push_back(gmx::formatString("CheckSum:    %s", checkSum_.c_str()));
     out.push_back(gmx::formatString("TimeStamp:   %s", timeStamp_.c_str()));
     out.push_back(gmx::formatString("Polarizable: %s", polarizable() ? "True" : "False"));
-    out.push_back("Interactions:");
+    out.emplace_back("Interactions:");
     for(const auto &fs : forces_)
     {
         out.push_back(gmx::formatString("  %s function %s #entries %zu", interactionTypeToString(fs.first).c_str(),
@@ -104,13 +104,13 @@ std::vector<std::string> ForceField::info() const
                                             cr.second.ffplConst().value()));
         }
     }
-    out.push_back("");
+    out.emplace_back("");
     return out;
 }
 
 bool ForceField::verifyCheckSum(MsgHandler *msgHandler)
 {
-    std::string checkSum = forcefieldCheckSum(this);
+    const std::string checkSum = forcefieldCheckSum(this);
     return verifyCheckSum(msgHandler, checkSum);
 }
 
@@ -121,7 +121,7 @@ void ForceField::updateCheckSum()
 
 void ForceField::updateTimeStamp()
 {
-    auto tnow    = std::chrono::system_clock::now();
+    const auto tnow    = std::chrono::system_clock::now();
     auto ttt     = std::chrono::system_clock::to_time_t(tnow);
     std::tm *now = std::localtime(&ttt);
     timeStamp_   = gmx::formatString("%d-%02d-%02d %02d:%02d:%02d",
@@ -132,9 +132,9 @@ void ForceField::updateTimeStamp()
 
 void ForceField::setFilename(const std::string &fn2)
 {
-    GMX_RELEASE_ASSERT((fn2.size() > 0),
+    GMX_RELEASE_ASSERT((!fn2.empty()),
                        "Trying to set empty ForceField filename");
-    if (0 != filename_.size())
+    if (!filename_.empty())
     {
         fprintf(stderr, "Changing ForceField filename_ from %s to %s\n",
                 filename_.c_str(), fn2.c_str());
@@ -177,16 +177,16 @@ bool ForceField::typeToInteractionType(const std::string &type,
     size_t colon = type.find(":");
     if (colon != std::string::npos)
     {
-        auto ittt = type.substr(0, colon);
+        const auto ittt = type.substr(0, colon);
         InteractionType itp;
         if (stringToInteractionType(ittt, &itp))
         {
-            auto iii  = type2Itype_.find(itp);
+            const auto iii  = type2Itype_.find(itp);
             if (iii == type2Itype_.end())
             {
                 GMX_THROW(gmx::InvalidInputError(gmx::formatString("No such interaction type '%s' in force field", ittt.c_str()).c_str()));
             }
-            auto ptype = type.substr(colon+1, type.size());
+            const auto ptype = type.substr(colon+1, type.size());
             if (iii->second.find(ptype) == iii->second.end())
             {
                 GMX_THROW(gmx::InvalidInputError(gmx::formatString("No such parameter '%s' for interaction type '%s' in force field",
@@ -242,7 +242,7 @@ void ForceField::guessChargeGenerationAlgorithm()
 
 void ForceField::checkForPolarizability()
 {
-    auto f = forces_.find(InteractionType::POLARIZATION);
+    const auto f = forces_.find(InteractionType::POLARIZATION);
     
     polarizable_ = (f != forces_.end() && f->second.numberOfParameters() > 0);
 }
@@ -311,7 +311,7 @@ static std::vector<int> scaleIndices(Potential pot)
 static bool scalesEnergy(Potential pot, const std::string &name)
 {
     const auto &names = potentialToParameterName(pot);
-    auto        scale = scaleIndices(pot);
+    const auto  scale = scaleIndices(pot);
     bool        scales = scale.empty();
     for(auto k : scale)
     {
@@ -390,14 +390,14 @@ std::map<std::string, std::string> ForceField::particleTypesOptions() const
 
 void ForceField::convertCoulomb(MsgHandler *msghandler)
 {
-    auto conflict = [this](const std::string &what)
-    {
-        GMX_THROW(gmx::InvalidInputError(gmx::formatString("%s in %s", what.c_str(), filename_.c_str()).c_str()));
-    };
+    const auto conflict = [this](const std::string &what)
+          {
+              GMX_THROW(gmx::InvalidInputError(gmx::formatString("%s in %s", what.c_str(), filename_.c_str()).c_str()));
+          };
     // The number of exclusions of the corrections is not used
     for(auto itype : { InteractionType::VDWCORRECTION, InteractionType::INDUCTIONCORRECTION })
     {
-        auto fs = forces_.find(itype);
+        const auto fs = forces_.find(itype);
         if (forces_.end() != fs)
         {
             fs->second.removeOption("nexcl");
@@ -406,7 +406,7 @@ void ForceField::convertCoulomb(MsgHandler *msghandler)
     // The number of exclusions of both COULOMB and VANDERWAALS
     for(auto itype : { InteractionType::ELECTROSTATICS, InteractionType::VDW })
     {
-        auto fs = forces_.find(itype);
+        const auto fs = forces_.find(itype);
         if (forces_.end() == fs || !fs->second.optionExists("nexcl"))
         {
             continue;
@@ -420,7 +420,7 @@ void ForceField::convertCoulomb(MsgHandler *msghandler)
         nexcl_ = nexcl;
         fs->second.removeOption("nexcl");
     }
-    auto fq = forces_.find(InteractionType::ELECTROSTATICS);
+    const auto fq = forces_.find(InteractionType::ELECTROSTATICS);
     if (forces_.end() == fq)
     {
         return;
@@ -454,7 +454,7 @@ void ForceField::convertCoulomb(MsgHandler *msghandler)
         {
             continue;
         }
-        auto ztype = pt.second.interactionTypeToIdentifier(InteractionType::ELECTROSTATICS);
+        const auto ztype = pt.second.interactionTypeToIdentifier(InteractionType::ELECTROSTATICS);
         if (!fsCoul.parameterExists(ztype))
         {
             continue;
@@ -494,13 +494,13 @@ Potential ForceField::potential(InteractionType itype) const
     {
         return chargeDistributionTypeToPotential(chargeDistribution());
     }
-    auto fs = forces_.find(itype);
+    const auto fs = forces_.find(itype);
     return forces_.end() == fs ? Potential::NONE : fs->second.potential();
 }
 
 void ForceField::convertVsite1(MsgHandler *msghandler)
 {
-    auto fv = forces_.find(InteractionType::VSITE1);
+    const auto fv = forces_.find(InteractionType::VSITE1);
     if (forces_.end() == fv)
     {
         return;
@@ -510,7 +510,7 @@ void ForceField::convertVsite1(MsgHandler *msghandler)
     for(auto itype : { InteractionType::VDW, InteractionType::VDWCORRECTION,
                        InteractionType::INDUCTIONCORRECTION })
     {
-        auto fs = forces_.find(itype);
+        const auto fs = forces_.find(itype);
         if (forces_.end() != fs && !fs->second.parametersConst().empty() &&
             fs->second.combinationRules().empty())
         {
@@ -534,41 +534,41 @@ void ForceField::convertVsite1(MsgHandler *msghandler)
     const std::set<InteractionType> mustBeZero = { InteractionType::VDW, InteractionType::VDWCORRECTION,
                                                    InteractionType::INDUCTIONCORRECTION };
     // The names by which the parameters of other interaction types refer to a particle type
-    auto names = [](const ParticleType &pt)
-    {
-        std::set<std::string> nm = { pt.id().id() };
-        for(const auto &opt : pt.optionsConst())
-        {
-            if (opt.first != "element" && opt.first != "atomnumber" && opt.first != "row" &&
-                opt.first != rowVSName)
-            {
-                nm.insert(opt.second);
-            }
-        }
-        return nm;
-    };
+    const auto names = [](const ParticleType &pt)
+          {
+              std::set<std::string> nm = { pt.id().id() };
+              for(const auto &opt : pt.optionsConst())
+              {
+                  if (opt.first != "element" && opt.first != "atomnumber" && opt.first != "row" &&
+                      opt.first != rowVSName)
+                  {
+                      nm.insert(opt.second);
+                  }
+              }
+              return nm;
+          };
     // Whether an identifier refers to one of the names
-    auto refers = [](const Identifier &id, const std::set<std::string> &nm)
-    {
-        for(const auto &a : id.atoms())
-        {
-            if (nm.count(a) > 0)
-            {
-                return true;
-            }
-        }
-        return false;
-    };
+    const auto refers = [](const Identifier &id, const std::set<std::string> &nm)
+          {
+              for(const auto &a : id.atoms())
+              {
+                  if (nm.count(a) > 0)
+                  {
+                      return true;
+                  }
+              }
+              return false;
+          };
     // The virtual site type of each atom type, if it can be converted
     std::map<std::string, std::string> vsiteOf;
     // The number of VSITE1 entries of each virtual site type
     std::map<std::string, int>         nuse;
     // The virtual sites that are kept, with the reason
     std::map<std::string, std::string> rejected;
-    auto reject = [&rejected](const std::string &vs, const std::string &why)
-    {
-        rejected.insert({ vs, why });
-    };
+    const auto reject = [&rejected](const std::string &vs, const std::string &why)
+          {
+              rejected.insert({ vs, why });
+          };
     for(const auto &entry : fv->second.parametersConst())
     {
         const auto &atoms = entry.first.atoms();
@@ -597,7 +597,7 @@ void ForceField::convertVsite1(MsgHandler *msghandler)
     for(const auto &vs : vsites)
     {
         const auto *pv = findParticleType(vs);
-        auto        nm = names(*pv);
+        const auto  nm = names(*pv);
         for(const auto &pt : alexandria_)
         {
             if (vsites.count(pt.first.id()) == 0)
@@ -738,22 +738,22 @@ void ForceField::expandSecondCharges(MsgHandler *msghandler)
     }
     auto *fv = findForces(InteractionType::VSITE1);
     // Whether a name is used by a particle type or by parameters
-    auto used = [this](const std::string &name)
-    {
-        if (hasParticleType(name))
-        {
-            return true;
-        }
-        for(const auto &fs : forces_)
-        {
-            if (fs.second.parameterExists(Identifier(name)) ||
-                fs.second.parameterExists(Identifier(name + "_z")))
-            {
-                return true;
-            }
-        }
-        return false;
-    };
+    const auto used = [this](const std::string &name)
+          {
+              if (hasParticleType(name))
+              {
+                  return true;
+              }
+              for(const auto &fs : forces_)
+              {
+                  if (fs.second.parameterExists(Identifier(name)) ||
+                      fs.second.parameterExists(Identifier(name + "_z")))
+                  {
+                      return true;
+                  }
+              }
+              return false;
+          };
     for(const auto &atype : atypes)
     {
         auto       *pa = findParticleType(atype);
@@ -776,12 +776,12 @@ void ForceField::expandSecondCharges(MsgHandler *msghandler)
         for(auto itype : { InteractionType::VDW, InteractionType::VDWCORRECTION,
                            InteractionType::INDUCTIONCORRECTION })
         {
-            auto fs = forces_.find(itype);
+            const auto fs = forces_.find(itype);
             if (forces_.end() == fs || !pa->hasInteractionType(itype))
             {
                 continue;
             }
-            auto pid = pa->interactionTypeToIdentifier(itype);
+            const auto pid = pa->interactionTypeToIdentifier(itype);
             if (!fs->second.parameterExists(pid))
             {
                 continue;
@@ -828,7 +828,7 @@ void ForceField::addParticleType(const ParticleType &ptp)
 void ForceField::addForces(InteractionType                iType,
                            const ForceFieldParameterList &forces)
 {
-    auto f     = forces_.find(iType);
+    const auto f     = forces_.find(iType);
     
     GMX_RELEASE_ASSERT(f == forces_.end(),
                        gmx::formatString("Will not add a second ForceFieldParameterList for %s\n",
@@ -873,7 +873,7 @@ void ForceField::addSymcharges(const std::string &central,
     }
     if (i == symcharges_.size())
     {
-        Symcharges symcharges(central, attached, numattach);
+        const Symcharges symcharges(central, attached, numattach);
         symcharges_.push_back(symcharges);
     }
 }
@@ -888,7 +888,7 @@ CommunicationStatus ForceField::Send(const CommunicationRecord *cr, int dest)
         cr->send(dest, timeStamp_);
         cr->send(dest, static_cast<int>(ChargeGenerationAlgorithm_));
         cr->send(dest, polarizable_ ? 1 : 0);
-        auto ptOptions = particleTypesOptions();
+        const auto ptOptions = particleTypesOptions();
         cr->send(dest, ptOptions.size());
         for(const auto &opt : ptOptions)
         {
@@ -912,7 +912,7 @@ CommunicationStatus ForceField::Send(const CommunicationRecord *cr, int dest)
             cr->send(dest, forces_.size());
             for (auto &force : forces_)
             {
-                std::string key(interactionTypeToString(force.first));
+                const std::string key(interactionTypeToString(force.first));
                 cr->send(dest, key);
                 cs = force.second.Send(cr, dest);
                 if (CommunicationStatus::OK != cs)
@@ -1194,7 +1194,7 @@ void ForceField::checkConsistency(MsgHandler *msgHandler) const
         nerror += 1;
     }
     auto itype = InteractionType::ELECTRONEGATIVITYEQUALIZATION;
-    auto eem = findForcesConst(itype);
+    const auto eem = findForcesConst(itype);
     for (const auto &atp : alexandria_)
     {
         if (!atp.second.hasInteractionType(itype))
@@ -1218,7 +1218,7 @@ void ForceField::checkConsistency(MsgHandler *msgHandler) const
         }
         else
         {
-            auto acmtype = atp.second.interactionTypeToIdentifier(InteractionType::ELECTRONEGATIVITYEQUALIZATION);
+            const auto acmtype = atp.second.interactionTypeToIdentifier(InteractionType::ELECTRONEGATIVITYEQUALIZATION);
             // Check whether the ACM parameters are present
             if (!eem.parameterExists(acmtype))
             {
@@ -1272,7 +1272,7 @@ template <> bool ffOption(const ForceField  &pd,
     {
         return false;
     }
-    auto fs = pd.findForcesConst(itype);
+    const auto& fs = pd.findForcesConst(itype);
     if (!fs.optionExists(name))
     {
         return false;
@@ -1292,7 +1292,7 @@ template <> bool ffOption(const ForceField  &pd,
     {
         return false;
     }
-    *value = my_atoi(vstr.c_str(), name.c_str());
+    *value = my_atoi(vstr, name);
     return true;
 }
 
@@ -1307,7 +1307,7 @@ template <> bool ffOption(const ForceField  &pd,
     {
         return false;
     }
-    *value = my_atof(vstr.c_str(), name.c_str());
+    *value = my_atof(vstr, name);
     return true;
 }
 

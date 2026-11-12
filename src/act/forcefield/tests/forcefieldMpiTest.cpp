@@ -71,9 +71,9 @@ protected:
     //! \return the contents of the force field written to a file of this rank
     std::string written(ForceField *pd, const std::string &name)
     {
-        auto fileName = fileManager_.getTemporaryFilePath(gmx::formatString("%s%d.xml", name.c_str(), cr_.rank()));
+        const auto fileName = fileManager_.getTemporaryFilePath(gmx::formatString("%s%d.xml", name.c_str(), cr_.rank()));
         writeForceField(fileName, pd, false);
-        std::ifstream     in(fileName);
+        const std::ifstream     in(fileName);
         std::stringstream ss;
         ss << in.rdbuf();
         return ss.str();

@@ -74,7 +74,7 @@ protected:
     //! \return the mutability of chi for an ACM type
     static Mutability chiMutability(const ForceField &pd, const std::string &acmtype)
     {
-        auto fs = pd.findForcesConst(InteractionType::ELECTRONEGATIVITYEQUALIZATION);
+        const auto& fs = pd.findForcesConst(InteractionType::ELECTRONEGATIVITYEQUALIZATION);
         return fs.findParameterTypeConst(Identifier(acmtype), "chi").mutability();
     }
 
@@ -157,7 +157,7 @@ protected:
 // several identifiers at once
 TEST_F(EditFFTest, MutabilityOfSeveralIdentifiers)
 {
-    auto output = fileManager().getTemporaryFilePath("edited.xml");
+    const auto output = fileManager().getTemporaryFilePath("edited.xml");
     gmx::test::CommandLine cmd;
     cmd.append("edit_ff");
     cmd.addOption("-ff", fileManager().getInputFilePath("forcefields/ACM-g1.xml"));
@@ -180,7 +180,7 @@ TEST_F(EditFFTest, MutabilityOfSeveralIdentifiers)
 // force field, the others do not change
 TEST_F(EditFFTest, CombinationRule)
 {
-    auto pd = read(run(input_, { { "-cr", "VANDERWAALS:sigma:Arithmetic" } }));
+    const auto pd = read(run(input_, { { "-cr", "VANDERWAALS:sigma:Arithmetic" } }));
     const auto &vdw = pd.findForcesConst(InteractionType::VDW);
     EXPECT_EQ(CombRule::Arithmetic, vdw.combinationRuleConst("sigma").rule());
     EXPECT_EQ(CombRule::Geometric, vdw.combinationRuleConst("epsilon").rule());
@@ -196,8 +196,8 @@ static const ForceFieldParameter &particleCharge(const ForceField &pd, const std
 // the other particle types keep theirs
 TEST_F(EditFFTest, ParticleChargeForced)
 {
-    auto ref = read(input_);
-    auto pd  = read(run(input_, { { "-p", "charge" }, { "-a", "Be2+" }, { "-val", "1.5" }, { "-force", "" } }));
+    const auto ref = read(input_);
+    const auto pd  = read(run(input_, { { "-p", "charge" }, { "-a", "Be2+" }, { "-val", "1.5" }, { "-force", "" } }));
     EXPECT_DOUBLE_EQ(1.5, particleCharge(pd, "Be2+").value());
     EXPECT_DOUBLE_EQ(particleCharge(ref, "Mg2+").value(), particleCharge(pd, "Mg2+").value());
 }
@@ -206,18 +206,18 @@ TEST_F(EditFFTest, ParticleChargeForced)
 // value does not change
 TEST_F(EditFFTest, ParticleChargeBounds)
 {
-    auto ref = read(input_);
-    auto pd  = read(run(input_, { { "-p", "charge" }, { "-a", "Be2+" }, { "-min", "1" }, { "-max", "3" } }));
+    const auto ref = read(input_);
+    const auto pd  = read(run(input_, { { "-p", "charge" }, { "-a", "Be2+" }, { "-min", "1" }, { "-max", "3" } }));
     expectRange(particleCharge(pd, "Be2+"), 1, particleCharge(ref, "Be2+").value(), 3);
 }
 
 // Test: A new value of one parameter of one identifier, the others do not change
 TEST_F(EditFFTest, Value)
 {
-    auto pd = read(run(input_, { { "-p", "chi" }, { "-a", "h_z" }, { "-val", "3.9" } }));
+    const auto pd = read(run(input_, { { "-p", "chi" }, { "-a", "h_z" }, { "-val", "3.9" } }));
     expectRange(acm(pd, "h_z", "chi"), 2.8, 3.9, 4.375);
     EXPECT_DOUBLE_EQ(14, acm(pd, "h_z", "eta").value());
-    auto ref = read(input_);
+    const auto ref = read(input_);
     EXPECT_DOUBLE_EQ(acm(ref, "f_z", "chi").value(), acm(pd, "f_z", "chi").value());
 }
 
@@ -233,8 +233,8 @@ TEST_F(EditFFTest, ValueOutsideBounds)
 // Test: Scaling a value, of several identifiers at once
 TEST_F(EditFFTest, Scale)
 {
-    auto pd  = read(run(input_, { { "-p", "eta" }, { "-a", "h_z f_z" }, { "-scale", "1.1" } }));
-    auto ref = read(input_);
+    const auto pd  = read(run(input_, { { "-p", "eta" }, { "-a", "h_z f_z" }, { "-scale", "1.1" } }));
+    const auto ref = read(input_);
     expectRealEq(1.1*14, acm(pd, "h_z", "eta").value());
     expectRealEq(1.1*acm(ref, "f_z", "eta").value(), acm(pd, "f_z", "eta").value());
 }
@@ -263,7 +263,7 @@ TEST_F(EditFFTest, Limits)
     for (const char *factor : { "0.5", "2" })
     {
         SCOPED_TRACE(factor);
-        auto pd = read(run(input_, { { "-p", "chi" }, { "-a", "h_z" }, { "-limits", factor } }));
+        const auto pd = read(run(input_, { { "-p", "chi" }, { "-a", "h_z" }, { "-limits", factor } }));
         expectRange(acm(pd, "h_z", "chi"), 1.75, 3.5, 7);
     }
 }
@@ -271,11 +271,11 @@ TEST_F(EditFFTest, Limits)
 // Test: Stretching the bounds of a parameter at its minimum or maximum
 TEST_F(EditFFTest, Stretch)
 {
-    auto atMinimum = run(input_, { { "-p", "chi" }, { "-a", "h_z" }, { "-min", "3.5" } }, "minimum.xml");
+    const auto atMinimum = run(input_, { { "-p", "chi" }, { "-a", "h_z" }, { "-min", "3.5" } }, "minimum.xml");
     auto pd        = read(run(atMinimum, { { "-p", "chi" }, { "-a", "h_z" }, { "-stretch", "" } }));
     // The range of 3.5 to 4.375 is extended by a fifth below
     expectRange(acm(pd, "h_z", "chi"), 3.5 - 0.2*0.875, 3.5, 4.375);
-    auto atMaximum = run(input_, { { "-p", "chi" }, { "-a", "h_z" }, { "-val", "7" } }, "maximum.xml");
+    const auto atMaximum = run(input_, { { "-p", "chi" }, { "-a", "h_z" }, { "-val", "7" } }, "maximum.xml");
     pd             = read(run(atMaximum, { { "-p", "chi" }, { "-a", "h_z" }, { "-stretch", "" } }, "stretched.xml"));
     // The range of 2.8 to 7 is extended by a fifth above
     expectRange(acm(pd, "h_z", "chi"), 2.8, 7, 7 + 0.2*4.2);
@@ -286,10 +286,10 @@ TEST_F(EditFFTest, Stretch)
 TEST_F(EditFFTest, FixedParameter)
 {
     // The width of the charge distribution is a parameter of the particle type
-    auto unchanged = run(input_, { { "-p", "zeta" }, { "-a", "h" }, { "-val", "25" } });
+    const auto unchanged = run(input_, { { "-p", "zeta" }, { "-a", "h" }, { "-val", "25" } });
     EXPECT_FALSE(std::filesystem::exists(unchanged));
     auto pd   = read(run(input_, { { "-p", "zeta" }, { "-a", "h" }, { "-val", "25" }, { "-force", "" } }));
-    auto zeta = pd.findParticleType("h")->parameterConst(zetaName);
+    const auto zeta = pd.findParticleType("h")->parameterConst(zetaName);
     EXPECT_DOUBLE_EQ(25, zeta.value());
     EXPECT_EQ(Mutability::Fixed, zeta.mutability());
     // A file is written with -write even without changes
@@ -300,8 +300,8 @@ TEST_F(EditFFTest, FixedParameter)
 // after it, not those of its subtypes, which other types may share
 TEST_F(EditFFTest, Remove)
 {
-    auto pd  = read(run(input_, { { "-a", "f" }, { "-del", "" } }));
-    auto ref = read(input_);
+    const auto pd  = read(run(input_, { { "-a", "f" }, { "-del", "" } }));
+    const auto ref = read(input_);
     EXPECT_TRUE(ref.hasParticleType("f"));
     EXPECT_FALSE(pd.hasParticleType("f"));
     EXPECT_TRUE(pd.hasParticleType("f_s"));
@@ -324,7 +324,7 @@ TEST_F(EditFFTest, Dump)
     std::sort(lines.begin(), lines.end());
     // The EEM group includes the widths of the charges, which are those of
     // the particle types
-    std::vector<std::string> expected = { "chi|h_z|3.5", "eta|h_z|14", "zeta|h|30" };
+    const std::vector<std::string> expected = { "chi|h_z|3.5", "eta|h_z|14", "zeta|h|30" };
     EXPECT_EQ(expected, lines);
 }
 
@@ -366,13 +366,13 @@ static void writeBrokenForceField(const std::string &input, const std::string &o
 {
     std::ifstream in(input);
     std::string   text((std::istreambuf_iterator<char>(in)), std::istreambuf_iterator<char>());
-    auto replace = [&text](const std::string &from, const std::string &to)
-    {
-        auto pos = text.find(from);
-        ASSERT_NE(std::string::npos, pos) << from;
-        ASSERT_EQ(std::string::npos, text.find(from, pos + 1)) << "not unique: " << from;
-        text.replace(pos, from.size(), to);
-    };
+    const auto replace = [&text](const std::string &from, const std::string &to)
+          {
+              auto pos = text.find(from);
+              ASSERT_NE(std::string::npos, pos) << from;
+              ASSERT_EQ(std::string::npos, text.find(from, pos + 1)) << "not unique: " << from;
+              text.replace(pos, from.size(), to);
+          };
     const std::string chi = "      <parameter type=\"chi\" unit=\"eV\" value=\"3.5\" uncertainty=\"0\" minimum=\"2.8\" maximum=\"4.375\" ntrain=\"1\" mutability=\"Bounded\" nonnegative=\"yes\"/>\n";
     const std::string eta = "      <parameter type=\"eta\" unit=\"eV/e\" value=\"14\" uncertainty=\"0\" minimum=\"11.2\" maximum=\"17.5\" ntrain=\"1\" mutability=\"Bounded\" nonnegative=\"yes\"/>\n";
     std::string eta13 = eta;
@@ -417,10 +417,10 @@ TEST_F(EditFFTest, ValidateClean)
 // Test: Each kind of problem is found, with what reading did about it
 TEST_F(EditFFTest, ValidateFindsProblems)
 {
-    auto broken = fileManager().getTemporaryFilePath("broken.xml");
+    const auto broken = fileManager().getTemporaryFilePath("broken.xml");
     writeBrokenForceField(input_, broken);
-    auto pd     = read(broken);
-    auto issues = validateForceField(pd);
+    const auto pd     = read(broken);
+    const auto issues = validateForceField(pd);
     // The values of chi of h_z and of the mass of h were set to their maximum
     EXPECT_EQ(2u, countIssues(issues, ForceFieldIssue::Kind::ResetToBounds));
     EXPECT_EQ(2u, countIssues(issues, ForceFieldIssue::Kind::Duplicate));
@@ -441,7 +441,7 @@ TEST_F(EditFFTest, ValidateFindsProblems)
     expectRealEq(5, acm(pd, "h_z", "chi").valueBeforeReset());
     expectRealEq(14, acm(pd, "h_z", "eta").value());
     expectRealEq(0, particleCharge(pd, "h").value());
-    auto summary = repairedIssuesSummary(issues);
+    const auto summary = repairedIssuesSummary(issues);
     EXPECT_NE(std::string::npos, summary.find("2 parameter(s) were outside their bounds")) << summary;
     EXPECT_NE(std::string::npos, summary.find("2 were defined more than once")) << summary;
     EXPECT_NE(std::string::npos, summary.find("edit_ff -validate")) << summary;
@@ -451,10 +451,10 @@ TEST_F(EditFFTest, ValidateFindsProblems)
 // reading repairs, the others are left
 TEST_F(EditFFTest, ValidateWrites)
 {
-    auto broken = fileManager().getTemporaryFilePath("broken.xml");
+    const auto broken = fileManager().getTemporaryFilePath("broken.xml");
     writeBrokenForceField(input_, broken);
     auto pd     = read(run(broken, { { "-validate", "" } }, "validated.xml"));
-    auto issues = validateForceField(pd);
+    const auto issues = validateForceField(pd);
     EXPECT_EQ(2u, issues.size());
     EXPECT_EQ(1u, countIssues(issues, ForceFieldIssue::Kind::OutOfBounds));
     EXPECT_EQ(1u, countIssues(issues, ForceFieldIssue::Kind::Negative));
@@ -463,7 +463,7 @@ TEST_F(EditFFTest, ValidateWrites)
     expectRealEq(14, acm(pd, "h_z", "eta").value());
     expectRealEq(1, pd.findParticleType("h")->parameterConst("mass").value());
     // The rest of the force field is as before
-    auto ref = read(input_);
+    const auto ref = read(input_);
     expectRealEq(acm(ref, "i_z", "eta").value(), acm(pd, "i_z", "eta").value());
     expectRealEq(acm(ref, "h_z", "eta").value(), acm(pd, "h_z", "eta").value());
 }
@@ -472,9 +472,9 @@ TEST_F(EditFFTest, ValidateWrites)
 // those that are selected, which removes the problem that -validate reports
 TEST_F(EditFFTest, NonNegativeCleared)
 {
-    auto broken = fileManager().getTemporaryFilePath("broken.xml");
+    const auto broken = fileManager().getTemporaryFilePath("broken.xml");
     writeBrokenForceField(input_, broken);
-    auto pd = read(run(broken, { { "-p", "chi" }, { "-a", "i_z" }, { "-nonneg", "no" } }));
+    const auto pd = read(run(broken, { { "-p", "chi" }, { "-a", "i_z" }, { "-nonneg", "no" } }));
     EXPECT_FALSE(acm(pd, "i_z", "chi").nonNegative());
     EXPECT_TRUE(acm(pd, "h_z", "chi").nonNegative());
     EXPECT_TRUE(acm(pd, "i_z", "eta").nonNegative());
@@ -485,11 +485,11 @@ TEST_F(EditFFTest, NonNegativeCleared)
 // Test: -nonneg yes makes all parameters of a type non-negative
 TEST_F(EditFFTest, NonNegativeSet)
 {
-    auto cleared = read(run(input_, { { "-p", "eta" }, { "-nonneg", "no" } }, "cleared.xml"));
+    const auto cleared = read(run(input_, { { "-p", "eta" }, { "-nonneg", "no" } }, "cleared.xml"));
     EXPECT_FALSE(acm(cleared, "h_z", "eta").nonNegative());
     EXPECT_FALSE(acm(cleared, "i_z", "eta").nonNegative());
-    auto set = read(run(fileManager().getTemporaryFilePath("cleared.xml"),
-                        { { "-p", "eta" }, { "-nonneg", "yes" } }, "set.xml"));
+    const auto set = read(run(fileManager().getTemporaryFilePath("cleared.xml"),
+                              { { "-p", "eta" }, { "-nonneg", "yes" } }, "set.xml"));
     EXPECT_TRUE(acm(set, "h_z", "eta").nonNegative());
     EXPECT_TRUE(acm(set, "i_z", "eta").nonNegative());
 }
@@ -497,7 +497,7 @@ TEST_F(EditFFTest, NonNegativeSet)
 // Test: Without problems that reading repairs, -validate writes no file
 TEST_F(EditFFTest, ValidateNothingToWrite)
 {
-    auto out = run(input_, { { "-validate", "" } }, "unchanged.xml");
+    const auto out = run(input_, { { "-validate", "" } }, "unchanged.xml");
     EXPECT_FALSE(std::filesystem::exists(out));
 }
 
@@ -505,10 +505,10 @@ TEST_F(EditFFTest, ValidateNothingToWrite)
 // are copied, the others are not changed
 TEST_F(EditFFTest, CopyMissing)
 {
-    auto second = fileManager().getTemporaryFilePath("second.xml");
+    const auto second = fileManager().getTemporaryFilePath("second.xml");
     writeSecondForceField(input_, second);
-    auto pd = read(run(second, { { "-ff2", input_ }, { "-copy_missing", "EEM" } }));
-    auto ref = read(input_);
+    const auto pd = read(run(second, { { "-ff2", input_ }, { "-copy_missing", "EEM" } }));
+    const auto ref = read(input_);
     EXPECT_DOUBLE_EQ(acm(ref, "i_z", "chi").value(), acm(pd, "i_z", "chi").value());
     EXPECT_DOUBLE_EQ(4, acm(pd, "h_z", "chi").value());
 }
@@ -518,7 +518,7 @@ TEST_F(EditFFTest, Replace)
 {
     auto second = fileManager().getTemporaryFilePath("second.xml");
     writeSecondForceField(input_, second, true);
-    auto pd = read(run(input_, { { "-ff2", second }, { "-replace", "EEM" } }));
+    const auto pd = read(run(input_, { { "-ff2", second }, { "-replace", "EEM" } }));
     EXPECT_DOUBLE_EQ(4, acm(pd, "h_z", "chi").value());
     EXPECT_DOUBLE_EQ(6, acm(pd, "f_z", "chi").value());
     EXPECT_DOUBLE_EQ(5, acm(pd, "i_z", "chi").value());
@@ -530,8 +530,8 @@ TEST_F(EditFFTest, Implant)
 {
     auto second = fileManager().getTemporaryFilePath("second.xml");
     writeSecondForceField(input_, second);
-    auto pd  = read(run(input_, { { "-ff2", second }, { "-implant", "EEM" }, { "-a", "h_z" }, { "-p", "chi" } }));
-    auto ref = read(input_);
+    const auto pd  = read(run(input_, { { "-ff2", second }, { "-implant", "EEM" }, { "-a", "h_z" }, { "-p", "chi" } }));
+    const auto ref = read(input_);
     EXPECT_DOUBLE_EQ(4, acm(pd, "h_z", "chi").value());
     EXPECT_DOUBLE_EQ(14, acm(pd, "h_z", "eta").value());
     EXPECT_DOUBLE_EQ(acm(ref, "f_z", "chi").value(), acm(pd, "f_z", "chi").value());
@@ -559,7 +559,7 @@ static std::filesystem::path plotInteractions(const std::string &forceField,
 {
     std::filesystem::path plots(dir);
     std::filesystem::create_directories(plots);
-    auto cwd = std::filesystem::current_path();
+    const auto cwd = std::filesystem::current_path();
     std::filesystem::current_path(plots);
     gmx::test::CommandLine cmd;
     cmd.append("edit_ff");
@@ -594,13 +594,13 @@ static std::pair<double, double> minimum(const std::filesystem::path &xvg)
 TEST_F(EditFFTest, Plot)
 {
     int  status;
-    auto plots = plotInteractions(fileManager().getInputFilePath("forcefields/SPCE.xml"),
-                                  fileManager().getTemporaryFilePath("plots"), &status);
+    const auto plots = plotInteractions(fileManager().getInputFilePath("forcefields/SPCE.xml"),
+                                        fileManager().getTemporaryFilePath("plots"), &status);
     ASSERT_EQ(0, status);
-    auto bond = minimum(plots / "BONDS_h_b~o3_b.xvg");
+    const auto bond = minimum(plots / "BONDS_h_b~o3_b.xvg");
     EXPECT_NEAR(0.1, bond.first, 1e-3);
     EXPECT_NEAR(0, bond.second, 1e-6);
-    auto vdw = minimum(plots / "VANDERWAALS_o3~o3.xvg");
+    const auto vdw = minimum(plots / "VANDERWAALS_o3~o3.xvg");
     double sigma = 0.3165558, epsilon = 0.65017032;
     EXPECT_NEAR(std::pow(2.0, 1.0/6.0)*sigma, vdw.first, 1e-3);
     EXPECT_NEAR(-epsilon, vdw.second, 1e-3);
@@ -613,13 +613,13 @@ TEST_F(EditFFTest, Plot)
 TEST_F(EditFFTest, PlotSkipsImpropersWithoutBonds)
 {
     int  status;
-    auto plots = plotInteractions(fileManager().getInputFilePath("forcefields/ACS-g1.xml"),
-                                  fileManager().getTemporaryFilePath("plots"), &status);
+    const auto plots = plotInteractions(fileManager().getInputFilePath("forcefields/ACS-g1.xml"),
+                                        fileManager().getTemporaryFilePath("plots"), &status);
     ASSERT_EQ(0, status);
     std::map<std::string, int> count;
     for (const auto &entry : std::filesystem::directory_iterator(plots))
     {
-        auto name = entry.path().filename().string();
+        const auto name = entry.path().filename().string();
         if (entry.path().extension() == ".xvg")
         {
             EXPECT_GT(std::filesystem::file_size(entry.path()), 0u) << name;

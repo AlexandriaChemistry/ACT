@@ -116,7 +116,7 @@ static SingleParameterCache *singleParameterCache(const ForceField        *pd,
     }
     if (nullptr == cache)
     {
-        caches.push_back(SingleParameterCache());
+        caches.emplace_back();
         cache       = &caches.back();
         cache->list = list;
     }
@@ -134,8 +134,8 @@ static SingleParameterCache *singleParameterCache(const ForceField        *pd,
     {
         for(size_t j = i; j < n; j++)
         {
-            auto myId = Identifier({ cache->singles[i].id->id(), cache->singles[j].id->id() }, { 1 }, CanSwap::Yes);
-            auto pp   = parm->find(myId);
+            const auto myId = Identifier({ cache->singles[i].id->id(), cache->singles[j].id->id() }, { 1 }, CanSwap::Yes);
+            const auto pp   = parm->find(myId);
             if (parm->end() != pp)
             {
                 cache->pairs[i*n+j] = &pp->second;
@@ -236,7 +236,7 @@ static void generateParameterPairs(MsgHandler      *msghandler,
             {
                 if (msghandler && msghandler->debug())
                 {
-                    auto myId  = Identifier({ singles[i].id->id(), singles[j].id->id() }, { 1 }, CanSwap::Yes);
+                    const auto myId  = Identifier({ singles[i].id->id(), singles[j].id->id() }, { 1 }, CanSwap::Yes);
                     auto mystr = gmx::formatString("Generated pair parameters for %s / %s",
                                                    potentialToString(forcesVdw->potential()).c_str(),
                                                    myId.id().c_str());
@@ -275,10 +275,10 @@ void generateDependentParameter(MsgHandler                      *msghandler,
                                 bool                             force,
                                 const std::set<InteractionType> *changed)
 {
-    auto todo = [force, changed](InteractionType itype)
-    {
-        return force || nullptr == changed || changed->count(itype) > 0;
-    };
+    const auto todo = [force, changed](InteractionType itype)
+          {
+              return force || nullptr == changed || changed->count(itype) > 0;
+          };
     for(auto itype : { InteractionType::VDW, InteractionType::VDWCORRECTION,
                        InteractionType::INDUCTIONCORRECTION })
     {

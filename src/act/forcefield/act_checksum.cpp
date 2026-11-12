@@ -69,7 +69,7 @@ std::string computeCheckSum(const std::string &filename)
     while (bytes_read > 0);
     fclose(filp);
     
-    auto mysum = gmx_md5_finish(&pms);
+    const auto mysum = gmx_md5_finish(&pms);
     // Now convert the checksum into a hex string
     std::string newVersion;
     for(const auto &m : mysum)
@@ -82,10 +82,10 @@ std::string computeCheckSum(const std::string &filename)
 std::string forcefieldCheckSum(ForceField *pd)
 {
     // Save the old checkSum
-    std::string oldCheckSum = pd->checkSum();
+    const std::string oldCheckSum = pd->checkSum();
     pd->setCheckSum("");
     // Save the old timeStamp
-    std::string timeStamp = pd->timeStamp();
+    const std::string timeStamp = pd->timeStamp();
     pd->setTimeStamp("");
     // Write the document to a tmp file
     char tmpForceField[] = "forcefieldTmpXXXXXX";

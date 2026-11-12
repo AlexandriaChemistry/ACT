@@ -79,15 +79,15 @@ static void merge_parameter(const std::vector<alexandria::ForceField> &pds,
     // The values and the sum of the training points of each identifier
     std::map<Identifier, gmx_stats> lsq;
     std::map<Identifier, int>       ntrain;
-    auto add = [&](const Identifier &id, const ForceFieldParameterMap &params)
-    {
-        auto pp = params.find(parameter);
-        if (pp != params.end())
-        {
-            lsq[id].add_point(0, pp->second.value(), 0, 0);
-            ntrain[id] += pp->second.ntrain();
-        }
-    };
+    const auto add = [&](const Identifier &id, const ForceFieldParameterMap &params)
+          {
+              const auto pp = params.find(parameter);
+              if (pp != params.end())
+              {
+                  lsq[id].add_point(0, pp->second.value(), 0, 0);
+                  ntrain[id] += pp->second.ntrain();
+              }
+          };
     for (const auto &pd : pds)
     {
         if (pd.interactionPresent(iType))
@@ -105,35 +105,35 @@ static void merge_parameter(const std::vector<alexandria::ForceField> &pds,
             }
         }
     }
-    auto update = [&](const Identifier &id, ForceFieldParameterMap *params)
-    {
-        auto pp = params->find(parameter);
-        auto st = lsq.find(id);
-        if (pp == params->end() || st == lsq.end() ||
-            pp->second.mutability() != alexandria::Mutability::Bounded)
-        {
-            return;
-        }
-        real average = 0;
-        real sigma   = 0;
-        if ((eStats::OK == st->second.get_average(&average)) &&
-            (eStats::OK == st->second.get_sigma(&sigma)))
-        {
-            auto &p = pp->second;
-            // The average of values within their bounds may be outside the
-            // bounds of the first force field
-            p.setMinimum(std::min(p.minimum(), static_cast<double>(average)));
-            p.setMaximum(std::max(p.maximum(), static_cast<double>(average)));
-            p.setValue(average);
-            p.setUncertainty(sigma);
-            p.setNtrain(ntrain[id]/st->second.get_npoints());
-            if (limits > 0)
-            {
-                p.setMinimum(average-limits*sigma);
-                p.setMaximum(average+limits*sigma);
-            }
-        }
-    };
+    const auto update = [&](const Identifier &id, ForceFieldParameterMap *params)
+          {
+              const auto pp = params->find(parameter);
+              const auto st = lsq.find(id);
+              if (pp == params->end() || st == lsq.end() ||
+                  pp->second.mutability() != alexandria::Mutability::Bounded)
+              {
+                  return;
+              }
+              real average = 0;
+              real sigma   = 0;
+              if ((eStats::OK == st->second.get_average(&average)) &&
+                  (eStats::OK == st->second.get_sigma(&sigma)))
+              {
+                  auto &p = pp->second;
+                  // The average of values within their bounds may be outside the
+                  // bounds of the first force field
+                  p.setMinimum(std::min(p.minimum(), static_cast<double>(average)));
+                  p.setMaximum(std::max(p.maximum(), static_cast<double>(average)));
+                  p.setValue(average);
+                  p.setUncertainty(sigma);
+                  p.setNtrain(ntrain[id]/st->second.get_npoints());
+                  if (limits > 0)
+                  {
+                      p.setMinimum(average-limits*sigma);
+                      p.setMaximum(average+limits*sigma);
+                  }
+              }
+          };
     if (pdout->interactionPresent(iType))
     {
         for (auto &fp : *pdout->findForces(iType)->parameters())
@@ -203,18 +203,18 @@ int merge_ff(int argc, char *argv[])
         return 0;
     }
     /* Read all the gentop files. */
-    auto filenames = opt2fns("-ff", fnm.size(), fnm.data());
+    const auto filenames = opt2fns("-ff", fnm.size(), fnm.data());
     
     // The force fields need not be complete, but the merged one has to be
     for (auto &i : filenames)
     {
         alexandria::ForceField pd;
-        readForceField(i.c_str(), &pd, nullptr, true, false);
+        readForceField(i, &pd, nullptr, true, false);
         pds.push_back(std::move(pd));
     }    
 
     // Copy the first gentop file into pdout
-    readForceField(filenames[0].c_str(), &pdout, nullptr, true, false);
+    readForceField(filenames[0], &pdout, nullptr, true, false);
 
     // Let's see what parameters to handle
     std::vector<std::string> allparams;
@@ -230,7 +230,7 @@ int merge_ff(int argc, char *argv[])
         {
             if (!fs.second.empty())
             {
-                auto pp = fs.second.parametersConst().begin();
+                const auto pp = fs.second.parametersConst().begin();
                 for(const auto &type : pp->second)
                 {
                     merge_parameter(pds, fs.first, type.first, &pdout, limits);
