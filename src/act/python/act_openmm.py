@@ -357,6 +357,7 @@ class CombinationRules:
             hve = "hogervorstepsilon"
             hvs = "hogervorstsigma"
             wme = "waldmanepsilon"
+            qie = "qiepsilon"
             mng = "masongamma"
             epsilon1 = allParam["epsilon"][0]
             epsilon2 = allParam["epsilon"][1]
@@ -380,21 +381,23 @@ class CombinationRules:
                         mydict["rmin"]   = math.sqrt(((epsilon1*gamma1*rmin1**6)/(gamma1-6)) * ((epsilon2*gamma2*rmin2**6)/(gamma2-6)))*((gamma1+gamma2)/2-6)/(e12*(gamma1+gamma2)/2)**(1.0/6.0)
                     else:
                         sys.exit("Combination rule %s not supported for param %s and VdW function %s" % ( hvs, param, self.vdw ))
-            elif wme == self.comb[param].lower():
+            elif self.comb[param].lower() in [ wme, qie ]:
+                # Qi et al. use the epsilon of Waldman and Hagler
                 if "epsilon" == param:
                     if "sigma" in allParam:
-                        denominator = (sigma1**6)+(sigma2**6)
+                        dist1, dist2 = sigma1, sigma2
                     elif "rmin" in allParam:
-                        denominator = (rmin1**6)+(rmin2**6)
+                        dist1, dist2 = rmin1, rmin2
                     else:
-                        sys.exit("Combination rule %s requires either sigma or rmin to calculate %s" % ( wme, param ))
+                        sys.exit("Combination rule %s requires either sigma or rmin to calculate %s" % ( self.comb[param], param ))
+                    denominator = (dist1**6)+(dist2**6)
                     # check for division by zero
                     if denominator != 0:
-                        mydict["epsilon"] = math.sqrt(epsilon1*epsilon2)*(2*(rmin1**3)*(rmin2**3))/(denominator)
+                        mydict["epsilon"] = math.sqrt(epsilon1*epsilon2)*(2*(dist1**3)*(dist2**3))/(denominator)
                     else:
                         mydict["epsilon"] = 0
                 else:
-                    sys.exit("Combination rule %s not supported for param %s" % ( wme, param ))
+                    sys.exit("Combination rule %s not supported for param %s" % ( self.comb[param], param ))
             elif mng == self.comb[param].lower():
                 if "gamma" == param:
                     sigmaIJ = math.sqrt(allParam["sigma"][0]*allParam["sigma"][1])
@@ -411,6 +414,7 @@ class CombinationRules:
         epsilon = "epsilon"
         hvs     = "hogervorstsigma"
         wme     = "waldmanepsilon"
+        qie     = "qiepsilon"
         mng     = "masongamma"
         geom    = "geometric"
         for param in self.comb.keys():
@@ -422,7 +426,8 @@ class CombinationRules:
                     mydict["rmin"] = ("select(e12,(((sqrt(((epsilon1*gamma1*rmin1^6)/(gamma1-6)) * ((epsilon2*gamma2*rmin2^6)/(gamma2-6)))*((gamma1+gamma2)/2-6))/(e12*(gamma1+gamma2)/2))^(1.0/6.0)),0);e12=%s" % e12)
                 else:
                     sys.exit("Combination rule %s not supported for param %s and VdW function %s" % ( hvs, param, self.vdw ))
-            elif wme == self.comb[param].lower():
+            elif self.comb[param].lower() in [ wme, qie ]:
+                # Qi et al. use the epsilon of Waldman and Hagler
                 if epsilon == param:
                     if "rmin" in self.comb.keys():
                         mydict[epsilon] = ("select(rmin1+rmin2, sqrt(epsilon1*epsilon2)*(2*(rmin1^3)*(rmin2^3))/((rmin1^6)+(rmin2^6)), 0)")
@@ -431,7 +436,7 @@ class CombinationRules:
                     else:
                         sys.exit("Combination rule %s requires either sigma or rmin to calculate %s" % ( wme, param ))
                 else:
-                    sys.exit("Combination rule %s not supported for param %s" % ( wme, param ))
+                    sys.exit("Combination rule %s not supported for param %s" % ( self.comb[param], param ))
             elif mng == self.comb[param].lower():
                 if "gamma" == param:
                     sigmaIJ = self.combTwoString(geom, "sigma1", "sigma2", "sigma")

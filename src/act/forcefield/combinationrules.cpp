@@ -285,6 +285,17 @@ void evalCombinationRule(Potential                     ftype,
                                                jvdw.find(param.first)->second.value(),
                                                crule.ffplConst().value());
             }
+            else if (CombRule::HogervorstSigma == crule.rule() ||
+                     CombRule::WaldmanEpsilon == crule.rule() ||
+                     CombRule::QiEpsilon == crule.rule() ||
+                     CombRule::MasonGamma == crule.rule())
+            {
+                // These need the sigma and epsilon of the potential
+                GMX_THROW(gmx::InvalidInputError(gmx::formatString("Combination rule %s for %s needs sigma and epsilon, which potential %s does not have",
+                                                                   combinationRuleName(crule.rule()).c_str(),
+                                                                   param.first.c_str(),
+                                                                   potentialToString(ftype).c_str()).c_str()));
+            }
             else
             {
                 value = combineTwo(crule.rule(),
@@ -365,6 +376,8 @@ void evalCombinationRule(Potential                     ftype,
                 value = combineHogervorstSigma(ieps, jeps, igam, jgam, isig, jsig);
                 break;
             case CombRule::WaldmanEpsilon:
+            case CombRule::QiEpsilon:
+                // Qi et al. use the epsilon of Waldman and Hagler, Eqn. 3 of Qi2016a
                 value = combineWaldmanEpsilon(ieps, jeps, isig, jsig);
                 break;
             case CombRule::MasonGamma:
