@@ -643,6 +643,7 @@ void readForceField(const std::string &fileName,
     pd->guessChargeGenerationAlgorithm();
     // Parameters that are used in their own units have to have those
     pd->checkUnits();
+    pd->checkVsitePotentials();
     if (check)
     {
         pd->checkConsistency(msgHandler);
