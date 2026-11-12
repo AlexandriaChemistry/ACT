@@ -109,7 +109,7 @@ static int parameterIndex(MsgHandler                     *msghandler,
                           Potential                       pot,
                           const std::map<Potential, int> &p2i)
 {
-    auto pi = p2i.find(pot);
+    const auto pi = p2i.find(pot);
     if (p2i.end() == pi)
     {
         constraintError(msghandler,
@@ -280,8 +280,8 @@ void Constrainer::makeConstraintList(MsgHandler                   *msghandler,
             nredundant_ += 1;
             continue;
         }
-        auto  bij     = bondLength.find(std::minmax(indices[0], indices[1]));
-        auto  bjk     = bondLength.find(std::minmax(indices[1], indices[2]));
+        const auto  bij     = bondLength.find(std::minmax(indices[0], indices[1]));
+        const auto  bjk     = bondLength.find(std::minmax(indices[1], indices[2]));
         if (bondLength.end() == bij || bondLength.end() == bjk)
         {
             constraintError(msghandler,
@@ -463,18 +463,18 @@ int Constrainer::shakeT(const std::vector<X>   &reference,
         tolerance[a]    = std::min(tolerance[a], 0.5/(rounding*length2));
     }
     // Compute the deviations, return the sum of the squared relative deviations
-    auto deviations = [&]()
-    {
-        double sum = 0;
-        for (size_t a = 0; a < nc; a++)
-        {
-            dx[a]      = differenceDouble((*positions)[pairs_[a][0]], (*positions)[pairs_[a][1]]);
-            diff[a]    = constraint_distance_squared_[a] - dx[a].norm2();
-            double rel = diff[a] * tolerance[a];
-            sum       += rel*rel;
-        }
-        return sum;
-    };
+    const auto deviations = [&]()
+          {
+              double sum = 0;
+              for (size_t a = 0; a < nc; a++)
+              {
+                  dx[a]      = differenceDouble((*positions)[pairs_[a][0]], (*positions)[pairs_[a][1]]);
+                  diff[a]    = constraint_distance_squared_[a] - dx[a].norm2();
+                  double rel = diff[a] * tolerance[a];
+                  sum       += rel*rel;
+              }
+              return sum;
+          };
     double dev   = deviations();
     int    error = -1;
     for (int iter = 0; iter < maxiter_; iter++)
@@ -586,7 +586,7 @@ static bool solveProjection(const std::vector<std::array<int, 2>> &pairs,
                             Eigen::VectorXd                       *h)
 {
     auto            nc = pairs.size();
-    Eigen::MatrixXd A  = Eigen::MatrixXd::Zero(nc, nc);
+    Eigen::MatrixXd A  = Eigen::MatrixXd::Zero(nc, nc); // NOLINT
     Eigen::VectorXd uproj(nc);
     for (size_t a = 0; a < nc; a++)
     {
@@ -671,7 +671,7 @@ int Constrainer::projectForces(gmx_unused MsgHandler        *msghandler,
         return 1;
     }
     // Add the constraint forces, without dividing by the masses
-    std::vector<double> ones(invmass_.size(), 1.0);
+    const std::vector<double> ones(invmass_.size(), 1.0);
     displace(pairs_, ones, initial_displacements_, h, forces);
     return 0;
 }

@@ -68,7 +68,7 @@ protected:
     
     ConstraintsTest () : checker_(this->rootChecker())
     {
-        auto tolerance = gmx::test::relativeToleranceAsFloatingPoint(1.0, GMX_DOUBLE ? 1e-10 : 1e-6);
+        const auto tolerance = gmx::test::relativeToleranceAsFloatingPoint(1.0, GMX_DOUBLE ? 1e-10 : 1e-6);
         checker_.setDefaultTolerance(tolerance);
     }
     
@@ -91,9 +91,9 @@ protected:
         msghandler.setPrintLevel(ACTStatus::Warning);
         std::string dirmolname("molecules/");
         dirmolname += molname;
-        auto dataName = gmx::test::TestFileManager::getInputFilePath(dirmolname);
+        const auto dataName = gmx::test::TestFileManager::getInputFilePath(dirmolname);
         initACTMol(&msghandler, dataName, pd, &forceComp, &mps);
-        gmx::RVec           vZero = { 0, 0, 0 };
+        const gmx::RVec     vZero = { 0, 0, 0 };
         int isign                 = 0;
         std::vector<double> signs = { 0.3, 0.7, -0.6, -0.9, 0.5 };
         for(auto &mol: mps)
@@ -212,7 +212,7 @@ static void loadMolecule(ForceField          *pd,
     ForceComputer forceComp;
     MsgHandler    msghandler;
     msghandler.setPrintLevel(ACTStatus::Warning);
-    auto dataName = gmx::test::TestFileManager::getInputFilePath("molecules/" + molname);
+    const auto dataName = gmx::test::TestFileManager::getInputFilePath("molecules/" + molname);
     initACTMol(&msghandler, dataName, pd, &forceComp, mps);
 }
 
@@ -222,7 +222,7 @@ TEST(ConstrainerTest, ProjectForces)
     std::vector<ACTMol> mps;
     loadMolecule(pd, "acetate.sdf", &mps);
     ASSERT_EQ(1u, mps.size());
-    auto               &mol = mps[0];
+    const auto         &mol = mps[0];
     // Bond lengths within a relative tolerance that single precision allows
     Constrainer         ccc(100, gmx::test::precisionTolerance(1e-8, 1e-6), 1);
     auto        coords = mol.xOriginal();
@@ -280,7 +280,7 @@ TEST(ConstrainerTest, Frozen)
     std::vector<ACTMol> mps;
     loadMolecule(pd, "acetate.sdf", &mps);
     ASSERT_EQ(1u, mps.size());
-    auto               &mol = mps[0];
+    const auto         &mol = mps[0];
     // Bond lengths within a relative tolerance that single precision allows
     double              toler = gmx::test::precisionTolerance(1e-8, 1e-6);
     Constrainer         ccc(100, toler, 1);
