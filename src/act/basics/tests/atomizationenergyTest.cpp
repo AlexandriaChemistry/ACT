@@ -61,7 +61,7 @@ protected:
     //! Init set tolerance
     AtomizationEnergyTest () : checker_(this->rootChecker())
     {
-        auto tolerance = gmx::test::relativeToleranceAsFloatingPoint(1.0, GMX_DOUBLE ? 1e-10 : 5e-2);
+        const auto tolerance = gmx::test::relativeToleranceAsFloatingPoint(1.0, GMX_DOUBLE ? 1e-10 : 5e-2);
         checker_.setDefaultTolerance(tolerance);
         atomenergy_.read();
     }
@@ -128,7 +128,7 @@ TEST(AtomizationEnergyDump, SameAsLibrary)
     gmx::test::TestFileManager    fileManager;
     alexandria::AtomizationEnergy atomenergy;
     atomenergy.read();
-    auto dumpName = fileManager.getTemporaryFilePath("dump.csv");
+    const auto dumpName = fileManager.getTemporaryFilePath("dump.csv");
     atomenergy.dump(dumpName);
     auto dumped = readFields(dumpName);
     std::vector<std::vector<std::string>> library;

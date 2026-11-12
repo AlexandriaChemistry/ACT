@@ -44,7 +44,7 @@ namespace alexandria
 std::map<std::string, AtomProp> readAtomProps()
 {
     bool useCWD = false;
-    auto props = findLibrary("atomprops.csv", useCWD);
+    const auto props = findLibrary("atomprops.csv", useCWD);
     if (props.empty())
     {
         return {};
@@ -59,11 +59,11 @@ std::map<std::string, AtomProp> readAtomProps()
             auto ptr = split(tmp, ',');
             if (ptr.size() == 7)
             {
-                AtomProp ap(ptr[1], ptr[2], 
-                            my_atoi(ptr[3].c_str(), "atomnumber"),
-                            my_atof(ptr[4].c_str(), "mass"),
-                            my_atoi(ptr[5].c_str(), "charge"),
-                            my_atoi(ptr[6].c_str(), "mult"));
+                const AtomProp ap(ptr[1], ptr[2], 
+                                  my_atoi(ptr[3], "atomnumber"),
+                                  my_atof(ptr[4], "mass"),
+                                  my_atoi(ptr[5], "charge"),
+                                  my_atoi(ptr[6], "mult"));
                 table.insert({ ptr[0], ap });
             }
         }

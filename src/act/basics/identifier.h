@@ -81,7 +81,7 @@ class Identifier
  public:
     /*! \brief Empty constructor
      */
-    Identifier() {}
+    Identifier() = default;
 
     /*! \brief Constructor
      * Will extract atoms and bondorders from the id string. If the string

@@ -59,7 +59,7 @@ class IdentifierMapTest : public gmx::test::CommandLineTestBase
 
         IdentifierMapTest () : checker_(this->rootChecker())
         {
-            auto tolerance = gmx::test::relativeToleranceAsFloatingPoint(1.0, GMX_DOUBLE ? 1e-10 : 5e-2);
+            const auto tolerance = gmx::test::relativeToleranceAsFloatingPoint(1.0, GMX_DOUBLE ? 1e-10 : 5e-2);
             checker_.setDefaultTolerance(tolerance);
         }
 
@@ -76,7 +76,7 @@ class IdentifierMapTest : public gmx::test::CommandLineTestBase
         {
             for (const auto &id : idmap)
             {
-                auto mapfind = idmap.find(id.first);
+                const auto mapfind = idmap.find(id.first);
                 if (mapfind == idmap.end())
                 {
                     fprintf(stderr, "Could not find %s in map. Shame on you.\n", id.first.id().c_str());

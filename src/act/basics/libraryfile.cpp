@@ -75,7 +75,7 @@ std::string findLibrary(const std::string &filename,
     auto actdata = std::getenv("ACTDATA");
     if (!gmx::isNullOrEmpty(actdata))
     {
-        dirs.push_back(actdata);
+        dirs.emplace_back(actdata);
     }
     dirs.push_back(installedDataDirectory());
     for (const auto &dir : dirs)

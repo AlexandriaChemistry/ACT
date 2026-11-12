@@ -81,7 +81,7 @@ class AllmolsTest : public gmx::test::CommandLineTestBase
 
     void runTest(const std::string &inchi)
     {
-        AlexandriaMols amols;
+        const AlexandriaMols amols;
 
         auto *amol = amols.findInChi(inchi);
         EXPECT_FALSE(nullptr == amol);
@@ -90,7 +90,7 @@ class AllmolsTest : public gmx::test::CommandLineTestBase
 
     void runMol(const std::string &mol)
     {
-        AlexandriaMols amols;
+        const AlexandriaMols amols;
 
         auto *amol = amols.findMol(mol);
         EXPECT_FALSE(nullptr == amol);
@@ -99,7 +99,7 @@ class AllmolsTest : public gmx::test::CommandLineTestBase
 
     void runUnknown(const std::string &mol)
     {
-        AlexandriaMols amols;
+        const AlexandriaMols amols;
 
         auto *amol = amols.findMol(mol);
         EXPECT_TRUE(nullptr == amol);

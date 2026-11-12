@@ -89,7 +89,7 @@ std::map<InteractionType, NameDescr> eitNames = {
 
 const std::string &interactionTypeToString(InteractionType iType)
 {
-    auto en = eitNames.find(iType);
+    const auto en = eitNames.find(iType);
     if (en == eitNames.end())
     {
         GMX_THROW(gmx::InternalError(gmx::formatString("No string corresponding to interaction type %d",
@@ -100,7 +100,7 @@ const std::string &interactionTypeToString(InteractionType iType)
 
 const std::string &interactionTypeToDescription(InteractionType iType)
 {
-    auto en = eitNames.find(iType);
+    const auto en = eitNames.find(iType);
     if (en == eitNames.end())
     {
         GMX_THROW(gmx::InternalError(gmx::formatString("No string corresponding to interaction type %d",

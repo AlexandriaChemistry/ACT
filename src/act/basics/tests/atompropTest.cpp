@@ -63,7 +63,7 @@ class AtomPropsTest : public gmx::test::CommandLineTestBase
     
     void runTest()
     {
-        auto aprops = readAtomProps();
+        const auto aprops = readAtomProps();
         checker_.checkInteger(aprops.size(), "Number of atomprops");
         for(const auto &ap : aprops)
         {

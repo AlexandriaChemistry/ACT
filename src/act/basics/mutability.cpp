@@ -53,7 +53,7 @@ static std::map<const std::string, Mutability> string2mut;
     
 const std::string &mutabilityName(Mutability mutability)
 {
-    auto m2s = mut2string.find(mutability);
+    const auto m2s = mut2string.find(mutability);
     
     return m2s->second;
 }
@@ -67,7 +67,7 @@ bool nameToMutability(const std::string &name, Mutability *mutability)
             string2mut.insert({iter->second, iter->first});
         }
     }
-    auto s2m = string2mut.find(name);
+    const auto s2m = string2mut.find(name);
     if (s2m != string2mut.end())
     {
         *mutability = s2m->second;

@@ -240,7 +240,7 @@ class MsgHandler
          */
         void fatal(const std::string &msg)
         {
-            fatal(ACTMessage::Silent, msg.c_str());
+            fatal(ACTMessage::Silent, msg);
         }
 
         /*! \brief Message, will only print if verbosity level

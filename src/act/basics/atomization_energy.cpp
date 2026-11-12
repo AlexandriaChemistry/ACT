@@ -117,13 +117,13 @@ class AtomizationEnergyTerm
 
 void AtomizationEnergy::read(MsgHandler *msg_handler)
 {
-    std::vector<const char *> ahof = {
-        "atomization-energies.csv", "atomization-energies-dft.csv"
-    };
+    const std::vector<const char *> ahof = {
+              "atomization-energies.csv", "atomization-energies-dft.csv"
+          };
     bool useCWD = false;
     for (const auto &aa : ahof)
     {
-        std::string infile = findLibrary(aa, useCWD);
+        const std::string infile = findLibrary(aa, useCWD);
         if (infile.empty())
         {
             continue;
@@ -139,10 +139,10 @@ void AtomizationEnergy::read(MsgHandler *msg_handler)
                     auto words = gmx::splitDelimitedString(line, '|');
                     if (words.size() >= 9)
                     {
-                        int    charge      = my_atoi(words[1].c_str(), "charge");
-                        double temperature = my_atof(words[4].c_str(), "temperature");
-                        double value       = my_atof(words[5].c_str(), "value");
-                        int    mult        = my_atoi(words[6].c_str(), "multiplicity");
+                        int    charge      = my_atoi(words[1], "charge");
+                        double temperature = my_atof(words[4], "temperature");
+                        double value       = my_atof(words[5], "value");
+                        int    mult        = my_atoi(words[6], "multiplicity");
                         terms_.push_back(new AtomizationEnergyTerm(words[0], charge, words[2], words[3], temperature,
                                                                    value, mult, words[7], words[8]));
                     }
@@ -183,13 +183,13 @@ double AtomizationEnergy::term(const std::string &elem,
                                std::string       *ref) const
 {
     //    AtomizationEnergyTerm aet(elem, charge, source, prop, T, 0, 1, "", "");
-    auto term = std::find_if(terms_.begin(), terms_.end(),
-                             [&](const AtomizationEnergyTerm *x)
-                             { return (elem   == x->elem() &&
-                                       charge == x->charge() &&
-                                       source == x->source() &&
-                                       prop   == x->prop() &&
-                                       std::abs(T - x->T()) < 1e-3); });
+    const auto term = std::find_if(terms_.begin(), terms_.end(),
+                                   [&](const AtomizationEnergyTerm *x)
+                                   { return (elem   == x->elem() &&
+                                             charge == x->charge() &&
+                                             source == x->source() &&
+                                             prop   == x->prop() &&
+                                             std::abs(T - x->T()) < 1e-3); });
     if (terms_.end() == term)
     {
         return 0;
