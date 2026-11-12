@@ -36,7 +36,7 @@
 set(testname "AlexandriaTests")
 set(exename "alexandria-test")
 
-gmx_add_unit_test(
+act_add_gpu_unit_test(
     ${testname}
     ${exename}
     # files with code for tests
@@ -66,9 +66,9 @@ if (TEST ${testname})
     set_tests_properties(${testname} PROPERTIES TIMEOUT 120)
 endif()
 
-gmx_add_mpi_unit_test(
+act_add_gpu_unit_test(
     AlexandriaMpiTests
-    alexandria-mpi-test 4
+    alexandria-mpi-test RANKS 4
     # files with code for tests
     trainffMpiTest.cpp
     )

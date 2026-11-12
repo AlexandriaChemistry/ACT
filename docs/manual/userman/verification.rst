@@ -41,6 +41,13 @@ where the second one is needed for *-\-single* and the third one for *-\-asan*. 
    | -\-single        | Also build and test build_Release_SINGLE, in single        |
    |                  | precision, with and without explicit SIMD.                 |
    +------------------+------------------------------------------------------------+
+   | -\-gpu           | Also build and test the GPU build, on a computer with a    |
+   |                  | GPU, where its tests may not be skipped, and run the       |
+   |                  | regression set there as well, see below.                   |
+   +------------------+------------------------------------------------------------+
+   | -g DIR           | The GPU build directory, by default                        |
+   |                  | build_Release_SINGLE_SYCL.                                 |
+   +------------------+------------------------------------------------------------+
    | -\-save-reference| Run the regression set, see below, and keep the results as |
    |                  | the reference.                                             |
    +------------------+------------------------------------------------------------+
@@ -59,6 +66,8 @@ Which checks to run depends on the change. Before committing a small change, *ad
   admin/verify.sh --novec --asan --single
 
 The build without vectorization shows whether a difference comes from vectorization, the address sanitizer finds reading or writing outside arrays and memory leaks, and the single precision build checks the tolerances of the tests in single precision, which is used with a GPU.
+
+After changes to the GPU code, run the script on a node with a GPU with *-\-gpu* as well. The GPU build directory has to be configured with *-DACT_GPU=SYCL -DACT_DOUBLE=OFF*, see :numref:`tab-cmake`. The tests of the GPU, whose names end in *Gpu*, run as separate *ctest* entries, for instance *ACTForcesTestsGpu*, which *ctest* reports as skipped without a GPU. With *-\-gpu*, a skipped GPU entry counts as a failure, since then no GPU was found. With *-\-save-reference* or *-\-regression*, the regression set is also run in the GPU build, with the polarizable models trained on the GPU, and compared with a reference made with that build (mode *gpu*).
 
 ==================
 The regression set

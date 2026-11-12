@@ -36,7 +36,7 @@
 set(testname "ACTForcesTests")
 set(exename "act-forces-test")
 
-gmx_add_unit_test(
+act_add_gpu_unit_test(
     ${testname}
     ${exename}
     # files with code for tests

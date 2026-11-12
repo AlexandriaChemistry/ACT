@@ -374,11 +374,11 @@ Note that these tests are run every time a change in the ACT source code is uplo
 
 Testing the GPU code
 ~~~~~~~~~~~~~~~~~~~~
-The tests of the GPU code need a GPU, in a single precision build with *-DACT_GPU=SYCL*. Without a GPU they pass without testing anything, and print a line such as::
+The tests of the GPU code need a GPU, in a single precision build with *-DACT_GPU=SYCL*. Their names end in *Gpu*, and *ctest* runs them separately from the other tests of a test program: *ACTForcesTestsGpu* (the pair potentials on the GPU), *AlexandriaTestsGpu* (the molecules on the GPU, several sets of parameters at once, the deviations on the GPU and *-shell_keep*) and *AlexandriaMpiTestsGpu* (training on the GPU with *-lockstep* and with molecules that are skipped). Without a GPU, or in double precision, *ctest* reports these three as skipped, for instance::
 
-  CoulombGaussianGpu: no GPU, nothing tested
+  20/29 Test #20: ACTForcesTestsGpu ................***Skipped   0.85 sec
 
-A test run on a computer without a GPU, such as the head node of a cluster, therefore does not test the GPU code, even when all tests pass. The tests with GPU parts are in *ACTForcesTests* (the pair potentials and the shell relaxation on the GPU) and *AlexandriaTests* (training with the molecules on the GPU, several sets of parameters at once, the deviations on the GPU and *-shell_keep*). *ACTGpuTests* checks the estimate of the peak performance and the explanation of why no GPU was found, which need no GPU.
+and lists them at the end under *The following tests did not run*. A test run on a computer without a GPU, such as the head node of a cluster, therefore does not test the GPU code, even when all tests pass. *ACTGpuTests* checks the estimate of the peak performance and the explanation of why no GPU was found, which need no GPU. If a GPU is found but cannot compute the molecules of a test, that test fails.
 
 On a cluster, compile everything on the head node, the tests included, and run the tests in a job on a node with a GPU. The head node needs no GPU to compile, since AdaptiveCpp compiles the GPU code when a program first uses the GPU. Set *ACT_SIMD* to the SIMD instructions of the GPU nodes if their processors differ from that of the head node, see above. If the processors of the GPU nodes are of another type than that of the head node, for instance ARM against x86, compile in a job on a GPU node instead. On csb, for instance, after::
 
@@ -395,10 +395,10 @@ on the head node, a job script like this runs the tests on a GPU node, with the 
   ml gcc/14 fftw openmpi/5.0.5
   cd $HOME/ACT/build_Release_SINGLE_SYCL
   $HOME/miniforge3/envs/ACT/bin/ctest -j 4 -V > ctest-gpu.log 2>&1
-  grep -E "tests passed|nothing tested|\*\*\*" ctest-gpu.log
+  grep -E "tests passed|Skipped|\*\*\*" ctest-gpu.log
 
-The program *ctest* comes with *cmake*. On csb the *cmake* module does not work on the compute nodes, therefore the script uses the *ctest* of the conda environment of ACT, which has *cmake* as well. The last line should report that all tests passed, and no test that tested nothing. Run *make tests* again after each change before submitting the job, since *make* by itself does not rebuild the test programs. To run a single test program on a GPU node interactively, for instance::
+The program *ctest* comes with *cmake*. On csb the *cmake* module does not work on the compute nodes, therefore the script uses the *ctest* of the conda environment of ACT, which has *cmake* as well. The last line should report that all tests passed, and no test should be skipped. Run *make tests* again after each change before submitting the job, since *make* by itself does not rebuild the test programs. To run a single test program on a GPU node interactively, for instance::
 
-  srun -p CLUSTER-AMD --gres=gpu:1 -n 1 -c 8 bin/act-forces-test --gtest_filter='*Gpu*'
+  srun -p CLUSTER-AMD --gres=gpu:1 -n 1 -c 8 bin/act-forces-test --gtest_filter='*Gpu'
 
 The first run on a type of GPU takes longer, since AdaptiveCpp then compiles the GPU code, which it keeps in *~/.acpp* for later runs. If the MPI tests fail in the job because MPI programs are started differently there, run the others with *ctest -LE MpiTest*. Most tests have a time limit of 120 s, since some of them take 40 s on older processors.
