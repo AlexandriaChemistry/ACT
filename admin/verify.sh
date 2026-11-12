@@ -39,6 +39,11 @@
 #                     build_ASAN_DOUBLE
 #   --single          Also build and test the single precision build
 #                     build_Release_SINGLE, with and without explicit SIMD
+#   --gpu             Also build and test the GPU build, on a computer with a
+#                     GPU, where the tests of the GPU may not be skipped, and
+#                     run the regression set there too (mode gpu)
+#   -g DIR            The GPU build directory (default build_Release_SINGLE_SYCL),
+#                     configured with -DACT_GPU=SYCL -DACT_DOUBLE=OFF
 #   --save-reference  Run the regression set and keep it as the reference
 #   --regression      Run the regression set and compare it with the reference
 #   --tolerance T     Largest relative difference accepted by --regression,
@@ -48,7 +53,7 @@
 # The regression set needs the input files in $ACT_VERIFY_DATA, by default
 # $HOME/Alexandria/ACTdata. Its outputs are in DIR/verify/<mode>/<case>, the
 # reference in DIR/verify-reference/<mode>/<case>, where mode is simd or
-# nosimd. The genetic algorithm amplifies the smallest differences, so the
+# nosimd, and gpu in the GPU build directory. The genetic algorithm amplifies the smallest differences, so the
 # trained force fields are only comparable within one build and mode.
 #
 # Exits with a nonzero status if anything fails.
@@ -61,6 +66,8 @@ jobs=8
 novec=0
 asan=0
 single=0
+gpu=0
+gpubuild=build_Release_SINGLE_SYCL
 regression=""
 tolerance=0
 tests=1
@@ -71,6 +78,8 @@ while [ $# -gt 0 ]; do
         --novec) novec=1 ;;
         --asan) asan=1 ;;
         --single) single=1 ;;
+        --gpu) gpu=1 ;;
+        -g) gpubuild=$2; shift ;;
         --save-reference) regression=save ;;
         --regression) regression=compare ;;
         --tolerance) tolerance=$2; shift ;;
@@ -82,6 +91,10 @@ done
 case "$build" in
     /*) ;;
     *) build=$root/$build ;;
+esac
+case "$gpubuild" in
+    /*) ;;
+    *) gpubuild=$root/$gpubuild ;;
 esac
 actdata=${ACT_VERIFY_DATA:-$HOME/Alexandria/ACTdata}
 failures=()
@@ -112,6 +125,12 @@ runTests()
     echo "=== Tests $label"
     if (cd "$dir" && "$ctest" -j "$jobs" --output-on-failure > "verify-tests-$3.log" 2>&1); then
         grep "tests passed" "$dir/verify-tests-$3.log"
+        # The tests of the GPU are skipped without a GPU, see src/testutils/gputests.h
+        if [ "${requireGpu:-0}" -eq 1 ] && grep -qE "Gpu .*Skipped" "$dir/verify-tests-$3.log"; then
+            grep -E "Gpu .*Skipped" "$dir/verify-tests-$3.log"
+            echo "    the tests of the GPU were skipped, no GPU was found"
+            failures+=("GPU tests $label")
+        fi
     else
         grep -E "tests passed|\*\*\*Failed|Failed  |Timeout" "$dir/verify-tests-$3.log"
         failures+=("tests $label")
@@ -127,7 +146,8 @@ testBuild()
         return
     fi
     if [ $tests -eq 1 ]; then
-        runTests "$dir" "$name, explicit SIMD if available" simd
+        requireGpu=${3:-0} runTests "$dir" "$name, explicit SIMD if available" simd
+        # Without explicit SIMD the GPU tests of the forces are skipped
         ACT_NO_EXPLICIT_SIMD=1 runTests "$dir" "$name, without explicit SIMD" nosimd
     fi
 }
@@ -167,13 +187,18 @@ runCases()
     run hf-b2 b2 -ff "$tff/4S-lj14-7-pg-hvdw.xml" -f "$b2d/hydrogen-fluoride#hydrogen-fluoride.pdb" $b2
 }
 
-# Run the regression set with and without explicit SIMD, and keep or compare it
+# Run the regression set in build directory $1 in the modes that follow it,
+# simd and nosimd for with and without explicit SIMD, gpu as simd, and keep
+# or compare it
 regressionSet()
 {
-    local act=$build/bin/alexandria
-    for mode in simd nosimd; do
+    local dir=$1; shift
+    local act=$dir/bin/alexandria
+    # The MPI launcher of that build, which may differ for the GPU build
+    mpiexec=$(cacheValue "$dir" MPIEXEC_EXECUTABLE)
+    for mode in "$@"; do
         echo "=== Regression set, $mode"
-        local out=$build/verify/$mode ref=$build/verify-reference/$mode
+        local out=$dir/verify/$mode ref=$dir/verify-reference/$mode
         rm -rf "$out"
         mkdir -p "$out"
         local nfail=${#failures[@]}
@@ -232,8 +257,20 @@ if [ $single -eq 1 ]; then
     testBuild "$root/build_Release_SINGLE" "build_Release_SINGLE"
 fi
 
+if [ $gpu -eq 1 ]; then
+    if [ -f "$gpubuild/CMakeCache.txt" ]; then
+        testBuild "$gpubuild" "$(basename "$gpubuild"), GPU" 1
+    else
+        echo "=== No GPU build directory $gpubuild"
+        failures+=("GPU build $gpubuild not configured")
+    fi
+fi
+
 if [ -n "$regression" ]; then
-    regressionSet
+    regressionSet "$build" simd nosimd
+    if [ $gpu -eq 1 ] && [ -x "$gpubuild/bin/alexandria" ]; then
+        regressionSet "$gpubuild" gpu
+    fi
 fi
 
 if [ ${#failures[@]} -gt 0 ]; then

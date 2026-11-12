@@ -50,6 +50,7 @@
 #include "act/gpu/gpu.h"
 
 #include "testutils/cmdlinetest.h"
+#include "testutils/gputests.h"
 #include "testutils/refdata.h"
 #include "testutils/testasserts.h"
 
@@ -430,12 +431,10 @@ void compareGpuTrainings(gmx::test::TestFileManager *fileManager,
 // together, each with the bounds of its own charges, as one at a time. The
 // second charges of the polarizable model are trained with the charges, such
 // that they differ between the individuals.
-TEST_F(TrainFFMpiTest, GpuLockstepCharges)
+TEST_F(TrainFFMpiTest, LockstepChargesGpu)
 {
-    if (!gpuTraining())
+    if (!gmx::test::gpuTestRuns(gpuTraining(), "no GPU or double precision"))
     {
-        // This googletest has no GTEST_SKIP
-        fprintf(stderr, "Not tested: needs a GPU and single precision\n");
         return;
     }
     // Four individuals on each of the three middlemen
@@ -450,11 +449,10 @@ TEST_F(TrainFFMpiTest, GpuLockstepCharges)
 // Test: The molecules whose parameters did not change are not computed again
 // on the GPU, their deviations, including the bounds of their charges, are
 // those kept from before. ACT_NO_GPU_SKIP computes all of them each time.
-TEST_F(TrainFFMpiTest, GpuSkippedMolecules)
+TEST_F(TrainFFMpiTest, SkippedMoleculesGpu)
 {
-    if (!gpuTraining())
+    if (!gmx::test::gpuTestRuns(gpuTraining(), "no GPU or double precision"))
     {
-        fprintf(stderr, "Not tested: needs a GPU and single precision\n");
         return;
     }
     // Two individuals on each middleman, one after the other

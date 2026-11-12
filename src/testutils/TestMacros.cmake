@@ -101,10 +101,12 @@ endfunction()
 # TODO When a test case needs it, generalize the MPI_RANKS mechanism so
 # that ctest can run the test binary over a range of numbers of MPI
 # ranks.
+#   GTEST_FILTER <F>      runs only the tests of the googletest filter F
+#   SKIP_REGEX <R>        reports the test as skipped if its output matches R
 function (gmx_register_gtest_test NAME EXENAME)
     if (GMX_BUILD_UNITTESTS AND BUILD_TESTING)
         set(_options INTEGRATION_TEST SLOW_TEST)
-        set(_one_value_args MPI_RANKS OPENMP_THREADS)
+        set(_one_value_args MPI_RANKS OPENMP_THREADS GTEST_FILTER SKIP_REGEX)
         cmake_parse_arguments(ARG "${_options}" "${_one_value_args}" "" ${ARGN})
         set(_xml_path ${CMAKE_BINARY_DIR}/Testing/Temporary/${NAME}.xml)
         set(_labels GTest)
@@ -150,8 +152,14 @@ function (gmx_register_gtest_test NAME EXENAME)
                 list(APPEND _cmd -ntmpi ${ARG_MPI_RANKS})
             endif()
         endif()
+        if (ARG_GTEST_FILTER)
+            list(APPEND _cmd --gtest_filter=${ARG_GTEST_FILTER})
+        endif()
         add_test(NAME ${NAME}
                  COMMAND ${_cmd} --gtest_output=xml:${_xml_path})
+        if (ARG_SKIP_REGEX)
+            set_tests_properties(${NAME} PROPERTIES SKIP_REGULAR_EXPRESSION "${ARG_SKIP_REGEX}")
+        endif()
         set_tests_properties(${NAME} PROPERTIES LABELS "${_labels}")
         set_tests_properties(${NAME} PROPERTIES TIMEOUT ${_timeout})
         add_dependencies(tests ${EXENAME})
@@ -161,6 +169,28 @@ endfunction ()
 function (gmx_add_unit_test NAME EXENAME)
     gmx_add_gtest_executable(${EXENAME} ${ARGN})
     gmx_register_gtest_test(${NAME} ${EXENAME})
+endfunction()
+
+# A test program with tests that need a GPU, whose names end in Gpu. These
+# run as a CTest entry of their own, NAME followed by Gpu, which is reported
+# as skipped if there is no GPU, see src/testutils/gputests.h. The other
+# tests run as the entry NAME. With RANKS, the program is an MPI test.
+function (act_add_gpu_unit_test NAME EXENAME)
+    set(_one_value_args RANKS)
+    cmake_parse_arguments(ARG "" "${_one_value_args}" "" ${ARGN})
+    if (ARG_RANKS)
+        if (NOT (ACT_MPI OR (GMX_THREAD_MPI AND GTEST_IS_THREADSAFE)))
+            return()
+        endif()
+        gmx_add_gtest_executable(${EXENAME} MPI ${ARG_UNPARSED_ARGUMENTS})
+        set(_ranks MPI_RANKS ${ARG_RANKS})
+    else()
+        gmx_add_gtest_executable(${EXENAME} ${ARG_UNPARSED_ARGUMENTS})
+        set(_ranks)
+    endif()
+    gmx_register_gtest_test(${NAME} ${EXENAME} ${_ranks} GTEST_FILTER "-*Gpu")
+    gmx_register_gtest_test(${NAME}Gpu ${EXENAME} ${_ranks} GTEST_FILTER "*Gpu"
+                            SKIP_REGEX "ACT GPU tests skipped")
 endfunction()
 
 function (gmx_add_mpi_unit_test NAME EXENAME RANKS)

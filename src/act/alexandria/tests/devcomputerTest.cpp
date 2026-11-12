@@ -55,6 +55,7 @@
 #include "act/topology/actmol.h"
 
 #include "testutils/cmdlinetest.h"
+#include "testutils/gputests.h"
 #include "testutils/refdata.h"
 #include "testutils/testasserts.h"
 #include "testutils/testfilemanager.h"
@@ -2249,10 +2250,8 @@ TEST_F(PropertyDevComputerTest, ShellKeepSameEnergies)
 // within single precision, with fewer iterations
 TEST_F(PropertyDevComputerTest, ShellKeepSameEnergiesGpu)
 {
-    if (!gpu::useGpu())
+    if (!gmx::test::gpuTestRuns(gpu::useGpu() && !GMX_DOUBLE, "no GPU or double precision"))
     {
-        // Needs a GPU
-        fprintf(stderr, "ShellKeepSameEnergiesGpu: no GPU, nothing tested\n");
         return;
     }
     ForceField pd;
@@ -2264,10 +2263,7 @@ TEST_F(PropertyDevComputerTest, ShellKeepSameEnergiesGpu)
         MsgHandler msghandler;
         return prepareMolecules(&msghandler, &pd, fc, {}, mpFile);
     };
-    if (!compareShellKeep(&pd, make, true, 1e-5))
-    {
-        fprintf(stderr, "ShellKeepSameEnergiesGpu: the GPU cannot compute these molecules, nothing tested\n");
-    }
+    EXPECT_TRUE(compareShellKeep(&pd, make, true, 1e-5)) << "The GPU cannot compute these molecules";
 }
 
 // Test: With -gpu_resident, molecules that the GPU cannot take are computed
@@ -2316,12 +2312,10 @@ TEST_F(PropertyDevComputerTest, GpuResidentFallsBackToProcessor)
 // of the molecules, give the same energies and charges as computing each set
 // by itself. The sets differ in the polarizabilities and in the
 // electronegativities, of which the GPU generates the charges with SQE.
-TEST_F(PropertyDevComputerTest, GpuReplicasAsSeparateEvaluations)
+TEST_F(PropertyDevComputerTest, ReplicasAsSeparateEvaluationsGpu)
 {
-    if (!gpu::useGpu())
+    if (!gmx::test::gpuTestRuns(gpu::useGpu() && !GMX_DOUBLE, "no GPU or double precision"))
     {
-        // Needs a GPU
-        fprintf(stderr, "GpuReplicasAsSeparateEvaluations: no GPU, nothing tested\n");
         return;
     }
     ForceComputer forceComputer;
@@ -2336,12 +2330,7 @@ TEST_F(PropertyDevComputerTest, GpuReplicasAsSeparateEvaluations)
     auto mpFile = fileManager().getInputFilePath("molprop/ion-water.xml");
     auto mols   = prepareMolecules(&msghandler, &pd, &forceComputer, {}, mpFile);
     ASSERT_FALSE(mols.empty());
-    // Needs a GPU that can compute these molecules, in single precision
-    if (!forceComputer.prepareGpuResident(&pd, pointers(&mols)))
-    {
-        fprintf(stderr, "GpuReplicasAsSeparateEvaluations: the GPU cannot compute these molecules, nothing tested\n");
-        return;
-    }
+    ASSERT_TRUE(forceComputer.prepareGpuResident(&pd, pointers(&mols))) << "The GPU cannot compute these molecules";
     std::vector<std::pair<ForceFieldParameter *, double>> original;
     for(auto itype : { InteractionType::POLARIZATION, InteractionType::ELECTRONEGATIVITYEQUALIZATION })
     {
@@ -2416,12 +2405,10 @@ TEST_F(PropertyDevComputerTest, GpuReplicasAsSeparateEvaluations)
 // gives them, without the conformation data, on the processor and on the
 // GPU, are those of calcDeviation, exactly, for all energy targets, loss
 // functions and Boltzmann weighting.
-TEST_F(PropertyDevComputerTest, CompactDeviationsAsCalcDeviation)
+TEST_F(PropertyDevComputerTest, CompactDeviationsAsCalcDeviationGpu)
 {
-    if (!gpu::useGpu())
+    if (!gmx::test::gpuTestRuns(gpu::useGpu() && !GMX_DOUBLE, "no GPU or double precision"))
     {
-        // Needs a GPU
-        fprintf(stderr, "CompactDeviationsAsCalcDeviation: no GPU, nothing tested\n");
         return;
     }
     ForceComputer forceComputer;
@@ -2434,11 +2421,7 @@ TEST_F(PropertyDevComputerTest, CompactDeviationsAsCalcDeviation)
     auto mpFile = fileManager().getInputFilePath("molprop/ion-water.xml");
     auto mols   = prepareMolecules(&msghandler, &pd, &forceComputer, {}, mpFile);
     ASSERT_FALSE(mols.empty());
-    if (!forceComputer.prepareGpuResident(&pd, pointers(&mols)))
-    {
-        fprintf(stderr, "CompactDeviationsAsCalcDeviation: the GPU cannot compute these molecules, nothing tested\n");
-        return;
-    }
+    ASSERT_TRUE(forceComputer.prepareGpuResident(&pd, pointers(&mols))) << "The GPU cannot compute these molecules";
     const std::vector<eRMS> all = { eRMS::EPOT, eRMS::Interaction, eRMS::Electrostatics,
                                     eRMS::Dispersion, eRMS::Exchange, eRMS::Induction,
                                     eRMS::DeltaHF, eRMS::ExchInd, eRMS::AllElec };
