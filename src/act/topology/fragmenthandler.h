@@ -62,6 +62,8 @@ private:
     std::vector<double>                qtotal_;
     //! Whether charges are fixed or not. They are when set from a charge map.
     bool                               fixedQ_ = false;
+    //! Whether the topologies leave out the Coulomb pairs of particles without charge, see Topology::setLeaveOutUnchargedPairs
+    bool                               leaveOutUncharged_ = true;
     //! Total number of atoms
     size_t                             natoms_ = 0;
     //! The particle type of each atom of each fragment, nullptr if the force field has none
@@ -87,6 +89,11 @@ public:
      * \param[in] fragments     The fragmentation information
      * \param[in] missing       How to deal with missing parameters
      */
+    /*! \brief Whether init makes topologies without the Coulomb pairs of particles without charge
+     * \param[in] leaveOut Whether to leave them out, see Topology::setLeaveOutUnchargedPairs
+     */
+    void setLeaveOutUnchargedPairs(bool leaveOut) { leaveOutUncharged_ = leaveOut; }
+
     void init(MsgHandler                   *msghandler,
               ForceField                   *pd,
               const std::vector<gmx::RVec> &coordinates,

@@ -1489,6 +1489,35 @@ void Topology::build(MsgHandler             *msghandler,
     nonBonded_.make(atoms_.size(), exclusions);
     nonBonded_.addType(pd, InteractionType::VDW, atoms_);
     nonBonded_.addType(pd, InteractionType::ELECTROSTATICS, atoms_);
+    // Particles whose charges are fixed at zero do not take part in Coulomb
+    // interactions, see setLeaveOutUnchargedPairs
+    uncharged_.assign(atoms_.size(), 0);
+    if (leaveOutUncharged_)
+    {
+        bool any = false;
+        for (size_t i = 0; i < atoms_.size(); i++)
+        {
+            if (!pd->hasParticleType(atoms_[i].ffType()))
+            {
+                continue;
+            }
+            auto fixedZero = [](const ForceFieldParameter &p)
+            {
+                return p.mutability() == Mutability::Fixed && p.value() == 0;
+            };
+            auto ptype = pd->findParticleType(atoms_[i].ffType());
+            if (ptype->hasParameter("charge") && fixedZero(ptype->parameterConst("charge")) &&
+                (!ptype->hasChargeVS() || fixedZero(ptype->parameterConst(chargeVSName))))
+            {
+                uncharged_[i] = 1;
+                any           = true;
+            }
+        }
+        if (any)
+        {
+            nonBonded_.leaveOut(InteractionType::ELECTROSTATICS, uncharged_);
+        }
+    }
     auto itqt = InteractionType::VDWCORRECTION;
     // If the interaction has no parameters even though it is present, ignore
     if (pd->interactionPresent(itqt) && !pd->findForcesConst(itqt).empty())

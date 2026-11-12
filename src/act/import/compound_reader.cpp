@@ -386,6 +386,9 @@ void CompoundReader::read(MsgHandler          *msghandler,
         bool warnQtot = mols->size() == 1;
         for(auto mol = mols->begin(); mol != mols->end(); )
         {
+            // Read or given charges may differ from those of the force field
+            mol->setChargesFromForceField(qAlgorithm_ != ChargeGenerationAlgorithm::Read &&
+                                          qAlgorithm_ != ChargeGenerationAlgorithm::Custom);
             mol->GenerateTopology(msghandler, &pd, missingParameters::Error);
             if (msghandler->ok())
             {

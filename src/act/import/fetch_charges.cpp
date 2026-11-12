@@ -92,6 +92,8 @@ ChargeMap fetchChargeMap(MsgHandler                  *msghandler,
         }
         alexandria::ACTMol actmol;
         actmol.Merge(std::move(&(*mp)));
+        // Read charges may differ from those of the force field
+        actmol.setChargesFromForceField(algorithm != ChargeGenerationAlgorithm::Read);
         actmol.GenerateTopology(msghandler, pd, missingParameters::Error);
         // Add charges according to the algorithm selected
         std::vector<std::pair<Identifier, double>> newq;
