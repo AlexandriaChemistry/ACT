@@ -57,6 +57,8 @@ if (NOT CMAKE_INSTALL_PYTHON_LIBDIR)
   set(CMAKE_INSTALL_PYTHON_LIBDIR
     "lib/python${Python3_VERSION_MAJOR}.${Python3_VERSION_MINOR}/site-packages")
 endif ()
+# make tidy, clean-up of the code with clang-tidy
+include(ACTClangTidy)
 
 # Set up common version variables, as well as general information about
 # the build tree (whether the build is from a source package or from a git

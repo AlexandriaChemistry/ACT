@@ -1,0 +1,32 @@
+# The checks that "make tidy" applies to the ACT code, see admin/clang_tidy_fix.py.
+# Only checks that come with automatic fixes are listed here.
+# misc-const-correctness makes local variables and references const
+# where possible; admin/clang_tidy_fix.py leaves out its fixes for scalar variables
+# (built-in types, enumerations and pointers), see --const-scalars.
+Checks: >
+  -*,
+  misc-const-correctness,
+  modernize-redundant-void-arg,
+  modernize-use-bool-literals,
+  modernize-use-emplace,
+  modernize-use-equals-default,
+  modernize-use-nullptr,
+  modernize-use-override,
+  performance-for-range-copy,
+  performance-unnecessary-copy-initialization,
+  readability-braces-around-statements,
+  readability-container-size-empty,
+  readability-delete-null-pointer,
+  readability-redundant-control-flow,
+  readability-redundant-smartptr-get,
+  readability-redundant-string-cstr,
+  readability-redundant-string-init,
+  readability-simplify-boolean-expr
+WarningsAsErrors: ''
+CheckOptions:
+  # Local variables and references only, the signatures of functions stay as they are
+  misc-const-correctness.AnalyzeParameters: false
+  misc-const-correctness.AnalyzePointers: false
+  misc-const-correctness.WarnPointersAsValues: false
+  misc-const-correctness.TransformPointersAsValues: false
+  readability-simplify-boolean-expr.SimplifyDeMorgan: false

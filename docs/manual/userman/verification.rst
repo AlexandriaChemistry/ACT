@@ -1,7 +1,7 @@
 ************************
 Verifying changes to ACT
 ************************
-The test set described in the previous chapter checks that ACT works as intended. When changing the code, two scripts in the *admin* directory of the source code help to check more thoroughly that nothing broke: *verify.sh* runs the tests in different ways and compares a set of real calculations with a reference, and *coverage.sh* reports which parts of the code the tests do not run.
+The test set described in the previous chapter checks that ACT works as intended. When changing the code, two scripts in the *admin* directory of the source code help to check more thoroughly that nothing broke: *verify.sh* runs the tests in different ways and compares a set of real calculations with a reference, and *coverage.sh* reports which parts of the code the tests do not run. In addition, *make tidy* cleans up the code with *clang-tidy*, see the last section.
 
 ==========================
 Running the test set fully
@@ -101,3 +101,53 @@ builds ACT in *build_COVERAGE* with the source-based coverage of the clang compi
 * *html/index.html*, the source code with the number of times each line was run, in which code that is not run by any test stands out in red.
 
 This shows where new tests are most needed. The script needs the clang compiler and its tools *llvm-profdata* and *llvm-cov*, which come with Xcode on macOS.
+
+====================================
+Cleaning up the code with clang-tidy
+====================================
+The build target *tidy* cleans up the code of *src/act* with the *clang-tidy* program of the LLVM project and changes the source files in place. From a configured build directory, the command::
+
+  make tidy
+
+runs *clang-tidy* on all source files of *src/act* that are compiled in that build directory, collects the fixes it proposes and applies them. The checks are listed in *admin/clang-tidy-fix.yaml*; only checks that come with automatic fixes are used. They
+
+* make local variables and references *const* where they are not changed, but only for variables that are not scalars, such as objects, strings, containers and iterators; variables of the built-in types, enumerations and pointers are left as they are (see *-\-const-scalars* below), as are the parameters of functions, so that no function signatures change,
+* avoid needless copies, for instance by using *const auto &* for a variable that is copied from a constant reference, or *emplace_back* rather than *push_back*,
+* use *empty()* rather than comparing *size()* with zero, and remove calls of *c_str()* and initializations of strings that are not needed,
+* write *= default* for empty constructors and destructors and *override* for virtual functions that override another,
+* simplify boolean expressions, use *nullptr*, and add braces around the statement of *if*, *for*, *while* and *else* when they are missing.
+
+The fixes are applied in the layout of the ACT code, with 4 spaces of indentation: *const* is written in front of the type (*const auto it*), aligned declarations stay aligned, braces that are added get lines of their own, and *= default* follows the parameter list. Only the lines that are fixed change, the rest of each file is left as it is. Fixes that overlap with another fix are left for the next run, and fixes that cannot be written in this layout, such as braces in a function written on one line, are left out; the output lists how many fixes of each check were applied or left. Run *make tidy* until it reports no more fixes.
+
+The clean-up can be limited to some files or directories, relative to the directory with the source code, and the options of :numref:`tab-tidy` can be given, with two environment variables::
+
+  make tidy ACT_TIDY_PATHS=src/act/forces
+  make tidy ACT_TIDY_PATHS="src/act/topology src/act/qgen" ACT_TIDY_ARGS=--dry-run
+
+Header files are changed only when they are in the selected files or directories. The script that does the work, *admin/clang_tidy_fix.py*, can also be run directly, with the build directory given as *-\-build-dir*.
+
+.. table:: Options of make tidy, given with ACT_TIDY_ARGS.
+   :name: tab-tidy
+
+   +------------------+------------------------------------------------------------+
+   | **Option**       | **Description**                                            |
+   +==================+============================================================+
+   | -\-dry-run       | Only report how many fixes of each check would be applied, |
+   |                  | without changing any file.                                 |
+   +------------------+------------------------------------------------------------+
+   | -\-const-scalars | Also make variables of scalar types (built-in types,       |
+   |                  | enumerations and pointers) const.                          |
+   +------------------+------------------------------------------------------------+
+   | -j N             | The number of clang-tidy processes run at the same time,   |
+   |                  | by default the number of cores.                            |
+   +------------------+------------------------------------------------------------+
+
+*clang-tidy* reads how each file is compiled from *compile_commands.json* in the build directory, which *cmake* writes when it configures the build. It therefore only sees the code that is compiled there: code for another configuration, for instance the SYCL code of a build with GPU support or code for single precision, is only cleaned up from a build directory with that configuration. The target needs *clang-tidy* and Python with the *PyYAML* module. Any recent version of *clang-tidy* will do; if it is not in the path, or has another name, give it when configuring::
+
+  cmake -DACT_CLANG_TIDY=$HOME/miniforge3/envs/tidy/bin/clang-tidy .
+
+where, for instance, the conda environment *tidy* was made with::
+
+  conda create -n tidy -c conda-forge clang-tools clang
+
+The package *clang* is needed for the header files of the compiler that *clang-tidy* uses. As with any change, check the result with *git diff*, then build ACT and run the tests, for instance with *admin/verify.sh*, before committing it.
