@@ -296,6 +296,24 @@ TEST_F (CombinationRuleTest, GeneralizedMean_1_4_QuiteSmall)
 
 // Test: The number of combination rules from the command line that change
 // those of the force field
+// Test: HalgrenEpsilon is Eqn. cr_harmonic_mean of the manual,
+// 4 x1 x2/(sqrt(x1) + sqrt(x2))^2, which lies between the geometric mean and
+// HogervorstEpsilon, and gives x for two values x. A macro without
+// parentheses made the denominator sqrt(x1) + sqrt(x2)*sqrt(x1) + sqrt(x2).
+TEST(CombinationRuleFormulaTest, HalgrenEpsilon)
+{
+    for (const auto &x : std::vector<std::pair<double, double>>{ { 1, 2 }, { 0.3, 0.9 }, { 5, 5 } })
+    {
+        double x1 = x.first, x2 = x.second;
+        double s  = std::sqrt(x1) + std::sqrt(x2);
+        double h  = combineTwo(CombRule::HalgrenEpsilon, x1, x2);
+        EXPECT_NEAR(4*x1*x2/(s*s), h, 1e-14*h);
+        EXPECT_LE(h, combineTwo(CombRule::Geometric, x1, x2)*(1 + 1e-14));
+        EXPECT_GE(h, combineTwo(CombRule::HogervorstEpsilon, x1, x2)*(1 - 1e-14));
+    }
+    EXPECT_NEAR(5, combineTwo(CombRule::HalgrenEpsilon, 5.0, 5.0), 1e-14);
+}
+
 /*! \brief Combine the van der Waals parameters of the hydrogen fluoride force field with a rule for epsilon
  * \param[in]  rule    The combination rule of epsilon
  * \param[out] mixed   The epsilon of the pair f and hf
