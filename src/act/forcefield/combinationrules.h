@@ -32,6 +32,7 @@
 #ifndef ACT_COMBINATIONRULES_H
 #define ACT_COMBINATIONRULES_H
 
+#include "act/forcefield/combinationkernels.h"
 #include <map>
 
 #include "act/forcefield/forcefield_parameter.h"
@@ -40,15 +41,8 @@
 namespace alexandria
 {
 
-//! \brief Class that defines the combination rules supported by ACT
-enum class CombRule {
-    Geometric, Arithmetic, Volumetric, InverseSquare, 
-    HogervorstEpsilon, HogervorstSigma, Yang,
-    WaldmanSigma, WaldmanEpsilon, HalgrenEpsilon,
-    QiSigma, QiEpsilon, MasonGamma, Kronecker,
-    GeneralizedMean
-};
-
+// The enum CombRule, the combination rules supported by ACT, is in
+// combinationkernels.h, with their formulas
 //! Map combination rules to strings
 extern const std::map<CombRule, const std::string> combRuleName;
 

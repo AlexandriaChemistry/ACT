@@ -40,6 +40,7 @@
 #include <type_traits>
 
 #include "act/forcefield/forcefield_parametername.h"
+#include "act/gpu/pairrows.h"
 #include "act/utility/timings.h"
 #include "gromacs/math/functions.h"
 #include "gromacs/math/units.h"
@@ -121,101 +122,13 @@ static bool gpuPairEntryT(gpu::PairKernel             kernel,
         }
         return true;
     }
-    case gpu::PairKernel::Polarization:
+    default:
     {
-        auto &params = b.params();
-        auto  alpha  = params[polALPHA];
-        if (alpha == 0)
-        {
-            return false;
-        }
-        auto q   = atoms[ind[1]].charge();
-        pe->p[0] = static_cast<float>(ONE_4PI_EPS0*q*q/alpha);
-        pe->p[1] = static_cast<float>(params[polRHYPER]);
-        pe->p[2] = static_cast<float>(params[polFCHYPER]);
-        return true;
-    }
-    case gpu::PairKernel::LJ12_6:
-    {
-        auto sig6 = gmx::power6(b.params()[lj12_6SIGMA]);
-        auto c6   = 4*b.params()[lj12_6EPSILON]*sig6;
-        pe->p[0]  = static_cast<float>(c6);
-        pe->p[1]  = static_cast<float>(c6*sig6);
-        return true;
-    }
-    case gpu::PairKernel::LJ14_7:
-    {
-        auto &params  = b.params();
-        auto  sigma   = params[lj14_7SIGMA];
-        auto  epsilon = params[lj14_7EPSILON];
-        pe->p[0] = static_cast<float>(1/sigma);
-        pe->p[1] = static_cast<float>(epsilon);
-        pe->p[2] = static_cast<float>(params[lj14_7GAMMA]);
-        pe->p[3] = static_cast<float>(params[lj14_7DELTA]);
-        return epsilon > 0 && sigma > 0;
-    }
-    case gpu::PairKernel::WangBuckingham:
-    {
-        auto &params  = b.params();
-        auto  sigma   = params[wbhSIGMA];
-        auto  epsilon = params[wbhEPSILON];
-        auto  gamma   = params[wbhGAMMA];
-        auto  gamma_3 = 3.0/(gamma + 3.0);
-        pe->p[0] = static_cast<float>(gmx::power6(sigma));
-        pe->p[1] = static_cast<float>(gamma_3);
-        pe->p[2] = static_cast<float>(2*epsilon/(1.0 - gamma_3));
-        pe->p[3] = static_cast<float>(gamma);
-        pe->p[4] = static_cast<float>(1/sigma);
-        return epsilon > 0 && gamma > 0 && sigma > 0;
-    }
-    case gpu::PairKernel::DoubleExponential:
-    {
-        pe->p[0] = static_cast<float>(b.params()[dexpA2] - b.params()[dexpA1]);
-        pe->p[1] = static_cast<float>(b.params()[dexpB]);
-        return true;
-    }
-    case gpu::PairKernel::HarmonicBond:
-    {
-        auto &params = b.params();
-        pe->p[0] = static_cast<float>(params[bondLENGTH]);
-        pe->p[1] = static_cast<float>(params[bondKB]);
-        pe->p[2] = static_cast<float>(params[bondENERGY]);
-        return true;
-    }
-    case gpu::PairKernel::CubicBond:
-    {
-        auto &params = b.params();
-        double b0   = params[cubicLENGTH];
-        double rmax = params[cubicRMAX];
-        // Not beyond the maximum of the potential, as CubicBond::prepare
-        double rhi  = (2*rmax + b0)/3;
-        pe->p[0] = static_cast<float>(b0);
-        pe->p[1] = static_cast<float>(rmax);
-        pe->p[2] = static_cast<float>(params[cubicKB]);
-        pe->p[3] = static_cast<float>(params[cubicDE]);
-        pe->p[4] = static_cast<float>(rhi*rhi);
-        return true;
-    }
-    case gpu::PairKernel::MorseBond:
-    {
-        auto &params = b.params();
-        pe->p[0] = static_cast<float>(params[morseLENGTH]);
-        pe->p[1] = static_cast<float>(params[morseBETA]);
-        pe->p[2] = static_cast<float>(params[morseDE]);
-        pe->p[3] = static_cast<float>(params[morseD0]);
-        return true;
-    }
-    case gpu::PairKernel::HuaBond:
-    {
-        auto &params = b.params();
-        pe->p[0] = static_cast<float>(params[huaLENGTH]);
-        pe->p[1] = static_cast<float>(params[huaB]);
-        pe->p[2] = static_cast<float>(params[huaDE]);
-        pe->p[3] = static_cast<float>(params[huaC]);
-        return true;
+        // The other kernels only need the parameters, see pairrows.h
+        double qshell = gpu::PairKernel::Polarization == kernel ? atoms[ind[1]].charge() : 0.0;
+        return gpu::rows::pairRow(kernel, b.params().data(), qshell, ONE_4PI_EPS0, pe->p);
     }
     }
-    return false;
 }
 
 bool gpuPairEntry(gpu::PairKernel             kernel,
@@ -256,31 +169,7 @@ void gpuBondedEntry(gpu::BondedKernel kernel, const TopologyEntry &b, gpu::Bonde
     {
         be->a[k] = static_cast<uint32_t>(k < static_cast<int>(ind.size()) ? ind[k] : ind[0]);
     }
-    std::fill(be->p, be->p + 8, 0.0f);
-    switch (kernel)
-    {
-    case gpu::BondedKernel::HarmonicAngle:
-        be->p[0] = static_cast<float>(params[angleKT]);
-        be->p[1] = static_cast<float>(params[angleANGLE]);
-        break;
-    case gpu::BondedKernel::LinearAngle:
-        be->p[0] = static_cast<float>(params[linangA]);
-        be->p[1] = static_cast<float>(params[linangKLIN]);
-        break;
-    case gpu::BondedKernel::FourierDihedral:
-    {
-        size_t n = std::min(params.size(), static_cast<size_t>(fdihNR));
-        for (size_t k = 0; k < n; k++)
-        {
-            be->p[k] = static_cast<float>(params[k]);
-        }
-        be->p[6] = static_cast<float>(n);
-        break;
-    }
-    case gpu::BondedKernel::HarmonicDihedral:
-        be->p[0] = static_cast<float>(params[idihKPHI]);
-        break;
-    }
+    gpu::rows::bondedRow(kernel, params.data(), params.size(), be->p);
 }
 
 bool gpuVsiteEntry(InteractionType itype, const TopologyEntry &b, gpu::VsiteEntry *ve)
