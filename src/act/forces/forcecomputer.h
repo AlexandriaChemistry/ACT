@@ -610,7 +610,7 @@ private:
     //! \return whether the GPU makes the rows of its parameter tables from recipes, see GpuTrainingSystem::recipeRows
     bool gpuRecipeRows() const
     {
-        return gpuSystem_ ? gpuSystem_->recipeRows() : false;
+        return gpuSystem_ && !gpuResidentUnavailable_ ? gpuSystem_->recipeRows() : false;
     }
 
     //! \return a number that changes when the molecules or the deviations on the GPU are made again
