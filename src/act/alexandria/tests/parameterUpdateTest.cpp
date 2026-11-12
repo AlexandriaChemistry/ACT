@@ -235,6 +235,18 @@ Evaluation evaluate(GaTestHelper              *helper,
     return ev;
 }
 
+/*! \brief Whether a change of a parameter changed the result
+ * Terms that cancel, such as the bonded ones in an interaction energy,
+ * may still change it by rounding, which does not count.
+ * \param[in] a The result after the change
+ * \param[in] b The result before
+ * \return whether it changed
+ */
+bool resultChanged(const Evaluation &a, const Evaluation &b)
+{
+    return std::abs(a.chi2 - b.chi2) > 1e-9*std::abs(b.chi2);
+}
+
 /*! \brief Compare two evaluations
  * \param[in] a         One
  * \param[in] b         The other
@@ -487,7 +499,7 @@ void checkUpdates(gmx::test::TestFileManager *fileManager,
         auto values1    = values;
         values1[k]      = probe[k];
         auto tried      = evaluate(&incremental, values1, { static_cast<int>(k) }, charges);
-        probeChanged[k] = tried.chi2 != before.chi2;
+        probeChanged[k] = resultChanged(tried, before);
         compare(evaluate(&incremental, values, { static_cast<int>(k) }, charges), before, tolerance);
     }
     // Then, for each kind of parameter, the first one that changed the
@@ -547,7 +559,7 @@ void checkUpdates(gmx::test::TestFileManager *fileManager,
         }
         ASSERT_EQ(1, which.count(k)) << "Parameter " << k << " did not change";
         auto reference = evaluate(&fresh, changed, {}, charges);
-        if (reference.chi2 != before.chi2)
+        if (resultChanged(reference, before))
         {
             relevant.insert(kindOf(oi));
         }
@@ -680,6 +692,78 @@ TEST_F(ParameterUpdateTest, OneAtATimeGpu)
     auto cases = updateCases();
     SCOPED_TRACE("alc-pol-wbh");
     checkUpdates(&fileManager_, "alc-pol-wbh", cases["alc-pol-wbh"], true, 1e-6);
+}
+
+// Test: The processor and the GPU give the same objective function for the
+// same sequence of parameters, as the MCMC steps of a training, within
+// single precision. The sequence is fixed, a random walk in which half of
+// the steps are undone as when they are rejected, since the Metropolis
+// criterion could take other decisions on the processor and the GPU when
+// two values of the objective function are nearly the same.
+TEST_F(ParameterUpdateTest, ProcessorMatchesGpu)
+{
+    if (!gmx::test::gpuTestRuns(gpu::useGpu() && !GMX_DOUBLE, "no GPU or double precision"))
+    {
+        return;
+    }
+    auto uc  = updateCases()["alc-pol-wbh"];
+    auto fit = trainableNames(uc.files.forceField);
+    // Random values of the parameters to start from, as in checkUpdates
+    auto baseFiles = uc.files;
+    {
+        GaTestHelper original(1, fit, uc.targets, uc.files);
+        baseFiles.forceField = fileManager_.getTemporaryFilePath("base.xml");
+        writeValues(uc.files.forceField, original.sii->optIndex(), randomValues(original.sii),
+                    baseFiles.forceField);
+    }
+    std::vector<GaTestHelper *> helpers;
+    for (bool resident : { false, true })
+    {
+        auto fc = new ForceComputer();
+        fc->setKeepShells(false);
+        fc->setGpuResident(resident);
+        helpers.push_back(new GaTestHelper(1, fit, uc.targets, baseFiles, fc));
+    }
+    auto *sii    = helpers[0]->sii;
+    auto  values = parameterValues(sii);
+    ASSERT_EQ(values, parameterValues(helpers[1]->sii));
+    std::mt19937        gen(2027);
+    std::set<int>       changed;
+    std::vector<double> beforeChange = values;
+    size_t        nsteps = 20, ndiffer = 0;
+    double        previous = 0;
+    for (size_t step = 0; step <= nsteps; step++)
+    {
+        SCOPED_TRACE(gmx::formatString("step %zu", step));
+        auto onProcessor = evaluate(helpers[0], values, changed, false);
+        auto onGpu       = evaluate(helpers[1], values, changed, false);
+        // The relaxation of the shells stops at a force tolerance, at which
+        // the processor and the GPU differ a little
+        compare(onGpu, onProcessor, 1e-4);
+        if (step > 0 && onProcessor.chi2 != previous)
+        {
+            ndiffer += 1;
+        }
+        previous = onProcessor.chi2;
+        // The next step undoes the last change, as when it is rejected, or
+        // changes another parameter
+        if (step % 2 == 1)
+        {
+            values = beforeChange;
+        }
+        else
+        {
+            std::uniform_int_distribution<size_t> pick(0, values.size() - 1);
+            size_t k     = pick(gen);
+            auto   p     = parameter(sii, k);
+            std::uniform_real_distribution<double> value(p->minimum(), p->maximum());
+            beforeChange = values;
+            values[k]    = value(gen);
+            changed      = { static_cast<int>(k) };
+        }
+    }
+    // Without changes nothing was compared
+    EXPECT_GT(ndiffer, nsteps/4);
 }
 
 } // namespace
