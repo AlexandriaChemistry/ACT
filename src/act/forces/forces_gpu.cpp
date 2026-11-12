@@ -172,6 +172,72 @@ void gpuBondedEntry(gpu::BondedKernel kernel, const TopologyEntry &b, gpu::Bonde
     gpu::rows::bondedRow(kernel, params.data(), params.size(), be->p);
 }
 
+bool gpuVsiteParameters(InteractionType itype, const TopologyEntry &b, int index[3], double factor[3])
+{
+    for (int k = 0; k < 3; k++)
+    {
+        index[k]  = -1;
+        factor[k] = 1;
+    }
+    auto use = [index, factor](int k, int i, double f = 1)
+    {
+        index[k]  = i;
+        factor[k] = f;
+    };
+    // The sign of the out-of-plane distance of the site, see Vsite3OUT
+    auto sign = [&b]() { return static_cast<const Vsite3OUT *>(b.self())->sign(); };
+    switch (itype)
+    {
+    case InteractionType::VSITE1:
+        return true;
+    case InteractionType::VSITE2:
+        use(0, vsite2A);
+        return true;
+    case InteractionType::VSITE2FD:
+        use(0, vsite2fdA);
+        return true;
+    case InteractionType::VSITE3:
+        use(0, vsite3A);
+        use(1, vsite3B);
+        return true;
+    case InteractionType::VSITE3S:
+        use(0, vsite3sA);
+        use(1, vsite3sA);
+        return true;
+    case InteractionType::VSITE3FD:
+        use(0, vsite3fdA);
+        use(1, vsite3fdB);
+        return true;
+    case InteractionType::VSITE3OUT:
+        use(0, vsite3outA);
+        use(1, vsite3outB);
+        use(2, vsite3outC, sign());
+        return true;
+    case InteractionType::VSITE3OUTS:
+        use(0, vsite3outsA);
+        use(1, vsite3outsA);
+        use(2, vsite3outsC, sign());
+        return true;
+    case InteractionType::VSITE4:
+        use(0, vsite4A);
+        use(1, vsite4B);
+        use(2, vsite4C);
+        return true;
+    case InteractionType::VSITE4S:
+        use(0, vsite4sA);
+        use(1, vsite4sB);
+        use(2, vsite4sB);
+        return true;
+    case InteractionType::VSITE4S3:
+        use(0, vsite4s3A);
+        use(1, vsite4s3A);
+        use(2, vsite4s3A);
+        return true;
+    default:
+        return false;
+    }
+}
+
 bool gpuVsiteEntry(InteractionType itype, const TopologyEntry &b, gpu::VsiteEntry *ve)
 {
     const auto &ai     = b.atomIndices();
@@ -192,68 +258,35 @@ bool gpuVsiteEntry(InteractionType itype, const TopologyEntry &b, gpu::VsiteEntr
     auto secondFirst = [ve]() { std::swap(ve->parent[0], ve->parent[1]); };
     switch (itype)
     {
-    case InteractionType::VSITE1:
-        ve->kind = gpu::VsiteKind::Copy;
-        return true;
-    case InteractionType::VSITE2:
-        ve->kind = gpu::VsiteKind::Linear2;
-        ve->p[0] = params[vsite2A];
-        return true;
-    case InteractionType::VSITE2FD:
-        ve->kind = gpu::VsiteKind::Fd2;
-        ve->p[0] = params[vsite2fdA];
-        return true;
+    case InteractionType::VSITE1:     ve->kind = gpu::VsiteKind::Copy; break;
+    case InteractionType::VSITE2:     ve->kind = gpu::VsiteKind::Linear2; break;
+    case InteractionType::VSITE2FD:   ve->kind = gpu::VsiteKind::Fd2; break;
     case InteractionType::VSITE3:
-        ve->kind = gpu::VsiteKind::Linear3;
-        ve->p[0] = params[vsite3A];
-        ve->p[1] = params[vsite3B];
-        return true;
-    case InteractionType::VSITE3S:
-        ve->kind = gpu::VsiteKind::Linear3;
-        ve->p[0] = params[vsite3sA];
-        ve->p[1] = params[vsite3sA];
-        return true;
-    case InteractionType::VSITE3FD:
-        ve->kind = gpu::VsiteKind::Fd3;
-        ve->p[0] = params[vsite3fdA];
-        ve->p[1] = params[vsite3fdB];
-        return true;
+    case InteractionType::VSITE3S:    ve->kind = gpu::VsiteKind::Linear3; break;
+    case InteractionType::VSITE3FD:   ve->kind = gpu::VsiteKind::Fd3; break;
     case InteractionType::VSITE3OUT:
-        ve->kind = gpu::VsiteKind::Out3;
-        ve->p[0] = params[vsite3outA];
-        ve->p[1] = params[vsite3outB];
-        ve->p[2] = static_cast<const Vsite3OUT *>(b.self())->sign()*params[vsite3outC];
-        secondFirst();
-        return true;
-    case InteractionType::VSITE3OUTS:
-        ve->kind = gpu::VsiteKind::Out3;
-        ve->p[0] = params[vsite3outsA];
-        ve->p[1] = params[vsite3outsA];
-        ve->p[2] = static_cast<const Vsite3OUT *>(b.self())->sign()*params[vsite3outsC];
-        secondFirst();
-        return true;
+    case InteractionType::VSITE3OUTS: ve->kind = gpu::VsiteKind::Out3; secondFirst(); break;
     case InteractionType::VSITE4:
-        ve->kind = gpu::VsiteKind::Linear4;
-        ve->p[0] = params[vsite4A];
-        ve->p[1] = params[vsite4B];
-        ve->p[2] = params[vsite4C];
-        return true;
     case InteractionType::VSITE4S:
-        ve->kind = gpu::VsiteKind::Linear4;
-        ve->p[0] = params[vsite4sA];
-        ve->p[1] = params[vsite4sB];
-        ve->p[2] = params[vsite4sB];
-        return true;
-    case InteractionType::VSITE4S3:
-        ve->kind = gpu::VsiteKind::Linear4;
-        ve->p[0] = params[vsite4s3A];
-        ve->p[1] = params[vsite4s3A];
-        ve->p[2] = params[vsite4s3A];
-        secondFirst();
-        return true;
-    default:
-        return false;
+    case InteractionType::VSITE4S3:   ve->kind = gpu::VsiteKind::Linear4; break;
+    default:                          return false;
     }
+    if (InteractionType::VSITE4S3 == itype)
+    {
+        secondFirst();
+    }
+    // The parameters, as the GPU makes them from the recipes, see gpuVsiteParameters
+    int    index[3];
+    double factor[3];
+    (void) gpuVsiteParameters(itype, b, index, factor);
+    for (int k = 0; k < 3; k++)
+    {
+        if (index[k] >= 0)
+        {
+            ve->p[k] = static_cast<float>(factor[k]*params[index[k]]);
+        }
+    }
+    return true;
 }
 
 /*! \brief The interactions with prepared parameters for the GPU, see gpuPairEntry

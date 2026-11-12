@@ -301,15 +301,17 @@ std::vector<double> ACMFitnessComputer::calcDeviations(MsgHandler               
 }
 
 /*! \brief Whether the processor needs the parameters of an interaction type in the topology
- * When the GPU makes the rows of its parameter tables from the force field,
- * see ForceComputer::gpuRecipeRows, the processor still makes the moving
- * shells, from the polarizabilities, and the virtual sites, see stageBlock.
- * \param[in] itype The interaction type
- * \return whether it does
+ * When the GPU makes the rows of its parameter tables, the moving shells and
+ * the virtual sites from the force field, see ForceComputer::gpuRecipeRows,
+ * the processor needs only some. The virtual sites are needed for the coordinates of the charge generation,
+ * see GpuTrainingSystem::stageParameters, the polarization only if the
+ * processor generates the charges, which relaxes the shells.
+ * \param[in] itype       The interaction type
+ * \param[in] hostCharges Whether the processor generates the charges
  */
-static bool hostNeedsParameters(InteractionType itype)
+static bool hostNeedsParameters(InteractionType itype, bool hostCharges)
 {
-    return InteractionType::POLARIZATION == itype || isVsite(itype);
+    return (hostCharges && InteractionType::POLARIZATION == itype) || isVsite(itype);
 }
 
 void ACMFitnessComputer::updateMolecule(MsgHandler                      *msghandler,
@@ -326,10 +328,12 @@ void ACMFitnessComputer::updateMolecule(MsgHandler                      *msghand
         static const size_t timer = Timings::instance().index("Topology parameter update");
         ScopedTimer         scoped(timer);
         auto                &filled = filledVersion_[imol];
+        // To be safe, also when the charge properties are computed
+        bool                 hostCharges = (needQProps || !(gpuCharges && actmol->fragmentHandler()->sqeOnGpu(sii_->forcefield())));
         std::set<InteractionType> itFill;
         for(auto itype : itUpdate)
         {
-            if (!allTypes && !hostNeedsParameters(itype))
+            if (!allTypes && !hostNeedsParameters(itype, hostCharges))
             {
                 continue;
             }

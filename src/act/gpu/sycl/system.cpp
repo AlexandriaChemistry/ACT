@@ -564,6 +564,10 @@ public:
     //! The parameters of the sets of each replica, maxSetParameters each
     double                         *setValues_     = nullptr;
     uint64_t                        nset_ = 0, nrowRecipe_ = 0, nrecipeValue_ = 0, nrecipeReplica_ = 0;
+    //! The recipes of the moving shells and the virtual sites, see createShellVsiteRecipes
+    ShellRecipe                    *shellRecipes_  = nullptr;
+    VsiteRecipe                    *vsiteRecipes_  = nullptr;
+    uint64_t                        nshellRecipe_ = 0, nvsiteRecipe_ = 0;
     //! Whether updateRecipeValues gave values of which the rows were not made yet
     bool                            recipeValuesChanged_ = false;
     //! The virtual sites, as on the device
@@ -1631,6 +1635,20 @@ void createRowRecipes(System *sys, const SetRecipe *recipes, size_t nset, const 
     sys->recipeValuesChanged_ = false;
 }
 
+void createShellVsiteRecipes(System *sys, const ShellRecipe *shells, size_t nshell,
+                             const VsiteRecipe *vsites, size_t nvsite)
+{
+    sys->release(sys->shellRecipes_);
+    sys->release(sys->vsiteRecipes_);
+    sys->nshellRecipe_ = nshell;
+    sys->nvsiteRecipe_ = nvsite;
+    sys->shellRecipes_ = sys->allocate<ShellRecipe>(std::max<size_t>(nshell, 1));
+    sys->vsiteRecipes_ = sys->allocate<VsiteRecipe>(std::max<size_t>(nvsite, 1));
+    sys->upload(sys->shellRecipes_, shells, nshell);
+    sys->upload(sys->vsiteRecipes_, vsites, nvsite);
+    sys->queue_->wait_and_throw();
+}
+
 void updateRecipeValues(System *sys, const double *values)
 {
     if (sys->nrowRecipe_ == 0)
@@ -1687,6 +1705,42 @@ static void computeRecipeRows(System *sys, double coulomb)
                 {
                     // As stageRows
                     t[7] = 1;
+                }
+            }
+        });
+    }
+    // The force constants of the moving shells, as addShellFragment in forces_simd.cpp
+    auto dSR = sys->shellRecipes_;
+    auto dMS = sys->movingShells_;
+    if (sys->nshellRecipe_ > 0)
+    {
+        queue->parallel_for(sycl::range<1>(sys->nshellRecipe_), [=](sycl::id<1> id)
+        {
+            const ShellRecipe &sr    = dSR[id[0]];
+            const double      *p     = dS + maxSetParameters*(sr.replica*nset + sr.set);
+            double             alpha = p[polALPHA];
+            double             q     = dQ[sr.charge];
+            MovingShell       &ms    = dMS[sr.shell];
+            ms.fcShell = (alpha > 0 && q != 0) ? q*q*coulomb/alpha : 0;
+            ms.fcHyper = p[polFCHYPER];
+            ms.rHyper  = p[polRHYPER];
+        });
+    }
+    // The parameters of the virtual sites, as gpuVsiteEntry in forces_gpu.cpp
+    auto dVR = sys->vsiteRecipes_;
+    auto dVS = sys->vsites_;
+    if (sys->nvsiteRecipe_ > 0)
+    {
+        queue->parallel_for(sycl::range<1>(sys->nvsiteRecipe_), [=](sycl::id<1> id)
+        {
+            const VsiteRecipe &vr = dVR[id[0]];
+            const double      *p  = dS + maxSetParameters*(vr.replica*nset + vr.set);
+            VsiteEntry        &ve = dVS[vr.vsite].entry;
+            for (int k = 0; k < 3; k++)
+            {
+                if (vr.index[k] >= 0)
+                {
+                    ve.p[k] = static_cast<float>(vr.factor[k]*p[vr.index[k]]);
                 }
             }
         });

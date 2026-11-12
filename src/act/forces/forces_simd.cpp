@@ -3466,6 +3466,8 @@ struct GpuRelaxMolecule
     ConformationData                        *cdata = nullptr;
     std::vector<gpu::ForceShell>             forceShells;
     std::vector<gpu::MovingShell>            movingShells;
+    //! The polarization of each moving shell, see GpuTrainingSystem::Impl::makeRowRecipes
+    std::vector<const TopologyEntry *>       movingShellEntries;
     std::vector<gpu::ShellFragment>          fragments;
     std::vector<std::vector<gpu::PairEntry>> pairs;
     std::vector<Potential>                   potentials;
@@ -3533,6 +3535,7 @@ void addShellFragment(const Topology   *top,
             ms.fcHyper = params[polFCHYPER];
             ms.rHyper  = params[polRHYPER];
             m->movingShells.push_back(ms);
+            m->movingShellEntries.push_back(p.operator->());
         }
     }
     fr.nforceShell  = m->forceShells.size() - fr.firstForceShell;
@@ -4382,9 +4385,64 @@ public:
                 }
             }
         }
+        // The moving shells and the virtual sites, in the order of stageShellsVsites
+        std::vector<gpu::ShellRecipe> shellRecipes;
+        std::vector<gpu::VsiteRecipe> vsiteRecipes;
+        size_t shellsReplica = staged[0].shells.size();
+        size_t vsitesReplica = staged[0].vsites.size();
+        for (size_t b = 0; b < blocks.size(); b++)
+        {
+            const auto      &bl  = blocks[b];
+            const auto      &d   = bl.desc;
+            const auto      &seg = segments[b - bl.replica*nblockReplica];
+            GpuRelaxMolecule sh;
+            shellsOf(bl, &sh);
+            if (sh.movingShells.size() != seg.nshell || d.vsiteEntries.size() != seg.nvsite)
+            {
+                return false;
+            }
+            for (size_t k = 0; k < sh.movingShells.size(); k++)
+            {
+                gpu::ShellRecipe sr;
+                sr.shell   = bl.replica*shellsReplica + seg.shell + k;
+                sr.replica = static_cast<uint32_t>(bl.replica);
+                sr.set     = recipes.directSet(pd, InteractionType::POLARIZATION, sh.movingShellEntries[k]->id());
+                sr.charge  = static_cast<int64_t>(4*(bl.replica*chargesReplica + seg.charge/4 + sh.movingShells[k].shell));
+                if (sr.set < 0)
+                {
+                    return false;
+                }
+                shellRecipes.push_back(sr);
+            }
+            for (size_t v = 0; v < d.vsiteEntries.size(); v++)
+            {
+                gpu::VsiteRecipe vr;
+                vr.vsite   = bl.replica*vsitesReplica + seg.vsite + v;
+                vr.replica = static_cast<uint32_t>(bl.replica);
+                double factor[3];
+                if (!gpuVsiteParameters(d.vsiteTypes[v], *d.vsiteEntries[v], vr.index, factor))
+                {
+                    return false;
+                }
+                std::copy(factor, factor + 3, vr.factor);
+                if (std::all_of(vr.index, vr.index + 3, [](int i) { return i < 0; }))
+                {
+                    // Without parameters
+                    continue;
+                }
+                vr.set = recipes.directSet(pd, d.vsiteTypes[v], d.vsiteEntries[v]->id());
+                if (vr.set < 0)
+                {
+                    return false;
+                }
+                vsiteRecipes.push_back(vr);
+            }
+        }
         gpu::createRowRecipes(system, recipes.recipes().data(), recipes.recipes().size(),
                               rowRecipes.data(), rowRecipes.size(), recipes.factors().data(),
                               recipes.values().size(), nreplica);
+        gpu::createShellVsiteRecipes(system, shellRecipes.data(), shellRecipes.size(),
+                                     vsiteRecipes.data(), vsiteRecipes.size());
         recipeValues.assign(nreplica*recipes.values().size(), 0.0);
         recipeStaged.assign(nreplica, 0);
         return true;
@@ -4482,7 +4540,7 @@ public:
             {
                 auto   fatoms = tops[f].atomsPtr();
                 size_t start  = fh->atomStart()[f];
-                // Four values for each atom of the block of the fragment, see stageBlock
+                // Four values for each atom of the block of the fragment, see stageCharges
                 const double *q4 = nullptr;
                 int           b  = find(k, f);
                 if (st && b >= 0 && static_cast<size_t>(b) < segments.size() &&
@@ -4993,30 +5051,29 @@ static size_t tableRows(const GpuSystemTopology &d)
     return n;
 }
 
-//! The parameters of one block except the rows of the tables, appended, see GpuTrainingSystem::stageParameters
-static void stageBlock(const ACTMol                  *molptr,
-                       int                            what,
-                       const GpuSystemTopology       &d,
-                       const GpuRelaxMolecule        &sh,
-                       std::vector<double>           *charges,
-                       std::vector<gpu::MovingShell> *shells,
-                       std::vector<gpu::VsiteEntry>  *vsites)
+//! The charges and widths of the particles of a block, four each, see GpuTrainingSystem::stageParameters
+static void stageCharges(const ACTMol *molptr, int what, double *charges)
 {
-    const auto &atoms = blockTopology(molptr, what)->atoms();
-    for (const auto &a : atoms)
+    for (const auto &a : blockTopology(molptr, what)->atoms())
     {
-        charges->push_back(a.charge());
-        charges->push_back(a.chargeVS());
-        charges->push_back(a.zeta());
-        charges->push_back(a.zetaVS());
+        *charges++ = a.charge();
+        *charges++ = a.chargeVS();
+        *charges++ = a.zeta();
+        *charges++ = a.zetaVS();
     }
+}
+
+//! The moving shells and the virtual sites of one block, see GpuTrainingSystem::stageParameters
+static void stageShellsVsites(const GpuSystemTopology       &d,
+                              const GpuRelaxMolecule        &sh,
+                              gpu::MovingShell              *shells,
+                              gpu::VsiteEntry               *vsites)
+{
     // The force constants of the shells depend on their charges
-    shells->insert(shells->end(), sh.movingShells.begin(), sh.movingShells.end());
+    std::copy(sh.movingShells.begin(), sh.movingShells.end(), shells);
     for (size_t v = 0; v < d.vsiteEntries.size(); v++)
     {
-        gpu::VsiteEntry ve;
-        (void) gpuVsiteEntry(d.vsiteTypes[v], *d.vsiteEntries[v], &ve);
-        vsites->push_back(ve);
+        (void) gpuVsiteEntry(d.vsiteTypes[v], *d.vsiteEntries[v], &vsites[v]);
     }
 }
 
@@ -5038,50 +5095,55 @@ void GpuTrainingSystem::stageParameters(size_t replica, const ForceField *pd, co
         st.vsites.clear();
         im.segments.resize(im.nblockReplica);
     }
-    for (size_t b = b0; b < b0 + im.nblockReplica; b++)
+    static const size_t blockT = Timings::instance().index("GPU staging of charges, shells and virtual sites");
+    static const size_t acmXT  = Timings::instance().index("GPU staging of coordinates for SQE");
     {
-        if (im.stagedAll[replica] && !im.active.empty() && !im.active[b])
+        ScopedTimer blockTimer(blockT);
+        for (size_t b = b0; b < b0 + im.nblockReplica; b++)
         {
-            continue;
-        }
-        auto            &bl = im.blocks[b];
-        GpuRelaxMolecule sh;
-        im.shellsOf(bl, &sh);
-        auto &seg = im.segments[b - b0];
-        if (!im.stagedAll[replica])
-        {
-            seg.table  = st.tables.size();
-            seg.charge = st.charges.size();
-            seg.shell  = st.shells.size();
-            seg.vsite  = st.vsites.size();
-            st.tables.resize(st.tables.size() + 8*tableRows(bl.desc), 0.0f);
-            // All rows are made the first time
-            bl.rowVersion.assign(bl.desc.lists.size(), 0);
-            stageRows(im.mols[bl.mol], bl.what, bl.desc, epsilonr, &bl.rowVersion, st.tables.data() + seg.table);
-            stageBlock(im.mols[bl.mol], bl.what, bl.desc, sh, &st.charges, &st.shells, &st.vsites);
-            seg.ntable  = st.tables.size() - seg.table;
-            seg.ncharge = st.charges.size() - seg.charge;
-            seg.nshell  = st.shells.size() - seg.shell;
-            seg.nvsite  = st.vsites.size() - seg.vsite;
-        }
-        else
-        {
-            // The rows in place, of the lists whose parameters changed,
-            // unless the GPU makes them from the values, see makeRowRecipes
-            if (im.recipeRows != 1 || im.hostRows)
+            if (im.stagedAll[replica] && !im.active.empty() && !im.active[b])
             {
-                stageRows(im.mols[bl.mol], bl.what, bl.desc, epsilonr, &bl.rowVersion, st.tables.data() + seg.table);
+                continue;
             }
-            std::vector<double>           charges;
-            std::vector<gpu::MovingShell> shells;
-            std::vector<gpu::VsiteEntry>  vsites;
-            stageBlock(im.mols[bl.mol], bl.what, bl.desc, sh, &charges, &shells, &vsites);
-            GMX_RELEASE_ASSERT(charges.size() == seg.ncharge &&
-                               shells.size() == seg.nshell && vsites.size() == seg.nvsite,
+            auto &bl  = im.blocks[b];
+            auto &seg = im.segments[b - b0];
+            // The GPU makes the rows, the moving shells and the virtual
+            // sites from the values, once it can, see makeRowRecipes
+            bool onHost = !im.stagedAll[replica] || im.recipeRows != 1 || im.hostRows;
+            if (!im.stagedAll[replica])
+            {
+                GpuRelaxMolecule sh;
+                im.shellsOf(bl, &sh);
+                seg.table   = st.tables.size();
+                seg.charge  = st.charges.size();
+                seg.shell   = st.shells.size();
+                seg.vsite   = st.vsites.size();
+                seg.ntable  = 8*tableRows(bl.desc);
+                seg.ncharge = 4*blockTopology(im.mols[bl.mol], bl.what)->atoms().size();
+                seg.nshell  = sh.movingShells.size();
+                seg.nvsite  = bl.desc.vsiteEntries.size();
+                st.tables.resize(seg.table + seg.ntable, 0.0f);
+                st.charges.resize(seg.charge + seg.ncharge);
+                st.shells.resize(seg.shell + seg.nshell);
+                st.vsites.resize(seg.vsite + seg.nvsite);
+                // All rows are made the first time
+                bl.rowVersion.assign(bl.desc.lists.size(), 0);
+                stageRows(im.mols[bl.mol], bl.what, bl.desc, epsilonr, &bl.rowVersion, st.tables.data() + seg.table);
+                stageShellsVsites(bl.desc, sh, st.shells.data() + seg.shell, st.vsites.data() + seg.vsite);
+            }
+            else if (onHost)
+            {
+                // The rows in place, of the lists whose parameters changed
+                stageRows(im.mols[bl.mol], bl.what, bl.desc, epsilonr, &bl.rowVersion, st.tables.data() + seg.table);
+                GpuRelaxMolecule sh;
+                im.shellsOf(bl, &sh);
+                GMX_RELEASE_ASSERT(sh.movingShells.size() == seg.nshell && bl.desc.vsiteEntries.size() == seg.nvsite,
+                                   "The parameters of a block changed in size");
+                stageShellsVsites(bl.desc, sh, st.shells.data() + seg.shell, st.vsites.data() + seg.vsite);
+            }
+            GMX_RELEASE_ASSERT(4*blockTopology(im.mols[bl.mol], bl.what)->atoms().size() == seg.ncharge,
                                "The parameters of a block changed in size");
-            std::copy(charges.begin(), charges.end(), st.charges.begin() + seg.charge);
-            std::copy(shells.begin(), shells.end(), st.shells.begin() + seg.shell);
-            std::copy(vsites.begin(), vsites.end(), st.vsites.begin() + seg.vsite);
+            stageCharges(im.mols[bl.mol], bl.what, st.charges.data() + seg.charge);
         }
     }
     im.stagedAll[replica] = 1;
@@ -5105,6 +5167,7 @@ void GpuTrainingSystem::stageParameters(size_t replica, const ForceField *pd, co
         }
         if (im.acmVsites)
         {
+            ScopedTimer acmXTimer(acmXT);
             st.acmX = im.acmCoordinates(fc);
         }
     }
@@ -5190,23 +5253,35 @@ size_t GpuTrainingSystem::deviationsVersion() const
 void GpuTrainingSystem::uploadParameters(const ForceField *pd)
 {
     auto &im = *impl_;
+    // Once all replicas were staged, whether the GPU can make the rows, the
+    // moving shells and the virtual sites, see makeRowRecipes, which
+    // ACT_GPU_RECIPE_ROWS=0 turns off
+    if (0 == im.recipeRows &&
+        std::all_of(im.stagedAll.begin(), im.stagedAll.end(), [](char c) { return c != 0; }))
+    {
+        const char *env = std::getenv("ACT_GPU_RECIPE_ROWS");
+        bool        off = env && std::string(env) == "0";
+        im.recipeRows   = (!off && im.makeRowRecipes(pd)) ? 1 : -1;
+    }
+    bool gpuMakes = (1 == im.recipeRows &&
+                     std::all_of(im.recipeStaged.begin(), im.recipeStaged.end(), [](char c) { return c != 0; }));
     // In the order of the blocks, those of a single replica as they are
     Impl::Staged all;
     for (size_t r = 0; r < im.nreplica && im.nreplica > 1; r++)
     {
         const auto &st = im.staged[r];
-        all.tables.insert(all.tables.end(), st.tables.begin(), st.tables.end());
+        if (!gpuMakes)
+        {
+            all.tables.insert(all.tables.end(), st.tables.begin(), st.tables.end());
+            all.shells.insert(all.shells.end(), st.shells.begin(), st.shells.end());
+            all.vsites.insert(all.vsites.end(), st.vsites.begin(), st.vsites.end());
+        }
         all.charges.insert(all.charges.end(), st.charges.begin(), st.charges.end());
-        all.shells.insert(all.shells.end(), st.shells.begin(), st.shells.end());
-        all.vsites.insert(all.vsites.end(), st.vsites.begin(), st.vsites.end());
         all.acmValues.insert(all.acmValues.end(), st.acmValues.begin(), st.acmValues.end());
         all.acmX.insert(all.acmX.end(), st.acmX.begin(), st.acmX.end());
     }
     auto &up      = im.nreplica > 1 ? all : im.staged[0];
-    auto &tables  = up.tables;
     auto &charges = up.charges;
-    auto &shells  = up.shells;
-    auto &vsites  = up.vsites;
     auto &values  = up.acmValues;
     auto &xa      = up.acmX;
     if (!im.acmMols.empty())
@@ -5229,26 +5304,18 @@ void GpuTrainingSystem::uploadParameters(const ForceField *pd)
             im.acmGenerated = true;
         }
     }
-    // Once all replicas were staged, whether the GPU can make the rows, see
-    // makeRowRecipes, which ACT_GPU_RECIPE_ROWS=0 turns off
-    if (0 == im.recipeRows &&
-        std::all_of(im.stagedAll.begin(), im.stagedAll.end(), [](char c) { return c != 0; }))
+    if (gpuMakes)
     {
-        const char *env = std::getenv("ACT_GPU_RECIPE_ROWS");
-        bool        off = env && std::string(env) == "0";
-        im.recipeRows   = (!off && im.makeRowRecipes(pd)) ? 1 : -1;
-    }
-    const float *rows = tables.data();
-    if (1 == im.recipeRows &&
-        std::all_of(im.recipeStaged.begin(), im.recipeStaged.end(), [](char c) { return c != 0; }))
-    {
-        // The GPU makes the rows from the values
+        // The GPU makes the rows, the moving shells and the virtual sites from the values
         gpu::updateRecipeValues(im.system, im.recipeValues.data());
-        rows = nullptr;
+        gpu::updateParameters(im.system, nullptr, charges.data(), ONE_4PI_EPS0, pd->epsilonr());
     }
-    gpu::updateParameters(im.system, rows, charges.data(), ONE_4PI_EPS0, pd->epsilonr());
-    gpu::updateMovingShells(im.system, shells.data(), shells.size());
-    gpu::updateVsites(im.system, vsites.data(), vsites.size());
+    else
+    {
+        gpu::updateParameters(im.system, up.tables.data(), charges.data(), ONE_4PI_EPS0, pd->epsilonr());
+        gpu::updateMovingShells(im.system, up.shells.data(), up.shells.size());
+        gpu::updateVsites(im.system, up.vsites.data(), up.vsites.size());
+    }
 }
 
 void GpuTrainingSystem::selectReplica(size_t replica)

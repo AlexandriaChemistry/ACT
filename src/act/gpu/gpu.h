@@ -680,6 +680,53 @@ struct RowRecipe
 void createRowRecipes(System *sys, const SetRecipe *recipes, size_t nset, const RowRecipe *rows, size_t nrow,
                       const double *factors, size_t nvalue, size_t nreplica);
 
+/*! \brief How the device makes the force constants of a moving shell, see MovingShell
+ * As the rows of the polarization, from the parameters of a set of the
+ * polarization and the charge of the shell, see createShellVsiteRecipes.
+ */
+struct ShellRecipe
+{
+    //! The moving shell, in the order of updateMovingShells
+    uint64_t shell   = 0;
+    //! The set of parameters, see SetRecipe
+    int32_t  set     = 0;
+    //! The replica, of which the values are used
+    uint32_t replica = 0;
+    //! The position of the charge of the shell in the charges, see updateParameters
+    int64_t  charge  = 0;
+};
+
+/*! \brief How the device makes the parameters of a virtual site, see VsiteEntry
+ * Parameter k is factor[k] times parameter index[k] of the set, or unchanged
+ * if index[k] is negative, see gpuVsiteParameters in act/forces/forces_gpu.h.
+ */
+struct VsiteRecipe
+{
+    //! The virtual site, in the order of updateVsites
+    uint64_t vsite    = 0;
+    //! The set of parameters, see SetRecipe
+    int32_t  set      = 0;
+    //! The replica, of which the values are used
+    uint32_t replica  = 0;
+    //! The parameter of the set of each parameter of the site
+    int32_t  index[3] = { -1, -1, -1 };
+    //! The factor of each
+    double   factor[3] = { 1, 1, 1 };
+};
+
+/*! \brief Let the device make the moving shells and the virtual sites from the values too
+ * After createRowRecipes, updateParameters makes the force constants of
+ * these shells and the parameters of these sites as well, after which
+ * updateMovingShells and updateVsites are only needed for the others.
+ * \param[in] sys     The system
+ * \param[in] shells  The recipes of the moving shells
+ * \param[in] nshell  Their number
+ * \param[in] vsites  The recipes of the virtual sites
+ * \param[in] nvsite  Their number
+ */
+void createShellVsiteRecipes(System *sys, const ShellRecipe *shells, size_t nshell,
+                             const VsiteRecipe *vsites, size_t nvsite);
+
 /*! \brief The values of the force field of all replicas for the recipes, see createRowRecipes
  * \param[in] sys    The system
  * \param[in] values The values, those of each replica after those of the previous one
