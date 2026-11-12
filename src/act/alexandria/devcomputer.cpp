@@ -72,48 +72,88 @@ void BoundsDevComputer::calcDeviation(MsgHandler                    *,
     }
     for(auto mol : actmols)
     {
-        mytarget->second.increase(1, moleculeBound(mol, forcefield, lossFunction));
+        mytarget->second.increase(1, moleculeBound(mol, cachedBounds(mol, forcefield), lossFunction));
     }
+}
+
+std::vector<BoundsDevComputer::ChargeBound> BoundsDevComputer::chargeBounds(const ACTMol     *mol,
+                                                                            const ForceField *forcefield)
+{
+    std::vector<ChargeBound> bounds;
+    const auto &atoms = mol->atomsConst();
+    for(size_t i = 0; i < atoms.size(); i++)
+    {
+        const auto &atom = atoms[i];
+        const auto &p    = forcefield->findParticleType(atom.ffType())->parameterConst("charge");
+        if (p.mutability() == Mutability::ACM && p.maximum() > p.minimum())
+        {
+            ChargeBound cb = { static_cast<int>(i), p.minimum(), p.maximum(), {} };
+            // The shell charge(s)
+            for(auto ss : atom.shells())
+            {
+                cb.extra.push_back(ss);
+            }
+            // The charge of the virtual sites of this atom alone
+            for(auto vv : atom.vsites())
+            {
+                if (atoms[vv].parents().size() == 1)
+                {
+                    cb.extra.push_back(vv);
+                }
+            }
+            bounds.push_back(std::move(cb));
+        }
+    }
+    return bounds;
+}
+
+double BoundsDevComputer::moleculeBound(const ACTMol                   *mol,
+                                        const std::vector<ChargeBound> &bounds,
+                                        LossFunction                    lossFunction)
+{
+    double bound = 0;
+    const auto &atoms = mol->atomsConst();
+    for(const auto &cb : bounds)
+    {
+        // Including the second charge, if any
+        double q = atoms[cb.atom].totalCharge();
+        for(auto e : cb.extra)
+        {
+            q += atoms[e].charge();
+        }
+        if (q < cb.minimum)
+        {
+            bound += loss(lossFunction, 1, cb.minimum - q);
+        }
+        else if (q > cb.maximum)
+        {
+            bound += loss(lossFunction, 1, q - cb.maximum);
+        }
+    }
+    return bound;
 }
 
 double BoundsDevComputer::moleculeBound(const ACTMol     *mol,
                                         const ForceField *forcefield,
                                         LossFunction      lossFunction)
 {
-    double bound = 0;
-    // Check ACM charges
-    const auto &atoms = mol->atomsConst();
-    for(const auto &atom: atoms)
+    return moleculeBound(mol, chargeBounds(mol, forcefield), lossFunction);
+}
+
+const std::vector<BoundsDevComputer::ChargeBound> &BoundsDevComputer::cachedBounds(const ACTMol     *mol,
+                                                                                   const ForceField *forcefield)
+{
+    if (forcefield != boundsForceField_)
     {
-        const auto &p = forcefield->findParticleType(atom.ffType())->parameterConst("charge");
-        if (p.mutability() == Mutability::ACM && p.maximum() > p.minimum())
-        {
-            // Including the second charge, if any
-            double q = atom.totalCharge();
-            // Add shell charge(s)
-            for(auto ss : atom.shells())
-            {
-                q += atoms[ss].charge();
-            }
-            // Add vsite 1 charge
-            for(auto vv : atom.vsites())
-            {
-                if (atoms[vv].parents().size() == 1)
-                {
-                    q += atoms[vv].charge();
-                }
-            }
-            if (q < p.minimum())
-            {
-                bound += loss(lossFunction, 1, p.minimum() - q);
-            }
-            else if (q > p.maximum())
-            {
-                bound += loss(lossFunction, 1, q - p.maximum());
-            }
-        }
+        bounds_.clear();
+        boundsForceField_ = forcefield;
     }
-    return bound;
+    auto b = bounds_.find(mol);
+    if (b == bounds_.end())
+    {
+        b = bounds_.emplace(mol, chargeBounds(mol, forcefield)).first;
+    }
+    return b->second;
 }
 
 /* * * * * * * * * * * * * * * * * * * * * *

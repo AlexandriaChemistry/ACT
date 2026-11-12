@@ -657,9 +657,12 @@ bool ACMFitnessComputer::prepareDeviation(MsgHandler    *msghandler,
     std::vector<ACTMol *> selected;
     for (auto actmol = mymols->begin(); actmol < mymols->end(); ++actmol)
     {
-        msghandler->writeDebug(gmx::formatString("CalcDev: mol %s dataset %s\n",
-                                                 actmol->getMolname().c_str(),
-                                                 iMolSelectName(actmol->datasetType()).c_str()));
+        if (msghandler->debug())
+        {
+            msghandler->writeDebug(gmx::formatString("CalcDev: mol %s dataset %s\n",
+                                                     actmol->getMolname().c_str(),
+                                                     iMolSelectName(actmol->datasetType()).c_str()));
+        }
         if (ims != actmol->datasetType())
         {
             continue;
@@ -715,9 +718,12 @@ bool ACMFitnessComputer::prepareDeviation(MsgHandler    *msghandler,
                 msghandler->msg(ACTStatus::Warning,
                                 "No devComputers: no deviation from reference values will be computed.");
             }
-            msghandler->writeDebug(gmx::formatString("CalcDev: rank %d mol %s #energies %zu tw %g\n",
-                                                     cr->rank(), actmol->getMolname().c_str(), actmol->experimentConst().size(),
-                                                     targets->find(eRMS::EPOT)->second.totalWeight()));
+            if (msghandler->debug())
+            {
+                msghandler->writeDebug(gmx::formatString("CalcDev: rank %d mol %s #energies %zu tw %g\n",
+                                                         cr->rank(), actmol->getMolname().c_str(), actmol->experimentConst().size(),
+                                                         targets->find(eRMS::EPOT)->second.totalWeight()));
+            }
             dt->active.push_back(active ? 1 : 0);
             dt->keys.push_back(std::move(key));
             dt->hit.push_back(hit);
@@ -926,6 +932,14 @@ double ACMFitnessComputer::finishDeviation(MsgHandler *msghandler, DeviationTask
     if (dt->gpuDeviations && targets->find(eRMS::BOUNDS) != targets->end())
     {
         molBound.resize(selected.size(), 0);
+        BoundsDevComputer *bdc = nullptr;
+        for (auto *mydev : devComputers_)
+        {
+            if (auto b = dynamic_cast<BoundsDevComputer *>(mydev))
+            {
+                bdc = b;
+            }
+        }
         for (size_t m = 0; m < selected.size(); m++)
         {
             if (dt->skipping && !dt->active[m])
@@ -934,7 +948,8 @@ double ACMFitnessComputer::finishDeviation(MsgHandler *msghandler, DeviationTask
             }
             else
             {
-                molBound[m] = BoundsDevComputer::moleculeBound(selected[m], sii_->forcefield(), lossFunction_);
+                molBound[m] = bdc ? BoundsDevComputer::moleculeBound(selected[m], bdc->cachedBounds(selected[m], sii_->forcefield()), lossFunction_)
+                                  : BoundsDevComputer::moleculeBound(selected[m], sii_->forcefield(), lossFunction_);
             }
         }
     }
