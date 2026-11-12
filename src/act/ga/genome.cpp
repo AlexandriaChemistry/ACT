@@ -57,7 +57,7 @@ std::string Genome::print(const char *name) const
 
 double Genome::fitness(iMolSelect ims) const
 {
-    auto ff = fitness_.find(ims);
+    const auto ff = fitness_.find(ims);
     if (ff == fitness_.end())
     {
         GMX_THROW(gmx::InternalError(gmx::formatString("No fitness for data set %s", iMolSelectName(ims).c_str()).c_str()));
@@ -67,7 +67,7 @@ double Genome::fitness(iMolSelect ims) const
 
 void Genome::setFitness(iMolSelect ims, double fitness)
 {
-    auto ff = fitness_.find(ims);
+    const auto ff = fitness_.find(ims);
     if (ff == fitness_.end())
     {
         fitness_.insert({ims, fitness});
@@ -80,7 +80,7 @@ void Genome::setFitness(iMolSelect ims, double fitness)
 
 void Genome::unsetFitness(iMolSelect ims)
 {
-    auto ff = fitness_.find(ims);
+    const auto ff = fitness_.find(ims);
     if (ff != fitness_.end())
     {
         fitness_.erase(ff);
@@ -111,7 +111,7 @@ void Genome::Send(const alexandria::CommunicationRecord *cr, int dest) const
     cr->send(dest, fitness_.size());
     for(auto &f : fitness_)
     {
-        std::string imsName(iMolSelectName(f.first));
+        const std::string imsName(iMolSelectName(f.first));
         cr->send(dest, imsName);
         cr->send(dest, f.second);
     }

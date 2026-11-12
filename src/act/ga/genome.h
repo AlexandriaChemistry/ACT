@@ -62,7 +62,7 @@ public:
     genome_(genome), fitness_(fitness) {}
 
     //! Empty constructor
-    Genome() {}
+    Genome() = default;
     
     //! \return whether this fitness term is present
     bool hasFitness(iMolSelect ims) const { return fitness_.end() != fitness_.find(ims); }

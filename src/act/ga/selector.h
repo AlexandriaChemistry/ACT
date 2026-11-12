@@ -95,7 +95,7 @@ public:
      * \param[in] pop The population, with the probabilities set
      * \return the index of the selected genome
      */
-    virtual int select(const std::vector<Genome> *pop);
+    int select(const std::vector<Genome> *pop) override;
 
 };
 

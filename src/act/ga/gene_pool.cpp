@@ -48,11 +48,11 @@ namespace ga
 std::vector<std::string> GenePool::print() const
 {
     std::vector<std::string> out;
-    out.push_back("Population:");
+    out.emplace_back("Population:");
     int i = 0;
     for (auto &ind : genomes_)
     {
-        auto istr = gmx::formatString("Individual %3d", i++);
+        const auto istr = gmx::formatString("Individual %3d", i++);
         out.push_back(ind.print(istr.c_str()));
     }
     return out;
@@ -106,7 +106,7 @@ const Genome &GenePool::getBest(const iMolSelect ims) const
 void GenePool::addGenome(const std::vector<double> &genome, double fitness)
 {
     // First time we add a genome, set the genome size
-    if (genomes_.size() == 0)
+    if (genomes_.empty())
     {
         genomeSize_ = genome.size();
     }
@@ -115,15 +115,15 @@ void GenePool::addGenome(const std::vector<double> &genome, double fitness)
     {
         GMX_THROW(gmx::InternalError(gmx::formatString("All genes must be the same length. Expected %zu, got %zu.", genomeSize_, genome.size()).c_str()));
     }
-    FitnessMap fm = { { iMolSelect::Train, fitness } };
-    Genome g(genome, fm);
+    const FitnessMap fm = { { iMolSelect::Train, fitness } };
+    const Genome g(genome, fm);
     genomes_.push_back(g);
 }
 
 void GenePool::addGenome(const Genome &genome)
 {
     // First time we add a genome, set the genome size
-    if (genomes_.size() == 0)
+    if (genomes_.empty())
     {
         genomeSize_ = genome.bases().size();
     }
@@ -241,7 +241,7 @@ void GenePool::read(const std::string &fileName)
     while (tr.readLine(&line))
     {
         lineNumber += 1;
-        auto words = split(line, ' ');
+        const auto words = split(line, ' ');
         if (0 == genomeSize_)
         {
             genomeSize_ = words.size();

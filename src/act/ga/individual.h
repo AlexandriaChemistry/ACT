@@ -48,7 +48,7 @@ class Individual
 protected:
 
     //! \brief Default constructor
-    Individual() {}
+    Individual() = default;
 
 public:
 

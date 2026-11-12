@@ -55,12 +55,12 @@ class Penalizer
 protected:
 
     //! \brief Default constructor
-    Penalizer() {}
+    Penalizer() = default;
 
 public:
 
     //! \brief Default base destructor
-    virtual ~Penalizer() {}
+    virtual ~Penalizer() = default;
 
     /*!
      * \brief Penalize a population
@@ -106,7 +106,7 @@ private:
 public:
 
     //! \brief Destructor: closes output file
-    ~VolumeFractionPenalizer();
+    ~VolumeFractionPenalizer() override;
 
     /*!
      * \brief Create a new VolumeFractionPenalizer

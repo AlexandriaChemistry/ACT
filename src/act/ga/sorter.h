@@ -59,7 +59,7 @@ protected:
       bool descending_ = false;
 
       //! \brief Default constructor
-      Sorter() {}
+      Sorter() = default;
 
       /*!
        * \brief Property constructor
@@ -90,7 +90,7 @@ public:
       /*! \brief Does nothing
        * \param[in] pop The population, not used
        */
-      virtual void sort(gmx_unused std::vector<Genome> *pop) {};
+      void sort(gmx_unused std::vector<Genome> *pop) override {};
 
 };
 

@@ -88,8 +88,8 @@ public:
      * \param[inout] pop        The population
      * \param[in]    generation The current generation number, not used
      */
-    virtual void compute(      std::vector<Genome> *pop,
-                         const int                  generation);
+    void compute(      std::vector<Genome> *pop,
+                         const int                  generation) override;
 
 };
 
@@ -148,8 +148,8 @@ public:
      * \param[inout] pop        The population
      * \param[in]    generation The current generation number, determines the annealed temperature
      */
-    virtual void compute(      std::vector<Genome> *pop,
-                         const int                  generation);
+    void compute(      std::vector<Genome> *pop,
+                         const int                  generation) override;
 
 };
 
@@ -188,8 +188,8 @@ public:
      * \param[in] pop        pointer to the population
      * \param[in] generation the current generation number
      */
-    virtual void compute(      std::vector<Genome> *pop,
-                         const int                  generation);
+    void compute(      std::vector<Genome> *pop,
+                         const int                  generation) override;
 
 };
 

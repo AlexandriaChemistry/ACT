@@ -91,7 +91,7 @@ protected:
 public:
 
     //! \brief Default constructor
-    GeneticAlgorithm() {}
+    GeneticAlgorithm() = default;
 
     //! \brief Default destructor
     virtual ~GeneticAlgorithm() = default;

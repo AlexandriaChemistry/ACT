@@ -57,9 +57,7 @@ class GenePoolTest : public gmx::test::CommandLineTestBase
 {
 protected:
  
-    GenePoolTest ()
-    {
-    }
+    GenePoolTest () = default;
 
     // Static initiation, only run once every test.
     static void SetUpTestCase()
@@ -73,13 +71,13 @@ protected:
     void compare(const GenePool &gp)
     {
         gmx::test::TestReferenceChecker checker(this->rootChecker());
-        auto tolerance = gmx::test::relativeToleranceAsFloatingPoint(1.0, 1e-8);
+        const auto tolerance = gmx::test::relativeToleranceAsFloatingPoint(1.0, 1e-8);
         checker.setDefaultTolerance(tolerance);
         int gene = 0;
         for(const auto &g : gp.genePool())
         {
             gene++;
-            std::string buf = "Gene " + std::to_string(gene);
+            const std::string buf = "Gene " + std::to_string(gene);
             checker.checkSequence(g.bases().begin(), g.bases().end(),
                                   buf.c_str());
         }
@@ -88,19 +86,19 @@ protected:
     void write()
     {
         GenePool gp;
-        std::vector<std::vector<double> > bases = {
-            { 3.4, 5.6, 0.1, 2.3 },
-            { 6.7, 7.8, 0.9, 2.4 },
-            { 1.2, 3.4, 5.4,-2.1 }
-        };
-        FitnessMap fm = { { iMolSelect::Train, 0.1 } };
+        const std::vector<std::vector<double> > bases = {
+                  { 3.4, 5.6, 0.1, 2.3 },
+                  { 6.7, 7.8, 0.9, 2.4 },
+                  { 1.2, 3.4, 5.4,-2.1 }
+              };
+        const FitnessMap fm = { { iMolSelect::Train, 0.1 } };
         for(const auto &b : bases)
         {
-            Genome g(b, fm);
+            const Genome g(b, fm);
             gp.addGenome(g);
         }
         // Each MPI rank writes its own file
-        std::string fileName = fileManager().getTemporaryFilePath(gmx::formatString("gptest%d.csv", gmx_node_rank()));
+        const std::string fileName = fileManager().getTemporaryFilePath(gmx::formatString("gptest%d.csv", gmx_node_rank()));
         gp.write(fileName);
         GenePool gp2;
         gp2.read(fileName);
@@ -129,10 +127,10 @@ TEST_F (GenePoolTest, Read)
 // that need many digits
 TEST_F (GenePoolTest, WritePrecision)
 {
-    std::vector<double> bases = { 1.2345678901234567e-7, 0.12345678901234567, -98765.432109876543, 1e-300 };
+    const std::vector<double> bases = { 1.2345678901234567e-7, 0.12345678901234567, -98765.432109876543, 1e-300 };
     GenePool gp;
     gp.addGenome(Genome(bases, { { iMolSelect::Train, 0.1 } }));
-    auto fileName = fileManager().getTemporaryFilePath(gmx::formatString("precision%d.csv", gmx_node_rank()));
+    const auto fileName = fileManager().getTemporaryFilePath(gmx::formatString("precision%d.csv", gmx_node_rank()));
     gp.write(fileName);
     GenePool gp2;
     gp2.read(fileName);
