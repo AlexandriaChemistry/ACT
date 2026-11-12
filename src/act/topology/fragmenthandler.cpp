@@ -123,6 +123,7 @@ void FragmentHandler::init(MsgHandler                   *msghandler,
             copy_rvec(x[i], xfrag[j++]);
         }
         // Now build the rest of the topology
+        top.setLeaveOutUnchargedPairs(leaveOutUncharged_);
         top.build(msghandler, pd, &xfrag, 175.0, 5.0, missing);
         allWell = allWell && msghandler->ok();
         if (allWell)

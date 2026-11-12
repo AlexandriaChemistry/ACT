@@ -684,6 +684,7 @@ void ACTMol::GenerateTopology(MsgHandler        *msghandler,
         auto fptr = fragmentPtr();
         if (fptr->size() > 0)
         {
+            fraghandler_.setLeaveOutUnchargedPairs(chargesFromForceField_);
             fraghandler_.init(msghandler,
                               pd, coords, topology_.atoms(),
                               bondsConst(), fptr, missing);
@@ -708,6 +709,7 @@ void ACTMol::GenerateTopology(MsgHandler        *msghandler,
     
     if (msghandler->ok())
     {
+        topology_.setLeaveOutUnchargedPairs(chargesFromForceField_);
         topology_.build(msghandler, pd, &coords, 175.0, 5.0, missing);
         if (isDimer() && fraghandler_.atomStart().size() == 2)
         {
@@ -908,6 +910,26 @@ void ACTMol::minimizeShells(MsgHandler                *msghandler,
                        forces, &energies);
 }
 
+/*! \brief Check that particles without Coulomb pairs did not get a charge
+ * \param[in] atoms     The particles with their charges
+ * \param[in] uncharged Whether each was left out, see Topology::unchargedParticles
+ * \param[in] molname   The molecule, for the message
+ * \throws gmx::InternalError if one has a charge
+ */
+static void checkUncharged(const std::vector<ActAtom> &atoms,
+                           const std::vector<char>    &uncharged,
+                           const std::string          &molname)
+{
+    for (size_t i = 0; i < atoms.size() && i < uncharged.size(); i++)
+    {
+        if (uncharged[i] && (atoms[i].charge() != 0 || atoms[i].chargeVS() != 0))
+        {
+            GMX_THROW(gmx::InternalError(gmx::formatString("Particle %zu of %s gets charge %g, but its charge is fixed at zero in the force field, such that its Coulomb pairs were left out. Call ACTMol::setChargesFromForceField(false) before GenerateTopology.",
+                                                           i + 1, molname.c_str(), atoms[i].charge()).c_str()));
+        }
+    }
+}
+
 void ACTMol::setCharges(MsgHandler        *msghandler,
                         const ForceField  *pd,
                         const std::string &qread)
@@ -972,6 +994,7 @@ void ACTMol::setCharges(MsgHandler        *msghandler,
             (*myatoms)[core].setCharge((*myatoms)[core].charge()-q);
         }
     }
+    checkUncharged(*myatoms, topology_.unchargedParticles(), getMolname());
     fraghandler_.setCharges(*myatoms);
 }
 
@@ -1002,6 +1025,7 @@ void ACTMol::setCharges(const std::vector<double> &qcustom)
     {
         (*myatoms)[i].setCharge(qcustom[i]);
     }
+    checkUncharged(*myatoms, topology_.unchargedParticles(), getMolname());
     fraghandler_.setCharges(*myatoms);
 }
 
@@ -1014,6 +1038,7 @@ void ACTMol::setCharges(MsgHandler       *msghandler,
         msghandler->msg(ACTStatus::Error,
                         gmx::formatString("Mismatch in number of atoms between fragmenthandler and topology"));
     }
+    checkUncharged(*atoms(), topology_.unchargedParticles(), getMolname());
 }
                         
 void ACTMol::generateCharges(MsgHandler                *msghandler,

@@ -313,6 +313,12 @@ public:
     //! \return the type pairs of an interaction type, nullptr if it has none
     const PairTypes *pairTypes(InteractionType itype) const;
 
+    /*! \brief Leave out the pairs of an interaction type with particles that do not take part
+     * \param[in] itype     The interaction type
+     * \param[in] particles For each particle whether its pairs are left out
+     */
+    void leaveOut(InteractionType itype, const std::vector<char> &particles);
+
     //! \return the memory used, in bytes, approximately
     size_t memory() const;
 

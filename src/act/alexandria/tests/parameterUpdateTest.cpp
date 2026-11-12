@@ -71,6 +71,7 @@
 #include "act/ga/ga_test_helper.h"
 #include "act/gpu/gpu.h"
 #include "act/topology/topology.h"
+#include "act/molprop/molprop_xml.h"
 #include "act/topology/actmol.h"
 #include "act/utility/units.h"
 #include "gromacs/math/units.h"
@@ -794,15 +795,15 @@ bool needChargeProperties(const GaTestFiles &files, const std::vector<eRMS> &tar
     return need;
 }
 
-//! \return the number of van der Waals pairs of the molecules for training, intra- and intermolecular
-size_t vdwPairs(const std::vector<ACTMol> &mols)
+//! \return the number of pairs of an interaction type of the molecules for training, intra- and intermolecular
+size_t numberOfPairs(const std::vector<ACTMol> &mols, InteractionType itype = InteractionType::VDW)
 {
     size_t n = 0;
     for (const auto &mol : mols)
     {
         if (mol.datasetType() == iMolSelect::Train)
         {
-            n += mol.topology()->nonBondedPairs().range(InteractionType::VDW).size();
+            n += mol.topology()->nonBondedPairs().range(itype).size();
         }
     }
     return n;
@@ -850,12 +851,113 @@ TEST_F(ParameterUpdateTest, FixedZeroEpsilonLeftOut)
         // Only the charges are trained, such that both have the same parameters
         GaTestHelper helper(1, { "chi" }, targets, *files, fc);
         results.push_back(evaluate(&helper, parameterValues(helper.sii), {}, true));
-        npairs.push_back(vdwPairs(helper.molgen->actmols()));
+        npairs.push_back(numberOfPairs(helper.molgen->actmols()));
     }
     printf("Van der Waals pairs: %zu with fixed zero epsilons left out, %zu with them\n", npairs[0], npairs[1]);
     EXPECT_LT(npairs[0], npairs[1]);
     EXPECT_GT(npairs[0], 0u);
     compare(results[0], results[1], 0);
+}
+
+// Test: Particles whose charges are fixed at zero, such as the virtual
+// sites of the hydrogen fluoride model, have no Coulomb pairs, with the same
+// energies as when their charges may be trained but are zero.
+TEST_F(ParameterUpdateTest, FixedZeroChargeLeftOut)
+{
+    GaTestFiles fixed;
+    fixed.forceField = "forcefields/HF-LJ14-7.xml";
+    fixed.molprop    = "molprop/hf-hf.xml";
+    fixed.selection  = "molprop/hf-hf.dat";
+    fixed.oneH       = false;
+    auto   bounded = fixed;
+    size_t nfixed  = 0;
+    {
+        ForceField pd;
+        readForceField(ffPath(fixed.forceField), &pd);
+        for (auto &pt : *pd.particleTypes())
+        {
+            if (pt.second.hasParameter("charge"))
+            {
+                auto q = pt.second.parameter("charge");
+                if (q->mutability() == Mutability::Fixed && q->value() == 0)
+                {
+                    q->setMutability(Mutability::Bounded);
+                    nfixed += 1;
+                }
+            }
+        }
+        bounded.forceField = fileManager_.getTemporaryFilePath("bounded-charges.xml");
+        writeForceField(bounded.forceField, &pd, false);
+    }
+    ASSERT_GT(nfixed, 0u);
+    const std::vector<eRMS> targets = { eRMS::Interaction, eRMS::Electrostatics, eRMS::Exchange,
+                                        eRMS::Dispersion, eRMS::Induction };
+    std::vector<Evaluation> results;
+    std::vector<size_t>     npairs;
+    for (const auto *files : { &fixed, &bounded })
+    {
+        auto fc = new ForceComputer();
+        fc->setKeepShells(false);
+        GaTestHelper helper(1, { "sigma" }, targets, *files, fc);
+        results.push_back(evaluate(&helper, parameterValues(helper.sii), {}, true));
+        npairs.push_back(numberOfPairs(helper.molgen->actmols(), InteractionType::ELECTROSTATICS));
+    }
+    printf("Coulomb pairs: %zu with fixed zero charges left out, %zu with them\n", npairs[0], npairs[1]);
+    EXPECT_LT(npairs[0], npairs[1]);
+    EXPECT_GT(npairs[0], 0u);
+    EXPECT_GT(results[0].targets[eRMS::Electrostatics], 0);
+    compare(results[0], results[1], 0);
+}
+
+/*! \brief The hydrogen fluoride dimer with its topology
+ * \param[in] pd             The force field
+ * \param[in] fromForceField Whether the charges will be those of the force field
+ * \return The molecule
+ */
+ACTMol hydrogenFluoride(ForceField *pd, bool fromForceField)
+{
+    MsgHandler           msghandler;
+    std::vector<MolProp> mps;
+    MolPropRead(&msghandler, gmx::test::TestFileManager::getInputFilePath("molprop/hf-hf.xml").c_str(), &mps);
+    for (auto &mp : mps)
+    {
+        if (mp.getMolname() == "hydrogen-fluoride#hydrogen-fluoride")
+        {
+            ACTMol mol;
+            mol.Merge(&mp);
+            mol.setChargesFromForceField(fromForceField);
+            mol.GenerateTopology(&msghandler, pd, missingParameters::Error);
+            EXPECT_TRUE(msghandler.ok());
+            return mol;
+        }
+    }
+    ADD_FAILURE() << "No hydrogen fluoride dimer";
+    return ACTMol();
+}
+
+// Test: Charges that are given rather than taken from the force field, such
+// as with -qcustom, may differ from those fixed at zero in the force field.
+// Then the Coulomb pairs of those particles have to be kept, as they are if
+// the molecule is told so before its topology is made, otherwise giving them
+// a charge is an error rather than silently wrong energies.
+TEST(ChargePropertiesTest, GivenChargesKeepCoulombPairs)
+{
+    ForceField pd;
+    readForceField(gmx::test::TestFileManager::getInputFilePath("forcefields/HF-LJ14-7.xml"), &pd);
+    auto fromForceField = hydrogenFluoride(&pd, true);
+    auto given          = hydrogenFluoride(&pd, false);
+    const auto &atoms   = given.atomsConst();
+    ASSERT_GT(atoms.size(), 2u);
+    // A charge for each particle, also for the virtual site
+    std::vector<double> q(atoms.size(), 0.1);
+    q[0] = -0.1*(atoms.size() - 1);
+    auto coulombPairs = [](const ACTMol &mol)
+    {
+        return mol.topology()->nonBondedPairs().range(InteractionType::ELECTROSTATICS).size();
+    };
+    EXPECT_LT(coulombPairs(fromForceField), coulombPairs(given));
+    EXPECT_NO_THROW(given.setCharges(q));
+    EXPECT_THROW(fromForceField.setCharges(q), gmx::InternalError);
 }
 
 // Test: The charge properties are only needed for the targets of the ESP

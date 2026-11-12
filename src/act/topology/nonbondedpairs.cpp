@@ -319,6 +319,41 @@ bool NonBondedPairs::fillParameters(MsgHandler       *msghandler,
     return changed;
 }
 
+void NonBondedPairs::leaveOut(InteractionType itype, const std::vector<char> &particles)
+{
+    auto it = types_.find(itype);
+    if (it == types_.end())
+    {
+        return;
+    }
+    // As the pairs without parameters in fillParameters
+    auto  &tp = it->second;
+    size_t n  = 0, intermolecularStart = tp.intermolecularStart, shellStart = tp.shellStart;
+    for (size_t k = 0; k < tp.pos.size(); k++)
+    {
+        const auto &p = pairs_[tp.pos[k]];
+        if (particles[p[0]] || particles[p[1]])
+        {
+            intermolecularStart -= (k < tp.intermolecularStart) ? 1 : 0;
+            shellStart          -= (k < tp.shellStart) ? 1 : 0;
+            continue;
+        }
+        tp.pos[n] = tp.pos[k];
+        if (!tp.type.empty())
+        {
+            tp.type[n] = tp.type[k];
+        }
+        n += 1;
+    }
+    tp.pos.resize(n);
+    if (!tp.type.empty())
+    {
+        tp.type.resize(n);
+    }
+    tp.intermolecularStart = intermolecularStart;
+    tp.shellStart          = shellStart;
+}
+
 void NonBondedPairs::separate(const std::function<bool(const std::array<int, 2> &)> &keepFirst,
                               bool                                                  shells)
 {

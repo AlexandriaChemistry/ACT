@@ -201,6 +201,8 @@ private:
     eSupport                       eSupp_         = eSupport::Local;
     //! Structure to manage charge generation
     FragmentHandler                fraghandler_;
+    //! Whether the charges are those of the force field, see setChargesFromForceField
+    bool                           chargesFromForceField_ = true;
     //! The dataset this compound belongs to
     iMolSelect                     dataset_type_  = iMolSelect::Ignore;
     //! Internal storage for original coords
@@ -443,6 +445,15 @@ public:
      * \param[in]  pd         Data structure containing atomic properties
      * \param[in]  missing    How to treat missing parameters
      */
+    /*! \brief Say whether the charges will be those of the force field
+     * If not, such as when they are read or given otherwise, GenerateTopology
+     * keeps the Coulomb pairs of particles whose charge is fixed at zero in
+     * the force field, see Topology::setLeaveOutUnchargedPairs. Call this
+     * before GenerateTopology.
+     * \param[in] fromForceField Whether they are, true by default
+     */
+    void setChargesFromForceField(bool fromForceField) { chargesFromForceField_ = fromForceField; }
+
     void GenerateTopology(MsgHandler        *msghandler,
                           ForceField        *pd,
                           missingParameters  missing);

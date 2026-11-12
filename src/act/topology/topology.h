@@ -88,6 +88,10 @@ private:
     std::map<InteractionType, size_t>                         shellStart_;
     //! The non-bonded pairs, stored compactly, see NonBondedPairs
     NonBondedPairs                                            nonBonded_;
+    //! Whether build leaves out the Coulomb pairs of particles without charge, see setLeaveOutUnchargedPairs
+    bool                                   leaveOutUncharged_ = true;
+    //! For each particle whether its Coulomb pairs were left out
+    std::vector<char>                      uncharged_;
 
     /*! Generate virtual sites for atoms.
      * \param[in] msghandler Message handler
@@ -244,6 +248,17 @@ private:
      * \param[in] PlanarAngleMax Maximum angle to be considered planar (degrees)
      * \param[in] missing        How to treat missing parameters
      */
+    /*! \brief Whether build leaves out the Coulomb pairs of particles without charge
+     * Those are the particles whose charge, and second charge if any, is
+     * fixed at zero in the force field, which only stays so if the charges
+     * are those of the force field, not read or given otherwise.
+     * \param[in] leaveOut Whether to leave them out, true by default
+     */
+    void setLeaveOutUnchargedPairs(bool leaveOut) { leaveOutUncharged_ = leaveOut; }
+
+    //! \return for each particle whether its Coulomb pairs were left out, see setLeaveOutUnchargedPairs
+    const std::vector<char> &unchargedParticles() const { return uncharged_; }
+
     void build(MsgHandler             *msghandler,
                const ForceField       *pd,
                std::vector<gmx::RVec> *x,

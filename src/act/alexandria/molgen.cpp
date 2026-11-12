@@ -936,6 +936,9 @@ size_t MolGen::Read(MsgHandler                          *msghandler,
                 // Copy the data
                 alexandria::ACTMol actmol;
                 actmol.Merge(&(*mpi));
+                // Charges from a map, or read or given, may differ from those of the force field
+                actmol.setChargesFromForceField(qmap.empty() && alg != ChargeGenerationAlgorithm::Read &&
+                                                alg != ChargeGenerationAlgorithm::Custom);
                 actmol.GenerateTopology(msghandler, pd, missingParameters::Error);
                 if (!msghandler->ok())
                 {
@@ -1149,6 +1152,9 @@ size_t MolGen::Read(MsgHandler                          *msghandler,
             {
                 msghandler->writeDebug(gmx::formatString("Succesfully retrieved %s\n", actmol.getMolname().c_str()));
             }
+            // Charges from a map, or read or given, may differ from those of the force field
+            actmol.setChargesFromForceField(qmap.empty() && alg != ChargeGenerationAlgorithm::Read &&
+                                            alg != ChargeGenerationAlgorithm::Custom);
             actmol.GenerateTopology(msghandler, pd, missingParameters::Error);
 
             std::vector<gmx::RVec> coords;
