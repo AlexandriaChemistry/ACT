@@ -41,7 +41,8 @@ if(ACT_GPU_SYCL)
     set(ACT_GPU_SYCL_SOURCES sycl/pairbatch.cpp sycl/devices.cpp sycl/relaxation.cpp sycl/system.cpp)
     # gpuinfo.cpp needs no GPU runtime, see there
     add_library(actGpu SHARED ${ACT_GPU_SYCL_SOURCES} gpuinfo.cpp)
-    target_include_directories(actGpu PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+    # The headers shared with the processor code, such as act/gpu/pairrows.h
+    target_include_directories(actGpu PRIVATE ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_SOURCE_DIR}/src)
     target_compile_definitions(actGpu PRIVATE ACT_ACPP_VERSION="${AdaptiveCpp_VERSION}")
     add_sycl_to_target(TARGET actGpu SOURCES ${ACT_GPU_SYCL_SOURCES})
     target_link_libraries(actLib PUBLIC actGpu)

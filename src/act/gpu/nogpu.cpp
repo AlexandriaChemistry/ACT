@@ -120,6 +120,10 @@ void updateShells(System *, size_t, const MovingShell *, size_t)
 
 void updateParameters(System *, const float *, const double *, double, double) {}
 
+void createRowRecipes(System *, const SetRecipe *, size_t, const RowRecipe *, size_t, const double *, size_t, size_t) {}
+
+void updateRecipeValues(System *, const double *) {}
+
 void updateMovingShells(System *, const MovingShell *, size_t) {}
 
 void updateVsites(System *, const VsiteEntry *, size_t) {}

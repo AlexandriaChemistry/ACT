@@ -39,6 +39,7 @@
 #include "act/coulombintegrals/slater_integrals.h"
 #include "act/forces/conformationdata.h"
 #include "act/forcefield/forcefield_parametername.h"
+#include "act/forcefield/parameterrecipes.h"
 #include "act/forces/forces_explicit_simd.h"
 #include "act/forces/forcecomputer.h"
 #include "act/forces/forces_gpu.h"
@@ -4151,6 +4152,7 @@ bool GpuTrainingSystem::moleculeDeviations(size_t, GpuMoleculeDeviations *) cons
 void GpuTrainingSystem::setActiveMolecules(int, const std::vector<char> &) {}
 std::vector<uint64_t> GpuTrainingSystem::moleculeSignatures(const ForceField *, const ForceComputer *) { return {}; }
 size_t GpuTrainingSystem::version() const { return 0; }
+bool GpuTrainingSystem::recipeRows() const { return false; }
 size_t GpuTrainingSystem::deviationsVersion() const { return 0; }
 void GpuTrainingSystem::compute(int, bool, bool) {}
 void GpuTrainingSystem::computeForces(int) {}
@@ -4302,6 +4304,89 @@ public:
     size_t                             versionCount = 0, devVersionCount = 0;
     //! Whether compute keeps the energies on the GPU only, see setDeviationsOnly
     bool                devOnly = false;
+    /*! \brief The recipes of the rows of the parameter tables, see makeRowRecipes
+     * With them the GPU makes the rows from the values of the force field,
+     * instead of stageRows. recipeRows is 0 until it is known whether they
+     * can be used, then 1 if they are, -1 if not.
+     */
+    ParameterRecipes                   recipes;
+    int                                recipeRows = 0;
+    //! The values of the recipes of each replica, and whether those of each were copied, see stageParameters
+    std::vector<double>                recipeValues;
+    std::vector<char>                  recipeStaged;
+
+    /*! \brief Make the recipes of all rows of the parameter tables, see gpu::createRowRecipes
+     * \param[in] pd The force field
+     * \return whether all rows have a recipe, except those of Coulomb, which
+     *         the GPU makes from the charges
+     */
+    bool makeRowRecipes(const ForceField *pd)
+    {
+        recipes = ParameterRecipes();
+        std::vector<gpu::RowRecipe> rowRecipes;
+        size_t tablesReplica  = staged[0].tables.size()/8;
+        size_t chargesReplica = staged[0].charges.size()/4;
+        for (size_t r = 1; r < nreplica; r++)
+        {
+            if (staged[r].tables.size()/8 != tablesReplica || staged[r].charges.size()/4 != chargesReplica)
+            {
+                return false;
+            }
+        }
+        for (size_t b = 0; b < blocks.size(); b++)
+        {
+            const auto &bl  = blocks[b];
+            const auto &d   = bl.desc;
+            const auto &seg = segments[b - bl.replica*nblockReplica];
+            size_t      row = bl.replica*tablesReplica + seg.table/8;
+            for (size_t l = 0; l < d.lists.size(); l++)
+            {
+                auto itype  = d.itypes[d.lists[l].energyIndex];
+                bool bonded = d.lists[l].bonded;
+                for (const auto &rw : d.rows[l])
+                {
+                    gpu::RowRecipe rr;
+                    rr.row     = row++;
+                    rr.replica = static_cast<uint32_t>(bl.replica);
+                    rr.bonded  = bonded ? 1 : 0;
+                    if (bonded)
+                    {
+                        rr.kernel = static_cast<uint32_t>(d.bondedKernels[l]);
+                        rr.set    = rw.entry ? recipes.directSet(pd, itype, rw.entry->id()) : -1;
+                    }
+                    else
+                    {
+                        auto kernel = d.pairKernels[l];
+                        if (gpu::PairKernel::Coulomb == kernel)
+                        {
+                            // From the charges, see gpu::updateParameters
+                            continue;
+                        }
+                        rr.kernel = static_cast<uint32_t>(kernel);
+                        rr.set    = rw.pair ? recipes.pairSet(pd, itype, rw.pair->id()) :
+                            (rw.entry ? recipes.directSet(pd, itype, rw.entry->id()) : -1);
+                        if (gpu::PairKernel::Polarization == kernel)
+                        {
+                            // The shell is the second particle, as gpuPairEntry
+                            int shell = rw.pair ? rw.pair->atomIndex(1) : rw.entry->atomIndices()[1];
+                            rr.charge = static_cast<int64_t>(4*(bl.replica*chargesReplica + seg.charge/4 + shell));
+                        }
+                    }
+                    if (rr.set < 0)
+                    {
+                        return false;
+                    }
+                    rowRecipes.push_back(rr);
+                }
+            }
+        }
+        gpu::createRowRecipes(system, recipes.recipes().data(), recipes.recipes().size(),
+                              rowRecipes.data(), rowRecipes.size(), recipes.factors().data(),
+                              recipes.values().size(), nreplica);
+        recipeValues.assign(nreplica*recipes.values().size(), 0.0);
+        recipeStaged.assign(nreplica, 0);
+        return true;
+    }
 
     //! Make blockIndex, after the blocks were made
     void indexBlocks()
@@ -4547,6 +4632,11 @@ bool GpuTrainingSystem::prepare(const ForceField *pd, const std::vector<ACTMol *
     im.active.clear();
     im.segments.clear();
     im.stagedAll.assign(nreplica, 0);
+    // The recipes of the rows are made again for the new blocks
+    im.recipeRows = 0;
+    im.recipeValues.clear();
+    im.recipeStaged.clear();
+    im.recipes = ParameterRecipes();
     im.molValues.assign(allmols.size(), {});
     im.versionCount   += 1;
     im.mols  = allmols;
@@ -4974,8 +5064,12 @@ void GpuTrainingSystem::stageParameters(size_t replica, const ForceField *pd, co
         }
         else
         {
-            // The rows in place, of the lists whose parameters changed
-            stageRows(im.mols[bl.mol], bl.what, bl.desc, epsilonr, &bl.rowVersion, st.tables.data() + seg.table);
+            // The rows in place, of the lists whose parameters changed,
+            // unless the GPU makes them from the values, see makeRowRecipes
+            if (im.recipeRows != 1)
+            {
+                stageRows(im.mols[bl.mol], bl.what, bl.desc, epsilonr, &bl.rowVersion, st.tables.data() + seg.table);
+            }
             std::vector<double>           charges;
             std::vector<gpu::MovingShell> shells;
             std::vector<gpu::VsiteEntry>  vsites;
@@ -4989,6 +5083,14 @@ void GpuTrainingSystem::stageParameters(size_t replica, const ForceField *pd, co
         }
     }
     im.stagedAll[replica] = 1;
+    if (im.recipeRows == 1)
+    {
+        // The values of this replica, that the force field has now
+        im.recipes.update();
+        const auto &v = im.recipes.values();
+        std::copy(v.begin(), v.end(), im.recipeValues.begin() + replica*v.size());
+        im.recipeStaged[replica] = 1;
+    }
     st.acmValues.clear();
     st.acmX.clear();
     if (!im.acmMols.empty())
@@ -5069,6 +5171,11 @@ size_t GpuTrainingSystem::version() const
     return impl_->versionCount;
 }
 
+bool GpuTrainingSystem::recipeRows() const
+{
+    return 1 == impl_->recipeRows;
+}
+
 size_t GpuTrainingSystem::deviationsVersion() const
 {
     return impl_->versionCount*1000003 + impl_->devVersionCount;
@@ -5116,7 +5223,24 @@ void GpuTrainingSystem::uploadParameters(const ForceField *pd)
             im.acmGenerated = true;
         }
     }
-    gpu::updateParameters(im.system, tables.data(), charges.data(), ONE_4PI_EPS0, pd->epsilonr());
+    // Once all replicas were staged, whether the GPU can make the rows, see
+    // makeRowRecipes, which ACT_GPU_RECIPE_ROWS=0 turns off
+    if (0 == im.recipeRows &&
+        std::all_of(im.stagedAll.begin(), im.stagedAll.end(), [](char c) { return c != 0; }))
+    {
+        const char *env = std::getenv("ACT_GPU_RECIPE_ROWS");
+        bool        off = env && std::string(env) == "0";
+        im.recipeRows   = (!off && im.makeRowRecipes(pd)) ? 1 : -1;
+    }
+    const float *rows = tables.data();
+    if (1 == im.recipeRows &&
+        std::all_of(im.recipeStaged.begin(), im.recipeStaged.end(), [](char c) { return c != 0; }))
+    {
+        // The GPU makes the rows from the values
+        gpu::updateRecipeValues(im.system, im.recipeValues.data());
+        rows = nullptr;
+    }
+    gpu::updateParameters(im.system, rows, charges.data(), ONE_4PI_EPS0, pd->epsilonr());
     gpu::updateMovingShells(im.system, shells.data(), shells.size());
     gpu::updateVsites(im.system, vsites.data(), vsites.size());
 }

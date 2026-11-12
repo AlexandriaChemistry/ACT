@@ -268,6 +268,9 @@ public:
     //! \return a number that changes when the system is made again, see prepare
     size_t version() const;
 
+    //! \return whether the GPU makes the rows of the parameter tables from recipes, see gpu::createRowRecipes
+    bool recipeRows() const;
+
     //! \return a number that changes when the system or the deviations are made again, see setDeviations
     size_t deviationsVersion() const;
 

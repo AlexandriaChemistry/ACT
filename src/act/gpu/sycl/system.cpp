@@ -55,6 +55,8 @@
 
 #include <sycl/sycl.hpp>
 
+#include "act/forcefield/setrecipe.h"
+#include "act/gpu/pairrows.h"
 #include "sycl/bondedkernels.h"
 #include "sycl/context.h"
 #include "sycl/pairkernels.h"
@@ -554,6 +556,16 @@ public:
     //! The charges and widths of all particles, four each
     double                         *charges_    = nullptr;
     uint64_t                        ncharge_    = 0;
+    //! The recipes of the rows of the tables, see createRowRecipes
+    SetRecipe                      *recipes_       = nullptr;
+    RowRecipe                      *rowRecipes_    = nullptr;
+    double                         *recipeFactors_ = nullptr;
+    double                         *recipeValues_  = nullptr;
+    //! The parameters of the sets of each replica, maxSetParameters each
+    double                         *setValues_     = nullptr;
+    uint64_t                        nset_ = 0, nrowRecipe_ = 0, nrecipeValue_ = 0, nrecipeReplica_ = 0;
+    //! Whether updateRecipeValues gave values of which the rows were not made yet
+    bool                            recipeValuesChanged_ = false;
     //! The virtual sites, as on the device
     std::vector<DeviceVsite>        vsitesHost_;
     //! The charge generation, see createAcm
@@ -1584,13 +1596,119 @@ void downloadCharges(System *sys, double *charges)
     sys->queue_->wait_and_throw();
 }
 
+//! The mathematical functions of SYCL, for the functions of combinationkernels.h
+struct SyclMath
+{
+    //! \return the square root of x
+    static double sqrt(double x) { return sycl::sqrt(x); }
+    //! \return x to the power y
+    static double pow(double x, double y) { return sycl::pow(x, y); }
+    //! \return the absolute value of x
+    static double abs(double x) { return sycl::fabs(x); }
+};
+
+void createRowRecipes(System *sys, const SetRecipe *recipes, size_t nset, const RowRecipe *rows, size_t nrow,
+                      const double *factors, size_t nvalue, size_t nreplica)
+{
+    sys->release(sys->recipes_);
+    sys->release(sys->rowRecipes_);
+    sys->release(sys->recipeFactors_);
+    sys->release(sys->recipeValues_);
+    sys->release(sys->setValues_);
+    sys->nset_           = nset;
+    sys->nrowRecipe_     = nrow;
+    sys->nrecipeValue_   = nvalue;
+    sys->nrecipeReplica_ = nreplica;
+    sys->recipes_        = sys->allocate<SetRecipe>(std::max<size_t>(nset, 1));
+    sys->rowRecipes_     = sys->allocate<RowRecipe>(std::max<size_t>(nrow, 1));
+    sys->recipeFactors_  = sys->allocate<double>(std::max<size_t>(nvalue, 1));
+    sys->recipeValues_   = sys->allocate<double>(std::max<size_t>(nvalue*nreplica, 1));
+    sys->setValues_      = sys->allocate<double>(std::max<size_t>(maxSetParameters*nset*nreplica, 1));
+    sys->upload(sys->recipes_, recipes, nset);
+    sys->upload(sys->rowRecipes_, rows, nrow);
+    sys->upload(sys->recipeFactors_, factors, nvalue);
+    sys->queue_->wait_and_throw();
+    sys->recipeValuesChanged_ = false;
+}
+
+void updateRecipeValues(System *sys, const double *values)
+{
+    if (sys->nrowRecipe_ == 0)
+    {
+        return;
+    }
+    sys->upload(sys->recipeValues_, values, sys->nrecipeValue_*sys->nrecipeReplica_);
+    sys->recipeValuesChanged_ = true;
+}
+
+/*! \brief Make the rows of the recipes from the values, see createRowRecipes
+ * First the sets of parameters of all replicas, then the rows from them, as
+ * gpuPairEntry and gpuBondedEntry do on the processor, with the charges of
+ * the shells as they are on the device.
+ * \param[in] sys     The system
+ * \param[in] coulomb The Coulomb constant
+ */
+static void computeRecipeRows(System *sys, double coulomb)
+{
+    auto    *queue = sys->queue_;
+    uint64_t nset  = sys->nset_;
+    uint64_t nv    = sys->nrecipeValue_;
+    auto     dR    = sys->recipes_;
+    auto     dF    = sys->recipeFactors_;
+    auto     dV    = sys->recipeValues_;
+    auto     dS    = sys->setValues_;
+    if (nset > 0)
+    {
+        queue->parallel_for(sycl::range<1>(nset*sys->nrecipeReplica_), [=](sycl::id<1> id)
+        {
+            uint64_t w = id[0];
+            uint64_t r = w / nset;
+            (void) evaluateRecipe<SyclMath>(dR[w - r*nset], dV + r*nv, dF, dS + maxSetParameters*w);
+        });
+    }
+    auto dRR = sys->rowRecipes_;
+    auto dT  = sys->tables_;
+    auto dQ  = sys->charges_;
+    if (sys->nrowRecipe_ > 0)
+    {
+        queue->parallel_for(sycl::range<1>(sys->nrowRecipe_), [=](sycl::id<1> id)
+        {
+            const RowRecipe &rr = dRR[id[0]];
+            const double    *p  = dS + maxSetParameters*(rr.replica*nset + rr.set);
+            float           *t  = dT + 8*rr.row;
+            if (rr.bonded)
+            {
+                rows::bondedRow(static_cast<BondedKernel>(rr.kernel), p, dR[rr.set].n, t);
+            }
+            else
+            {
+                double q = rr.charge >= 0 ? dQ[rr.charge] : 0.0;
+                if (!rows::pairRow(static_cast<PairKernel>(rr.kernel), p, q, coulomb, t))
+                {
+                    // As stageRows
+                    t[7] = 1;
+                }
+            }
+        });
+    }
+    sys->recipeValuesChanged_ = false;
+}
+
 void updateParameters(System *sys, const float *tables, const double *charges,
                       double coulomb, double epsilonr)
 {
     auto *queue = sys->queue_;
-    sys->upload(sys->tables_, tables, 8*sys->ntable_);
+    if (tables)
+    {
+        sys->upload(sys->tables_, tables, 8*sys->ntable_);
+    }
     sys->upload(sys->charges_, charges, 4*sys->ncharge_);
     generateAcmCharges(sys);
+    // The rows of the recipes, after the charges of the shells are known
+    if (sys->recipeValuesChanged_)
+    {
+        computeRecipeRows(sys, coulomb);
+    }
     uint64_t nparam = sys->nparam_;
     if (nparam == 0)
     {
