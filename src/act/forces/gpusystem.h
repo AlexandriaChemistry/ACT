@@ -36,6 +36,7 @@
 #define ACT_FORCES_GPUSYSTEM_H
 
 #include <memory>
+#include <string>
 #include <vector>
 
 #include "act/basics/interactiontype.h"
@@ -273,6 +274,15 @@ public:
      * sites and the structures of the charge generation as well
      */
     bool recipeRows() const;
+
+    /*! \return whether the GPU makes the fixed parts of the charges as
+     * well, see gpu::createChargeRecipes, such that the processor need not
+     * update them, see FragmentHandler::updateFixedCharges
+     */
+    bool chargeRecipes() const;
+
+    //! \return why prepare failed, empty if it did not
+    const std::string &whyNot() const;
 
     //! \return a number that changes when the system or the deviations are made again, see setDeviations
     size_t deviationsVersion() const;

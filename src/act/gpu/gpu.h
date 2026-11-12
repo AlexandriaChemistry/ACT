@@ -637,7 +637,8 @@ void updateShells(System *system, size_t block, const MovingShell *shells, size_
  * \param[in] tables   The rows of 8 parameters of the tables of all lists
  *                     of all blocks, in the order of createSystem
  * \param[in] charges  For all particles of all blocks in order: the charge,
- *                     the second charge and the widths of both, 4 per particle
+ *                     the second charge and the widths of both, 4 per
+ *                     particle, or nullptr to keep them, see createChargeRecipes
  * \param[in] coulomb  The Coulomb constant, ONE_4PI_EPS0
  * \param[in] epsilonr The relative dielectric constant
  */
@@ -726,6 +727,42 @@ struct VsiteRecipe
  */
 void createShellVsiteRecipes(System *sys, const ShellRecipe *shells, size_t nshell,
                              const VsiteRecipe *vsites, size_t nvsite);
+
+/*! \brief How the device makes a fixed part of the charge of a particle
+ * One of the four numbers of a particle in the charges, see
+ * updateParameters, is a value of the recipes, or its value in the units of
+ * the program, as FragmentHandler::updateFixedCharges gives them on the
+ * processor. See createChargeRecipes.
+ */
+struct ChargeRecipe
+{
+    //! The position in the charges of all blocks of all replicas
+    uint64_t position = 0;
+    //! The replica, of which the values are used
+    uint32_t replica  = 0;
+    //! The value, see createRowRecipes
+    int32_t  slot     = 0;
+    //! Whether the value is converted to the units of the program, see ForceFieldParameter::internalValue
+    uint32_t internal = 0;
+};
+
+/*! \brief Let the device make the fixed parts of the charges from the values too
+ * After createRowRecipes, updateParameters writes these numbers of the
+ * charges when the values changed, after which the charges passed to it
+ * may be nullptr. The charges are generated again only if the values of
+ * the charge generation changed, see updateAcm, or acmChargesChanged.
+ * \param[in] sys     The system
+ * \param[in] charges The recipes
+ * \param[in] n       Their number
+ */
+void createChargeRecipes(System *sys, const ChargeRecipe *charges, size_t n);
+
+/*! \brief Generate the charges again at the next updateParameters
+ * For instance when fixed charges of the recipes changed, since the
+ * charges that downloadAcmCharges gives include them.
+ * \param[in] sys The system
+ */
+void acmChargesChanged(System *sys);
 
 /*! \brief The values of the force field of all replicas for the recipes, see createRowRecipes
  * \param[in] sys    The system

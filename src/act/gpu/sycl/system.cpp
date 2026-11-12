@@ -592,6 +592,9 @@ public:
     uint32_t                       *acmVsiteStart_ = nullptr;
     AcmVsite                       *acmVsites_     = nullptr;
     uint64_t                        nacmVsite_     = 0;
+    //! The recipes of the fixed parts of the charges, see createChargeRecipes
+    ChargeRecipe                   *chargeRecipes_ = nullptr;
+    uint64_t                        nchargeRecipe_ = 0;
     //! Whether the coordinates of the charge generation are to be constructed, see acmVsitesChanged
     bool                            acmVsitesChanged_ = false;
     //! Work space: the charges of each molecule and the matrices of each fragment
@@ -1595,6 +1598,34 @@ void updateAcm(System *sys, const double *values)
     sys->acmChanged_ = true;
 }
 
+void createChargeRecipes(System *sys, const ChargeRecipe *charges, size_t n)
+{
+    sys->release(sys->chargeRecipes_);
+    sys->nchargeRecipe_ = n;
+    sys->chargeRecipes_ = sys->allocate<ChargeRecipe>(std::max<size_t>(n, 1));
+    sys->upload(sys->chargeRecipes_, charges, n);
+    sys->queue_->wait_and_throw();
+}
+
+/*! \brief Write the fixed parts of the charges from the values, see createChargeRecipes
+ * \param[in] sys The system
+ */
+static void computeChargeRecipes(System *sys)
+{
+    uint64_t nv  = sys->nrecipeValue_;
+    auto     dC  = sys->chargeRecipes_;
+    auto     dF  = sys->recipeFactors_;
+    auto     dV  = sys->recipeValues_;
+    auto     dQ  = sys->charges_;
+    sys->queue_->parallel_for(sycl::range<1>(sys->nchargeRecipe_), [=](sycl::id<1> id)
+    {
+        const ChargeRecipe &cr = dC[id[0]];
+        double              v  = dV[cr.replica*nv + cr.slot];
+        // As ForceFieldParameter::internalValue, see ParameterRecipes::slot
+        dQ[cr.position] = cr.internal ? v*dF[cr.slot] : v;
+    });
+}
+
 void createAcmVsites(System *sys, const int64_t *x, const uint32_t *vsiteStart,
                      const AcmVsite *vsites, size_t nvsite)
 {
@@ -1615,6 +1646,11 @@ void createAcmVsites(System *sys, const int64_t *x, const uint32_t *vsiteStart,
 void acmVsitesChanged(System *sys)
 {
     sys->acmVsitesChanged_ = true;
+}
+
+void acmChargesChanged(System *sys)
+{
+    sys->acmChanged_ = true;
 }
 
 void updateAcmCoordinates(System *sys, const double *x)
@@ -1860,13 +1896,21 @@ void updateParameters(System *sys, const float *tables, const double *charges,
     {
         sys->upload(sys->tables_, tables, 8*sys->ntable_);
     }
-    sys->upload(sys->charges_, charges, 4*sys->ncharge_);
+    if (charges)
+    {
+        sys->upload(sys->charges_, charges, 4*sys->ncharge_);
+    }
     // The sets of the recipes, of which the coordinates of the charge
     // generation may follow, and the rows after the charges of the shells
     bool recipes = sys->recipeValuesChanged_;
     if (recipes)
     {
         computeRecipeSets(sys);
+    }
+    if (recipes && sys->nchargeRecipe_ > 0)
+    {
+        // The charges are generated again if acmChargesChanged says so
+        computeChargeRecipes(sys);
     }
     if (recipes && sys->acmVsitesChanged_ && sys->nacmMolecule_ > 0)
     {
