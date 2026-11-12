@@ -107,6 +107,24 @@ private:
     //! Information about each force field parameter
     const std::vector<OptimizationIndex> *optIndex_;
 public:
+    //! An atom whose charge has bounds, see chargeBounds
+    struct ChargeBound
+    {
+        //! The atom
+        int                 atom;
+        //! The bounds of its charge
+        double              minimum;
+        //! The bounds of its charge
+        double              maximum;
+        //! Its shells and the virtual sites with only this parent
+        std::vector<int>    extra;
+    };
+private:
+    //! The atoms with bounds of each molecule, see cachedBounds
+    std::map<const ACTMol *, std::vector<ChargeBound>> bounds_;
+    //! The force field of those
+    const ForceField                                  *boundsForceField_ = nullptr;
+public:
 
     /*! \brief Create a new BoundsDevComputer
      * @param optIndex  pointer to vector containing information about each force field parameter
@@ -142,6 +160,34 @@ public:
     static double moleculeBound(const ACTMol     *mol,
                                 const ForceField *forcefield,
                                 LossFunction      lossFunction);
+
+    /*! \brief The atoms of a molecule whose charges have bounds
+     * Those of the ACM charge parameters with a range. Training does not
+     * change them, nor the mutability, therefore they can be kept.
+     * \param[in] mol        The molecule
+     * \param[in] forcefield The force field
+     * \return The atoms, in their order
+     */
+    static std::vector<ChargeBound> chargeBounds(const ACTMol     *mol,
+                                                 const ForceField *forcefield);
+
+    /*! \brief The penalty of one molecule from its atoms with bounds
+     * \param[in] mol          The molecule, with its charges
+     * \param[in] bounds       Its atoms with bounds, see chargeBounds
+     * \param[in] lossFunction Functional form of the loss function
+     * \return The penalty, the same as moleculeBound
+     */
+    static double moleculeBound(const ACTMol                   *mol,
+                                const std::vector<ChargeBound> &bounds,
+                                LossFunction                    lossFunction);
+
+    /*! \brief The atoms with bounds of a molecule, made once
+     * \param[in] mol        The molecule
+     * \param[in] forcefield The force field
+     * \return The atoms, see chargeBounds
+     */
+    const std::vector<ChargeBound> &cachedBounds(const ACTMol     *mol,
+                                                 const ForceField *forcefield);
 };
 
 /*!
