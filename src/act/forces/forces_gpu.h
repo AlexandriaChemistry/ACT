@@ -160,6 +160,18 @@ void gpuBondedEntry(gpu::BondedKernel kernel, const TopologyEntry &b, gpu::Bonde
  * \param[out] ve    The virtual site for the GPU
  * \return false if the GPU cannot construct this type
  */
+/*! \brief Which parameters of a virtual site the GPU uses, see gpu::VsiteEntry::p
+ * Parameter k of the site is factor[k] times parameter index[k] of the
+ * entry, or zero if index[k] is negative. gpuVsiteEntry and the recipes of
+ * the virtual sites, see gpu::createRowRecipes, both use this.
+ * \param[in]  itype  The type of virtual site
+ * \param[in]  b      The entry
+ * \param[out] index  The parameter of the entry of each parameter of the site
+ * \param[out] factor The factor of each
+ * \return whether the GPU supports the type
+ */
+bool gpuVsiteParameters(InteractionType itype, const TopologyEntry &b, int index[3], double factor[3]);
+
 bool gpuVsiteEntry(InteractionType itype, const TopologyEntry &b, gpu::VsiteEntry *ve);
 
 /*! \brief Potentials of several molecules that are computed on the GPU at once

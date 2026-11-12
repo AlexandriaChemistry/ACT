@@ -641,6 +641,23 @@ std::map<std::string, UpdateCase> updateCases()
         uc.targets          = inter;
         cases["hf-lj14-7-vsites"] = uc;
     }
+    {
+        // Polarizable, with virtual sites, with Gaussian charges and
+        // Wang-Buckingham instead of the Slater charges and the generalized
+        // Buckingham potential, which the GPU does not have
+        UpdateCase uc;
+        uc.files.forceField = "forcefields/ACS-ps.xml";
+        uc.modify           = [](ForceField *pd)
+        {
+            pd->setChargeDistribution(ChargeDistributionType::Gaussian);
+            replaceVdw(pd, Potential::WANG_BUCKINGHAM);
+        };
+        uc.files.molprop    = "molprop/hf-hf.xml";
+        uc.files.selection  = "molprop/hf-hf.dat";
+        uc.files.oneH       = false;
+        uc.targets          = inter;
+        cases["hf-pg-vsites"] = uc;
+    }
     UpdateCase hf;
     hf.files.forceField = "forcefields/HF-LJ14-7.xml";
     hf.files.molprop    = "molprop/hf-hf.xml";
@@ -1153,50 +1170,60 @@ TEST(ChargePropertiesTest, OnlyWithData)
 
 // Test: The rows of the parameter tables that the GPU makes from the recipes
 // give the same objective function as those made on the processor, which
-// ACT_GPU_RECIPE_ROWS=0 asks for, also when the parameters change.
+// ACT_GPU_RECIPE_ROWS=0 asks for, also when the parameters change. So do the
+// moving shells and the virtual sites that the GPU makes from the recipes.
 TEST_F(ParameterUpdateTest, RecipeRowsAsProcessorRowsGpu)
 {
     if (!gmx::test::gpuTestRuns(gpu::useGpu() && !GMX_DOUBLE, "no GPU or double precision"))
     {
         return;
     }
-    auto                     uc = updateCases()["alc-pol-wbh"];
-    std::vector<std::string> fit;
-    GaTestFiles              baseFiles;
-    baseForceField(&fileManager_, uc, true, &fit, &baseFiles);
-    std::vector<ForceComputer *> fcs;
-    std::vector<GaTestHelper *>  helpers;
-    for (int h = 0; h < 2; h++)
+    // With shells whose polarizabilities and charges change, and with
+    // virtual sites whose parameters change
+    for (const std::string label : { "alc-pol-wbh", "hf-pg-vsites" })
     {
-        auto fc = new ForceComputer();
-        fc->setKeepShells(false);
-        fc->setGpuResident(true);
-        fcs.push_back(fc);
-        helpers.push_back(new GaTestHelper(1, fit, uc.targets, baseFiles, fc));
-    }
-    auto values = parameterValues(helpers[0]->sii);
-    // Whether the GPU uses the recipes is decided at the first evaluation
-    setenv("ACT_GPU_RECIPE_ROWS", "0", 1);
-    auto onProcessor = evaluate(helpers[0], values, {}, false);
-    unsetenv("ACT_GPU_RECIPE_ROWS");
-    auto fromRecipes = evaluate(helpers[1], values, {}, false);
-    compare(fromRecipes, onProcessor, 1e-12);
-    std::mt19937 gen(1997);
-    std::uniform_int_distribution<size_t> pick(0, values.size() - 1);
-    for (int step = 0; step < 10; step++)
-    {
-        SCOPED_TRACE(gmx::formatString("step %d", step));
-        size_t k  = pick(gen);
-        values[k] = otherValue(*parameter(helpers[0]->sii, k));
-        onProcessor = evaluate(helpers[0], values, { static_cast<int>(k) }, false);
-        fromRecipes = evaluate(helpers[1], values, { static_cast<int>(k) }, false);
+        SCOPED_TRACE(label);
+        auto                     uc = updateCases()[label];
+        std::vector<std::string> fit;
+        GaTestFiles              baseFiles;
+        baseForceField(&fileManager_, uc, true, &fit, &baseFiles);
+        std::vector<ForceComputer *> fcs;
+        std::vector<GaTestHelper *>  helpers;
+        for (int h = 0; h < 2; h++)
+        {
+            auto fc = new ForceComputer();
+            fc->setKeepShells(false);
+            fc->setGpuResident(true);
+            fcs.push_back(fc);
+            helpers.push_back(new GaTestHelper(1, fit, uc.targets, baseFiles, fc));
+        }
+        auto values = parameterValues(helpers[0]->sii);
+        // Whether the GPU uses the recipes is decided at the first evaluation
+        setenv("ACT_GPU_RECIPE_ROWS", "0", 1);
+        auto onProcessor = evaluate(helpers[0], values, {}, false);
+        unsetenv("ACT_GPU_RECIPE_ROWS");
+        auto fromRecipes = evaluate(helpers[1], values, {}, false);
         compare(fromRecipes, onProcessor, 1e-12);
-    }
-    EXPECT_FALSE(fcs[0]->gpuRecipeRows());
-    EXPECT_TRUE(fcs[1]->gpuRecipeRows()) << "The GPU did not make the rows from the recipes";
-    for (auto h : helpers)
-    {
-        delete h;
+        std::mt19937 gen(1997);
+        std::uniform_int_distribution<size_t> pick(0, values.size() - 1);
+        // Each of a few parameters, otherwise some at random
+        bool   each  = values.size() <= 20;
+        size_t nstep = each ? values.size() : 10;
+        for (size_t step = 0; step < nstep; step++)
+        {
+            SCOPED_TRACE(gmx::formatString("step %zu", step));
+            size_t k  = each ? step : pick(gen);
+            values[k] = otherValue(*parameter(helpers[0]->sii, k));
+            onProcessor = evaluate(helpers[0], values, { static_cast<int>(k) }, false);
+            fromRecipes = evaluate(helpers[1], values, { static_cast<int>(k) }, false);
+            compare(fromRecipes, onProcessor, 1e-12);
+        }
+        EXPECT_FALSE(fcs[0]->gpuRecipeRows());
+        EXPECT_TRUE(fcs[1]->gpuRecipeRows()) << "The GPU did not make the rows from the recipes";
+        for (auto h : helpers)
+        {
+            delete h;
+        }
     }
 }
 

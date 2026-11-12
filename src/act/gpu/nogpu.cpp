@@ -124,6 +124,8 @@ void createRowRecipes(System *, const SetRecipe *, size_t, const RowRecipe *, si
 
 void updateRecipeValues(System *, const double *) {}
 
+void createShellVsiteRecipes(System *, const ShellRecipe *, size_t, const VsiteRecipe *, size_t) {}
+
 void updateMovingShells(System *, const MovingShell *, size_t) {}
 
 void updateVsites(System *, const VsiteEntry *, size_t) {}
