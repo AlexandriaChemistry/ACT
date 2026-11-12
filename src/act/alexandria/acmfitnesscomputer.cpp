@@ -300,12 +300,25 @@ std::vector<double> ACMFitnessComputer::calcDeviations(MsgHandler               
     return chi2;
 }
 
+/*! \brief Whether the processor needs the parameters of an interaction type in the topology
+ * When the GPU makes the rows of its parameter tables from the force field,
+ * see ForceComputer::gpuRecipeRows, the processor still makes the moving
+ * shells, from the polarizabilities, and the virtual sites, see stageBlock.
+ * \param[in] itype The interaction type
+ * \return whether it does
+ */
+static bool hostNeedsParameters(InteractionType itype)
+{
+    return InteractionType::POLARIZATION == itype || isVsite(itype);
+}
+
 void ACMFitnessComputer::updateMolecule(MsgHandler                      *msghandler,
                                         ACTMol                          *actmol,
                                         size_t                           imol,
                                         const std::set<InteractionType> &itUpdate,
                                         bool                             gpuCharges,
-                                        bool                             needQProps)
+                                        bool                             needQProps,
+                                        bool                             allTypes)
 {
     {
         // Now update the topology, only the interaction types of
@@ -316,6 +329,10 @@ void ACMFitnessComputer::updateMolecule(MsgHandler                      *msghand
         std::set<InteractionType> itFill;
         for(auto itype : itUpdate)
         {
+            if (!allTypes && !hostNeedsParameters(itype))
+            {
+                continue;
+            }
             auto fv = filled.find(itype);
             if (filled.end() == fv || fv->second != sii_->parameterVersion(itype))
             {
@@ -613,6 +630,11 @@ bool ACMFitnessComputer::prepareDeviation(MsgHandler    *msghandler,
     }
     std::vector<double>   values = haveDeps ? parameterValues() : std::vector<double>();
     std::vector<ACTMol *> skipped;
+    // When the GPU makes the rows of its parameter tables from the force
+    // field, the topologies only need the parameters that the processor uses,
+    // see updateMolecule. If the GPU does not after all, for instance since
+    // its molecules are made again, the others are filled below.
+    const bool allTypes = !(gpuCharges && forceComp_->gpuRecipeRows());
     dt->active.clear();
     dt->keys.clear();
     dt->hit.clear();
@@ -657,7 +679,7 @@ bool ACMFitnessComputer::prepareDeviation(MsgHandler    *msghandler,
             }
             if (active)
             {
-                updateMolecule(msghandler, &(*actmol), imol, itUpdate, gpuCharges, needQProps);
+                updateMolecule(msghandler, &(*actmol), imol, itUpdate, gpuCharges, needQProps, allTypes);
             }
             else
             {
@@ -696,7 +718,7 @@ bool ACMFitnessComputer::prepareDeviation(MsgHandler    *msghandler,
     {
         for (auto molptr : skipped)
         {
-            updateMolecule(msghandler, molptr, molptr - &(*mymols->begin()), itUpdate, gpuCharges, needQProps);
+            updateMolecule(msghandler, molptr, molptr - &(*mymols->begin()), itUpdate, gpuCharges, needQProps, allTypes);
         }
         skipped.clear();
         std::fill(dt->active.begin(), dt->active.end(), 1);
@@ -738,6 +760,13 @@ bool ACMFitnessComputer::prepareDeviation(MsgHandler    *msghandler,
             kept.push_back(molptr);
         }
         selected = std::move(kept);
+    }
+    if (!allTypes && !(gpuOk && forceComp_->gpuRecipeRows()))
+    {
+        for (auto molptr : selected)
+        {
+            updateMolecule(msghandler, molptr, molptr - &(*mymols->begin()), itUpdate, gpuCharges, needQProps);
+        }
     }
     dt->skipping = canSkip && consistent && gpuOk;
     if (!dt->skipping)

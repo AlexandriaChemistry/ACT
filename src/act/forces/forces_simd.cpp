@@ -4314,6 +4314,8 @@ public:
     //! The values of the recipes of each replica, and whether those of each were copied, see stageParameters
     std::vector<double>                recipeValues;
     std::vector<char>                  recipeStaged;
+    //! Whether stageParameters makes the rows on the processor anyway, see moleculeSignatures
+    bool                               hostRows = false;
 
     /*! \brief Make the recipes of all rows of the parameter tables, see gpu::createRowRecipes
      * \param[in] pd The force field
@@ -5066,7 +5068,7 @@ void GpuTrainingSystem::stageParameters(size_t replica, const ForceField *pd, co
         {
             // The rows in place, of the lists whose parameters changed,
             // unless the GPU makes them from the values, see makeRowRecipes
-            if (im.recipeRows != 1)
+            if (im.recipeRows != 1 || im.hostRows)
             {
                 stageRows(im.mols[bl.mol], bl.what, bl.desc, epsilonr, &bl.rowVersion, st.tables.data() + seg.table);
             }
@@ -5130,7 +5132,11 @@ std::vector<uint64_t> GpuTrainingSystem::moleculeSignatures(const ForceField *pd
     auto &im     = *impl_;
     auto  active = im.active;
     im.active.clear();
+    // The rows on the processor, which the signatures are made of, also if
+    // the GPU makes them from the recipes
+    im.hostRows = true;
     stageParameters(0, pd, fc);
+    im.hostRows = false;
     im.active = std::move(active);
     // FNV-1a over the bytes of the parameters of the blocks of each molecule
     auto hash = [](uint64_t h, const void *data, size_t n)

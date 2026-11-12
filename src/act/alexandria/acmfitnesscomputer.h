@@ -124,13 +124,20 @@ private:
      * \param[in]    itUpdate   The interaction types that are optimized
      * \param[in]    gpuCharges Whether the GPU generates the charges, see prepareDeviation
      * \param[in]    needQProps Whether the charge properties are needed
+     * \param[in]    allTypes   Whether to fill the parameters of all interaction
+     *                          types in the topology, or only of those that the
+     *                          processor needs when the GPU makes the rows of
+     *                          its parameter tables, see hostNeedsParameters.
+     *                          The others then keep their version, such that
+     *                          they are filled the next time all are.
      */
     void updateMolecule(MsgHandler                      *msghandler,
                         ACTMol                          *actmol,
                         size_t                           imol,
                         const std::set<InteractionType> &itUpdate,
                         bool                             gpuCharges,
-                        bool                             needQProps);
+                        bool                             needQProps,
+                        bool                             allTypes = true);
 
     /*! \brief Find which molecules on the GPU each optimized parameter changes
      * Each parameter is changed in turn, and the molecules of which the
