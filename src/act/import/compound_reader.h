@@ -75,7 +75,7 @@ namespace alexandria
 
     public:
         //! Constructor
-        CompoundReader() {}
+        CompoundReader() = default;
 
         /*! \brief Add command-line options
          * \param[inout] pargs  List of command line flags

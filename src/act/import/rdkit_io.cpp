@@ -148,7 +148,7 @@ static void addInchiToFragments(MsgHandler            *msg_handler,
     RDKit::ExtraInchiReturnValues rv;
     if (fragptr->size() == 1)
     {
-        auto inchi = MolToInchi(*mol, rv);
+        const auto inchi = MolToInchi(*mol, rv);
         if (!updateFragmentFromInchi(msg_handler, amols, inchi, &((*fragptr)[0])))
         {
             std::vector<int> fragIndex;
@@ -164,8 +164,8 @@ static void addInchiToFragments(MsgHandler            *msg_handler,
         // Use RDKit to get fragments back as molecules
         bool sanitizeFrags = true;
         std::vector<int> fragindex(mol->getNumAtoms());
-        auto frags = RDKit::MolOps::getMolFrags(*mol, sanitizeFrags,
-                                                &fragindex);
+        const auto frags = RDKit::MolOps::getMolFrags(*mol, sanitizeFrags,
+                                                      &fragindex);
         if (frags.size() != fragptr->size())
         {
             msg_handler->msg(ACTStatus::Error,
@@ -177,7 +177,7 @@ static void addInchiToFragments(MsgHandler            *msg_handler,
             int myfrag = 0;
             for(const auto &frag : frags)
             {
-                auto inchi = MolToInchi(*frag, rv);
+                const auto inchi = MolToInchi(*frag, rv);
                 if (!updateFragmentFromInchi(msg_handler, amols, inchi, &((*fragptr)[myfrag])))
                 {
                     std::vector<int> fragIndex;
@@ -236,7 +236,7 @@ static bool abeSupported(MsgHandler              *msg_handler,
     std::vector<const ParticleType *> ptypes;
     for(const auto &atp : abe.atomtypes)
     {
-        Identifier id(atp.name);
+        const Identifier id(atp.name);
         if (!pd->hasParticleType(id))
         {
             if (atp.atomnumber <= 0)
@@ -266,17 +266,17 @@ static bool abeSupported(MsgHandler              *msg_handler,
         msg_handler->msg(ACTStatus::Error, "No bonds in force field");
         return false;
     }
-    auto fs = pd->findForcesConst(itype);
-    std::string bstr("bondtype");
+    const auto& fs = pd->findForcesConst(itype);
+    const std::string bstr("bondtype");
     for(const auto &sb : abe.bonds)
     {
         if (ptypes[sb.ai]->hasOption(bstr) &&
             ptypes[sb.aj]->hasOption(bstr))
         {
-            Identifier bondId({ ptypes[sb.ai]->optionValue(bstr),
-                    ptypes[sb.aj]->optionValue(bstr) },
-                              { sb.order },
-                              CanSwap::Yes);
+            const Identifier bondId({ ptypes[sb.ai]->optionValue(bstr),
+                          ptypes[sb.aj]->optionValue(bstr) },
+                                    { sb.order },
+                                    CanSwap::Yes);
             if (!fs.parameterExists(bondId))
             {
                 msg_handler->msg(ACTStatus::Warning,
@@ -313,7 +313,7 @@ static void lookUpSpecial(MsgHandler                           *msg_handler,
     for(size_t i = 0; i < abe.size(); i++)
     {
         // Make RDKit matcher for our pattern
-        RDKit::SmartsMatcher matcher(abe[i].name, abe[i].smarts);
+        const RDKit::SmartsMatcher matcher(abe[i].name, abe[i].smarts);
         // Check whether the pattern is valid, to prevent RDKit from throwing an exception
         if (!matcher.isValid())
         {
@@ -340,7 +340,7 @@ static void lookUpSpecial(MsgHandler                           *msg_handler,
                 // is not enough for a box with many compounds
                 RDKit::SubstructMatchParameters params;
                 params.maxMatches = std::numeric_limits<unsigned int>::max();
-                std::vector<RDKit::MatchVectType> matchVect = RDKit::SubstructMatch(*mol2, *qmol, params);
+                const std::vector<RDKit::MatchVectType> matchVect = RDKit::SubstructMatch(*mol2, *qmol, params);
                 if (matchVect.empty())
                 {
                     msg_handler->msg(ACTStatus::Warning,
@@ -467,7 +467,7 @@ static void importFile(MsgHandler                           *msg_handler,
     try
     {
         RDKit::RWMol *mol2 = nullptr;
-        std::string ext = filenm.substr(filenm.size()-3, 3);
+        const std::string ext = filenm.substr(filenm.size()-3, 3);
         if (ext == "sdf")
         {
             mol2 = RDKit::MolFileToMol( filenm, true, false, true );
@@ -524,9 +524,9 @@ static void importFile(MsgHandler                           *msg_handler,
         if (mol2)
         {
             MolProp      mp;
-            std::string  ref("Spoel2026a");
+            const std::string  ref("Spoel2026a");
             //! \todo Check whether this is correct
-            std::string  RDKit_Unit("Angstrom");
+            const std::string  RDKit_Unit("Angstrom");
             Experiment   exper(ref, conf);
             exper.setJobtype(jobtype);
             unsigned int atomid = 0;
@@ -538,7 +538,7 @@ static void importFile(MsgHandler                           *msg_handler,
                 std::string atype = atom->getSymbol();
                 std::transform(atype.begin(), atype.end(), atype.begin(), ::tolower);
                 CalcAtom ca(atom->getSymbol(), atype, atomid);
-                auto atomPos = conformer.getAtomPos(atomid);
+                const auto& atomPos = conformer.getAtomPos(atomid);
                 ca.setCoords(convertToGromacs(atomPos.x, RDKit_Unit),
                              convertToGromacs(atomPos.y, RDKit_Unit),
                              convertToGromacs(atomPos.z, RDKit_Unit));
@@ -550,9 +550,9 @@ static void importFile(MsgHandler                           *msg_handler,
                 double order = bondTypeValue(msg_handler, bond->getBondType());
                 if (msg_handler->ok())
                 {
-                    Bond b(bond->getBeginAtomIdx(),
-                           bond->getEndAtomIdx(),
-                           order);
+                    const Bond b(bond->getBeginAtomIdx(),
+                                 bond->getEndAtomIdx(),
+                                 order);
                     mp.AddBond(std::move(b));
                 }
             }
@@ -561,7 +561,7 @@ static void importFile(MsgHandler                           *msg_handler,
             lookUpSpecial(msg_handler, pd, abdb, mol2, &exper, mp.bonds(), oneH);
             if (msg_handler->ok())
             {
-                AlexandriaMols amols;
+                const AlexandriaMols amols;
                 mp.AddExperiment(std::move(exper));
                 mp.generateFragments(msg_handler, pd);
                 addInchiToFragments(msg_handler, amols, mol2, mp.fragmentPtr());
@@ -596,7 +596,7 @@ void importFile(MsgHandler             *msg_handler,
     if (abe.empty())
     {
         // Left empty on purpose.
-        std::string                    dbname;
+        const std::string              dbname;
         readAtomBondtypeDB(msg_handler, dbname, &abe);
         if (msg_handler->debug())
         {

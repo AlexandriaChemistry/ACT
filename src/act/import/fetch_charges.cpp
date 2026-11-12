@@ -50,7 +50,7 @@ ChargeMap fetchChargeMap(MsgHandler                  *msghandler,
                          ChargeGenerationAlgorithm    algorithm,
                          const char                  *qread)
 {
-    AlexandriaMols       amols;
+    const AlexandriaMols amols;
     ChargeMap            qmap;
     // Clear old data if present
     mols->clear();
@@ -122,7 +122,7 @@ ChargeMap fetchChargeMap(MsgHandler                  *msghandler,
         {
             for(auto &atom: actmol.atomsConst())
             {
-                newq.push_back({atom.id(), atom.charge()});
+                newq.emplace_back(atom.id(), atom.charge());
             }
             qmap.insert( { frags[0].inchi(), newq } );
             mols->push_back(std::move(actmol));

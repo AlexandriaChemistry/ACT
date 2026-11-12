@@ -67,7 +67,7 @@ protected:
     //! Constructor that does initialization
     CompoundReaderTest() : checker_(this->rootChecker())
     {
-        auto tolerance = gmx::test::relativeToleranceAsFloatingPoint(1.0, GMX_DOUBLE ? 1e-10 : 5e-2);
+        const auto tolerance = gmx::test::relativeToleranceAsFloatingPoint(1.0, GMX_DOUBLE ? 1e-10 : 5e-2);
         checker_.setDefaultTolerance(tolerance);
         pd = getForceField("ff-hh");
         qopt_.assign("-charges");
@@ -95,7 +95,7 @@ protected:
     {
         for(auto &pa : *pargs)
         {
-            if (fopt_.compare(pa.option) == 0 && infile.size() > 0)
+            if (fopt_.compare(pa.option) == 0 && !infile.empty())
             {
                 *pa.u.c = infile.c_str();
                 pa.bSet = true;
@@ -124,8 +124,8 @@ protected:
         {
             for(const auto &atom : mol.second)
             {
-                std::string aname = gmx::formatString("%s-%d",
-                                                      atom.first.id().c_str(), i);
+                const std::string aname = gmx::formatString("%s-%d",
+                                                            atom.first.id().c_str(), i);
                 checker_.checkDouble(atom.second, aname.c_str());
                 i += 1;
             }
@@ -161,7 +161,7 @@ protected:
             int i = 1;
             for(const auto &atom : atoms)
             {
-                std::string aname = gmx::formatString("%s-%s-%d", mol.formula().c_str(), atom.name().c_str(), i);
+                const std::string aname = gmx::formatString("%s-%s-%d", mol.formula().c_str(), atom.name().c_str(), i);
                 checker_.checkDouble(atom.charge(), aname.c_str());
                 i += 1;
             }
