@@ -1176,6 +1176,63 @@ void ForceField::sendToHelpers(const CommunicationRecord *cr, int root,
     cr->finishPackedBcast();
 }
 
+void ForceField::checkUnits() const
+{
+    // The charge generation, also on the GPU, uses these as they are, in
+    // eV, see QgenAcm, the others are converted with internalValue
+    const std::set<std::string> eV      = { "eV", "eV/e" };
+    const std::set<std::string> perNm   = { "1/nm" };
+    std::string                 errors;
+    auto check = [&errors](const std::string         &where,
+                           const std::string         &name,
+                           const ForceFieldParameter &p,
+                           const std::set<std::string> &allowed)
+    {
+        if (allowed.count(p.unit()) == 0)
+        {
+            std::string units;
+            for (const auto &u : allowed)
+            {
+                units += (units.empty() ? "'" : " or '") + u + "'";
+            }
+            errors += gmx::formatString("\n  %s of %s has unit '%s', it has to be %s",
+                                        name.c_str(), where.c_str(), p.unit().c_str(), units.c_str());
+        }
+    };
+    for (auto itype : { InteractionType::ELECTRONEGATIVITYEQUALIZATION, InteractionType::BONDCORRECTIONS })
+    {
+        if (!interactionPresent(itype))
+        {
+            continue;
+        }
+        for (const auto &entry : findForcesConst(itype).parametersConst())
+        {
+            for (const auto &p : entry.second)
+            {
+                if (p.first == "eta" || p.first == "chi" || p.first == "delta_eta" || p.first == "delta_chi")
+                {
+                    check(interactionTypeToString(itype) + " " + entry.first.id(), p.first, p.second, eV);
+                }
+            }
+        }
+    }
+    for (const auto &pt : alexandria_)
+    {
+        for (const char *zname : { zetaName, zetaVSName })
+        {
+            if (pt.second.hasParameter(zname))
+            {
+                check("particle type " + pt.first.id(), zname, pt.second.parameterConst(zname), perNm);
+            }
+        }
+    }
+    if (!errors.empty())
+    {
+        GMX_THROW(gmx::InvalidInputError(gmx::formatString("Force field %s has parameters in units that cannot be used:%s",
+                                                           filename().c_str(), errors.c_str())));
+    }
+}
+
 void ForceField::checkConsistency(MsgHandler *msgHandler) const
 {
     int  nerror = 0;

@@ -36,6 +36,7 @@
 #include "act/basics/mutability.h"
 #include "act/forcefield/forcefield_parametername.h"
 #include "act/forcefield/potential.h"
+#include "act/utility/units.h"
 #include "gromacs/math/functions.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxassert.h"
@@ -176,16 +177,15 @@ void evalCombinationRule(Potential                     ftype,
                          bool                          includePair,
                          ForceFieldParameterMap       *pmap)
 {
-    // Fudge unit
-    const std::string unit("kJ/mol");
-
     // We use dependent mutability to show these are not independent params
     auto mutd = Mutability::Dependent;
 
     // The parameters of both particle types in the order of ivdw, with
-    // their rules, see combination::pairParameters
+    // their rules, see combination::pairParameters. They are combined in
+    // the units of the program, such that particle types may have their
+    // parameters in other units, and so are the parameters of the pair.
     size_t                   n = ivdw.size();
-    std::vector<std::string> names;
+    std::vector<std::string> names, units;
     std::vector<double>      vi, vj, exponents, out(n, 0.0);
     std::vector<CombRule>    rules;
     for(const auto &param : ivdw)
@@ -205,8 +205,9 @@ void evalCombinationRule(Potential                     ftype,
         }
         const auto &crule = combrule.find(param.first)->second;
         names.push_back(param.first);
-        vi.push_back(param.second.value());
-        vj.push_back(jvdw.find(param.first)->second.value());
+        units.push_back(gromacsUnit(param.second.unit()));
+        vi.push_back(param.second.internalValue());
+        vj.push_back(jvdw.find(param.first)->second.internalValue());
         rules.push_back(crule.rule());
         exponents.push_back(crule.ffplConst().value());
     }
@@ -266,7 +267,7 @@ void evalCombinationRule(Potential                     ftype,
     for (size_t k = 0; k < n; k++)
     {
         pmap->insert_or_assign(names[k],
-                               ForceFieldParameter(unit, out[k], 0, 1, out[k], out[k], mutd, true, true));
+                               ForceFieldParameter(units[k], out[k], 0, 1, out[k], out[k], mutd, true, true));
     }
 }
 

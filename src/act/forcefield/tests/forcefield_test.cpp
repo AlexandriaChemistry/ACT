@@ -264,6 +264,43 @@ static std::string modifiedForceField(gmx::test::TestFileManager       *fileMana
     return fileName;
 }
 
+// Test: A force field with eta, chi, delta_eta or delta_chi in another unit
+// than eV, or zeta in another unit than 1/nm, cannot be read, since the
+// charge generation uses these values in those units as they are. Other
+// parameters are converted with ForceFieldParameter::internalValue.
+TEST(ForceFieldSimpleTest, unitsOfChargeGenerationChecked)
+{
+    gmx::test::TestFileManager fileManager;
+    // The start of the parameter up to its unit, and another unit
+    for (const auto &change : std::vector<std::pair<std::string, std::string>>{
+             { "<parameter type=\"chi\" unit=\"", "kJ/mol e" },
+             { "<parameter type=\"zeta\" unit=\"", "" } })
+    {
+        SCOPED_TRACE(change.first + change.second);
+        const auto fileName = modifiedForceField(&fileManager, "units.xml", [&change](std::string *xml)
+              {
+                  auto pos = xml->find(change.first);
+                  ASSERT_NE(std::string::npos, pos);
+                  auto start = pos + change.first.size();
+                  auto end   = xml->find("\"", start);
+                  xml->replace(start, end - start, change.second);
+              });
+        ForceField pd;
+        try
+        {
+            readForceField(fileName, &pd);
+            ADD_FAILURE() << "The force field was read";
+        }
+        catch (const gmx::InvalidInputError &ex)
+        {
+            EXPECT_NE(std::string::npos, std::string(ex.what()).find("cannot be used")) << ex.what();
+        }
+    }
+    // Unchanged it can be read
+    ForceField pd;
+    readForceField(gmx::test::TestFileManager::getInputFilePath("forcefields/ACM-g1.xml"), &pd);
+}
+
 // Test: A particle type of which the ACM type has no parameters cannot be
 // read, unless without the check of consistency
 TEST(ForceFieldSimpleTest, missingAcmParametersThrows)
