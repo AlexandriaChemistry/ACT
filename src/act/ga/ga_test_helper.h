@@ -52,6 +52,19 @@ namespace alexandria
  * Reads the ACS-g force field and the alcohol test molecules and creates
  * the initializer and fitness computer.
  */
+//! The input files of GaTestHelper, relative to the test data
+struct GaTestFiles
+{
+    //! The force field, relative to the test data unless it is an absolute path
+    std::string forceField = "forcefields/ACS-g3.xml";
+    //! The molecules
+    std::string molprop    = "molprop/testAlcohol.xml";
+    //! The selection of the molecules for training
+    std::string selection  = "molprop/testAlcohol.dat";
+    //! Whether the molecules are in the old format with one hydrogen per line, see CompoundReader::setOneH
+    bool        oneH       = true;
+};
+
 class GaTestHelper
 {
  public:
@@ -80,6 +93,20 @@ class GaTestHelper
     GaTestHelper(int                                  nmiddlemen,
                  const std::vector<std::string>      &fitstrings,
                  const std::vector<alexandria::eRMS> &erms);
+
+    /*! \brief Constructor with other input files
+     * \param[in] nmiddlemen    The number of individuals
+     * \param[in] fitstrings    Names of the parameters to fit
+     * \param[in] erms          The fitting targets
+     * \param[in] files         The input files
+     * \param[in] forceComputer The force computer, owned by the caller,
+     *                          or nullptr for one of this helper
+     */
+    GaTestHelper(int                                  nmiddlemen,
+                 const std::vector<std::string>      &fitstrings,
+                 const std::vector<alexandria::eRMS> &erms,
+                 const GaTestFiles                   &files,
+                 ForceComputer                       *forceComputer = nullptr);
 };
 
 } // namespace
