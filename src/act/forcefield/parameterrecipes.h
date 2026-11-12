@@ -120,7 +120,12 @@ inline combination::PairStatus evaluateRecipe(const SetRecipe &recipe,
         }
         return combination::PairStatus::Ok;
     }
-    double vi[maxSetParameters], vj[maxSetParameters], exps[maxSetParameters], combined[maxSetParameters];
+    // Only the first recipe.nin are used, the others are set for compilers
+    // that cannot see that, such as GCC with -Wmaybe-uninitialized
+    double vi[maxSetParameters]       = { 0 };
+    double vj[maxSetParameters]       = { 0 };
+    double exps[maxSetParameters]     = { 0 };
+    double combined[maxSetParameters] = { 0 };
     for (int q = 0; q < recipe.nin; q++)
     {
         vi[q]   = internal(recipe.slotI[q]);
