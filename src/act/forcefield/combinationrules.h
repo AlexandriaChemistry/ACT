@@ -147,6 +147,14 @@ void evalCombinationRule(Potential                     ftype,
                          bool                          same,
                          ForceFieldParameterMap       *pmap);
 
+/*! \brief How the parameters of a potential are combined into those of a pair
+ * \param[in] ftype The potential
+ * \return For the potentials with sigma and epsilon their positions among the
+ *         parameters of the potential, see potentialToParameterName, otherwise
+ *         that only rules of two values can be used
+ */
+combination::PairCombination pairCombination(Potential ftype);
+
 } // namespace alexandria
 
 #endif

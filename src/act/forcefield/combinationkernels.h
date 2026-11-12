@@ -214,6 +214,125 @@ inline T masonGamma(T g1, T g2, T s1, T s2)
     return sigmaIJ * (0.5*((g1/s1)+(g2/s2)));
 }
 
+//! How the parameters of a potential are combined into those of a pair, see pairParameters
+struct PairCombination
+{
+    /*! Whether the potential only has rules of two values, such as
+     * BUCKINGHAM, then there are no positions of sigma, epsilon and gamma
+     */
+    bool simple  = true;
+    //! The position of the distance, sigma or rmin, -1 if there is none
+    int  dist    = -1;
+    //! The position of epsilon, -1 if there is none
+    int  epsilon = -1;
+    //! The position of gamma, -1 if there is none
+    int  gamma   = -1;
+};
+
+//! The result of pairParameters
+enum class PairStatus
+{
+    //! The parameters were combined
+    Ok,
+    //! A rule cannot be used for these parameters, see combineTwo
+    UnknownRule,
+    //! A rule needs sigma and epsilon, which the potential does not have
+    NeedsSigma,
+    //! HogervorstSigma needs both gammas larger than 6
+    GammaTooSmall
+};
+
+/*! \brief Combine the parameters of two particle types into those of the pair
+ * As the rules of evalCombinationRule in combinationrules.cpp, which uses
+ * this, with the parameters of each particle type in the same order.
+ * \tparam M The mathematical functions
+ * \param[in]  pc          How the potential combines its parameters
+ * \param[in]  n           The number of parameters
+ * \param[in]  rules       The combination rule of each parameter
+ * \param[in]  exponents   The exponent of each parameter, for GeneralizedMean
+ * \param[in]  vi          The parameters of the first particle type
+ * \param[in]  vj          The parameters of the second particle type
+ * \param[in]  includePair For Kronecker, whether the pair interacts
+ * \param[out] out         The parameters of the pair
+ * \param[out] bad         If not Ok, the parameter that could not be combined
+ * \return Whether the parameters could be combined
+ */
+template <class M>
+inline PairStatus pairParameters(const PairCombination &pc,
+                                 int                    n,
+                                 const CombRule        *rules,
+                                 const double          *exponents,
+                                 const double          *vi,
+                                 const double          *vj,
+                                 bool                   includePair,
+                                 double                *out,
+                                 int                   *bad)
+{
+    for (int k = 0; k < n; k++)
+    {
+        *bad = k;
+        bool ok = true;
+        if (pc.simple)
+        {
+            switch (rules[k])
+            {
+            case CombRule::Kronecker:
+                out[k] = includePair ? two<M>(CombRule::Arithmetic, vi[k], vj[k], &ok) : 0;
+                break;
+            case CombRule::GeneralizedMean:
+                out[k] = generalizedMean<M>(vi[k], vj[k], exponents[k]);
+                break;
+            case CombRule::HogervorstSigma:
+            case CombRule::WaldmanEpsilon:
+            case CombRule::QiEpsilon:
+            case CombRule::MasonGamma:
+                return PairStatus::NeedsSigma;
+            default:
+                out[k] = two<M>(rules[k], vi[k], vj[k], &ok);
+                break;
+            }
+        }
+        else
+        {
+            double ieps = vi[pc.epsilon];
+            double jeps = vj[pc.epsilon];
+            double igam = pc.gamma >= 0 ? vi[pc.gamma] : 0;
+            double jgam = pc.gamma >= 0 ? vj[pc.gamma] : 0;
+            double isig = vi[pc.dist];
+            double jsig = vj[pc.dist];
+            switch (rules[k])
+            {
+            case CombRule::GeneralizedMean:
+                out[k] = generalizedMean<M>(vi[k], vj[k], exponents[k]);
+                break;
+            case CombRule::HogervorstSigma:
+                if (igam <= 6 || jgam <= 6)
+                {
+                    return PairStatus::GammaTooSmall;
+                }
+                out[k] = hogervorstSigma<M>(ieps, jeps, igam, jgam, isig, jsig);
+                break;
+            case CombRule::WaldmanEpsilon:
+            case CombRule::QiEpsilon:
+                // Qi et al. use the epsilon of Waldman and Hagler, Eqn. 3 of Qi2016a
+                out[k] = waldmanEpsilon<M>(ieps, jeps, isig, jsig);
+                break;
+            case CombRule::MasonGamma:
+                out[k] = masonGamma<M>(igam, jgam, isig, jsig);
+                break;
+            default:
+                out[k] = two<M>(rules[k], vi[k], vj[k], &ok);
+                break;
+            }
+        }
+        if (!ok)
+        {
+            return PairStatus::UnknownRule;
+        }
+    }
+    return PairStatus::Ok;
+}
+
 } // namespace combination
 
 } // namespace alexandria

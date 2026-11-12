@@ -27,9 +27,11 @@
  */
 #include "combinationrules.h"
 
+#include <algorithm>
 #include <cmath>
 #include <cstring>
 #include <string>
+#include <vector>
 
 #include "act/basics/mutability.h"
 #include "act/forcefield/forcefield_parametername.h"
@@ -127,10 +129,44 @@ double combineGeneralizedMean(double x1, double x2, double exponent)
     return combination::generalizedMean<combination::StdMath>(x1, x2, exponent);
 }
 
-//! \return the gamma of Mason1955a, see combination::masonGamma
-static double combineMasonGamma(double g1, double g2, double s1, double s2)
+combination::PairCombination pairCombination(Potential ftype)
 {
-    return combination::masonGamma<combination::StdMath>(g1, g2, s1, s2);
+    combination::PairCombination pc;
+    switch (ftype)
+    {
+    case Potential::BORN_MAYER:
+    case Potential::MACDANIEL_SCHMIDT:
+    case Potential::BUCKINGHAM:
+    case Potential::TANG_TOENNIES:
+    case Potential::TT2b:
+    case Potential::SLATER_ISA_TT:
+    case Potential::MORSE_BONDS:
+        pc.simple = true;
+        return pc;
+    case Potential::GENERALIZED_BUCKINGHAM:
+        pc = { false, gbhRMIN, gbhEPSILON, gbhGAMMA };
+        return pc;
+    case Potential::WANG_BUCKINGHAM:
+        pc = { false, wbhSIGMA, wbhEPSILON, wbhGAMMA };
+        return pc;
+    case Potential::LJ14_7:
+        pc = { false, lj14_7SIGMA, lj14_7EPSILON, lj14_7GAMMA };
+        return pc;
+    case Potential::LJ12_6:
+        pc = { false, lj12_6SIGMA, lj12_6EPSILON, -1 };
+        return pc;
+    case Potential::LJ12_6_4:
+        pc = { false, lj12_6_4SIGMA, lj12_6_4EPSILON, lj12_6_4GAMMA };
+        return pc;
+    case Potential::LJ8_6:
+        pc = { false, lj8_6SIGMA, lj8_6EPSILON, -1 };
+        return pc;
+    default:
+        gmx_fatal(FARGS, "Please implement support for potential '%s' ftype %d",
+                  potentialToString(ftype).c_str(),
+                  static_cast<int>(ftype));
+    }
+    return pc;
 }
 
 void evalCombinationRule(Potential                     ftype,
@@ -146,6 +182,12 @@ void evalCombinationRule(Potential                     ftype,
     // We use dependent mutability to show these are not independent params
     auto mutd = Mutability::Dependent;
 
+    // The parameters of both particle types in the order of ivdw, with
+    // their rules, see combination::pairParameters
+    size_t                   n = ivdw.size();
+    std::vector<std::string> names;
+    std::vector<double>      vi, vj, exponents, out(n, 0.0);
+    std::vector<CombRule>    rules;
     for(const auto &param : ivdw)
     {
         if (jvdw.end() == jvdw.find(param.first))
@@ -161,142 +203,70 @@ void evalCombinationRule(Potential                     ftype,
             }
             GMX_THROW(gmx::InvalidInputError(gmx::formatString("Parameter %s not found. There are combination rules for: %s.", param.first.c_str(), allrules.c_str()).c_str()));
         }
-        const auto   crule = combrule.find(param.first)->second;
-        double value = 0;
-        if (Potential::BORN_MAYER == ftype ||
-            Potential::MACDANIEL_SCHMIDT == ftype ||
-            Potential::BUCKINGHAM == ftype ||
-            Potential::TANG_TOENNIES == ftype ||
-            Potential::TT2b == ftype ||
-            Potential::SLATER_ISA_TT == ftype ||
-            Potential::MORSE_BONDS == ftype)
+        const auto &crule = combrule.find(param.first)->second;
+        names.push_back(param.first);
+        vi.push_back(param.second.value());
+        vj.push_back(jvdw.find(param.first)->second.value());
+        rules.push_back(crule.rule());
+        exponents.push_back(crule.ffplConst().value());
+    }
+    // The positions of sigma, epsilon and gamma among the parameters
+    auto pc = pairCombination(ftype);
+    if (!pc.simple)
+    {
+        auto vdwname = potentialToParameterName(ftype);
+        auto where   = [&names, &vdwname](int index)
         {
-            if (CombRule::Kronecker == crule.rule())
+            if (index < 0)
             {
-                if (includePair)
-                {
-                    value = combineTwo(CombRule::Arithmetic,
-                                       ivdw.find(param.first)->second.value(),
-                                       jvdw.find(param.first)->second.value());
-                }
-                else
-                {
-                    value = 0;
-                }
+                return -1;
             }
-            else if (CombRule::GeneralizedMean == crule.rule())
-            {
-                value = combineGeneralizedMean(ivdw.find(param.first)->second.value(),
-                                               jvdw.find(param.first)->second.value(),
-                                               crule.ffplConst().value());
-            }
-            else if (CombRule::HogervorstSigma == crule.rule() ||
-                     CombRule::WaldmanEpsilon == crule.rule() ||
-                     CombRule::QiEpsilon == crule.rule() ||
-                     CombRule::MasonGamma == crule.rule())
-            {
-                // These need the sigma and epsilon of the potential
-                GMX_THROW(gmx::InvalidInputError(gmx::formatString("Combination rule %s for %s needs sigma and epsilon, which potential %s does not have",
-                                                                   combinationRuleName(crule.rule()).c_str(),
-                                                                   param.first.c_str(),
-                                                                   potentialToString(ftype).c_str()).c_str()));
-            }
-            else
-            {
-                value = combineTwo(crule.rule(),
-                                   ivdw.find(param.first)->second.value(),
-                                   jvdw.find(param.first)->second.value());
-            }
-        }
-        else
+            auto found = std::find(names.begin(), names.end(), vdwname[index]);
+            return found == names.end() ? -1 : static_cast<int>(found - names.begin());
+        };
+        int dist = where(pc.dist);
+        if (dist < 0 && n > 0)
         {
-            // Defining some strings that we may or may not need
-            auto vdwname = potentialToParameterName(ftype);
-            std::string cdist, cepsilon, cgamma;
-            switch (ftype)
-            {
-            case Potential::GENERALIZED_BUCKINGHAM:
-                cdist    = vdwname[gbhRMIN];
-                cepsilon = vdwname[gbhEPSILON];
-                cgamma   = vdwname[gbhGAMMA];
-                break;
-            case Potential::WANG_BUCKINGHAM:
-                cdist    = vdwname[wbhSIGMA];
-                cepsilon = vdwname[wbhEPSILON];
-                cgamma   = vdwname[wbhGAMMA];
-                break;
-            case Potential::LJ14_7:
-                cdist    = vdwname[lj14_7SIGMA];
-                cepsilon = vdwname[lj14_7EPSILON];
-                cgamma   = vdwname[lj14_7GAMMA];
-                break;
-            case Potential::LJ12_6:
-                cdist    = vdwname[lj12_6SIGMA];
-                cepsilon = vdwname[lj12_6EPSILON];
-                break;
-            case Potential::LJ12_6_4:
-                cdist    = vdwname[lj12_6_4SIGMA];
-                cepsilon = vdwname[lj12_6_4EPSILON];
-                cgamma   = vdwname[lj12_6_4GAMMA];
-                break;
-            case Potential::LJ8_6:
-                cdist    = vdwname[lj8_6SIGMA];
-                cepsilon = vdwname[lj8_6EPSILON];
-                break;
-            default:
-                gmx_fatal(FARGS, "Please implement support for potential '%s' ftype %d",
-                          potentialToString(ftype).c_str(),
-                          static_cast<int>(ftype));   
-            }
-            auto ieps = ivdw.find(cepsilon)->second.value();
-            auto jeps = jvdw.find(cepsilon)->second.value();
-            double igam = 0;
-            double jgam = 0;
-            if (ivdw.end() != ivdw.find(cgamma))
-            {
-                igam = ivdw.find(cgamma)->second.value();
-            }
-            if (jvdw.end() != jvdw.find(cgamma))
-            {
-                jgam = jvdw.find(cgamma)->second.value();
-            }
-            double isig = 0, jsig = 0;
-            if (ivdw.find(cdist) == ivdw.end() || jvdw.find(cdist) == jvdw.end())
-            {
-                GMX_THROW(gmx::InternalError(gmx::formatString("Parameter %s missing trying to apply combination rule %s for potential %s",
-                                                               cdist.c_str(),
-                                                               combinationRuleName(crule.rule()).c_str(),
-                                                               potentialToString(ftype).c_str()).c_str()));
-            }
-            isig = ivdw.find(cdist)->second.value();
-            jsig = jvdw.find(cdist)->second.value();
-            switch (crule.rule())
-            {
-            case CombRule::GeneralizedMean:
-                value = combineGeneralizedMean(ivdw.find(param.first)->second.value(),
-                                               jvdw.find(param.first)->second.value(),
-                                               crule.ffplConst().value());
-                break;
-            case CombRule::HogervorstSigma:
-                value = combineHogervorstSigma(ieps, jeps, igam, jgam, isig, jsig);
-                break;
-            case CombRule::WaldmanEpsilon:
-            case CombRule::QiEpsilon:
-                // Qi et al. use the epsilon of Waldman and Hagler, Eqn. 3 of Qi2016a
-                value = combineWaldmanEpsilon(ieps, jeps, isig, jsig);
-                break;
-            case CombRule::MasonGamma:
-                value = combineMasonGamma(igam, jgam, isig, jsig);
-                break;
-            default: // perform correct default action, replace by all values
-                value = combineTwo(crule.rule(),
-                                   ivdw.find(param.first)->second.value(),
-                                   jvdw.find(param.first)->second.value());
-                break;
-            }
+            GMX_THROW(gmx::InternalError(gmx::formatString("Parameter %s missing trying to apply combination rule %s for potential %s",
+                                                           vdwname[pc.dist],
+                                                           combinationRuleName(rules[0]).c_str(),
+                                                           potentialToString(ftype).c_str()).c_str()));
         }
-        pmap->insert_or_assign(param.first,
-                               ForceFieldParameter(unit, value, 0, 1, value, value, mutd, true, true));
+        int epsilon = where(pc.epsilon);
+        if (epsilon < 0 && n > 0)
+        {
+            GMX_THROW(gmx::InternalError(gmx::formatString("Parameter %s missing trying to apply combination rule %s for potential %s",
+                                                           vdwname[pc.epsilon],
+                                                           combinationRuleName(rules[0]).c_str(),
+                                                           potentialToString(ftype).c_str()).c_str()));
+        }
+        pc.dist    = dist;
+        pc.epsilon = epsilon;
+        pc.gamma   = where(pc.gamma);
+    }
+    int  bad    = 0;
+    auto status = combination::pairParameters<combination::StdMath>(pc, static_cast<int>(n), rules.data(),
+                                                                      exponents.data(), vi.data(), vj.data(),
+                                                                      includePair, out.data(), &bad);
+    switch (status)
+    {
+    case combination::PairStatus::Ok:
+        break;
+    case combination::PairStatus::UnknownRule:
+        GMX_THROW(gmx::InternalError(gmx::formatString("Unknown combination rule %s",
+                                                       combinationRuleName(rules[bad]).c_str()).c_str()));
+    case combination::PairStatus::NeedsSigma:
+        GMX_THROW(gmx::InvalidInputError(gmx::formatString("Combination rule %s for %s needs sigma and epsilon, which potential %s does not have",
+                                                           combinationRuleName(rules[bad]).c_str(),
+                                                           names[bad].c_str(),
+                                                           potentialToString(ftype).c_str()).c_str()));
+    case combination::PairStatus::GammaTooSmall:
+        GMX_THROW(gmx::InvalidInputError("Combination rule HogervorstSigma not defined if gamma1 or gamma2 <= 6"));
+    }
+    for (size_t k = 0; k < n; k++)
+    {
+        pmap->insert_or_assign(names[k],
+                               ForceFieldParameter(unit, out[k], 0, 1, out[k], out[k], mutd, true, true));
     }
 }
 
