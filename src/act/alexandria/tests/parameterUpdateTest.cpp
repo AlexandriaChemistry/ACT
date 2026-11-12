@@ -70,6 +70,8 @@
 #include "act/forces/forcecomputer.h"
 #include "act/ga/ga_test_helper.h"
 #include "act/gpu/gpu.h"
+#include "act/utility/units.h"
+#include "gromacs/math/units.h"
 #include "gromacs/utility/stringutil.h"
 
 #include "testutils/gputests.h"
@@ -691,6 +693,86 @@ TEST_F(ParameterUpdateTest, OneAtATimeGpu)
     auto cases = updateCases();
     SCOPED_TRACE("alc-pol-wbh");
     checkUpdates(&fileManager_, "alc-pol-wbh", cases["alc-pol-wbh"], true, 1e-6);
+}
+
+/*! \brief Write a force field with sigma in Angstrom and epsilon in kcal/mol
+ * Only the parameters of the particle types are changed, from which those
+ * of the pairs are made, with the same values in the units of the program.
+ * \param[in] ffFile   The force field, with sigma in nm and epsilon in kJ/mol
+ * \param[in] fileName The file to write
+ */
+void writeOtherUnits(const std::string &ffFile, const std::string &fileName)
+{
+    ForceField pd;
+    readForceField(ffPath(ffFile), &pd);
+    auto *vdw = pd.findForces(InteractionType::VDW);
+    const std::map<std::string, std::pair<std::string, double>> units = {
+        { "sigma", { "Angstrom", A2NM } }, { "epsilon", { "kcal/mol", CAL2JOULE } }
+    };
+    size_t nchanged = 0;
+    for (auto &entry : *vdw->parametersNoRemoval())
+    {
+        if (entry.first.atoms().size() != 1)
+        {
+            continue;
+        }
+        for (auto &p : entry.second)
+        {
+            auto u = units.find(p.first);
+            if (u == units.end())
+            {
+                continue;
+            }
+            ASSERT_EQ(1.0, convertToGromacs(1.0, p.second.unit())) << p.first << " " << p.second.unit();
+            double f    = u->second.second;
+            p.second    = ForceFieldParameter(u->second.first, p.second.value()/f, 0, p.second.ntrain(),
+                                              p.second.minimum()/f, p.second.maximum()/f,
+                                              p.second.mutability(), true, p.second.nonNegative());
+            nchanged += 1;
+        }
+    }
+    ASSERT_GT(nchanged, 0u);
+    writeForceField(fileName, &pd, false);
+}
+
+// Test: A force field with the van der Waals parameters of its particle
+// types in other units, sigma in Angstrom and epsilon in kcal/mol, gives the
+// same energies and objective function as with nm and kJ/mol. The pairs are
+// made from the values in the units of the program. Before, the values as
+// they are in the force field were combined, and taken to be in nm and kJ/mol.
+TEST_F(ParameterUpdateTest, OtherUnitsOfVanDerWaals)
+{
+    // Lennard-Jones 14-7, of hydrogen fluoride dimers
+    UpdateCase uc;
+    uc.files.forceField = "forcefields/HF-LJ14-7.xml";
+    uc.files.molprop    = "molprop/hf-hf.xml";
+    uc.files.selection  = "molprop/hf-hf.dat";
+    uc.files.oneH       = false;
+    uc.targets          = { eRMS::Interaction, eRMS::Electrostatics, eRMS::Exchange,
+                            eRMS::Dispersion, eRMS::Induction };
+    auto fit = trainableNames(uc.files.forceField);
+    // Random values, such that the van der Waals energies are not zero
+    auto native = uc.files;
+    {
+        GaTestHelper original(1, fit, uc.targets, uc.files);
+        native.forceField = fileManager_.getTemporaryFilePath("native.xml");
+        writeValues(uc.files.forceField, original.sii->optIndex(), randomValues(original.sii),
+                    native.forceField);
+    }
+    auto other       = native;
+    other.forceField = fileManager_.getTemporaryFilePath("other-units.xml");
+    writeOtherUnits(native.forceField, other.forceField);
+    std::vector<Evaluation> results;
+    for (const auto *files : { &native, &other })
+    {
+        auto         fc = new ForceComputer();
+        fc->setKeepShells(false);
+        GaTestHelper helper(1, fit, uc.targets, *files, fc);
+        results.push_back(evaluate(&helper, parameterValues(helper.sii), {}, true));
+    }
+    EXPECT_GT(results[0].targets[eRMS::Dispersion], 0);
+    EXPECT_GT(results[0].targets[eRMS::Exchange], 0);
+    compare(results[1], results[0], 1e-10);
 }
 
 /*! \brief Whether the charge properties are needed for targets of a force field and molecules

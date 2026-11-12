@@ -641,6 +641,8 @@ void readForceField(const std::string &fileName,
     pd->checkForPolarizability();
     // The consistency depends on the charge generation algorithm
     pd->guessChargeGenerationAlgorithm();
+    // Parameters that are used in their own units have to have those
+    pd->checkUnits();
     if (check)
     {
         pd->checkConsistency(msgHandler);

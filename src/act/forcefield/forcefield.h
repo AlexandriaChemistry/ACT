@@ -483,6 +483,14 @@ class ForceField
      * \param[in] msgHandler MsgHandler for warnings, may be nullptr
      */
     void checkConsistency(MsgHandler *msgHandler) const;
+
+    /*! \brief Check the units of parameters that are used in their own units
+     * The charge generation uses eta, chi, delta_eta and delta_chi in eV
+     * and zeta in 1/nm, which their units have to be. Other parameters are
+     * converted to the units of the program, see ForceFieldParameter::internalValue.
+     * \throws gmx::InvalidInputError if a parameter has another unit
+     */
+    void checkUnits() const;
     
 private:
     //! The force field checksum
