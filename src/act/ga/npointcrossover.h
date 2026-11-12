@@ -105,10 +105,10 @@ public:
      * \param[out] child1  The first child
      * \param[out] child2  The second child
      */
-    virtual void offspring(const ga::Genome *parent1,
+    void offspring(const ga::Genome *parent1,
                            const ga::Genome *parent2,
                            ga::Genome       *child1,
-                           ga::Genome       *child2);
+                           ga::Genome       *child2) override;
 
 };
 

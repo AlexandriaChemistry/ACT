@@ -146,7 +146,7 @@ double VolumeFractionPenalizer::getPoolVolume(const GenePool &pool) const
     {
         double maximum = -1e20;
         double minimum =  1e20;
-        for (auto genome : pool.genePool())  // For each genome
+        for (const auto& genome : pool.genePool())  // For each genome
         {
             if (genome.base(i) > maximum)
             {

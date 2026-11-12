@@ -306,10 +306,10 @@ TEST(TerminatorTest, TestGen)
     GenePool pool;
     pool.addGenome(Genome({ 1.0 }, { { iMolSelect::Train, 1 }, { iMolSelect::Test, 10 } }));
     TestGenTerminator term(3);
-    auto setTest = [&pool](double fitness)
-    {
-        pool.genomePtr(0)->setFitness(iMolSelect::Test, fitness);
-    };
+    const auto setTest = [&pool](double fitness)
+          {
+              pool.genomePtr(0)->setFitness(iMolSelect::Test, fitness);
+          };
     // The first test fitness is an improvement
     EXPECT_FALSE(term.terminate(nullptr, &pool, 0, false));
     EXPECT_FALSE(term.terminate(nullptr, &pool, 1, false));
@@ -468,7 +468,7 @@ TEST(GeneticAlgorithmTest, UpdateGenePool)
     std::vector<Penalizer*>  penalizers;
     StaticGA ga(&terminators, &penalizers);
     EXPECT_THROW(ga.updateGenePool(GenePool()), gmx::InvalidInputError);
-    auto pool = makePool(4);
+    const auto pool = makePool(4);
     ga.updateGenePool(pool);
     EXPECT_EQ(4u, ga.getLastPop().popSize());
     ga.updateGenePool(makePool(6));

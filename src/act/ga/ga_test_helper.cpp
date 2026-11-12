@@ -70,12 +70,12 @@ GaTestHelper::GaTestHelper(int                                  nmiddlemen,
     sii = new StaticIndividualInfo(&cr);
     std::string ffName(files.forceField);
     // An absolute path is used as it is, for instance a temporary file
-    std::string ffDataName = ffName.empty() || ffName[0] == '/' ? ffName :
-        gmx::test::TestFileManager::getInputFilePath(ffName);
+    const std::string ffDataName = ffName.empty() || ffName[0] == '/' ? ffName :
+              gmx::test::TestFileManager::getInputFilePath(ffName);
     sii->fillForceField(msghandler, ffDataName.c_str());
     molgen = new MolGen(&cr);
-    std::string mpName(files.molprop);
-    std::string mpDataName = gmx::test::TestFileManager::getInputFilePath(mpName);
+    const std::string mpName(files.molprop);
+    const std::string mpDataName = gmx::test::TestFileManager::getInputFilePath(mpName);
     for(const auto &fs : fitstrings)
     {
         molgen->addFitOption(fs);
@@ -92,8 +92,8 @@ GaTestHelper::GaTestHelper(int                                  nmiddlemen,
     // Hack structure to add a file name
     fnms.back().filenames.push_back(mpDataName);
     // Selection file
-    std::string selName(files.selection);
-    std::string selDataName = gmx::test::TestFileManager::getInputFilePath(selName);
+    const std::string selName(files.selection);
+    const std::string selDataName = gmx::test::TestFileManager::getInputFilePath(selName);
     alexandria::MolSelect gms;
     // ForceComputer
     forceComputer   = fc ? fc : new ForceComputer();

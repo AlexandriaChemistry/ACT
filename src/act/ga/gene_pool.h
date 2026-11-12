@@ -62,7 +62,7 @@ public:
     GenePool(size_t genomeSize) : genomeSize_(genomeSize) {}
     
     //! Default constructor
-    GenePool() {}
+    GenePool() = default;
 
     //! \return the genome size
     size_t genomeSize() const { return genomeSize_; } 

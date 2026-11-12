@@ -58,7 +58,7 @@ class Terminator
 protected:
 
     /*! * \brief Constructor */
-    Terminator() {}
+    Terminator() = default;
 
 public:
 
@@ -107,10 +107,10 @@ public:
      * \param[in] minimum           Are we in a parameter minimum?
      * \return true if we should terminate, false otherwise
      */
-    virtual bool terminate(gmx::TextWriter *tw,
+    bool terminate(gmx::TextWriter *tw,
                            const GenePool  *pool,
                            const int        generationNumber,
-                           bool             minimum);
+                           bool             minimum) override;
 
 };
 
@@ -150,10 +150,10 @@ public:
      * \param[in] minimum           Are we in a parameter minimum?
      * \return true if we should terminate, false otherwise
      */
-    virtual bool terminate(gmx::TextWriter *tw,
+    bool terminate(gmx::TextWriter *tw,
                            const GenePool  *pool,
                            const int        generationNumber,
-                           bool             minimum);
+                           bool             minimum) override;
 
 };
 
@@ -189,13 +189,13 @@ class CurvatureTerminator : public Terminator
      * \param[in] minimum Whether the genome is a local minimum
      * \return true if we should terminate, false otherwise
      */
-    virtual bool terminate(gmx::TextWriter *tw,
+    bool terminate(gmx::TextWriter *tw,
                            const GenePool  *pool,
                            const int        generationNumber,
-                           bool             minimum);
+                           bool             minimum) override;
 
     //! Default destructor
-    virtual ~CurvatureTerminator() = default;
+    ~CurvatureTerminator() override = default;
 };
 
 

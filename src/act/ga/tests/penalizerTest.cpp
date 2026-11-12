@@ -59,9 +59,7 @@ class PenalizerTest : public gmx::test::CommandLineTestBase
 protected:
     
  
-    PenalizerTest ()
-    {
-    }
+    PenalizerTest () = default;
 
     // Static initiation, only run once every test.
     static void SetUpTestCase()
@@ -97,10 +95,10 @@ protected:
     {
         // Checker
         gmx::test::TestReferenceChecker checker(this->rootChecker());
-        auto tolerance = gmx::test::relativeToleranceAsFloatingPoint(1.0, 1e-4);
+        const auto tolerance = gmx::test::relativeToleranceAsFloatingPoint(1.0, 1e-4);
         checker.setDefaultTolerance(tolerance);
         // Helper structure
-        alexandria::GaTestHelper gth(1, {"sigma"}, {alexandria::eRMS::Interaction});
+        const alexandria::GaTestHelper gth(1, {"sigma"}, {alexandria::eRMS::Interaction});
         // Make some genes. The values have to be between 0.1 and 0.5 to match the FF.
         std::vector<std::vector<double>> genes(4);
         double totalVolume = 1;

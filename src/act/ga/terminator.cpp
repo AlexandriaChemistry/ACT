@@ -82,7 +82,7 @@ bool TestGenTerminator::terminate(gmx::TextWriter *tw,
     remaining_ -= 1;
     
     // Get best genome in population
-    const auto bestGenome = pool->getBest(iMolSelect::Train);
+    const auto& bestGenome = pool->getBest(iMolSelect::Train);
     // Check if its test fitness is better than the best one so far
     const double tmpTestFit = bestGenome.fitness(iMolSelect::Test);
     if (tmpTestFit < bestFitness_)

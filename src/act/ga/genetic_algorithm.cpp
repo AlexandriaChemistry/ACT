@@ -122,10 +122,10 @@ void GeneticAlgorithm::openFitnessFiles(const std::string &filename,
         }
     }
     auto imsNames = iMolSelectNames();
-    std::string fn = defname + gmx::formatString("_%s.dat",
-                                                 imsNames[ims].c_str());
+    const std::string fn = defname + gmx::formatString("_%s.dat",
+                                                       imsNames[ims].c_str());
     fileFitness_.insert({ims, gmx_fio_fopen(fn.c_str(), "w")});
-    GMX_RELEASE_ASSERT(fileFitness_[ims] != NULL, "Could not open file");
+    GMX_RELEASE_ASSERT(fileFitness_[ims] != nullptr, "Could not open file");
 }
 
 void GeneticAlgorithm::closeFitnessFiles()
