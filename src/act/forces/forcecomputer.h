@@ -607,6 +607,12 @@ private:
         return gpuSystem_ ? gpuSystem_->version() : 0;
     }
 
+    //! \return whether the GPU makes the rows of its parameter tables from recipes, see GpuTrainingSystem::recipeRows
+    bool gpuRecipeRows() const
+    {
+        return gpuSystem_ ? gpuSystem_->recipeRows() : false;
+    }
+
     //! \return a number that changes when the molecules or the deviations on the GPU are made again
     size_t gpuDeviationsVersion() const
     {

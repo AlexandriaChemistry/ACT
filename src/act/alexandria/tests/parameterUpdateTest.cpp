@@ -985,6 +985,55 @@ TEST(ChargePropertiesTest, OnlyWithData)
     EXPECT_FALSE(needChargeProperties(alcohols, { eRMS::EPOT }, &chi2));
 }
 
+// Test: The rows of the parameter tables that the GPU makes from the recipes
+// give the same objective function as those made on the processor, which
+// ACT_GPU_RECIPE_ROWS=0 asks for, also when the parameters change.
+TEST_F(ParameterUpdateTest, RecipeRowsAsProcessorRowsGpu)
+{
+    if (!gmx::test::gpuTestRuns(gpu::useGpu() && !GMX_DOUBLE, "no GPU or double precision"))
+    {
+        return;
+    }
+    auto                     uc = updateCases()["alc-pol-wbh"];
+    std::vector<std::string> fit;
+    GaTestFiles              baseFiles;
+    baseForceField(&fileManager_, uc, true, &fit, &baseFiles);
+    std::vector<ForceComputer *> fcs;
+    std::vector<GaTestHelper *>  helpers;
+    for (int h = 0; h < 2; h++)
+    {
+        auto fc = new ForceComputer();
+        fc->setKeepShells(false);
+        fc->setGpuResident(true);
+        fcs.push_back(fc);
+        helpers.push_back(new GaTestHelper(1, fit, uc.targets, baseFiles, fc));
+    }
+    auto values = parameterValues(helpers[0]->sii);
+    // Whether the GPU uses the recipes is decided at the first evaluation
+    setenv("ACT_GPU_RECIPE_ROWS", "0", 1);
+    auto onProcessor = evaluate(helpers[0], values, {}, false);
+    unsetenv("ACT_GPU_RECIPE_ROWS");
+    auto fromRecipes = evaluate(helpers[1], values, {}, false);
+    compare(fromRecipes, onProcessor, 1e-12);
+    std::mt19937 gen(1997);
+    std::uniform_int_distribution<size_t> pick(0, values.size() - 1);
+    for (int step = 0; step < 10; step++)
+    {
+        SCOPED_TRACE(gmx::formatString("step %d", step));
+        size_t k  = pick(gen);
+        values[k] = otherValue(*parameter(helpers[0]->sii, k));
+        onProcessor = evaluate(helpers[0], values, { static_cast<int>(k) }, false);
+        fromRecipes = evaluate(helpers[1], values, { static_cast<int>(k) }, false);
+        compare(fromRecipes, onProcessor, 1e-12);
+    }
+    EXPECT_FALSE(fcs[0]->gpuRecipeRows());
+    EXPECT_TRUE(fcs[1]->gpuRecipeRows()) << "The GPU did not make the rows from the recipes";
+    for (auto h : helpers)
+    {
+        delete h;
+    }
+}
+
 // Test: The processor and the GPU give the same objective function for the
 // same sequence of parameters, as the MCMC steps of a training, within
 // single precision. The sequence is fixed, a random walk in which half of

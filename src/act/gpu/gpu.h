@@ -43,6 +43,9 @@
 namespace alexandria
 {
 
+//! See act/forcefield/parameterrecipes.h
+struct SetRecipe;
+
 namespace gpu
 {
 
@@ -640,6 +643,48 @@ void updateShells(System *system, size_t block, const MovingShell *shells, size_
  */
 void updateParameters(System *sys, const float *tables, const double *charges,
                       double coulomb, double epsilonr);
+
+/*! \brief How the device makes a row of a parameter table from the parameters of a recipe
+ * See createRowRecipes and SetRecipe in act/forcefield/parameterrecipes.h.
+ */
+struct RowRecipe
+{
+    //! The row in the tables of all blocks of all replicas, see updateParameters
+    uint64_t row     = 0;
+    //! The set of parameters, see SetRecipe
+    int32_t  set     = 0;
+    //! The replica, of which the values are used
+    uint32_t replica = 0;
+    //! The kernel, a PairKernel, or a BondedKernel if bonded
+    uint32_t kernel  = 0;
+    //! Whether the interaction is bonded, see BondedKernel
+    uint32_t bonded  = 0;
+    //! For PairKernel::Polarization, the position of the charge of the shell in the charges, see updateParameters, otherwise -1
+    int64_t  charge  = -1;
+};
+
+/*! \brief Let the device make the rows of the parameter tables from the values of the force field
+ * After this, updateParameters makes the rows of the recipes from the values
+ * that updateRecipeValues gave last, after the charges, such that the rows of
+ * the shells use the charges of the charge generation too, and the tables
+ * passed to it may be nullptr. The rows without recipe are those uploaded last.
+ * \param[in] sys       The system
+ * \param[in] recipes   The recipes of the sets of parameters, see ParameterRecipes::recipes
+ * \param[in] nset      Their number
+ * \param[in] rows      The rows made from the sets
+ * \param[in] nrow      Their number
+ * \param[in] factors   The factor of the unit of each value, see ParameterRecipes::factors
+ * \param[in] nvalue    The number of values of each replica
+ * \param[in] nreplica  The number of replicas
+ */
+void createRowRecipes(System *sys, const SetRecipe *recipes, size_t nset, const RowRecipe *rows, size_t nrow,
+                      const double *factors, size_t nvalue, size_t nreplica);
+
+/*! \brief The values of the force field of all replicas for the recipes, see createRowRecipes
+ * \param[in] sys    The system
+ * \param[in] values The values, those of each replica after those of the previous one
+ */
+void updateRecipeValues(System *sys, const double *values);
 
 /*! \brief Replace the moving shells of all blocks, in the order of createSystem
  * \param[in] sys    The system
