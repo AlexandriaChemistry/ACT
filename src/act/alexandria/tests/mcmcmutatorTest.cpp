@@ -39,6 +39,7 @@
 
 #include "actpre.h"
 
+#include <cmath>
 #include <vector>
 
 #include <gtest/gtest.h>
@@ -50,6 +51,7 @@
 #include "act/alexandria/staticindividualinfo.h"
 #include "act/ga/genome.h"
 #include "act/ga/ga_test_helper.h"
+#include "gromacs/utility/stringutil.h"
 #include "act/basics/msg_handler.h"
 
 #include "gromacs/utility/exceptions.h"
@@ -223,6 +225,35 @@ TEST_F(MCMCMutatorTest, MutateLennardJones)
     ga::Genome before(bases, fm);
     int maxiter = 10;
     doMutate(before, maxiter, fitstrings, eRms);
+}
+
+// Test: Each parameter is chosen with the same probability. The random
+// numbers of a fine grid in [0, 1), away from the edges of the intervals of
+// the indices, give each index equally often, and the ends give the first
+// and the last index. The last index was chosen 1.5 times as often before.
+TEST(MCMCMutatorIndexTest, IndexOfRandomUniform)
+{
+    for (size_t n : { 1, 2, 3, 7, 60 })
+    {
+        SCOPED_TRACE(gmx::formatString("%zu parameters", n));
+        const size_t        perIndex = 1000;
+        std::vector<size_t> count(n, 0);
+        for (size_t i = 0; i < n*perIndex; i++)
+        {
+            double r = (i + 0.5)/(n*perIndex);
+            size_t k = MCMCMutator::indexOfRandom(r, n);
+            ASSERT_LT(k, n);
+            count[k] += 1;
+        }
+        for (size_t k = 0; k < n; k++)
+        {
+            EXPECT_EQ(perIndex, count[k]) << "index " << k;
+        }
+        EXPECT_EQ(0u, MCMCMutator::indexOfRandom(0.0, n));
+        EXPECT_EQ(n - 1, MCMCMutator::indexOfRandom(std::nextafter(1.0, 0.0), n));
+        // Also if a random number generator gives 1
+        EXPECT_EQ(n - 1, MCMCMutator::indexOfRandom(1.0, n));
+    }
 }
 
 // Test: The random numbers of the MCMC steps only depend on the seed and the

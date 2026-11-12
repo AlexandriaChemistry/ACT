@@ -21,7 +21,7 @@
     <String>o3 epsilon</String>
     <String>o3 sigma</String>
   </Sequence>
-  <Real Name="Fitness-after">54793806.549646839</Real>
+  <Real Name="Fitness-after">58205935.732883669</Real>
   <Sequence Name="Genome-after">
     <Int Name="Length">6</Int>
     <Real>0.45604715898790499</Real>
@@ -223,11 +223,11 @@
     <Int>1</Int>
     <Int>0</Int>
     <Int>3</Int>
-    <Int>3</Int>
+    <Int>2</Int>
     <Int>4</Int>
     <Int>4</Int>
     <Int>5</Int>
-    <Int>2</Int>
+    <Int>1</Int>
     <Int>5</Int>
     <Int>0</Int>
     <Int>5</Int>
@@ -237,12 +237,12 @@
     <Int>2</Int>
     <Int>1</Int>
     <Int>3</Int>
-    <Int>3</Int>
+    <Int>2</Int>
     <Int>0</Int>
     <Int>5</Int>
     <Int>3</Int>
-    <Int>4</Int>
-    <Int>2</Int>
+    <Int>3</Int>
+    <Int>1</Int>
     <Int>4</Int>
     <Int>5</Int>
     <Int>1</Int>
@@ -251,7 +251,7 @@
     <Int>5</Int>
     <Int>4</Int>
     <Int>2</Int>
-    <Int>1</Int>
+    <Int>0</Int>
     <Int>1</Int>
     <Int>1</Int>
     <Int>2</Int>
@@ -259,27 +259,27 @@
     <Int>2</Int>
     <Int>1</Int>
     <Int>5</Int>
-    <Int>2</Int>
     <Int>1</Int>
-    <Int>5</Int>
-    <Int>3</Int>
+    <Int>1</Int>
+    <Int>4</Int>
+    <Int>2</Int>
     <Int>1</Int>
     <Int>1</Int>
     <Int>0</Int>
     <Int>3</Int>
-    <Int>2</Int>
-    <Int>5</Int>
-    <Int>5</Int>
-    <Int>3</Int>
     <Int>1</Int>
     <Int>5</Int>
+    <Int>4</Int>
+    <Int>3</Int>
+    <Int>1</Int>
+    <Int>4</Int>
     <Int>1</Int>
     <Int>2</Int>
     <Int>4</Int>
     <Int>1</Int>
     <Int>3</Int>
     <Int>5</Int>
-    <Int>5</Int>
+    <Int>4</Int>
   </Sequence>
   <Seed Name="Seed1997">
     <Int64 Name="MaxIter">10</Int64>
@@ -501,10 +501,10 @@
     </Sequence>
     <Sequence Name="Random parameter indices">
       <Int Name="Length">60</Int>
-      <Int>4</Int>
+      <Int>3</Int>
       <Int>5</Int>
       <Int>4</Int>
-      <Int>4</Int>
+      <Int>3</Int>
       <Int>1</Int>
       <Int>0</Int>
       <Int>1</Int>
@@ -514,9 +514,9 @@
       <Int>4</Int>
       <Int>3</Int>
       <Int>1</Int>
+      <Int>4</Int>
       <Int>5</Int>
-      <Int>5</Int>
-      <Int>5</Int>
+      <Int>4</Int>
       <Int>1</Int>
       <Int>2</Int>
       <Int>2</Int>
@@ -534,25 +534,25 @@
       <Int>4</Int>
       <Int>4</Int>
       <Int>5</Int>
-      <Int>4</Int>
+      <Int>3</Int>
       <Int>2</Int>
       <Int>1</Int>
       <Int>0</Int>
       <Int>2</Int>
-      <Int>5</Int>
+      <Int>4</Int>
       <Int>5</Int>
       <Int>5</Int>
       <Int>0</Int>
       <Int>5</Int>
       <Int>3</Int>
       <Int>2</Int>
-      <Int>5</Int>
-      <Int>3</Int>
       <Int>4</Int>
+      <Int>3</Int>
+      <Int>3</Int>
       <Int>2</Int>
       <Int>1</Int>
-      <Int>4</Int>
       <Int>3</Int>
+      <Int>2</Int>
       <Int>1</Int>
       <Int>4</Int>
       <Int>5</Int>
