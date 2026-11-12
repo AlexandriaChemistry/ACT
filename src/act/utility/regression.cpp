@@ -81,7 +81,7 @@ static int multi_regression1(const std::vector<double>  *rhs,
         }
     }
     
-    Eigen::ColPivHouseholderQR<Eigen::MatrixXd> dec(Aeigen);
+    const Eigen::ColPivHouseholderQR<Eigen::MatrixXd> dec(Aeigen);
     Eigen::VectorXd Xeigen = dec.solve(Beigen);
     for(int i = 0; i < ncol; i++)
     {

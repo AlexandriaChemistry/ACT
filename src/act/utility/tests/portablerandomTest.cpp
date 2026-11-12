@@ -63,7 +63,7 @@ TEST(PortableRandomTest, Seed)
 TEST(PortableRandomTest, Index)
 {
     std::mt19937        gen(1993);
-    std::vector<size_t> expected = { 1, 2, 2, 9, 9 };
+    const std::vector<size_t> expected = { 1, 2, 2, 9, 9 };
     for (auto e : expected)
     {
         EXPECT_EQ(e, portableIndex(&gen, 10));

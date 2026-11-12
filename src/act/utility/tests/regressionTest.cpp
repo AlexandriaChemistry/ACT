@@ -56,7 +56,7 @@ class RegressionTest : public gmx::test::CommandLineTestBase
         //! Init set tolecrance
         RegressionTest () : checker_(this->rootChecker())
         {
-            auto tolerance = gmx::test::relativeToleranceAsFloatingPoint(1.0, GMX_DOUBLE ? 1e-10 : 5e-2);
+            const auto tolerance = gmx::test::relativeToleranceAsFloatingPoint(1.0, GMX_DOUBLE ? 1e-10 : 5e-2);
             checker_.setDefaultTolerance(tolerance);
         }
 
@@ -81,7 +81,7 @@ TEST_F (RegressionTest, Solve_A_x_is_B_2)
 {
 #define NCOL 3
 #define NROW 3
-    double        aa[NROW][NCOL] =
+    const double  aa[NROW][NCOL] =
     {
         { 3, 0, 0 },
         { 0, 2, 0 },
@@ -95,7 +95,7 @@ TEST_F (RegressionTest, Solve_A_x_is_B_2)
             a.set(j, i, aa[i][j]);
         }
     }
-    std::vector<double> b({ 3, 4, 5 });
+    const std::vector<double> b({ 3, 4, 5 });
 
     // Diagonal matrix, should give as answer ( 1, 2, 5 )
     EXPECT_FALSE(testRegression(a, b));
@@ -107,7 +107,7 @@ TEST_F (RegressionTest, Solve_A_x_is_B_3)
 {
 #define NCOL 2
 #define NROW 4
-    double        aa[NROW][NCOL] =
+    const double  aa[NROW][NCOL] =
     {
         { 3, 0 },
         { 0, 2 },
@@ -122,7 +122,7 @@ TEST_F (RegressionTest, Solve_A_x_is_B_3)
             a.set(j, i, aa[i][j]);
         }
     }
-    std::vector<double> b({ 6, 2, 2, 4 });
+    const std::vector<double> b({ 6, 2, 2, 4 });
     // Answer should be ( 2, 1 )
     EXPECT_FALSE(testRegression(a, b));
 #undef NCOL
@@ -133,7 +133,7 @@ TEST_F (RegressionTest, Solve_A_x_is_B_4)
 {
 #define NCOL 1
 #define NROW 2
-    double        aa[NROW][NCOL] =
+    const double  aa[NROW][NCOL] =
     {
         { 3 },
         { 2 }
@@ -146,7 +146,7 @@ TEST_F (RegressionTest, Solve_A_x_is_B_4)
             a.set(j, i, aa[i][j]);
         }
     }
-    std::vector<double> b({ 6, 4 });
+    const std::vector<double> b({ 6, 4 });
     // Answer should be ( 2 )
     EXPECT_FALSE(testRegression(a, b));
 #undef NCOL
@@ -157,7 +157,7 @@ TEST_F (RegressionTest, Solve_A_x_is_B_5)
 {
 #define NCOL 2
 #define NROW 2
-    double        aa[NROW][NCOL] =
+    const double  aa[NROW][NCOL] =
     {
         { 3, 0 },
         { 0, 2 }
@@ -170,7 +170,7 @@ TEST_F (RegressionTest, Solve_A_x_is_B_5)
             a.set(j, i, aa[i][j]);
         }
     }
-    std::vector<double> b({ 5, -5 });
+    const std::vector<double> b({ 5, -5 });
     // Answer should be ( 1.6666, -2.5)
     EXPECT_FALSE(testRegression(a, b));
 #undef NCOL
@@ -181,7 +181,7 @@ TEST_F (RegressionTest, Solve_A_x_is_B_6)
 {
 #define NCOL 2
 #define NROW 3
-    double        aa[NROW][NCOL] =
+    const double  aa[NROW][NCOL] =
     {
         { 1, 0 },
         { 0, 1 },
@@ -195,7 +195,7 @@ TEST_F (RegressionTest, Solve_A_x_is_B_6)
             a.set(j, i, aa[i][j]);
         }
     }
-    std::vector<double> b({ 1, 2, 5 });
+    const std::vector<double> b({ 1, 2, 5 });
     // Answer should be ( 1, 2 )
     EXPECT_FALSE(testRegression(a, b));
 #undef NCOL
@@ -206,7 +206,7 @@ TEST_F (RegressionTest, Fail_A_x_is_B)
 {
 #define NCOL 3
 #define NROW 3
-    double        aa[NROW][NCOL] =
+    const double  aa[NROW][NCOL] =
     {
         { 1, 0, 0 },
         { 0, 0, 0 },
@@ -220,7 +220,7 @@ TEST_F (RegressionTest, Fail_A_x_is_B)
             a.set(j, i, aa[i][j]);
         }
     }
-    std::vector<double> b({ 1, -1, 1 });
+    const std::vector<double> b({ 1, -1, 1 });
     // Answer should be ( 1, 2 )
     EXPECT_FALSE(testRegression(a, b));
 #undef NCOL
@@ -259,10 +259,10 @@ static void expectNumbered(const MatrixWrapper &m, int ncol, int nrow)
 // size, have the dimensions and elements of the original
 TEST(MatrixWrapperTest, CopyAndMove)
 {
-    auto a = numbered(3, 2);
+    const auto a = numbered(3, 2);
     MatrixWrapper copy(a);
     expectNumbered(copy, 3, 2);
-    MatrixWrapper moved(std::move(copy));
+    const MatrixWrapper moved(std::move(copy));
     expectNumbered(moved, 3, 2);
     MatrixWrapper assigned(1, 4);
     assigned = a;

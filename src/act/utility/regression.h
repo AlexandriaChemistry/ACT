@@ -43,7 +43,7 @@ class MatrixWrapper
 {
     public:
         //! \brief Default constructor
-        MatrixWrapper() {}
+        MatrixWrapper() = default;
 
         /*! \brief Constructor
          *

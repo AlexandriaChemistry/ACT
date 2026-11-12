@@ -209,11 +209,11 @@ double rmsd(const std::vector<real> &w, const std::vector<gmx::RVec> &x, const s
 // Test: A rotated structure is fitted back onto the original
 TEST(DoFitTest, RecoversRotation)
 {
-    std::vector<real> w = { 12, 1, 1, 16, 14, 1, 32 };
+    const std::vector<real> w = { 12, 1, 1, 16, 14, 1, 32 };
     for (bool planar : { false, true })
     {
         SCOPED_TRACE(planar ? "planar" : "3D");
-        auto xref = makeStructure(w, 1332, planar);
+        const auto xref = makeStructure(w, 1332, planar);
         auto x    = rotate(xref, 0.3, -1.2, 2.5);
         EXPECT_GT(rmsd(w, xref, x), 0.1);
         double R[DIM][DIM];
@@ -229,8 +229,8 @@ TEST(DoFitTest, RecoversRotation)
 // particles that have no weight
 TEST(DoFitTest, OptimalWithNoiseAndZeroWeights)
 {
-    std::vector<real> w = { 12, 1, 0, 16, 14, 1, 0, 32, 1 };
-    auto xref = makeStructure(w, 1477, false);
+    const std::vector<real> w = { 12, 1, 0, 16, 14, 1, 0, 32, 1 };
+    const auto xref = makeStructure(w, 1477, false);
     auto x    = rotate(xref, -0.7, 0.4, 1.1);
     std::mt19937                         gen(5);
     std::uniform_real_distribution<real> noise(-0.02, 0.02);

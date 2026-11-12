@@ -88,7 +88,7 @@ double findNumber(const JsonTree &tree, const std::string &key)
 //! Spend some time, such that a region has a measurable duration
 void spin()
 {
-    auto start = std::chrono::steady_clock::now();
+    const auto start = std::chrono::steady_clock::now();
     while (std::chrono::steady_clock::now() - start < std::chrono::milliseconds(5))
     {
     }
@@ -149,7 +149,7 @@ TEST(TimingsTest, PerformanceInJson)
     CommunicationRecord cr;
     cr.init(cr.size());
     JsonTree        jtree("Test");
-    PeakPerformance peak = { 100, "test processor" };
+    const PeakPerformance peak = { 100, "test processor" };
     double          wall = 2;
     printTimings(&cr, nullptr, wall, &jtree, &peak);
     auto jtimings = findObject(jtree, "Timings");
@@ -222,13 +222,13 @@ TEST(PeakPerformanceTest, Environment)
 {
     const char *name  = "ACT_PEAK_GFLOPS";
     const char *saved = std::getenv(name);
-    std::string old   = saved ? saved : "";
+    const std::string old   = saved ? saved : "";
     setenv(name, "12.5", 1);
-    auto peak = theoreticalPeakPerCore();
+    const auto peak = theoreticalPeakPerCore();
     EXPECT_EQ(12.5, peak.gflops);
     EXPECT_EQ("given by ACT_PEAK_GFLOPS", peak.basis);
     unsetenv(name);
-    auto detected = theoreticalPeakPerCore();
+    const auto detected = theoreticalPeakPerCore();
     EXPECT_FALSE(detected.basis.empty());
     if (detected.gflops > 0)
     {

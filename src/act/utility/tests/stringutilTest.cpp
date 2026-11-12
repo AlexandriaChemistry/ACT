@@ -78,7 +78,7 @@ TEST(StringUtilTest, SplitBySpaceSingleWords)
 
 TEST(StringUtilTest, SplitEmptyStringByCommaGivesNoTokens)
 {
-    auto result = split("", ',');
+    const auto result = split("", ',');
     EXPECT_TRUE(result.empty());
 }
 
@@ -92,7 +92,7 @@ TEST(StringUtilTest, SplitSingleTokenNoDelimiter)
 TEST(StringUtilTest, SplitWithElemsAccumulates)
 {
     std::vector<std::string> elems;
-    elems.push_back("existing");
+    elems.emplace_back("existing");
     split("a,b", ',', elems);
     ASSERT_EQ(3u, elems.size());
     EXPECT_EQ("existing", elems[0]);

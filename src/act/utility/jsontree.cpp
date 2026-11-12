@@ -149,7 +149,7 @@ void JsonTree::write(const std::string &fileName,
                      bool               json,
                      int                indent)
 {
-    FILE *fp   = gmx_ffopen(fileName.c_str(), "w");
+    FILE *fp   = gmx_ffopen(fileName, "w");
     fprintf(fp, "%s", writeString(json, &indent).c_str());
     gmx_ffclose(fp);
 }
