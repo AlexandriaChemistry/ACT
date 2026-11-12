@@ -33,16 +33,16 @@
     <String>h_b~o3_b bondlength</String>
     <String>h_b~o3_b kb</String>
   </Sequence>
-  <Real Name="Fitness-after">5344785.0711575914</Real>
+  <Real Name="Fitness-after">3994045.6252287854</Real>
   <Sequence Name="Genome-after">
     <Int Name="Length">12</Int>
     <Real>-289.60320867284202</Real>
     <Real>131.68578913164666</Real>
     <Real>296698.27268416877</Real>
-    <Real>-256.86899564215827</Real>
+    <Real>-295.28687508101791</Real>
     <Real>100.97606744868122</Real>
     <Real>315681.63174902793</Real>
-    <Real>-359.62331386191352</Real>
+    <Real>-319.74720467704299</Real>
     <Real>121.26053099867755</Real>
     <Real>294366.76011553296</Real>
     <Real>-449.82397764573915</Real>
@@ -425,93 +425,93 @@
     <Int>8</Int>
     <Int>8</Int>
     <Int>10</Int>
-    <Int>4</Int>
-    <Int>11</Int>
+    <Int>3</Int>
+    <Int>10</Int>
     <Int>1</Int>
     <Int>11</Int>
     <Int>1</Int>
-    <Int>11</Int>
-    <Int>11</Int>
+    <Int>10</Int>
+    <Int>10</Int>
     <Int>4</Int>
     <Int>3</Int>
     <Int>7</Int>
-    <Int>6</Int>
+    <Int>5</Int>
     <Int>0</Int>
-    <Int>11</Int>
+    <Int>10</Int>
     <Int>7</Int>
     <Int>7</Int>
-    <Int>4</Int>
-    <Int>9</Int>
-    <Int>11</Int>
+    <Int>3</Int>
+    <Int>8</Int>
+    <Int>10</Int>
     <Int>3</Int>
     <Int>1</Int>
     <Int>3</Int>
     <Int>11</Int>
     <Int>9</Int>
     <Int>5</Int>
-    <Int>2</Int>
+    <Int>1</Int>
     <Int>2</Int>
     <Int>2</Int>
     <Int>4</Int>
     <Int>3</Int>
-    <Int>5</Int>
-    <Int>2</Int>
-    <Int>11</Int>
     <Int>4</Int>
     <Int>2</Int>
+    <Int>10</Int>
+    <Int>3</Int>
+    <Int>2</Int>
+    <Int>9</Int>
+    <Int>5</Int>
+    <Int>3</Int>
+    <Int>2</Int>
+    <Int>1</Int>
+    <Int>7</Int>
+    <Int>3</Int>
+    <Int>10</Int>
     <Int>9</Int>
     <Int>6</Int>
     <Int>3</Int>
-    <Int>2</Int>
-    <Int>1</Int>
-    <Int>7</Int>
-    <Int>3</Int>
-    <Int>10</Int>
-    <Int>10</Int>
-    <Int>6</Int>
-    <Int>3</Int>
-    <Int>10</Int>
+    <Int>9</Int>
     <Int>3</Int>
     <Int>4</Int>
     <Int>9</Int>
     <Int>2</Int>
     <Int>7</Int>
     <Int>10</Int>
-    <Int>10</Int>
+    <Int>9</Int>
     <Int>2</Int>
     <Int>4</Int>
     <Int>3</Int>
     <Int>2</Int>
     <Int>10</Int>
-    <Int>11</Int>
-    <Int>0</Int>
-    <Int>2</Int>
-    <Int>6</Int>
-    <Int>4</Int>
-    <Int>11</Int>
-    <Int>11</Int>
-    <Int>5</Int>
-    <Int>5</Int>
-    <Int>4</Int>
-    <Int>9</Int>
-    <Int>5</Int>
-    <Int>9</Int>
-    <Int>4</Int>
-    <Int>1</Int>
-    <Int>1</Int>
-    <Int>5</Int>
-    <Int>11</Int>
-    <Int>1</Int>
-    <Int>7</Int>
-    <Int>2</Int>
-    <Int>0</Int>
     <Int>11</Int>
     <Int>0</Int>
+    <Int>2</Int>
+    <Int>6</Int>
+    <Int>4</Int>
+    <Int>11</Int>
+    <Int>11</Int>
+    <Int>4</Int>
+    <Int>5</Int>
+    <Int>4</Int>
+    <Int>9</Int>
+    <Int>5</Int>
+    <Int>9</Int>
+    <Int>4</Int>
+    <Int>1</Int>
+    <Int>1</Int>
+    <Int>5</Int>
+    <Int>11</Int>
+    <Int>0</Int>
+    <Int>6</Int>
+    <Int>2</Int>
+    <Int>0</Int>
+    <Int>11</Int>
+    <Int>0</Int>
     <Int>1</Int>
     <Int>4</Int>
     <Int>4</Int>
     <Int>10</Int>
-    <Int>11</Int>
+    <Int>10</Int>
     <Int>2</Int>
     <Int>9</Int>
     <Int>10</Int>
@@ -528,13 +528,13 @@
     <Int>5</Int>
     <Int>2</Int>
     <Int>10</Int>
-    <Int>8</Int>
-    <Int>6</Int>
-    <Int>11</Int>
-    <Int>9</Int>
-    <Int>11</Int>
+    <Int>7</Int>
+    <Int>5</Int>
+    <Int>10</Int>
     <Int>8</Int>
     <Int>11</Int>
+    <Int>7</Int>
+    <Int>10</Int>
     <Int>1</Int>
     <Int>0</Int>
     <Int>8</Int>
@@ -572,13 +572,13 @@
       <String>h_b~o3_b bondlength</String>
       <String>h_b~o3_b kb</String>
     </Sequence>
-    <Real Name="Fitness-after">5441312.040931589</Real>
+    <Real Name="Fitness-after">5919980.5199172115</Real>
     <Sequence Name="Genome-after">
       <Int Name="Length">12</Int>
       <Real>-299.53420678159284</Real>
       <Real>133.74026066352963</Real>
       <Real>295318.86086013849</Real>
-      <Real>-245.27822744106183</Real>
+      <Real>-232.68474616766355</Real>
       <Real>100.79653566045266</Real>
       <Real>298217.18110844539</Real>
       <Real>-326.94847756719872</Real>
@@ -586,7 +586,7 @@
       <Real>291779.00932202977</Real>
       <Real>-489.5049990719877</Real>
       <Real>96.617365272159731</Real>
-      <Real>342325.74989198067</Real>
+      <Real>360370.99987523147</Real>
     </Sequence>
     <Int64 Name="numberObjectiveFunctionCalls">121</Int64>
     <Int64 Name="numEvaluations ForceComputer">484</Int64>
@@ -957,20 +957,20 @@
     </Sequence>
     <Sequence Name="Random parameter indices">
       <Int Name="Length">120</Int>
-      <Int>8</Int>
-      <Int>10</Int>
-      <Int>9</Int>
-      <Int>8</Int>
-      <Int>3</Int>
-      <Int>0</Int>
-      <Int>3</Int>
-      <Int>11</Int>
-      <Int>9</Int>
+      <Int>7</Int>
       <Int>10</Int>
       <Int>9</Int>
       <Int>7</Int>
+      <Int>3</Int>
+      <Int>0</Int>
+      <Int>3</Int>
+      <Int>10</Int>
+      <Int>8</Int>
+      <Int>10</Int>
+      <Int>9</Int>
+      <Int>6</Int>
       <Int>2</Int>
-      <Int>10</Int>
+      <Int>9</Int>
       <Int>11</Int>
       <Int>9</Int>
       <Int>3</Int>
@@ -980,34 +980,34 @@
       <Int>5</Int>
       <Int>8</Int>
       <Int>11</Int>
-      <Int>9</Int>
+      <Int>8</Int>
       <Int>10</Int>
       <Int>3</Int>
       <Int>1</Int>
       <Int>0</Int>
-      <Int>9</Int>
+      <Int>8</Int>
       <Int>8</Int>
       <Int>9</Int>
       <Int>8</Int>
-      <Int>11</Int>
+      <Int>10</Int>
       <Int>7</Int>
       <Int>5</Int>
       <Int>3</Int>
       <Int>1</Int>
       <Int>4</Int>
-      <Int>10</Int>
+      <Int>9</Int>
       <Int>11</Int>
       <Int>10</Int>
       <Int>0</Int>
       <Int>11</Int>
       <Int>7</Int>
       <Int>4</Int>
-      <Int>10</Int>
+      <Int>9</Int>
       <Int>7</Int>
       <Int>7</Int>
       <Int>5</Int>
-      <Int>3</Int>
-      <Int>8</Int>
+      <Int>2</Int>
+      <Int>7</Int>
       <Int>5</Int>
       <Int>2</Int>
       <Int>8</Int>
@@ -1015,7 +1015,7 @@
       <Int>6</Int>
       <Int>3</Int>
       <Int>9</Int>
-      <Int>9</Int>
+      <Int>8</Int>
       <Int>0</Int>
       <Int>4</Int>
       <Int>7</Int>
@@ -1027,7 +1027,7 @@
       <Int>0</Int>
       <Int>0</Int>
       <Int>1</Int>
-      <Int>9</Int>
+      <Int>8</Int>
       <Int>1</Int>
       <Int>5</Int>
       <Int>11</Int>
@@ -1035,7 +1035,7 @@
       <Int>5</Int>
       <Int>10</Int>
       <Int>10</Int>
-      <Int>9</Int>
+      <Int>8</Int>
       <Int>5</Int>
       <Int>1</Int>
       <Int>10</Int>
@@ -1045,37 +1045,37 @@
       <Int>10</Int>
       <Int>9</Int>
       <Int>2</Int>
-      <Int>9</Int>
+      <Int>8</Int>
       <Int>11</Int>
       <Int>2</Int>
-      <Int>11</Int>
+      <Int>10</Int>
       <Int>7</Int>
       <Int>1</Int>
       <Int>9</Int>
       <Int>11</Int>
-      <Int>11</Int>
+      <Int>10</Int>
       <Int>3</Int>
-      <Int>1</Int>
+      <Int>0</Int>
       <Int>5</Int>
       <Int>5</Int>
       <Int>1</Int>
       <Int>6</Int>
-      <Int>11</Int>
+      <Int>10</Int>
       <Int>5</Int>
       <Int>9</Int>
       <Int>4</Int>
       <Int>8</Int>
       <Int>10</Int>
-      <Int>8</Int>
-      <Int>10</Int>
+      <Int>7</Int>
+      <Int>9</Int>
       <Int>8</Int>
       <Int>2</Int>
-      <Int>11</Int>
-      <Int>0</Int>
-      <Int>11</Int>
       <Int>10</Int>
+      <Int>0</Int>
+      <Int>10</Int>
+      <Int>9</Int>
       <Int>4</Int>
-      <Int>5</Int>
+      <Int>4</Int>
       <Int>3</Int>
     </Sequence>
   </Seed>

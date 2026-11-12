@@ -46,7 +46,7 @@
     <Real>337.18628550099629</Real>
     <Real>5.3007879679317575</Real>
     <Real>306.85629290476624</Real>
-    <Real>6.8256011535719328</Real>
+    <Real>6.4338215217192163</Real>
     <Real>300</Real>
     <Real>9.8123798720465008</Real>
     <Real>290.54730533275648</Real>
@@ -484,31 +484,31 @@
   </Sequence>
   <Sequence Name="Random parameter indices">
     <Int Name="Length">140</Int>
-    <Int>4</Int>
+    <Int>3</Int>
     <Int>0</Int>
     <Int>7</Int>
     <Int>6</Int>
     <Int>9</Int>
-    <Int>10</Int>
+    <Int>9</Int>
     <Int>12</Int>
     <Int>4</Int>
-    <Int>13</Int>
+    <Int>12</Int>
     <Int>1</Int>
     <Int>13</Int>
     <Int>1</Int>
-    <Int>13</Int>
+    <Int>12</Int>
     <Int>12</Int>
     <Int>5</Int>
-    <Int>4</Int>
+    <Int>3</Int>
     <Int>8</Int>
     <Int>6</Int>
     <Int>0</Int>
-    <Int>13</Int>
+    <Int>12</Int>
     <Int>8</Int>
-    <Int>9</Int>
+    <Int>8</Int>
     <Int>4</Int>
     <Int>10</Int>
-    <Int>13</Int>
+    <Int>12</Int>
     <Int>3</Int>
     <Int>1</Int>
     <Int>4</Int>
@@ -522,22 +522,22 @@
     <Int>3</Int>
     <Int>5</Int>
     <Int>2</Int>
-    <Int>13</Int>
+    <Int>12</Int>
     <Int>4</Int>
     <Int>2</Int>
     <Int>11</Int>
-    <Int>7</Int>
-    <Int>4</Int>
+    <Int>6</Int>
+    <Int>3</Int>
     <Int>3</Int>
     <Int>1</Int>
     <Int>8</Int>
     <Int>4</Int>
-    <Int>12</Int>
+    <Int>11</Int>
     <Int>11</Int>
     <Int>7</Int>
     <Int>4</Int>
     <Int>11</Int>
-    <Int>4</Int>
+    <Int>3</Int>
     <Int>5</Int>
     <Int>10</Int>
     <Int>2</Int>
@@ -546,43 +546,43 @@
     <Int>11</Int>
     <Int>2</Int>
     <Int>5</Int>
+    <Int>3</Int>
+    <Int>2</Int>
+    <Int>11</Int>
+    <Int>13</Int>
+    <Int>0</Int>
+    <Int>2</Int>
+    <Int>7</Int>
+    <Int>5</Int>
+    <Int>13</Int>
+    <Int>13</Int>
+    <Int>5</Int>
+    <Int>6</Int>
     <Int>4</Int>
+    <Int>10</Int>
+    <Int>6</Int>
+    <Int>10</Int>
+    <Int>5</Int>
+    <Int>1</Int>
     <Int>2</Int>
-    <Int>12</Int>
+    <Int>6</Int>
     <Int>13</Int>
-    <Int>0</Int>
-    <Int>2</Int>
+    <Int>1</Int>
     <Int>7</Int>
-    <Int>5</Int>
-    <Int>13</Int>
-    <Int>13</Int>
-    <Int>5</Int>
-    <Int>6</Int>
-    <Int>5</Int>
-    <Int>11</Int>
-    <Int>6</Int>
-    <Int>11</Int>
-    <Int>5</Int>
-    <Int>1</Int>
-    <Int>2</Int>
-    <Int>6</Int>
-    <Int>13</Int>
-    <Int>1</Int>
-    <Int>8</Int>
     <Int>3</Int>
-    <Int>1</Int>
+    <Int>0</Int>
     <Int>13</Int>
     <Int>0</Int>
     <Int>2</Int>
     <Int>5</Int>
     <Int>5</Int>
     <Int>12</Int>
-    <Int>13</Int>
-    <Int>2</Int>
-    <Int>11</Int>
     <Int>12</Int>
-    <Int>5</Int>
-    <Int>13</Int>
+    <Int>2</Int>
+    <Int>10</Int>
+    <Int>12</Int>
+    <Int>4</Int>
+    <Int>12</Int>
     <Int>7</Int>
     <Int>9</Int>
     <Int>1</Int>
@@ -591,16 +591,16 @@
     <Int>0</Int>
     <Int>2</Int>
     <Int>7</Int>
-    <Int>6</Int>
+    <Int>5</Int>
     <Int>3</Int>
     <Int>12</Int>
     <Int>9</Int>
-    <Int>7</Int>
-    <Int>13</Int>
+    <Int>6</Int>
+    <Int>12</Int>
     <Int>10</Int>
     <Int>13</Int>
     <Int>9</Int>
-    <Int>13</Int>
+    <Int>12</Int>
     <Int>2</Int>
     <Int>0</Int>
     <Int>10</Int>
@@ -617,13 +617,13 @@
     <Int>6</Int>
     <Int>13</Int>
     <Int>0</Int>
-    <Int>7</Int>
+    <Int>6</Int>
     <Int>0</Int>
     <Int>4</Int>
     <Int>1</Int>
-    <Int>9</Int>
+    <Int>8</Int>
     <Int>1</Int>
-    <Int>6</Int>
+    <Int>5</Int>
   </Sequence>
   <Seed Name="Seed1997">
     <Int64 Name="MaxIter">10</Int64>
@@ -676,7 +676,7 @@
       <Real>9.6089050593242007</Real>
       <Real>293.98593482904988</Real>
       <Real>7.1596433578483962</Real>
-      <Real>306.76713123547722</Real>
+      <Real>326.86265307231366</Real>
       <Real>3.2871572377031866</Real>
       <Real>360</Real>
     </Sequence>
@@ -1110,30 +1110,30 @@
     <Sequence Name="Random parameter indices">
       <Int Name="Length">140</Int>
       <Int>9</Int>
-      <Int>12</Int>
+      <Int>11</Int>
       <Int>10</Int>
       <Int>9</Int>
-      <Int>4</Int>
+      <Int>3</Int>
       <Int>0</Int>
       <Int>3</Int>
       <Int>12</Int>
       <Int>10</Int>
-      <Int>12</Int>
+      <Int>11</Int>
       <Int>10</Int>
       <Int>8</Int>
       <Int>3</Int>
-      <Int>12</Int>
-      <Int>13</Int>
       <Int>11</Int>
-      <Int>4</Int>
-      <Int>5</Int>
-      <Int>6</Int>
-      <Int>10</Int>
-      <Int>6</Int>
-      <Int>10</Int>
       <Int>13</Int>
       <Int>10</Int>
-      <Int>12</Int>
+      <Int>4</Int>
+      <Int>4</Int>
+      <Int>6</Int>
+      <Int>9</Int>
+      <Int>6</Int>
+      <Int>9</Int>
+      <Int>13</Int>
+      <Int>10</Int>
+      <Int>11</Int>
       <Int>4</Int>
       <Int>1</Int>
       <Int>0</Int>
@@ -1142,27 +1142,27 @@
       <Int>10</Int>
       <Int>10</Int>
       <Int>12</Int>
-      <Int>9</Int>
-      <Int>6</Int>
+      <Int>8</Int>
+      <Int>5</Int>
       <Int>4</Int>
       <Int>1</Int>
       <Int>5</Int>
       <Int>11</Int>
       <Int>13</Int>
-      <Int>12</Int>
+      <Int>11</Int>
       <Int>0</Int>
       <Int>13</Int>
       <Int>8</Int>
       <Int>5</Int>
       <Int>11</Int>
       <Int>8</Int>
-      <Int>9</Int>
-      <Int>6</Int>
+      <Int>8</Int>
+      <Int>5</Int>
       <Int>3</Int>
       <Int>9</Int>
       <Int>6</Int>
       <Int>2</Int>
-      <Int>10</Int>
+      <Int>9</Int>
       <Int>12</Int>
       <Int>7</Int>
       <Int>4</Int>
@@ -1172,7 +1172,7 @@
       <Int>5</Int>
       <Int>8</Int>
       <Int>7</Int>
-      <Int>10</Int>
+      <Int>9</Int>
       <Int>8</Int>
       <Int>0</Int>
       <Int>12</Int>
@@ -1180,13 +1180,13 @@
       <Int>1</Int>
       <Int>1</Int>
       <Int>10</Int>
-      <Int>2</Int>
+      <Int>1</Int>
       <Int>6</Int>
       <Int>13</Int>
       <Int>3</Int>
       <Int>6</Int>
       <Int>12</Int>
-      <Int>12</Int>
+      <Int>11</Int>
       <Int>10</Int>
       <Int>6</Int>
       <Int>2</Int>
@@ -1196,50 +1196,50 @@
       <Int>7</Int>
       <Int>12</Int>
       <Int>11</Int>
-      <Int>3</Int>
+      <Int>2</Int>
       <Int>10</Int>
       <Int>13</Int>
       <Int>2</Int>
-      <Int>13</Int>
+      <Int>12</Int>
       <Int>8</Int>
       <Int>1</Int>
       <Int>10</Int>
       <Int>13</Int>
-      <Int>13</Int>
-      <Int>4</Int>
+      <Int>12</Int>
+      <Int>3</Int>
       <Int>1</Int>
       <Int>6</Int>
       <Int>6</Int>
       <Int>1</Int>
       <Int>7</Int>
-      <Int>13</Int>
+      <Int>12</Int>
       <Int>6</Int>
-      <Int>11</Int>
-      <Int>5</Int>
       <Int>10</Int>
+      <Int>5</Int>
+      <Int>9</Int>
       <Int>12</Int>
       <Int>9</Int>
       <Int>11</Int>
-      <Int>10</Int>
+      <Int>9</Int>
       <Int>2</Int>
-      <Int>13</Int>
+      <Int>12</Int>
       <Int>0</Int>
       <Int>12</Int>
-      <Int>12</Int>
-      <Int>5</Int>
-      <Int>6</Int>
-      <Int>4</Int>
       <Int>11</Int>
-      <Int>9</Int>
+      <Int>5</Int>
+      <Int>5</Int>
+      <Int>3</Int>
+      <Int>11</Int>
+      <Int>8</Int>
       <Int>8</Int>
       <Int>0</Int>
       <Int>13</Int>
-      <Int>7</Int>
+      <Int>6</Int>
       <Int>13</Int>
       <Int>5</Int>
-      <Int>9</Int>
-      <Int>3</Int>
       <Int>8</Int>
+      <Int>3</Int>
+      <Int>7</Int>
       <Int>5</Int>
       <Int>13</Int>
       <Int>1</Int>
@@ -1247,7 +1247,7 @@
       <Int>7</Int>
       <Int>9</Int>
       <Int>9</Int>
-      <Int>13</Int>
+      <Int>12</Int>
       <Int>13</Int>
     </Sequence>
   </Seed>

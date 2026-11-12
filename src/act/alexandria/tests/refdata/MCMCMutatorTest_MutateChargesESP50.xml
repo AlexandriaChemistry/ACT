@@ -21,7 +21,7 @@
     <String>o3_z chi</String>
     <String>o3_z eta</String>
   </Sequence>
-  <Real Name="Fitness-after">481.17910414905754</Real>
+  <Real Name="Fitness-after">507.76093212588114</Real>
   <Sequence Name="Genome-after">
     <Int Name="Length">6</Int>
     <Real>4.3010968934591407</Real>
@@ -133,11 +133,11 @@
     <Int>1</Int>
     <Int>0</Int>
     <Int>3</Int>
-    <Int>3</Int>
+    <Int>2</Int>
     <Int>4</Int>
     <Int>4</Int>
     <Int>5</Int>
-    <Int>2</Int>
+    <Int>1</Int>
     <Int>5</Int>
     <Int>0</Int>
     <Int>5</Int>
@@ -147,12 +147,12 @@
     <Int>2</Int>
     <Int>1</Int>
     <Int>3</Int>
-    <Int>3</Int>
+    <Int>2</Int>
     <Int>0</Int>
     <Int>5</Int>
     <Int>3</Int>
-    <Int>4</Int>
-    <Int>2</Int>
+    <Int>3</Int>
+    <Int>1</Int>
     <Int>4</Int>
     <Int>5</Int>
     <Int>1</Int>
@@ -291,10 +291,10 @@
     </Sequence>
     <Sequence Name="Random parameter indices">
       <Int Name="Length">30</Int>
-      <Int>4</Int>
+      <Int>3</Int>
       <Int>5</Int>
       <Int>4</Int>
-      <Int>4</Int>
+      <Int>3</Int>
       <Int>1</Int>
       <Int>0</Int>
       <Int>1</Int>
@@ -304,9 +304,9 @@
       <Int>4</Int>
       <Int>3</Int>
       <Int>1</Int>
+      <Int>4</Int>
       <Int>5</Int>
-      <Int>5</Int>
-      <Int>5</Int>
+      <Int>4</Int>
       <Int>1</Int>
       <Int>2</Int>
       <Int>2</Int>

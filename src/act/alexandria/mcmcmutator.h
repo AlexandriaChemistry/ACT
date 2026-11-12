@@ -36,6 +36,9 @@
 #ifndef ALEXANDRIA_MCMCMUTATOR_H
 #define ALEXANDRIA_MCMCMUTATOR_H
 
+#include <algorithm>
+#include <cmath>
+
 #include "act/forces/forcecomputer.h"
 #include "act/ga/genome.h"
 #include "act/ga/mutator.h"
@@ -122,10 +125,10 @@ private:
     void printChi2Step(const std::map<iMolSelect, double> &chi2,
                        double                              xiter);
 
-    //! \return a random index of the force field parameter vector
+    //! \return a random index of the force field parameter vector, see indexOfRandom
     int randIndex()
     {
-        int ri = std::min(static_cast<double>(sii_->nParam()-1), std::floor(randNum()*(sii_->nParam()+0.5)));
+        int ri = static_cast<int>(indexOfRandom(randNum(), sii_->nParam()));
         randIndices_.push_back(ri);
         return ri;
     }
@@ -337,6 +340,18 @@ public:
     void openChi2ConvFile(const gmx_output_env_t *oenv);
     //! \return all random indices produced
     const std::vector<int> &randIndices() const { return randIndices_; }
+
+    /*! \brief The index of a parameter for a random number
+     * Each of the n indices has the same probability, the interval
+     * [k/n, (k+1)/n) of the random number gives index k.
+     * \param[in] r A random number in [0, 1)
+     * \param[in] n The number of parameters, larger than zero
+     * \return The index, from 0 to n-1
+     */
+    static size_t indexOfRandom(double r, size_t n)
+    {
+        return std::min(n - 1, static_cast<size_t>(std::floor(r*n)));
+    }
 };
 
 
