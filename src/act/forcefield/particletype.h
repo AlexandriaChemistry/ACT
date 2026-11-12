@@ -74,7 +74,7 @@ class ParticleType
  public:
 
     //! Empty constructor
-    ParticleType() {}
+    ParticleType() = default;
         
     /*! \brief
      * ParticleType constructor

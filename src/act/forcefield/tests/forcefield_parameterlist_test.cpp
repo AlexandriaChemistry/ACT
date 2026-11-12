@@ -52,7 +52,7 @@ class ForceFieldParameterListTest : public gmx::test::CommandLineTestBase
 
         ForceFieldParameterListTest () : checker_(this->rootChecker())
         {
-            auto tolerance = gmx::test::relativeToleranceAsFloatingPoint(1.0, GMX_DOUBLE ? 1e-10 : 5e-2);
+            const auto tolerance = gmx::test::relativeToleranceAsFloatingPoint(1.0, GMX_DOUBLE ? 1e-10 : 5e-2);
             checker_.setDefaultTolerance(tolerance);
         }
 
@@ -72,14 +72,14 @@ class ForceFieldParameterListTest : public gmx::test::CommandLineTestBase
         }
         void runTest(ForceFieldParameterList *ff, bool modify)
         {
-            std::vector<std::string> atoms = { "c2", "h3", "c3", "h3~h3" };
+            const std::vector<std::string> atoms = { "c2", "h3", "c3", "h3~h3" };
             
             checker_.checkString(potentialToGromacsString(ff->potential()), "function");
             int i = 1;
             for(const auto &atom : atoms)
             {
                 checker_.checkString(atom, gmx::formatString("atom%d", i++).c_str());
-                Identifier aa(atom);
+                const Identifier aa(atom);
                 if (ff->parameterExists(aa))
                 {
                     if (modify)
@@ -128,7 +128,7 @@ class ForceFieldParameterListTest : public gmx::test::CommandLineTestBase
                     }
                     else
                     {
-                        auto p = ff->findParameterMapConst(aa);
+                        const auto& p = ff->findParameterMapConst(aa);
                         checker_.checkInteger(p.size(), atom.c_str());
                     }
                 }
@@ -143,21 +143,21 @@ class ForceFieldParameterListTest : public gmx::test::CommandLineTestBase
 
 TEST_F (ForceFieldParameterListTest, AddOptionWorks) {
     ForceFieldParameterList ff("BONDS", CanSwap::Yes);
-    std::string option("Order");
+    const std::string option("Order");
     ff.addOption(option, "No");
     EXPECT_TRUE(ff.optionExists(option));
     checkOption(ff, option);
 }
 
 TEST (ForceFieldParameterListSimpleTest, OptionMissing) {
-    ForceFieldParameterList ff("ANGLES", CanSwap::Yes);
-    std::string option("Order");
+    const ForceFieldParameterList ff("ANGLES", CanSwap::Yes);
+    const std::string option("Order");
     EXPECT_FALSE(ff.optionExists(option));
 }
 
 TEST (ForceFieldParameterListSimpleTest, OptionMissingThrows) {
-    ForceFieldParameterList ff("ANGLES", CanSwap::Yes);
-    std::string option("Order");
+    const ForceFieldParameterList ff("ANGLES", CanSwap::Yes);
+    const std::string option("Order");
     EXPECT_THROW(auto val = ff.optionValue(option), gmx::InvalidInputError);
 }
 
@@ -166,7 +166,7 @@ TEST (ForceFieldParameterListSimpleTest, UnknownFunctionThrows) {
 }
 
 TEST (ForceFieldParameterListSimpleTest, EmptyFunctionOK) {
-    auto ff = ForceFieldParameterList("", CanSwap::No);
+    const auto ff = ForceFieldParameterList("", CanSwap::No);
 }
 
 TEST_F (ForceFieldParameterListTest, AddParameter) {

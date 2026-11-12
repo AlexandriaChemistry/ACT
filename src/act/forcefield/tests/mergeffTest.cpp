@@ -92,7 +92,7 @@ protected:
     //! \return the merged force field of the files, with the other options
     ForceField merge(const std::vector<std::string> &files, const std::vector<std::pair<std::string, std::string>> &options)
     {
-        auto output = fileManager().getTemporaryFilePath("merged.xml");
+        const auto output = fileManager().getTemporaryFilePath("merged.xml");
         gmx::test::CommandLine cmd;
         cmd.append("merge_ff");
         cmd.addOption("-ff");
@@ -117,7 +117,7 @@ protected:
 // deviation as the uncertainty, and the others are those of the first file
 TEST_F(MergeFFTest, Average)
 {
-    auto pd  = merge({ input_, modified("second.xml") }, { { "-merge", "chi" } });
+    const auto pd  = merge({ input_, modified("second.xml") }, { { "-merge", "chi" } });
     auto ref = ForceField();
     readForceField(input_, &ref);
     EXPECT_DOUBLE_EQ(3.75, acm(pd, "h_z", "chi").value());
@@ -132,8 +132,8 @@ TEST_F(MergeFFTest, Average)
 // deviations
 TEST_F(MergeFFTest, Limits)
 {
-    auto pd = merge({ input_, modified("second.xml") }, { { "-merge", "chi" }, { "-limits", "2" } });
-    auto p = acm(pd, "h_z", "chi");
+    const auto pd = merge({ input_, modified("second.xml") }, { { "-merge", "chi" }, { "-limits", "2" } });
+    const auto p = acm(pd, "h_z", "chi");
     EXPECT_DOUBLE_EQ(3.25, p.minimum());
     EXPECT_DOUBLE_EQ(4.25, p.maximum());
 }
@@ -148,7 +148,7 @@ TEST_F(MergeFFTest, MissingIdentifier)
     auto &eem = ref.findForcesConst(InteractionType::ELECTRONEGATIVITYEQUALIZATION).parametersConst();
     ASSERT_TRUE(eem.find(Identifier("br_z")) != eem.end());
     ASSERT_TRUE(Identifier("br_z") < Identifier("f_z"));
-    auto pd = merge({ input_, modified("second.xml", { "br_z" }) }, { { "-merge", "chi" } });
+    const auto pd = merge({ input_, modified("second.xml", { "br_z" }) }, { { "-merge", "chi" } });
     EXPECT_DOUBLE_EQ(3.75, acm(pd, "h_z", "chi").value());
     EXPECT_DOUBLE_EQ((acm(ref, "f_z", "chi").value() + 6)/2, acm(pd, "f_z", "chi").value());
     // Only in the first file
@@ -159,7 +159,7 @@ TEST_F(MergeFFTest, MissingIdentifier)
 TEST_F(MergeFFTest, AllParametersAndTable)
 {
     auto latex = fileManager().getTemporaryFilePath("table.tex");
-    auto pd    = merge({ input_, modified("second.xml") }, { { "-latex", latex } });
+    const auto pd    = merge({ input_, modified("second.xml") }, { { "-latex", latex } });
     EXPECT_DOUBLE_EQ(3.75, acm(pd, "h_z", "chi").value());
     EXPECT_GT(std::filesystem::file_size(latex), 0u);
 }

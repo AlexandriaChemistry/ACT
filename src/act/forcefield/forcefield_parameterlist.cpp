@@ -78,7 +78,7 @@ void ForceFieldParameterList::addParameter(const Identifier          &identifier
                                            const std::string         &type,
                                            const ForceFieldParameter &param)
 {
-    auto params = parameters_.find(identifier);
+    const auto params = parameters_.find(identifier);
     
     if (params == parameters_.end())
     {
@@ -100,14 +100,14 @@ void ForceFieldParameterList::addParameter(const Identifier          &identifier
         else
         {
             // The first definition is used, see duplicates
-            duplicates_.push_back({ identifier, type });
+            duplicates_.emplace_back( identifier, type );
         }
     }
 }
 
 const ForceFieldParameterMap &ForceFieldParameterList::findParameterMapConst(const Identifier &identifier) const
 {
-    auto iter = parameters_.find(identifier);
+    const auto iter = parameters_.find(identifier);
     if (parameters_.end() == iter)
     {
         GMX_THROW(gmx::InvalidInputError(gmx::formatString("1. No such identifier '%s' in const parameter list with %zu entries for function '%s'",
@@ -121,13 +121,13 @@ const ForceFieldParameterMap &ForceFieldParameterList::findParameterMapConst(con
 const ForceFieldParameter &ForceFieldParameterList::findParameterTypeConst(const Identifier  &identifier,
                                                                            const std::string &type) const
 {
-    auto params = parameters_.find(identifier);
+    const auto params = parameters_.find(identifier);
     
     if (params == parameters_.end())
     {
         GMX_THROW(gmx::InvalidInputError(gmx::formatString("2. No such identifier %s in parameter list for %s looking for type %s", identifier.id().c_str(), potentialToString(pot_).c_str(), type.c_str()).c_str()));
     }
-    auto ffparam = params->second.find(type);
+    const auto ffparam = params->second.find(type);
     if (ffparam == params->second.end())
     {
         GMX_THROW(gmx::InvalidInputError(gmx::formatString("No such type '%s' in parameter list for %s", type.c_str(), potentialToString(pot_).c_str()).c_str()));
@@ -138,13 +138,13 @@ const ForceFieldParameter &ForceFieldParameterList::findParameterTypeConst(const
 ForceFieldParameter *ForceFieldParameterList::findParameterType(const Identifier  &identifier,
                                                                 const std::string &type)
 {
-    auto params = parameters_.find(identifier);
+    const auto params = parameters_.find(identifier);
     
     if (params == parameters_.end())
     {
         GMX_THROW(gmx::InvalidInputError(gmx::formatString("3. No such identifier %s in parameter list for %s looking for type %s", identifier.id().c_str(), potentialToString(pot_).c_str(), type.c_str()).c_str()));
     }
-    auto ffparam = params->second.find(type);
+    const auto ffparam = params->second.find(type);
     if (ffparam == params->second.end())
     {
         GMX_THROW(gmx::InvalidInputError(gmx::formatString("No such type %s in parameter list for %s", type.c_str(), potentialToString(pot_).c_str()).c_str()));
@@ -154,7 +154,7 @@ ForceFieldParameter *ForceFieldParameterList::findParameterType(const Identifier
 
 ForceFieldParameterMap *ForceFieldParameterList::findParameters(const Identifier &identifier)
 {
-    auto params = parameters_.find(identifier);
+    const auto params = parameters_.find(identifier);
     
     if (params == parameters_.end())
     {
@@ -166,7 +166,7 @@ ForceFieldParameterMap *ForceFieldParameterList::findParameters(const Identifier
 
 const ForceFieldParameterMap *ForceFieldParameterList::findParametersPtrConst(const Identifier &identifier) const
 {
-    auto params = parameters_.find(identifier);
+    const auto params = parameters_.find(identifier);
     
     if (params == parameters_.end())
     {
@@ -186,9 +186,9 @@ CommunicationStatus ForceFieldParameterList::Send(const CommunicationRecord *cr,
     CommunicationStatus cs = CommunicationStatus::OK;
     if (CommunicationStatus::SEND_DATA == cr->send_data(dest))
     {
-        std::string ppp = potentialToString(pot_);
+        const std::string ppp = potentialToString(pot_);
         cr->send(dest, ppp);
-        std::string canSwapString = canSwapToString(canSwap_);
+        const std::string canSwapString = canSwapToString(canSwap_);
         if (canSwapString.empty())
         {
             GMX_THROW(gmx::InternalError("Empty canSwapString"));

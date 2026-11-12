@@ -64,7 +64,7 @@ const std::map<CombRule, const std::string> combRuleName =
 
 const std::string &combinationRuleName(CombRule c)
 {
-    auto crfind = combRuleName.find(c);
+    const auto crfind = combRuleName.find(c);
     if (crfind == combRuleName.end())
     {
         GMX_THROW(gmx::InternalError(gmx::formatString("Unsupported combination rule %d",
@@ -236,7 +236,7 @@ void evalCombinationRule(Potential                     ftype,
                          ForceFieldParameterMap       *pmap)
 {
     // Fudge unit
-    std::string unit("kJ/mol");
+    const std::string unit("kJ/mol");
 
     // We use dependent mutability to show these are not independent params
     auto mutd = Mutability::Dependent;
@@ -250,13 +250,13 @@ void evalCombinationRule(Potential                     ftype,
         if (combrule.end() == combrule.find(param.first))
         {
             std::string allrules;
-            for(auto c: combrule)
+            for(const auto& c: combrule)
             {
                 allrules += " " + c.first;
             }
             GMX_THROW(gmx::InvalidInputError(gmx::formatString("Parameter %s not found. There are combination rules for: %s.", param.first.c_str(), allrules.c_str()).c_str()));
         }
-        auto   crule = combrule.find(param.first)->second;
+        const auto   crule = combrule.find(param.first)->second;
         double value = 0;
         if (Potential::BORN_MAYER == ftype ||
             Potential::MACDANIEL_SCHMIDT == ftype ||

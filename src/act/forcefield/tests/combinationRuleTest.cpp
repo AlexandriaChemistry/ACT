@@ -65,7 +65,7 @@ protected:
     void testLow(CombRule crule, double x1, double x2)
     {
         gmx::test::TestReferenceChecker checker_(this->rootChecker());
-        auto tolerance = gmx::test::relativeToleranceAsFloatingPoint(1.0, GMX_DOUBLE ? 1e-10 : 5e-2);
+        const auto tolerance = gmx::test::relativeToleranceAsFloatingPoint(1.0, GMX_DOUBLE ? 1e-10 : 5e-2);
         checker_.setDefaultTolerance(tolerance);
         auto value = combineTwo(crule, x1, x2);
         checker_.checkReal(x1, "x1");
@@ -76,7 +76,7 @@ protected:
     void testWE(double s1, double s2, double e1, double e2)
     {
         gmx::test::TestReferenceChecker checker_(this->rootChecker());
-        auto tolerance = gmx::test::relativeToleranceAsFloatingPoint(1.0, GMX_DOUBLE ? 1e-10 : 5e-2);
+        const auto tolerance = gmx::test::relativeToleranceAsFloatingPoint(1.0, GMX_DOUBLE ? 1e-10 : 5e-2);
         checker_.setDefaultTolerance(tolerance);
         auto value = combineWaldmanEpsilon(e1, e2, s1, s2);
         checker_.checkReal(e1, "epsilon1");
@@ -89,7 +89,7 @@ protected:
     void testHS(double e1, double e2, double g1, double g2, double s1, double s2)
     {
         gmx::test::TestReferenceChecker checker_(this->rootChecker());
-        auto tolerance = gmx::test::relativeToleranceAsFloatingPoint(1.0, GMX_DOUBLE ? 1e-10 : 5e-2);
+        const auto tolerance = gmx::test::relativeToleranceAsFloatingPoint(1.0, GMX_DOUBLE ? 1e-10 : 5e-2);
         checker_.setDefaultTolerance(tolerance);
         auto value = combineHogervorstSigma(e1, e2, g1, g2, s1, s2);
         checker_.checkReal(e1, "epsilon1");
@@ -104,7 +104,7 @@ protected:
     void testGM(double x1, double x2, double exponent)
     {
         gmx::test::TestReferenceChecker checker_(this->rootChecker());
-        auto tolerance = gmx::test::relativeToleranceAsFloatingPoint(1.0, GMX_DOUBLE ? 1e-10 : 5e-2);
+        const auto tolerance = gmx::test::relativeToleranceAsFloatingPoint(1.0, GMX_DOUBLE ? 1e-10 : 5e-2);
         checker_.setDefaultTolerance(tolerance);
         auto value = combineGeneralizedMean(x1, x2, exponent);
         checker_.checkReal(x1, "x1");
@@ -376,14 +376,14 @@ TEST(CombRuleUtilTest, Extract)
 {
     ForceField pd;
     readForceField(gmx::test::TestFileManager::getInputFilePath("forcefields/ACM-g1.xml"), &pd);
-    auto count = [&pd](const char *rules)
-    {
-        CombRuleUtil         crule;
-        std::vector<t_pargs> pa;
-        crule.addPargs(&pa);
-        *pa[0].u.c = rules;
-        return crule.extract(&pd);
-    };
+    const auto count = [&pd](const char *rules)
+          {
+              CombRuleUtil         crule;
+              std::vector<t_pargs> pa;
+              crule.addPargs(&pa);
+              *pa[0].u.c = rules;
+              return crule.extract(&pd);
+          };
     // Sigma is Geometric in ACM-g
     EXPECT_EQ(0, count("VANDERWAALS:sigma:Geometric"));
     EXPECT_EQ(1, count("VANDERWAALS:sigma:Arithmetic"));

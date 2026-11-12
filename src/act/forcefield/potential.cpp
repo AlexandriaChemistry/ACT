@@ -128,7 +128,7 @@ std::map<Potential, PotentialProperties> potprops = {
 
 const std::string &potentialToString(Potential p)
 {
-    auto pp = potprops.find(p);
+    const auto pp = potprops.find(p);
     if (potprops.end() == pp)
     {
         GMX_THROW(gmx::InternalError(gmx::formatString("No support for potential %d", static_cast<int>(p))));
@@ -138,7 +138,7 @@ const std::string &potentialToString(Potential p)
 
 const std::vector<const char *> potentialToParameterName(Potential p)
 {
-    auto pp = potprops.find(p);
+    const auto pp = potprops.find(p);
     if (potprops.end() == pp)
     {
         GMX_THROW(gmx::InternalError(gmx::formatString("No support for potential %d", static_cast<int>(p))));
@@ -148,7 +148,7 @@ const std::vector<const char *> potentialToParameterName(Potential p)
 
 const std::string &potentialToEnergy(Potential p)
 {
-    auto pp = potprops.find(p);
+    const auto pp = potprops.find(p);
     if (potprops.end() == pp)
     {
         GMX_THROW(gmx::InternalError(gmx::formatString("No support for potential %d", static_cast<int>(p))));
@@ -158,7 +158,7 @@ const std::string &potentialToEnergy(Potential p)
 
 const std::string &potentialToPreFactor(Potential p)
 {
-    auto pp = potprops.find(p);
+    const auto pp = potprops.find(p);
     if (potprops.end() == pp)
     {
         GMX_THROW(gmx::InternalError(gmx::formatString("No support for potential %d", static_cast<int>(p))));
@@ -207,7 +207,7 @@ Potential defaultPotential(InteractionType itype)
 
 int potentialToGromacsType(Potential p)
 {
-    auto ppp = potprops.find(p);
+    const auto ppp = potprops.find(p);
     if (potprops.end() != ppp)
     {
         return ppp->second.ftype;

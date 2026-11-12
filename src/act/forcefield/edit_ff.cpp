@@ -229,10 +229,10 @@ static void modifyParticle(const std::string &paramType,
         bool hasLimitChange        = bSetMin || bSetMax || stretch || bLimit;
         if (force || ff->isMutable() || (hasLimitChange && !hasValueOrScaleChange))
         {
-            std::string particleId = 
-                gmx::formatString("%s - %s",
-                                  particle->id().id().c_str(),
-                                  paramType.c_str());
+            const std::string particleId = 
+                      gmx::formatString("%s - %s",
+                                        particle->id().id().c_str(),
+                                        paramType.c_str());
             setMinMaxMut(debug, ff,
                          bSetMin, pmin, 
                          bSetVal, pval, bSetMax, pmax,
@@ -272,11 +272,11 @@ static void modifyInteraction(ForceField *pd,
                 {
                     if (force || pp.second.isMutable())
                     {
-                        std::string myId = 
-                            gmx::formatString("%s - %s - %s",
-                                              pId.id().c_str(),
-                                              paramType.c_str(),
-                                              interactionTypeToString(itype).c_str());
+                        const std::string myId = 
+                                  gmx::formatString("%s - %s - %s",
+                                                    pId.id().c_str(),
+                                                    paramType.c_str(),
+                                                    interactionTypeToString(itype).c_str());
                         setMinMaxMut(debug, &pp.second,
                                      bSetMin, pmin, 
                                      bSetVal, pval, bSetMax, pmax,
@@ -304,7 +304,7 @@ static void removeParticles(ForceField *pd,
             auto params = f->second.parameters();
             for (auto fp = params->begin(); fp != params->end(); )
             {
-                auto myatoms = fp->first.atoms();
+                const auto myatoms = fp->first.atoms();
                 bool found = false;
                 for (const auto &mya : myatoms)
                 {
@@ -357,34 +357,34 @@ static int setNonNegative(ForceField        *pd,
         return 0;
     }
     auto ids     = gmx::splitString(particle);
-    auto wanted  = [&ids](const std::string &id)
-    {
-        return ids.empty() || std::find(ids.begin(), ids.end(), id) != ids.end();
-    };
+    const auto wanted  = [&ids](const std::string &id)
+          {
+              return ids.empty() || std::find(ids.begin(), ids.end(), id) != ids.end();
+          };
     int  changed = 0;
-    auto change  = [nonNegative, &changed](ForceFieldParameter *p)
-    {
-        if (p->nonNegative() == nonNegative)
-        {
-            return;
-        }
-        if (nonNegative)
-        {
-            p->setNonNegative();
-        }
-        else
-        {
-            p->clearNonNegative();
-        }
-        changed += 1;
-    };
+    const auto change  = [nonNegative, &changed](ForceFieldParameter *p)
+          {
+              if (p->nonNegative() == nonNegative)
+              {
+                  return;
+              }
+              if (nonNegative)
+              {
+                  p->setNonNegative();
+              }
+              else
+              {
+                  p->clearNonNegative();
+              }
+              changed += 1;
+          };
     InteractionType itype;
     if (pd->typeToInteractionType(paramType, &itype) && pd->interactionPresent(itype))
     {
         auto fs = pd->findForces(itype);
         for (auto &entry : *fs->parameters())
         {
-            auto param = entry.second.find(paramType);
+            const auto param = entry.second.find(paramType);
             if (wanted(entry.first.id()) && param != entry.second.end())
             {
                 change(&param->second);
@@ -395,7 +395,7 @@ static int setNonNegative(ForceField        *pd,
     {
         for (auto &pt : *pd->particleTypes())
         {
-            auto param = pt.second.parameters()->find(paramType);
+            const auto param = pt.second.parameters()->find(paramType);
             if (wanted(pt.first.id()) && param != pt.second.parameters()->end())
             {
                 change(&param->second);
@@ -439,7 +439,7 @@ static void modifyForceField(ForceField *pd,
             auto fs  = pd->findForces(itype);
             for (auto &ffp : fs->parametersConst())
             {
-                auto id = ffp.first;
+                const auto id = ffp.first;
                 if (ids.empty() || std::find(ids.begin(), ids.end(), id.id()) != ids.end())
                 {
                     modifyInteraction(pd, itype, paramType, id,
@@ -543,11 +543,11 @@ static void analyzeForceField(ForceField *pd)
         auto itype = fc.first;
         for(auto &fm : fc.second.parametersConst())
         {
-            auto myid = fm.first;
+            const auto myid = fm.first;
             for(auto &param : fm.second)
             {
-                auto ptype = param.first;
-                auto ppp   = param.second;
+                const auto ptype = param.first;
+                const auto ppp   = param.second;
                 if (ppp.ntrain() >= mindata && ppp.isMutable())
                 {
                     if (fabs(ppp.value() - ppp.minimum()) < tolerance)
@@ -595,13 +595,13 @@ static void dumpForceField(ForceField        *pd,
         }
         for(auto &fm : fc.second.parametersConst())
         {
-            auto myid = fm.first;
+            const auto myid = fm.first;
             if (std::find(particles.begin(), particles.end(), myid.id()) != particles.end())
             {
                 for(auto &param : fm.second)
                 {
-                    auto ptype = param.first;
-                    auto ppp   = param.second;
+                    const auto ptype = param.first;
+                    const auto ppp   = param.second;
                     fprintf(fp, "%s|%s|%g\n",
                             ptype.c_str(), myid.id().c_str(), ppp.value());
                     nparm++;
@@ -633,12 +633,12 @@ static void plotInteractions(MsgHandler        *msghandler,
                              const std::string &analyze)
 {
     bool found;
-    auto myset = findInteractionMap(analyze, &found);
+    const auto myset = findInteractionMap(analyze, &found);
     if (!found)
     {
         return;
     }
-    ForceComputer fc(1e-3, 100, 1.0);
+    const ForceComputer fc(1e-3, 100, 1.0);
     for(auto &m : myset)
     {
         fc.plot(msghandler, pd, m);
@@ -692,7 +692,7 @@ static void copy_missing(const ForceField  *pdref,
         }
         for(auto &fm : fc.second.parametersConst())
         {
-            auto myid = fm.first;
+            const auto myid = fm.first;
             if (!fcout->parameterExists(myid))
             {
                 printf("Parameter %s missing from %s for %s\n",
@@ -700,8 +700,8 @@ static void copy_missing(const ForceField  *pdref,
                        interactionTypeToDescription(itype).c_str());
                 for(auto &param : fm.second)
                 {
-                    auto ptype = param.first;
-                    auto ppp   = param.second;
+                    const auto ptype = param.first;
+                    const auto ppp   = param.second;
                     fcout->addParameter(myid, ptype, ppp);
                 }
             }
@@ -749,7 +749,7 @@ static void implant_values(const ForceField  *pdref,
         auto fcout = pdout->findForces(itype);
         for(auto &fm : fc.second.parametersConst())
         {
-            auto myid    = fm.first;
+            const auto myid    = fm.first;
             auto myatoms = myid.atoms();
             // If we have a specified atom, it should be in the identifier, if not skip this one
             if (!particle.empty() && std::find(myatoms.begin(), myatoms.end(), particle) == myatoms.end())
@@ -799,8 +799,8 @@ static void compare_pd(ForceField *pd1,
     {
         return;
     }
-    auto f1     = pd1->findForcesConst(itype1);
-    auto f2     = pd2->findForcesConst(itype2);
+    const auto& f1     = pd1->findForcesConst(itype1);
+    const auto& f2     = pd2->findForcesConst(itype2);
     printf("%-17s %11s %9s %9s %9s %4s | %9s %9s %9s %4s | %9s\n",
            "Param", "Ptype", 
            "Minimum_1", "Value_1", "Maximum_1", "N_1",
@@ -813,8 +813,8 @@ static void compare_pd(ForceField *pd1,
         {
             auto fp1 = f1.findParameterMapConst(id1.first);
             auto fp2 = f2.findParameterMapConst(id1.first);
-            auto p1  = fp1[ptype];
-            auto p2  = fp2[ptype];
+            const auto p1  = fp1[ptype];
+            const auto p2  = fp2[ptype];
             if (p1.ntrain() > 0 && p2.ntrain() > 0 &&
                 p1.value() != p2.value())
             {
@@ -845,7 +845,7 @@ static size_t printValidation(const ForceField  *pd,
                               const std::string &fileName,
                               bool               writing)
 {
-    auto issues = validateForceField(*pd);
+    const auto issues = validateForceField(*pd);
     const std::vector<std::pair<ForceFieldIssue::Kind, const char *>> kinds =
     {
         { ForceFieldIssue::Kind::ResetToBounds,       "Values outside their bounds, set to the nearest bound" },
@@ -1023,7 +1023,7 @@ int edit_ff(int argc, char*argv[])
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
     // The checksum of the force field as it was read, which differs from
     // that in the file if it was converted, see ForceField::convertCoulomb
-    std::string readCheckSum = forcefieldCheckSum(&pd);
+    const std::string readCheckSum = forcefieldCheckSum(&pd);
     (void) pd.verifyCheckSum(&msghandler, readCheckSum);
     if (opt2bSet("-ff2", fnm.size(), fnm.data()))
     {
@@ -1154,7 +1154,7 @@ int edit_ff(int argc, char*argv[])
     }
     if (opt2bSet("-o", fnm.size(), fnm.data()))
     {
-        std::string checkSum = forcefieldCheckSum(&pd);
+        const std::string checkSum = forcefieldCheckSum(&pd);
         if (checkSum == readCheckSum && !forceWrite && nRuleChanged == 0)
         {
             printf("No changes to forcefield structure, not writing a new file.");
@@ -1163,7 +1163,7 @@ int edit_ff(int argc, char*argv[])
         {
             pd.updateTimeStamp();
             pd.setCheckSum(checkSum);
-            writeForceField(opt2fn("-o", fnm.size(), fnm.data()), &pd, 0);
+            writeForceField(opt2fn("-o", fnm.size(), fnm.data()), &pd, false);
         }
     }
     return 0;

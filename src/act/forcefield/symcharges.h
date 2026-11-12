@@ -51,7 +51,7 @@ class Symcharges
     public:
 
         //! Default constructor
-        Symcharges () {}
+        Symcharges () = default;
 
         /*! \brief Constructor
          * \param[in] central   Element of the central atom

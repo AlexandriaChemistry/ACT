@@ -94,7 +94,7 @@ protected:
     ForceField generate(const std::vector<std::pair<std::string, std::string>> &options,
                         const std::string &vsites = "forcefields/genff-vsites.json")
     {
-        auto output = fileManager().getTemporaryFilePath("generated.xml");
+        const auto output = fileManager().getTemporaryFilePath("generated.xml");
         auto cmd    = commandLine(options, vsites);
         cmd.addOption("-o", output);
         EXPECT_EQ(0, gen_ff(cmd.argc(), cmd.argv()));
@@ -126,7 +126,7 @@ TEST_F(GenFFTest, Defaults)
     EXPECT_EQ("f", f->optionValue("vdwtype"));
     EXPECT_EQ(Mutability::ACM, f->parameterConst("charge").mutability());
     // The charge starts in the middle of its range
-    auto qhf = pd.findParticleType("hf")->parameterConst("charge");
+    const auto qhf = pd.findParticleType("hf")->parameterConst("charge");
     EXPECT_DOUBLE_EQ(0, qhf.minimum());
     EXPECT_DOUBLE_EQ(0.25, qhf.value());
     EXPECT_DOUBLE_EQ(0.5, qhf.maximum());
@@ -170,9 +170,9 @@ TEST_F(GenFFTest, Defaults)
 // Test: Other functions, charge distribution and options
 TEST_F(GenFFTest, Options)
 {
-    auto pd = generate({ { "-qdist", "POINT" }, { "-bondfn", "MORSE_BONDS" },
-                         { "-anglefn", "UREY_BRADLEY_ANGLES" }, { "-vdwfn", "WANG_BUCKINGHAM" },
-                         { "-epsilonr", "1.7" }, { "-nexcl", "3" } });
+    const auto pd = generate({ { "-qdist", "POINT" }, { "-bondfn", "MORSE_BONDS" },
+                               { "-anglefn", "UREY_BRADLEY_ANGLES" }, { "-vdwfn", "WANG_BUCKINGHAM" },
+                               { "-epsilonr", "1.7" }, { "-nexcl", "3" } });
     EXPECT_EQ(ChargeDistributionType::Point, pd.chargeDistribution());
     EXPECT_EQ(Potential::MORSE_BONDS, pd.findForcesConst(InteractionType::BONDS).potential());
     EXPECT_EQ(Potential::UREY_BRADLEY_ANGLES, pd.findForcesConst(InteractionType::ANGLES).potential());
@@ -190,7 +190,7 @@ TEST_F(GenFFTest, Options)
 // the same, otherwise the force field is not generated
 TEST_F(GenFFTest, ObsoleteExclusions)
 {
-    auto pd = generate({ { "-nexclqq", "3" }, { "-nexclvdw", "3" } });
+    const auto pd = generate({ { "-nexclqq", "3" }, { "-nexclvdw", "3" } });
     EXPECT_EQ(3, pd.nexcl());
     EXPECT_THROW(generate({ { "-nexclqq", "3" }, { "-nexclvdw", "1" } }), gmx::InvalidInputError);
 }
@@ -198,7 +198,7 @@ TEST_F(GenFFTest, ObsoleteExclusions)
 // Test: Without the file of virtual sites there are none
 TEST_F(GenFFTest, WithoutVirtualSites)
 {
-    auto pd = generate({}, "");
+    const auto pd = generate({}, "");
     EXPECT_FALSE(pd.interactionPresent(InteractionType::VSITE2));
     EXPECT_EQ(55u, pd.particleTypesConst().size());
 }
@@ -230,20 +230,20 @@ TEST_F(GenFFTest, VirtualSiteTypes)
     const std::string a   = "{ \"min\": 0, \"max\": 0.2 }";
     const std::string b   = "{ \"min\": 0.2, \"max\": 0.6 }";
     const std::string c   = "{ \"min\": -1, \"max\": 1 }";
-    auto first = vsiteFile(&fileManager(), "vsites1.json",
-                           vsite("VSITE2FD", "\"f_b\", \"hf_b\"", "\"vs2fd_a\": { \"min\": 0.1, \"max\": 0.3 }") + ", " +
-                           vsite("VSITE3", f3, "\"vs3a\": " + a + ", \"vs3b\": " + b) + ", " +
-                           vsite("VSITE3S", f3, "\"vs3sa\": " + a) + ", " +
-                           vsite("VSITE3FD", f3, "\"vs3fd_a\": " + a + ", \"vs3fd_b\": " + b) + ", " +
-                           vsite("VSITE3FAD", f3, "\"vs3fad_a\": " + a + ", \"vs3fad_b\": " + b));
-    auto second = vsiteFile(&fileManager(), "vsites2.json",
-                            vsite("VSITE3OUT", f3, "\"vs3out_a\": " + a + ", \"vs3out_b\": " + b + ", \"vs3out_c\": " + c) + ", " +
-                            vsite("VSITE3OUTS", f3, "\"vs3outs_a\": " + a + ", \"vs3outs_c\": " + c) + ", " +
-                            vsite("VSITE4", f4, "\"vs4a\": " + a + ", \"vs4b\": " + b + ", \"vs4c\": " + c) + ", " +
-                            vsite("VSITE4S", f4, "\"vs4sa\": " + a + ", \"vs4sb\": " + b) + ", " +
-                            vsite("VSITE4S3", f4, "\"vs4s3a\": " + a));
+    const auto first = vsiteFile(&fileManager(), "vsites1.json",
+                                 vsite("VSITE2FD", "\"f_b\", \"hf_b\"", "\"vs2fd_a\": { \"min\": 0.1, \"max\": 0.3 }") + ", " +
+                                 vsite("VSITE3", f3, "\"vs3a\": " + a + ", \"vs3b\": " + b) + ", " +
+                                 vsite("VSITE3S", f3, "\"vs3sa\": " + a) + ", " +
+                                 vsite("VSITE3FD", f3, "\"vs3fd_a\": " + a + ", \"vs3fd_b\": " + b) + ", " +
+                                 vsite("VSITE3FAD", f3, "\"vs3fad_a\": " + a + ", \"vs3fad_b\": " + b));
+    const auto second = vsiteFile(&fileManager(), "vsites2.json",
+                                  vsite("VSITE3OUT", f3, "\"vs3out_a\": " + a + ", \"vs3out_b\": " + b + ", \"vs3out_c\": " + c) + ", " +
+                                  vsite("VSITE3OUTS", f3, "\"vs3outs_a\": " + a + ", \"vs3outs_c\": " + c) + ", " +
+                                  vsite("VSITE4", f4, "\"vs4a\": " + a + ", \"vs4b\": " + b + ", \"vs4c\": " + c) + ", " +
+                                  vsite("VSITE4S", f4, "\"vs4sa\": " + a + ", \"vs4sb\": " + b) + ", " +
+                                  vsite("VSITE4S3", f4, "\"vs4s3a\": " + a));
     auto cmd    = commandLine({}, first);
-    auto output = fileManager().getTemporaryFilePath("generated.xml");
+    const auto output = fileManager().getTemporaryFilePath("generated.xml");
     cmd.append(second);
     cmd.addOption("-o", output);
     ASSERT_EQ(0, gen_ff(cmd.argc(), cmd.argv()));
@@ -264,7 +264,7 @@ TEST_F(GenFFTest, VirtualSiteTypes)
     };
     for (const auto &np : nparam)
     {
-        auto name = interactionTypeToString(np.first);
+        const auto name = interactionTypeToString(np.first);
         ASSERT_TRUE(pd.interactionPresent(np.first)) << name;
         auto &fs = pd.findForcesConst(np.first);
         ASSERT_EQ(1u, fs.parametersConst().size()) << name;
@@ -300,11 +300,11 @@ TEST_F(GenFFTest, VirtualSiteErrors)
                                      vsite("BONDS", f2, "\"vs2a\": " + ok),
                                      std::string("{ \"interaction\": \"VSITE2\" }") })
     {
-        auto vsfile = vsiteFile(&fileManager(), "vsites.json", site);
+        const auto vsfile = vsiteFile(&fileManager(), "vsites.json", site);
         auto cmd = commandLine({ { "-o", fileManager().getTemporaryFilePath("generated.xml") } }, vsfile);
         EXPECT_THROW(gen_ff(cmd.argc(), cmd.argv()), gmx::InvalidInputError) << site;
     }
-    auto vsfile = fileManager().getTemporaryFilePath("notjson.json");
+    const auto vsfile = fileManager().getTemporaryFilePath("notjson.json");
     {
         std::ofstream out(vsfile);
         out << "v2f1|VSITE2|f_b~hf_b|-1|0.5|||\n";

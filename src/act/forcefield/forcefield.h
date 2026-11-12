@@ -68,7 +68,7 @@ class ForceField
     public:
 
         //! Default constructor
-        ForceField() {};
+        ForceField() = default;
 
         /*! Return information about the force field
          * \return array of strings with info
@@ -164,7 +164,7 @@ class ForceField
      */
     bool hasParticleType(const std::string &ptype) const
     {
-        Identifier id(ptype);
+        const Identifier id(ptype);
         return hasParticleType(id);
     }
         
@@ -175,7 +175,7 @@ class ForceField
      */
     ParticleType *findParticleType(const Identifier &id)
     {
-        auto atp = alexandria_.find(id);
+        const auto atp = alexandria_.find(id);
         if (atp == alexandria_.end())
         {
             GMX_THROW(gmx::InvalidInputError(gmx::formatString("No such atom type %s", id.id().c_str()).c_str()));
@@ -190,7 +190,7 @@ class ForceField
      */
     const ParticleType *findParticleType(const Identifier &id) const
     {
-        auto atp = alexandria_.find(id);
+        const auto atp = alexandria_.find(id);
         if (atp == alexandria_.end())
         {
             GMX_THROW(gmx::InvalidInputError(gmx::formatString("No such atom ype %s", id.id().c_str()).c_str()));
@@ -207,7 +207,7 @@ class ForceField
      */
     ParticleType *findParticleType(const std::string &atype)
     {
-        Identifier id(atype);
+        const Identifier id(atype);
         return findParticleType(id);
     }
 
@@ -219,8 +219,8 @@ class ForceField
      */
     const ParticleType *findParticleType(const std::string &atype) const
     {
-        Identifier id(atype);
-        auto iter = alexandria_.find(id);
+        const Identifier id(atype);
+        const auto iter = alexandria_.find(id);
         return &iter->second;
     }
         
@@ -277,7 +277,7 @@ class ForceField
      */
     ForceFieldParameterList *findForces(InteractionType iType)
     {
-        auto force = forces_.find(iType);
+        const auto force = forces_.find(iType);
         if (force == forces_.end())
         {
             GMX_THROW(gmx::InternalError(gmx::formatString("No such interaction type %s (there are %zu interaction types)",

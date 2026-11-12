@@ -56,14 +56,14 @@ void ForceFieldTable::subtype_table(const std::string &info)
     LongTable  lt(fp_, false, nullptr);
 
     lt.setColumns("lcccc");
-    auto longbuf = gmx::formatString("Mapping from atom type to subtypes: Alexandria Charge Model (ACM), Charge distribution (Beta), Bond and Polarizability (Pol) types. %s", info.c_str());
+    const auto longbuf = gmx::formatString("Mapping from atom type to subtypes: Alexandria Charge Model (ACM), Charge distribution (Beta), Bond and Polarizability (Pol) types. %s", info.c_str());
     lt.setCaption(longbuf.c_str());
     lt.setLabel("subtype");
-    auto header = gmx::formatString("Atom type & ACM & Beta & Bond & Pol");
-    lt.addHeadLine(header.c_str());
+    const auto header = gmx::formatString("Atom type & ACM & Beta & Bond & Pol");
+    lt.addHeadLine(header);
     lt.printHeader();
     // The width of the charge distribution, zeta, is a parameter
-    std::vector<std::string> subtypes = { "acmtype", zetaName, "bondtype", "poltype" };
+    const std::vector<std::string> subtypes = { "acmtype", zetaName, "bondtype", "poltype" };
     for (const auto &pt : pd_->particleTypesConst())
     {
         if (pt.second.mass() == 0)
@@ -99,7 +99,7 @@ void ForceFieldTable::itype_table(InteractionType    itype,
     {
         return;
     }
-    auto eep = pd_->findForcesConst(itype);
+    const auto eep = pd_->findForcesConst(itype);
     // Check whether there is anything to print.
     int nparam = 0;
     for (const auto &p : eep.parametersConst())
@@ -171,7 +171,7 @@ void ForceFieldTable::itype_table(InteractionType    itype,
                 }
                 if (printSigma_)
                 {
-                    std::string fmt = gmx::formatString(" & %s(%%d, %s)", ffmt.c_str(), ffmt.c_str());
+                    const std::string fmt = gmx::formatString(" & %s(%%d, %s)", ffmt.c_str(), ffmt.c_str());
                     line += gmx::formatString(fmt.c_str(),
                                               ffp.second.value(),
                                               ffp.second.ntrain(),
@@ -179,7 +179,7 @@ void ForceFieldTable::itype_table(InteractionType    itype,
                 }
                 else
                 {
-                    std::string fmt = gmx::formatString(" & %s", ffmt.c_str());
+                    const std::string fmt = gmx::formatString(" & %s", ffmt.c_str());
                     line += gmx::formatString(fmt.c_str(), ffp.second.value());
                 }
             }
@@ -205,8 +205,8 @@ void ForceFieldTable::itype_table(InteractionType    itype,
         if (first)
         {
             lt.setColumns(ncolumns);
-            lt.addHeadLine(header.c_str());
-            lt.addHeadLine(units.c_str());
+            lt.addHeadLine(header);
+            lt.addHeadLine(units);
             lt.printHeader();
             first = false;
         }

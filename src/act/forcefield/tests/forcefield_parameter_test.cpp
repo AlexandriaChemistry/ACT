@@ -54,7 +54,7 @@ class ForceFieldParameterTest : public gmx::test::CommandLineTestBase
 
         ForceFieldParameterTest () : checker_(this->rootChecker())
         {
-            auto tolerance = gmx::test::relativeToleranceAsFloatingPoint(1.0, GMX_DOUBLE ? 1e-10 : 5e-2);
+            const auto tolerance = gmx::test::relativeToleranceAsFloatingPoint(1.0, GMX_DOUBLE ? 1e-10 : 5e-2);
             checker_.setDefaultTolerance(tolerance);
         }
 
@@ -90,80 +90,80 @@ class ForceFieldParameterTest : public gmx::test::CommandLineTestBase
 
 TEST_F (ForceFieldParameterTest, BoundedStrict) {
     ForceFieldParameter    fp("kJ/mol", 11.0, 0.25, 24, 8.0, 15.0, Mutability::Bounded, true, false);
-    ForceFieldParameterMap ff = { { "epsilon", fp } };
+    const ForceFieldParameterMap ff = { { "epsilon", fp } };
     runTest(ff);
     EXPECT_THROW(fp.setValue(17.0), gmx::InvalidInputError);
 }
 
 TEST_F (ForceFieldParameterTest, FixedStrict) {
     ForceFieldParameter    fp("", 11.0, 0.25, 57, 8.0, 15.0, Mutability::Fixed, true, false);
-    ForceFieldParameterMap ff = { { "gamma", fp } };
+    const ForceFieldParameterMap ff = { { "gamma", fp } };
     runTest(ff);
     EXPECT_THROW(fp.setValue(13.0), gmx::InvalidInputError);
 }
 
 TEST_F (ForceFieldParameterTest, BoundedNotStrict) {
     ForceFieldParameter    fp("1/nm", 11.0, 0.25, 913, 8.0, 15.0, Mutability::Bounded, false, true);
-    ForceFieldParameterMap ff = { { "beta", fp } };
+    const ForceFieldParameterMap ff = { { "beta", fp } };
     runTest(ff);
     fp.setValue(17.0);
 }
 
 TEST_F (ForceFieldParameterTest, BoundedNotStrictOriginal) {
     ForceFieldParameter    fp("1/nm", 11.0, 0.25, 35, 8.0, 15.0, Mutability::Bounded, false, true);
-    ForceFieldParameterMap ff = { {"beta", fp } };
+    const ForceFieldParameterMap ff = { {"beta", fp } };
     fp.setValue(17.0);
     runTest(ff);
 }
 
 TEST_F (ForceFieldParameterTest, FixedNotStrict) {
     ForceFieldParameter    fp("nm2", 11.0, 0.25, 3, 8.0, 15.0, Mutability::Fixed, false, false);
-    ForceFieldParameterMap ff = { { "kappa", fp } };
+    const ForceFieldParameterMap ff = { { "kappa", fp } };
     runTest(ff);
     fp.setValue(13.0);
 }
 
 TEST_F (ForceFieldParameterTest, FixedNotStrictOriginal) {
     ForceFieldParameter    fp("nm2", 11.0, 0.25, 1, 8.0, 15.0, Mutability::Fixed, false, false);
-    ForceFieldParameterMap ff = { { "kappa", fp } };
+    const ForceFieldParameterMap ff = { { "kappa", fp } };
     fp.setValue(13.0);
     runTest(ff);
 }
 
 TEST_F (ForceFieldParameterTest, UncertaintyNotStrict) {
     ForceFieldParameter    fp("ps", 11.0, 0.25, 17, 8.0, 15.0, Mutability::Fixed, false, false);
-    ForceFieldParameterMap ff = { { "ypsilon", fp } };
+    const ForceFieldParameterMap ff = { { "ypsilon", fp } };
     fp.setUncertainty(1.0);
 }
 
 TEST_F (ForceFieldParameterTest, UncertaintyNotStrictOriginal) {
     ForceFieldParameter    fp("fs", 11.0, 0.25, 123957, 8.0, 15.0, Mutability::Bounded, false, false);
-    ForceFieldParameterMap ff = { { "ypsilon", fp } };
+    const ForceFieldParameterMap ff = { { "ypsilon", fp } };
     fp.setUncertainty(1.0);
     runTest(ff);
 }
 
 TEST(ForceFieldParameterSimpleTest, UncertaintyStrict) {
     ForceFieldParameter    fp("kJ/mol", 11.0, 0.25, 45, 8.0, 15.0, Mutability::Fixed, true, false);
-    ForceFieldParameterMap ff = { { "zeta", fp } };
+    const ForceFieldParameterMap ff = { { "zeta", fp } };
     EXPECT_THROW(fp.setUncertainty(3.0), gmx::InternalError);
 }
 
 TEST_F (ForceFieldParameterTest, NtrainNotStrict) {
     ForceFieldParameter    fp("ps", 11.0, 0.25, 14, 8.0, 15.0, Mutability::Fixed, false, true);
-    ForceFieldParameterMap ff = { { "ypsilon", fp } };
+    const ForceFieldParameterMap ff = { { "ypsilon", fp } };
     fp.setNtrain(173);
     runTest(ff);
 }
 
 TEST(ForceFieldParameterSimpleTest, NtrainStrict) {
     ForceFieldParameter    fp("kJ/mol", 11.0, 0.25, 45, 8.0, 15.0, Mutability::Fixed, true, true);
-    ForceFieldParameterMap ff = { { "zeta", fp } };
+    const ForceFieldParameterMap ff = { { "zeta", fp } };
     EXPECT_THROW(fp.setNtrain(30), gmx::InternalError);
 }
 
 TEST(ForceFieldParameterSimpleTest, MinEqualsMaxSetMutabilityFixed) {
-    ForceFieldParameter    fp("kJ/mol", 15.0, 0.25, 45, 15.0, 15.0, Mutability::Bounded, true, true);
+    const ForceFieldParameter    fp("kJ/mol", 15.0, 0.25, 45, 15.0, 15.0, Mutability::Bounded, true, true);
     EXPECT_TRUE(fp.mutability() == Mutability::Fixed);
 }
 
@@ -178,27 +178,27 @@ TEST(ForceFieldParameterSimpleTest, NameToMutability) {
 }
 
 TEST(ForceFieldParameterSimpleTest, ACMMutable) {
-    ForceFieldParameter    fp("kJ/mol", 11.0, 0.25, 45, 8.0, 15.0, Mutability::ACM, true, true);
+    const ForceFieldParameter    fp("kJ/mol", 11.0, 0.25, 45, 8.0, 15.0, Mutability::ACM, true, true);
     EXPECT_FALSE(fp.isMutable());
 }
 
 TEST(ForceFieldParameterSimpleTest, FixedMutable) {
-    ForceFieldParameter    fp("kJ/mol", 11.0, 0.25, 45, 8.0, 15.0, Mutability::Fixed, true, true);
+    const ForceFieldParameter    fp("kJ/mol", 11.0, 0.25, 45, 8.0, 15.0, Mutability::Fixed, true, true);
     EXPECT_FALSE(fp.isMutable());
 }
 
 TEST(ForceFieldParameterSimpleTest, DependentMutable) {
-    ForceFieldParameter    fp("kJ/mol", 11.0, 0.25, 45, 8.0, 15.0, Mutability::Dependent, true, true);
+    const ForceFieldParameter    fp("kJ/mol", 11.0, 0.25, 45, 8.0, 15.0, Mutability::Dependent, true, true);
     EXPECT_FALSE(fp.isMutable());
 }
 
 TEST(ForceFieldParameterSimpleTest, BoundedMutable) {
-    ForceFieldParameter    fp("kJ/mol", 11.0, 0.25, 45, 8.0, 15.0, Mutability::Bounded, true, true);
+    const ForceFieldParameter    fp("kJ/mol", 11.0, 0.25, 45, 8.0, 15.0, Mutability::Bounded, true, true);
     EXPECT_TRUE(fp.isMutable());
 }
 
 TEST(ForceFieldParameterSimpleTest, BoundedMutableZeroRange) {
-    ForceFieldParameter    fp("kJ/mol", 15.0, 0.25, 45, 15.0, 15.0, Mutability::Bounded, true, true);
+    const ForceFieldParameter    fp("kJ/mol", 15.0, 0.25, 45, 15.0, 15.0, Mutability::Bounded, true, true);
     EXPECT_FALSE(fp.isMutable());
 }
 

@@ -57,11 +57,11 @@ protected:
     
     void TestOne(const std::string &fileName)
     {
-        std::string dataName = gmx::test::TestFileManager::getInputFilePath("forcefields/" + fileName + ".xml");
+        const std::string dataName = gmx::test::TestFileManager::getInputFilePath("forcefields/" + fileName + ".xml");
         auto pd      = getForceField(fileName);
-        auto orig    = pd->checkSum();
+        const auto orig    = pd->checkSum();
         checker_.checkString(orig, "ForceField checksum");
-        auto sumpd   = forcefieldCheckSum(pd);
+        const auto sumpd   = forcefieldCheckSum(pd);
         printf("orig  = '%s'\n", orig.c_str());
         printf("sumpd = '%s'\n", sumpd.c_str());
         EXPECT_TRUE(orig == sumpd);
