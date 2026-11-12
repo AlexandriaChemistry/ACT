@@ -90,19 +90,19 @@ public:
         bool       userqtot = false;
         MsgHandler msghandler;
         msghandler.setPrintLevel(ACTStatus::Warning);
-        importFile(&msghandler, pd, dataName.c_str(), &molprops,
+        importFile(&msghandler, pd, dataName, &molprops,
                    conf, JobType::OPT, userqtot, &qtot, oneH);
         EXPECT_TRUE(msghandler.ok());
         for(auto &molprop: molprops)
         {
             checker_.checkString(molname, "molname");
             checker_.checkDouble(qtot, "qtot");
-            EXPECT_TRUE(molprop.experimentConst().size() > 0);
-            if (molprop.experimentConst().size() == 0)
+            EXPECT_TRUE(!molprop.experimentConst().empty());
+            if (molprop.experimentConst().empty())
             {
                 continue;
             }
-            auto                     exper = molprop.experimentConst().begin();
+            const auto               exper = molprop.experimentConst().begin();
             std::vector<std::string> atypes;
             for (auto &ca : exper->calcAtomConst())
             {
@@ -113,12 +113,12 @@ public:
                 checker_.checkInteger(static_cast<int>(atypes.size()), molname.c_str());
                 checker_.checkSequence(atypes.begin(), atypes.end(), "atomtypes");
                 // Check for fragment charges in case of dimers
-                auto fragments = molprop.fragments();
+                const auto& fragments = molprop.fragments();
                 if (fragments.size() == 2)
                 {
                     for(int i = 0; i < 2; ++i)
                     {
-                        std::string qi = gmx::formatString("fragment_charge_%d", i);
+                        const std::string qi = gmx::formatString("fragment_charge_%d", i);
                         checker_.checkInteger(fragments[i].charge(), qi.c_str());
                     }
                 }
@@ -275,7 +275,7 @@ static std::vector<std::string> importTypes(const ForceField *pd, const std::str
     MsgHandler           msghandler;
     msghandler.setPrintLevel(ACTStatus::Warning);
     double qtot = 0;
-    importFile(&msghandler, pd, fileName.c_str(), &molprops, "minimum",
+    importFile(&msghandler, pd, fileName, &molprops, "minimum",
                JobType::OPT, false, &qtot, false);
     EXPECT_TRUE(msghandler.ok());
     std::vector<std::string> atypes;
@@ -295,7 +295,7 @@ static std::vector<std::string> importTypes(const ForceField *pd, const std::str
 TEST(ImportBoxTest, ManyMatches)
 {
     auto pd      = getForceField("gaff_hydrogen_types");
-    auto single  = gmx::test::TestFileManager::getInputFilePath("molecules/acetone-3-oep.log.pdb");
+    const auto single  = gmx::test::TestFileManager::getInputFilePath("molecules/acetone-3-oep.log.pdb");
     auto ref     = importTypes(pd, single);
     ASSERT_EQ(10u, ref.size());
     // Six hydrogens of the methyl groups in each copy
@@ -316,14 +316,14 @@ TEST(ImportBoxTest, ManyMatches)
         }
     }
     gmx::test::TestFileManager fileManager;
-    auto boxName = fileManager.getTemporaryFilePath("acetone-box.pdb");
+    const auto boxName = fileManager.getTemporaryFilePath("acetone-box.pdb");
     {
         std::ofstream out(boxName);
         int natom = atoms.size();
         for (int c = 0; c < ncopy; c++)
         {
             // On a grid with 8 Angstrom between the copies
-            double shift[3] = { 8.0*(c % 6), 8.0*((c/6) % 6), 8.0*(c/36) };
+            const double shift[3] = { 8.0*(c % 6), 8.0*((c/6) % 6), 8.0*(c/36) };
             for (int a = 0; a < natom; a++)
             {
                 const auto &line = atoms[a];

@@ -104,7 +104,7 @@ static void clean_xbuf(std::map<AtomBondtypeXml, std::string> *xbuf,
 {
     for (auto &mpx : clean)
     {
-        auto ff = xbuf->find(mpx);
+        const auto ff = xbuf->find(mpx);
         if (xbuf->end() != ff)
         {
             xbuf->erase(ff);
@@ -115,10 +115,10 @@ static void clean_xbuf(std::map<AtomBondtypeXml, std::string> *xbuf,
 //! \brief Extract double from xml buffer map or crash
 static double xbuf_atof(const std::map<AtomBondtypeXml, std::string> *xbuf, AtomBondtypeXml index, bool crash)
 {
-    auto ptr = xbuf->find(index);
+    const auto ptr = xbuf->find(index);
     if (ptr != xbuf->end())
     {
-        return my_atof(ptr->second.c_str(), rmap[index].c_str());
+        return my_atof(ptr->second, rmap[index]);
     }
     if (crash)
     {
@@ -131,10 +131,10 @@ static double xbuf_atof(const std::map<AtomBondtypeXml, std::string> *xbuf, Atom
 //! \brief Extract int from xml buffer map or crash
 static int xbuf_atoi(const std::map<AtomBondtypeXml, std::string> *xbuf, AtomBondtypeXml index, bool crash)
 {
-    auto ptr = xbuf->find(index);
+    const auto ptr = xbuf->find(index);
     if (ptr != xbuf->end())
     {
-        return my_atoi(ptr->second.c_str(), rmap[index].c_str());
+        return my_atoi(ptr->second, rmap[index]);
     }
     if (crash)
     {
@@ -151,7 +151,7 @@ static bool xmlFound(const std::map<AtomBondtypeXml, std::string> *xbuf,
     bool found = true;
     for(auto &ind : index)
     {
-        auto ptr = xbuf->find(ind);
+        const auto ptr = xbuf->find(ind);
         found = found && (xbuf->end() != ptr) && !ptr->second.empty();
     }
     return found;
@@ -164,13 +164,13 @@ static void get_attributes(MsgHandler                             *msg_handler,
 {
     while (attr != nullptr)
     {
-        std::string attrname(reinterpret_cast<const char *>(attr->name));
-        std::string attrval(reinterpret_cast<const char *>(attr->children->content));
+        const std::string attrname(reinterpret_cast<const char *>(attr->name));
+        const std::string attrval(reinterpret_cast<const char *>(attr->children->content));
 
-        auto  iter = xmlxxx.find(attrname);
+        const auto  iter = xmlxxx.find(attrname);
         if (iter != xmlxxx.end() && !attrval.empty())
         {
-            auto ptr = xbuf->find(iter->second);
+            const auto ptr = xbuf->find(iter->second);
             if (xbuf->end() == ptr)
             {
                 xbuf->insert({iter->second, attrval});
@@ -200,7 +200,7 @@ static void mp_process_tree(MsgHandler                             *msghandler,
                             std::vector<AtomBondtypeEntry>         *abdb,
                             std::map<AtomBondtypeXml, std::string> *xbuf)
 {
-    auto xmltype = xmltypes();
+    const auto& xmltype = xmltypes();
     while (tree != nullptr)
     {
         if (msghandler)
@@ -219,7 +219,7 @@ static void mp_process_tree(MsgHandler                             *msghandler,
         }
         if (tree->type == XML_ELEMENT_NODE)
         {
-            auto iter = xmlxxx.find((const char *)tree->name);
+            const auto iter = xmlxxx.find((const char *)tree->name);
             if (iter != xmlxxx.end())
             {
                 AtomBondtypeXml elem = iter->second;
@@ -241,10 +241,10 @@ static void mp_process_tree(MsgHandler                             *msghandler,
                     break;
                 case AtomBondtypeXml::ABTYPE:
                     {
-                        std::vector<AtomBondtypeXml> clean = {
-                            AtomBondtypeXml::NAME, AtomBondtypeXml::SMARTS,
-                            AtomBondtypeXml::CHARGE, AtomBondtypeXml::MULTIPLICITY
-                        };
+                        const std::vector<AtomBondtypeXml> clean = {
+                                  AtomBondtypeXml::NAME, AtomBondtypeXml::SMARTS,
+                                  AtomBondtypeXml::CHARGE, AtomBondtypeXml::MULTIPLICITY
+                              };
                         if (xmlFound(xbuf, clean))
                         {
                             AtomBondtypeEntry abe;
@@ -269,9 +269,9 @@ static void mp_process_tree(MsgHandler                             *msghandler,
                     break;
                 case AtomBondtypeXml::ATOMTYPE:
                     {
-                        std::vector<AtomBondtypeXml> clean = {
-                            AtomBondtypeXml::NAME, AtomBondtypeXml::INDEX, AtomBondtypeXml::ATOMNUMBER,
-                        };
+                        const std::vector<AtomBondtypeXml> clean = {
+                                  AtomBondtypeXml::NAME, AtomBondtypeXml::INDEX, AtomBondtypeXml::ATOMNUMBER,
+                              };
                         if (xmlFound(xbuf, clean))
                         {
                             AtomTypeDef atp;
@@ -290,9 +290,9 @@ static void mp_process_tree(MsgHandler                             *msghandler,
                     break;
                 case AtomBondtypeXml::BONDTYPE:
                     {
-                        std::vector<AtomBondtypeXml> clean = {
-                            AtomBondtypeXml::AI, AtomBondtypeXml::AJ, AtomBondtypeXml::ORDER
-                        };
+                        const std::vector<AtomBondtypeXml> clean = {
+                                  AtomBondtypeXml::AI, AtomBondtypeXml::AJ, AtomBondtypeXml::ORDER
+                              };
                         if (xmlFound(xbuf, clean))
                         {
                             SimpleBond sb;
@@ -323,7 +323,7 @@ void readAtomBondtypeDB(MsgHandler                     *msghandler,
                         std::vector<AtomBondtypeEntry> *abdb)
 {
     xmlDocPtr   doc;
-    std::string mpfile;
+    const std::string mpfile;
     std::string database(dbname);
 
     if (database.empty())
@@ -331,7 +331,7 @@ void readAtomBondtypeDB(MsgHandler                     *msghandler,
         database.assign("atom_bond.xml");
     }
     bool bAddCWD = true;
-    auto mydb    = findLibrary(database, bAddCWD);
+    const auto mydb    = findLibrary(database, bAddCWD);
     if (mydb.empty())
     {
         if (msghandler)
@@ -386,7 +386,7 @@ static void add_xml_abentry(xmlNodePtr               parent,
     {
         auto myatp = add_xml_child(atypes, rmap[AtomBondtypeXml::ATOMTYPE]);
         add_xml_int(myatp, rmap[AtomBondtypeXml::INDEX], atp.index);
-        add_xml_string(myatp, rmap[AtomBondtypeXml::NAME], atp.name.c_str());
+        add_xml_string(myatp, rmap[AtomBondtypeXml::NAME], atp.name);
         add_xml_int(myatp, rmap[AtomBondtypeXml::ATOMNUMBER], atp.atomnumber);
     }
     auto btypes = add_xml_child(ptr, rmap[AtomBondtypeXml::BONDTYPES]);

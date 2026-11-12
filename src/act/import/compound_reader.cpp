@@ -66,10 +66,10 @@ void CompoundReader::addOptions(std::vector<t_pargs>      *pargs,
                                 std::vector<t_filenm>     *filenm,
                                 std::vector<const char *> *desc)
 {
-    std::vector<t_filenm>     fnm = {
-        { efXML, "-charges", "molprop",    ffOPTRD },
-        { efDAT, "-sel",  "molselect",     ffOPTRD }
-    };
+    const std::vector<t_filenm>     fnm = {
+              { efXML, "-charges", "molprop",    ffOPTRD },
+              { efDAT, "-sel",  "molselect",     ffOPTRD }
+          };
     for (const auto &fn : fnm)
     {
         filenm->push_back(fn);
@@ -80,22 +80,22 @@ void CompoundReader::addOptions(std::vector<t_pargs>      *pargs,
         desc->push_back(cr);
     }
 
-    std::vector<t_pargs> mypargs = {
-        { "-f",      FALSE, etSTR,  {&filename_},
-          "Molecular structure file in e.g. pdb format. Is ignored with train_ff." },
-        { "-db",     FALSE, etSTR,  {&dbname_},
-          "Read one or more molecules from the database rather than from a file. To specify multiple molecules please use quotes, e.g. [TT]-db[tt] 'water methane ammonia'. Is ignored with train_ff." },
-        { "-oneH", FALSE, etBOOL, {&oneH_},
-          "Map all different hydrogen atom types back to H, mainly for debugging." },
-        { "-qtot",   FALSE, etREAL, {&qtot_},
-          "Combined charge of the molecule(s). This will be taken from the input file by default, but that is not always reliable. If the -qcustom flag is supplied, that will be used instead." },
-        { "-qalg",   FALSE, etSTR,  {&qalgorithm_},
-          "Algorithm to generate charges. Can be either of None (read from force field), EEM or SQE (depending on force field parameter availability), ESP (fit to electrostatic potential which then must be present in the molprop file, -charges option). Flag can be Custom (see flag -qcustom below) or Read (see flag -qqm below). When fitting parameters to the ESP, do not provide this flag and not the charges file either. Sorry for the confusion." },
-        { "-qqm",    FALSE, etSTR,  {&qqm_},
-          "Use a method from quantum mechanics that needs to be present in the input file. For instance, qESP, qHirshfeld, qCM5 or qMulliken may be available but check your input." },
-        { "-qcustom", FALSE, etSTR, {&qcustom_}, 
-          "Here a quoted string of custom charges can be provided such that a third party source can be used. It is then possible to generate multipoles and compare the ESP to a quantum chemistry result. The number of charges provided must match the number of particles (including shells if present in the force field used)." }
-    };
+    const std::vector<t_pargs> mypargs = {
+              { "-f",      FALSE, etSTR,  {&filename_},
+                "Molecular structure file in e.g. pdb format. Is ignored with train_ff." },
+              { "-db",     FALSE, etSTR,  {&dbname_},
+                "Read one or more molecules from the database rather than from a file. To specify multiple molecules please use quotes, e.g. [TT]-db[tt] 'water methane ammonia'. Is ignored with train_ff." },
+              { "-oneH", FALSE, etBOOL, {&oneH_},
+                "Map all different hydrogen atom types back to H, mainly for debugging." },
+              { "-qtot",   FALSE, etREAL, {&qtot_},
+                "Combined charge of the molecule(s). This will be taken from the input file by default, but that is not always reliable. If the -qcustom flag is supplied, that will be used instead." },
+              { "-qalg",   FALSE, etSTR,  {&qalgorithm_},
+                "Algorithm to generate charges. Can be either of None (read from force field), EEM or SQE (depending on force field parameter availability), ESP (fit to electrostatic potential which then must be present in the molprop file, -charges option). Flag can be Custom (see flag -qcustom below) or Read (see flag -qqm below). When fitting parameters to the ESP, do not provide this flag and not the charges file either. Sorry for the confusion." },
+              { "-qqm",    FALSE, etSTR,  {&qqm_},
+                "Use a method from quantum mechanics that needs to be present in the input file. For instance, qESP, qHirshfeld, qCM5 or qMulliken may be available but check your input." },
+              { "-qcustom", FALSE, etSTR, {&qcustom_}, 
+                "Here a quoted string of custom charges can be provided such that a third party source can be used. It is then possible to generate multipoles and compare the ESP to a quantum chemistry result. The number of charges provided must match the number of particles (including shells if present in the force field used)." }
+          };
     for(const auto &mp : mypargs)
     {
         pargs->push_back(mp);
@@ -182,10 +182,10 @@ void CompoundReader::setCharges(MsgHandler          *msghandler,
         if (qAlgorithm_ == ChargeGenerationAlgorithm::Custom)
         {
             std::vector<double> qcustom;
-            auto mycharges = gmx::splitString(qcustom_);
+            const auto mycharges = gmx::splitString(qcustom_);
             for(auto &q : mycharges)
             {
-                qcustom.push_back(my_atof(q.c_str(), "custom q"));
+                qcustom.push_back(my_atof(q, "custom q"));
             }
             if (qcustom.size() == mol->atomsConst().size())
             {
@@ -216,7 +216,7 @@ void CompoundReader::setCharges(MsgHandler          *msghandler,
         if (msghandler->debug())
         {
             auto msg = gmx::formatString("CHARGES for %s", mol->getMolname().c_str());
-            auto ac = mol->atomsConst();
+            const auto& ac = mol->atomsConst();
             for(size_t i = 0; i < ac.size(); i++)
             {
                 msg += gmx::formatString(" %s-%zu %g", ac[i].name().c_str(), i+1, ac[i].charge());
@@ -248,7 +248,7 @@ void CompoundReader::readFile(MsgHandler          *msghandler,
                         gmx::formatString("Reading %s failed.\n", filename_));
         return;
     }
-    if (mps.size() == 0)
+    if (mps.empty())
     {
         msghandler->msg(ACTStatus::Error,
                         gmx::formatString("Failed to import coordinate file %s using OpenBabel", filename_));
