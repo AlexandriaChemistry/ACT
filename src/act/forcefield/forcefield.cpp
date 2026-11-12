@@ -1233,6 +1233,29 @@ void ForceField::checkUnits() const
     }
 }
 
+void ForceField::checkVsitePotentials() const
+{
+    // The construction follows from the interaction type, see VsiteHandler,
+    // the parameters from the potential, which must therefore be the same
+    std::string errors;
+    for (const auto &fs : forces_)
+    {
+        if (isVsite(fs.first) &&
+            interactionTypeToString(fs.first) != potentialToString(fs.second.potential()))
+        {
+            errors += gmx::formatString("\n  the virtual sites of type %s have function %s, it has to be %s",
+                                        interactionTypeToString(fs.first).c_str(),
+                                        potentialToString(fs.second.potential()).c_str(),
+                                        interactionTypeToString(fs.first).c_str());
+        }
+    }
+    if (!errors.empty())
+    {
+        GMX_THROW(gmx::InvalidInputError(gmx::formatString("Force field %s has virtual sites that cannot be constructed:%s",
+                                                           filename().c_str(), errors.c_str())));
+    }
+}
+
 void ForceField::checkConsistency(MsgHandler *msgHandler) const
 {
     int  nerror = 0;

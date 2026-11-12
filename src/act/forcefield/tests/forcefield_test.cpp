@@ -301,6 +301,35 @@ TEST(ForceFieldSimpleTest, unitsOfChargeGenerationChecked)
     readForceField(gmx::test::TestFileManager::getInputFilePath("forcefields/ACM-g1.xml"), &pd);
 }
 
+// Test: A force field in which a type of virtual site has the function of
+// another type cannot be read, since the virtual sites are constructed by
+// their type with the parameters of their function.
+TEST(ForceFieldSimpleTest, vsiteFunctionOfOtherTypeThrows)
+{
+    gmx::test::TestFileManager fileManager;
+    const std::string          base = "forcefields/ACS-pg-vs3.xml";
+    const auto fileName = modifiedForceField(&fileManager, "vsites.xml", [](std::string *xml)
+          {
+              const std::string from = "<interaction type=\"VSITE4S\" function=\"VSITE4S\"";
+              auto              pos  = xml->find(from);
+              ASSERT_NE(std::string::npos, pos);
+              xml->replace(pos, from.size(), "<interaction type=\"VSITE4S\" function=\"VSITE4S3\"");
+          }, base);
+    ForceField pd;
+    try
+    {
+        readForceField(fileName, &pd);
+        ADD_FAILURE() << "The force field was read";
+    }
+    catch (const gmx::InvalidInputError &ex)
+    {
+        EXPECT_NE(std::string::npos, std::string(ex.what()).find("VSITE4S have function VSITE4S3")) << ex.what();
+    }
+    // Unchanged it can be read
+    ForceField unchanged;
+    readForceField(gmx::test::TestFileManager::getInputFilePath(base), &unchanged);
+}
+
 // Test: A particle type of which the ACM type has no parameters cannot be
 // read, unless without the check of consistency
 TEST(ForceFieldSimpleTest, missingAcmParametersThrows)

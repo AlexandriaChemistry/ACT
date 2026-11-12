@@ -491,6 +491,12 @@ class ForceField
      * \throws gmx::InvalidInputError if a parameter has another unit
      */
     void checkUnits() const;
+
+    /*! \brief Check that each type of virtual site has the potential of the same name
+     * Otherwise its construction and its parameters do not match.
+     * \throws gmx::InvalidInputError if one does not
+     */
+    void checkVsitePotentials() const;
     
 private:
     //! The force field checksum
