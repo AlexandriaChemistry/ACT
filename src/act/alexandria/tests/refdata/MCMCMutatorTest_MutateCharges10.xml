@@ -21,22 +21,22 @@
     <String>o3_z chi</String>
     <String>o3_z eta</String>
   </Sequence>
-  <Real Name="Fitness-after">0.00050017399380383862</Real>
+  <Real Name="Fitness-after">0.00050648339437794822</Real>
   <Sequence Name="Genome-after">
     <Int Name="Length">6</Int>
-    <Real>4.7025298322596605</Real>
+    <Real>4.5741062326917676</Real>
     <Real>12.296154365147924</Real>
-    <Real>3.249325186772253</Real>
-    <Real>10</Real>
-    <Real>5.0091738016613352</Real>
-    <Real>13.092806174946618</Real>
+    <Real>3.2999999999999998</Real>
+    <Real>10.054124144281507</Real>
+    <Real>5.037272651706612</Real>
+    <Real>13</Real>
   </Sequence>
   <Int64 Name="numberObjectiveFunctionCalls">13</Int64>
   <Int64 Name="numEvaluations ForceComputer">0</Int64>
   <Int64 Name="numShellIterations ForceComputer">0</Int64>
   <Int64 Name="numShellConvergenceFailed ForceComputer">0</Int64>
   <Sequence Name="Random numbers">
-    <Int Name="Length">30</Int>
+    <Int Name="Length">36</Int>
     <Real>0.27836172122052455</Real>
     <Real>0.91132550714989458</Real>
     <Real>0.15872918160889912</Real>
@@ -67,19 +67,25 @@
     <Real>0.10972006904701655</Real>
     <Real>0.036881407430525287</Real>
     <Real>0.6448144627540553</Real>
+    <Real>0.95963768729259524</Real>
+    <Real>0.83558049848828109</Real>
+    <Real>0.39172807986416025</Real>
+    <Real>0.13290706782022221</Real>
+    <Real>0.025827390830801909</Real>
+    <Real>0.39546818797507954</Real>
   </Sequence>
   <Sequence Name="Random parameter indices">
     <Int Name="Length">12</Int>
     <Int>1</Int>
     <Int>0</Int>
-    <Int>5</Int>
+    <Int>3</Int>
+    <Int>3</Int>
     <Int>4</Int>
     <Int>4</Int>
-    <Int>4</Int>
-    <Int>0</Int>
     <Int>5</Int>
     <Int>2</Int>
     <Int>5</Int>
+    <Int>0</Int>
     <Int>5</Int>
     <Int>0</Int>
   </Sequence>
@@ -104,22 +110,22 @@
       <String>o3_z chi</String>
       <String>o3_z eta</String>
     </Sequence>
-    <Real Name="Fitness-after">0.00049454100843560674</Real>
+    <Real Name="Fitness-after">0.00050410510640505591</Real>
     <Sequence Name="Genome-after">
       <Int Name="Length">6</Int>
       <Real>4.4257539519835083</Real>
-      <Real>12.439491978178205</Real>
+      <Real>12.100992251062316</Real>
       <Real>3.2999999999999998</Real>
       <Real>10</Real>
-      <Real>5.1366847595205858</Real>
-      <Real>13.326849667352965</Real>
+      <Real>5.0704823012705633</Real>
+      <Real>13.152742754374541</Real>
     </Sequence>
     <Int64 Name="numberObjectiveFunctionCalls">13</Int64>
     <Int64 Name="numEvaluations ForceComputer">0</Int64>
     <Int64 Name="numShellIterations ForceComputer">0</Int64>
     <Int64 Name="numShellConvergenceFailed ForceComputer">0</Int64>
     <Sequence Name="Random numbers">
-      <Int Name="Length">30</Int>
+      <Int Name="Length">36</Int>
       <Real>0.66266716871670173</Real>
       <Real>0.45007077233743786</Real>
       <Real>0.50308221916815032</Real>
@@ -150,6 +156,12 @@
       <Real>0.85674593167263047</Real>
       <Real>0.9175205309379989</Real>
       <Real>0.30733791638735913</Real>
+      <Real>0.75024932517701415</Real>
+      <Real>0.17784159682227615</Real>
+      <Real>0.27113570520411301</Real>
+      <Real>0.57965634483918793</Real>
+      <Real>0.41440767464279415</Real>
+      <Real>0.31297959610463305</Real>
     </Sequence>
     <Sequence Name="Random parameter indices">
       <Int Name="Length">12</Int>
@@ -157,14 +169,14 @@
       <Int>5</Int>
       <Int>4</Int>
       <Int>4</Int>
-      <Int>5</Int>
-      <Int>4</Int>
+      <Int>1</Int>
       <Int>0</Int>
       <Int>1</Int>
-      <Int>1</Int>
-      <Int>1</Int>
+      <Int>5</Int>
       <Int>4</Int>
       <Int>5</Int>
+      <Int>4</Int>
+      <Int>3</Int>
     </Sequence>
   </Seed>
 </ReferenceData>

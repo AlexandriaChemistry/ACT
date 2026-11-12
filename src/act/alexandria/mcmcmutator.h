@@ -156,12 +156,21 @@ private:
     };
 
     //! A change of one parameter, see proposeStep
+    /*! \brief A step of the Monte Carlo chain
+     * Each step draws the same three random numbers, the parameter, the
+     * change and the one of the Metropolis criterion, also when the latter
+     * is not needed. The random numbers then only depend on the seed and the
+     * number of steps, not on the values of the objective function, such
+     * that they can be drawn before the steps are computed.
+     */
     struct Proposal
     {
         //! The parameter
         size_t paramIndex = 0;
         //! Its value before the change
         double storeParam = 0;
+        //! The random number of the Metropolis criterion, in [0, 1)
+        double acceptRandom = 0;
     };
 
     /*!

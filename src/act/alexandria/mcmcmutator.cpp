@@ -306,6 +306,8 @@ MCMCMutator::Proposal MCMCMutator::proposeStep(ga::Genome *genome)
     // Change the parameter
     changeParam(genome, proposal.paramIndex);
     attemptedMoves_[proposal.paramIndex] += 1;
+    // Also when the step goes downhill, see Proposal
+    proposal.acceptRandom = randNum();
     return proposal;
 }
 
@@ -334,9 +336,8 @@ bool MCMCMutator::finishStep(MsgHandler                         *msghandler,
     {
         // Get beta for the MCMC algorithm.
         state->beta0 = bch_->computeBeta(myGeneration_, maxGenerations_, iter);
-        const double randProbability = randNum();
         const double mcProbability   = std::exp( - ( (state->beta0) / (sii_->weightedTemperature())[paramIndex] ) * deltaEval );
-        accept = (mcProbability > randProbability);
+        accept = (mcProbability > proposal.acceptRandom);
     }
 
     // Fractional iteration taking into account the inner loop with <pp> over <nParam>
@@ -413,11 +414,12 @@ void MCMCMutator::changeParam(ga::Genome *genome,
     std::vector<double> *param = genome->basesPtr();
     
     GMX_RELEASE_ASSERT(j < genome->nBase(), "Parameter out of range");
+    // One random number for each step, see Proposal
     double rnd = randNum();
-    while (rnd == 0.5)
+    if (rnd == 0.5)
     {
         // Make sure the parameter changes!
-        rnd = randNum();
+        rnd = 1;
     }
     (*param)[j] += (2*rnd-1) * sii_->stepSize()[j];
     if (sii_->mutability()[j] == Mutability::Bounded)

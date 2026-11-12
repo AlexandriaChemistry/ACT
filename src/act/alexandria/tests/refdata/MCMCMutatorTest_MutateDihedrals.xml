@@ -37,22 +37,22 @@
     <String>h_b~c3_b~o3_b~h_b kp</String>
     <String>h_b~c3_b~o3_b~h_b phi0</String>
   </Sequence>
-  <Real Name="Fitness-after">36592982.840353601</Real>
+  <Real Name="Fitness-after">36671973.159487635</Real>
   <Sequence Name="Genome-after">
     <Int Name="Length">14</Int>
-    <Real>6.1975068717045376</Real>
-    <Real>205.02304776062357</Real>
-    <Real>4.8510476469279471</Real>
-    <Real>334.07761431656979</Real>
-    <Real>5.636273168369744</Real>
-    <Real>334.30949505887753</Real>
-    <Real>6.9052930535458961</Real>
-    <Real>305.33846405652463</Real>
-    <Real>9.705801606043357</Real>
-    <Real>291.44460018900321</Real>
-    <Real>7.722409638034005</Real>
-    <Real>328.9500200590827</Real>
-    <Real>3.6898330295004103</Real>
+    <Real>5.9950075574600392</Real>
+    <Real>148.69023555723163</Real>
+    <Real>4.6964628080990432</Real>
+    <Real>337.18628550099629</Real>
+    <Real>5.3007879679317575</Real>
+    <Real>306.85629290476624</Real>
+    <Real>6.8256011535719328</Real>
+    <Real>300</Real>
+    <Real>9.8123798720465008</Real>
+    <Real>290.54730533275648</Real>
+    <Real>7.6186925485261954</Real>
+    <Real>308.44190233756279</Real>
+    <Real>3.4544330272429038</Real>
     <Real>360</Real>
   </Sequence>
   <Int64 Name="numberObjectiveFunctionCalls">141</Int64>
@@ -60,7 +60,7 @@
   <Int64 Name="numShellIterations ForceComputer">0</Int64>
   <Int64 Name="numShellConvergenceFailed ForceComputer">0</Int64>
   <Sequence Name="Random numbers">
-    <Int Name="Length">352</Int>
+    <Int Name="Length">420</Int>
     <Real>0.27836172122052455</Real>
     <Real>0.91132550714989458</Real>
     <Real>0.15872918160889912</Real>
@@ -413,6 +413,74 @@
     <Real>0.05370596863824232</Real>
     <Real>0.99713455181232802</Real>
     <Real>0.15625662121910278</Real>
+    <Real>0.24861217611025066</Real>
+    <Real>0.28840381938625403</Real>
+    <Real>0.033994709342976236</Real>
+    <Real>0.10343845985259074</Real>
+    <Real>0.40809938605958629</Real>
+    <Real>0.71693492162253591</Real>
+    <Real>0.54423149105169666</Real>
+    <Real>0.71246716017797707</Real>
+    <Real>0.6547691754562559</Real>
+    <Real>0.29153445474754464</Real>
+    <Real>0.15879439975550952</Real>
+    <Real>0.5861446292467628</Real>
+    <Real>0.61666760798035458</Real>
+    <Real>0.53143291110204682</Real>
+    <Real>0.18628265032387498</Real>
+    <Real>0.552402132349887</Real>
+    <Real>0.0054641561110082733</Real>
+    <Real>0.24794600887652177</Real>
+    <Real>0.7724407977040274</Real>
+    <Real>0.14664002880969415</Real>
+    <Real>0.79194337205864318</Real>
+    <Real>0.2564171795268364</Real>
+    <Real>0.75937908697531664</Real>
+    <Real>0.32391234335289049</Real>
+    <Real>0.68849647360386979</Real>
+    <Real>0.47762822406127964</Real>
+    <Real>0.6774730772714268</Real>
+    <Real>0.42040460063707336</Real>
+    <Real>0.346863162392758</Real>
+    <Real>0.042975448706569989</Real>
+    <Real>0.13994494302342908</Real>
+    <Real>0.2940858852449757</Real>
+    <Real>0.39518624305911004</Real>
+    <Real>0.7826881971536539</Real>
+    <Real>0.30770549664833258</Real>
+    <Real>0.74485207004040233</Real>
+    <Real>0.36500617232362365</Real>
+    <Real>0.36108641220970322</Real>
+    <Real>0.46669333392472723</Real>
+    <Real>0.5408015603003361</Real>
+    <Real>0.013916321805475945</Real>
+    <Real>0.98485260190073454</Real>
+    <Real>0.85747922836128443</Real>
+    <Real>0.75499494093247277</Real>
+    <Real>0.061772286281809807</Real>
+    <Real>0.58107659513344401</Real>
+    <Real>0.88125218879780598</Real>
+    <Real>0.49342000782868811</Real>
+    <Real>0.069042013115470036</Real>
+    <Real>0.86225033785425942</Real>
+    <Real>0.062074598484988232</Real>
+    <Real>0.16682713199775318</Real>
+    <Real>0.40337349918013543</Real>
+    <Real>0.33906536644200408</Real>
+    <Real>0.58723289622149089</Real>
+    <Real>0.35654521297401431</Real>
+    <Real>0.12888233686926531</Real>
+    <Real>0.99664561968307441</Real>
+    <Real>0.2030727090595926</Real>
+    <Real>0.63539162353363365</Real>
+    <Real>0.49237769312001495</Real>
+    <Real>0.38707174930671379</Real>
+    <Real>0.098306260905311277</Real>
+    <Real>0.19370764840796767</Real>
+    <Real>0.83919548265265687</Real>
+    <Real>0.42377380837124118</Real>
+    <Real>0.48390774756199373</Real>
+    <Real>0.35234553844007344</Real>
   </Sequence>
   <Sequence Name="Random parameter indices">
     <Int Name="Length">140</Int>
@@ -421,141 +489,141 @@
     <Int>7</Int>
     <Int>6</Int>
     <Int>9</Int>
-    <Int>5</Int>
-    <Int>1</Int>
+    <Int>10</Int>
     <Int>12</Int>
     <Int>4</Int>
-    <Int>11</Int>
-    <Int>10</Int>
-    <Int>0</Int>
-    <Int>12</Int>
+    <Int>13</Int>
     <Int>1</Int>
     <Int>13</Int>
-    <Int>5</Int>
     <Int>1</Int>
+    <Int>13</Int>
     <Int>12</Int>
+    <Int>5</Int>
     <Int>4</Int>
     <Int>8</Int>
+    <Int>6</Int>
+    <Int>0</Int>
+    <Int>13</Int>
+    <Int>8</Int>
+    <Int>9</Int>
+    <Int>4</Int>
+    <Int>10</Int>
+    <Int>13</Int>
+    <Int>3</Int>
+    <Int>1</Int>
+    <Int>4</Int>
+    <Int>13</Int>
+    <Int>10</Int>
+    <Int>6</Int>
+    <Int>2</Int>
+    <Int>2</Int>
+    <Int>3</Int>
+    <Int>5</Int>
+    <Int>3</Int>
+    <Int>5</Int>
+    <Int>2</Int>
+    <Int>13</Int>
+    <Int>4</Int>
+    <Int>2</Int>
+    <Int>11</Int>
+    <Int>7</Int>
+    <Int>4</Int>
+    <Int>3</Int>
+    <Int>1</Int>
+    <Int>8</Int>
+    <Int>4</Int>
+    <Int>12</Int>
+    <Int>11</Int>
+    <Int>7</Int>
+    <Int>4</Int>
+    <Int>11</Int>
     <Int>4</Int>
     <Int>5</Int>
-    <Int>0</Int>
-    <Int>1</Int>
-    <Int>0</Int>
-    <Int>5</Int>
-    <Int>9</Int>
-    <Int>13</Int>
-    <Int>13</Int>
-    <Int>11</Int>
-    <Int>13</Int>
-    <Int>3</Int>
-    <Int>7</Int>
-    <Int>1</Int>
-    <Int>3</Int>
-    <Int>0</Int>
-    <Int>7</Int>
-    <Int>3</Int>
+    <Int>10</Int>
     <Int>2</Int>
     <Int>8</Int>
-    <Int>10</Int>
+    <Int>12</Int>
+    <Int>11</Int>
+    <Int>2</Int>
     <Int>5</Int>
-    <Int>3</Int>
+    <Int>4</Int>
+    <Int>2</Int>
+    <Int>12</Int>
+    <Int>13</Int>
+    <Int>0</Int>
+    <Int>2</Int>
+    <Int>7</Int>
     <Int>5</Int>
+    <Int>13</Int>
+    <Int>13</Int>
     <Int>5</Int>
-    <Int>5</Int>
-    <Int>9</Int>
-    <Int>5</Int>
+    <Int>6</Int>
     <Int>5</Int>
     <Int>11</Int>
     <Int>6</Int>
-    <Int>0</Int>
-    <Int>4</Int>
-    <Int>10</Int>
     <Int>11</Int>
+    <Int>5</Int>
     <Int>1</Int>
-    <Int>8</Int>
-    <Int>1</Int>
-    <Int>10</Int>
-    <Int>11</Int>
     <Int>2</Int>
-    <Int>7</Int>
-    <Int>4</Int>
-    <Int>11</Int>
-    <Int>11</Int>
-    <Int>10</Int>
     <Int>6</Int>
+    <Int>13</Int>
     <Int>1</Int>
-    <Int>7</Int>
     <Int>8</Int>
-    <Int>12</Int>
-    <Int>9</Int>
     <Int>3</Int>
-    <Int>8</Int>
-    <Int>9</Int>
-    <Int>4</Int>
-    <Int>9</Int>
-    <Int>5</Int>
+    <Int>1</Int>
+    <Int>13</Int>
     <Int>0</Int>
     <Int>2</Int>
     <Int>5</Int>
+    <Int>5</Int>
+    <Int>12</Int>
+    <Int>13</Int>
     <Int>2</Int>
+    <Int>11</Int>
+    <Int>12</Int>
+    <Int>5</Int>
+    <Int>13</Int>
     <Int>7</Int>
-    <Int>5</Int>
-    <Int>13</Int>
-    <Int>5</Int>
-    <Int>0</Int>
     <Int>9</Int>
-    <Int>6</Int>
-    <Int>9</Int>
-    <Int>10</Int>
-    <Int>10</Int>
-    <Int>11</Int>
-    <Int>11</Int>
     <Int>1</Int>
-    <Int>13</Int>
-    <Int>2</Int>
-    <Int>4</Int>
-    <Int>11</Int>
-    <Int>3</Int>
     <Int>13</Int>
     <Int>8</Int>
-    <Int>3</Int>
-    <Int>1</Int>
     <Int>0</Int>
-    <Int>8</Int>
-    <Int>7</Int>
-    <Int>5</Int>
-    <Int>1</Int>
-    <Int>5</Int>
-    <Int>12</Int>
-    <Int>13</Int>
     <Int>2</Int>
-    <Int>11</Int>
-    <Int>12</Int>
-    <Int>12</Int>
-    <Int>1</Int>
-    <Int>13</Int>
-    <Int>3</Int>
+    <Int>7</Int>
     <Int>6</Int>
     <Int>3</Int>
-    <Int>1</Int>
-    <Int>13</Int>
-    <Int>8</Int>
-    <Int>3</Int>
-    <Int>0</Int>
     <Int>12</Int>
-    <Int>5</Int>
-    <Int>13</Int>
-    <Int>6</Int>
-    <Int>12</Int>
-    <Int>8</Int>
-    <Int>0</Int>
-    <Int>1</Int>
-    <Int>11</Int>
-    <Int>10</Int>
-    <Int>0</Int>
+    <Int>9</Int>
     <Int>7</Int>
     <Int>13</Int>
+    <Int>10</Int>
+    <Int>13</Int>
+    <Int>9</Int>
+    <Int>13</Int>
+    <Int>2</Int>
     <Int>0</Int>
+    <Int>10</Int>
+    <Int>9</Int>
+    <Int>8</Int>
+    <Int>2</Int>
+    <Int>3</Int>
+    <Int>11</Int>
+    <Int>4</Int>
+    <Int>9</Int>
+    <Int>0</Int>
+    <Int>5</Int>
+    <Int>10</Int>
+    <Int>6</Int>
+    <Int>13</Int>
+    <Int>0</Int>
+    <Int>7</Int>
+    <Int>0</Int>
+    <Int>4</Int>
+    <Int>1</Int>
+    <Int>9</Int>
+    <Int>1</Int>
+    <Int>6</Int>
   </Sequence>
   <Seed Name="Seed1997">
     <Int64 Name="MaxIter">10</Int64>
@@ -594,22 +662,22 @@
       <String>h_b~c3_b~o3_b~h_b kp</String>
       <String>h_b~c3_b~o3_b~h_b phi0</String>
     </Sequence>
-    <Real Name="Fitness-after">36408555.308661133</Real>
+    <Real Name="Fitness-after">36612243.266654894</Real>
     <Sequence Name="Genome-after">
       <Int Name="Length">14</Int>
-      <Real>6.3242785737892637</Real>
-      <Real>150.03926480721628</Real>
-      <Real>4.1402316520558404</Real>
-      <Real>331.83974637462074</Real>
-      <Real>5.9165920515754573</Real>
-      <Real>302.23173474179612</Real>
-      <Real>6.8560740648433161</Real>
-      <Real>303.35747125561153</Real>
-      <Real>9.8499555350772781</Real>
-      <Real>302.02554075760406</Real>
-      <Real>7.3001485161168995</Real>
-      <Real>306.73477619779788</Real>
-      <Real>3.5624259203285353</Real>
+      <Real>6.1284934491380536</Real>
+      <Real>164.86635540045617</Real>
+      <Real>4.8460985167691097</Real>
+      <Real>326.8519296912603</Real>
+      <Real>5.7578059998678288</Real>
+      <Real>299.22017307507753</Real>
+      <Real>6.3048036523971938</Real>
+      <Real>310.21710620312069</Real>
+      <Real>9.6089050593242007</Real>
+      <Real>293.98593482904988</Real>
+      <Real>7.1596433578483962</Real>
+      <Real>306.76713123547722</Real>
+      <Real>3.2871572377031866</Real>
       <Real>360</Real>
     </Sequence>
     <Int64 Name="numberObjectiveFunctionCalls">141</Int64>
@@ -617,7 +685,7 @@
     <Int64 Name="numShellIterations ForceComputer">0</Int64>
     <Int64 Name="numShellConvergenceFailed ForceComputer">0</Int64>
     <Sequence Name="Random numbers">
-      <Int Name="Length">349</Int>
+      <Int Name="Length">420</Int>
       <Real>0.66266716871670173</Real>
       <Real>0.45007077233743786</Real>
       <Real>0.50308221916815032</Real>
@@ -967,6 +1035,77 @@
       <Real>0.091706286854674135</Real>
       <Real>0.65522590994598873</Real>
       <Real>0.83248642598378098</Real>
+      <Real>0.46897883169141868</Real>
+      <Real>0.85240380182879882</Real>
+      <Real>0.38024135158142569</Real>
+      <Real>0.10070565624911387</Real>
+      <Real>0.44688685905820769</Real>
+      <Real>0.41609588994265467</Real>
+      <Real>0.42650857067853737</Real>
+      <Real>0.88386134480193679</Real>
+      <Real>0.27595753093474695</Real>
+      <Real>0.12117052811934605</Real>
+      <Real>0.40420752311635488</Real>
+      <Real>0.81901661966500161</Real>
+      <Real>0.1720364545649738</Real>
+      <Real>0.34741805366593559</Real>
+      <Real>0.6244053413810513</Real>
+      <Real>0.40083032654315714</Real>
+      <Real>0.11166895382689293</Real>
+      <Real>0.597631045123032</Real>
+      <Real>0.02621939685791513</Real>
+      <Real>0.10912128497782689</Real>
+      <Real>0.011886828962844086</Real>
+      <Real>0.67503177607642029</Real>
+      <Real>0.99803152339906298</Real>
+      <Real>0.95188255488754003</Real>
+      <Real>0.57842810586261806</Real>
+      <Real>0.15348144516524093</Real>
+      <Real>0.48821153688586588</Real>
+      <Real>0.64664341002388925</Real>
+      <Real>0.55608724613948679</Real>
+      <Real>0.97889809301266439</Real>
+      <Real>0.45381407116038508</Real>
+      <Real>0.74593794162407179</Real>
+      <Real>0.36957992808183532</Real>
+      <Real>0.46741965771309102</Real>
+      <Real>0.54949668717743383</Real>
+      <Real>0.63050746266098434</Real>
+      <Real>0.62798382778370943</Real>
+      <Real>0.55217984300787692</Real>
+      <Real>0.25761824606636313</Real>
+      <Real>0.28558955638263506</Real>
+      <Real>0.0048496633623693677</Real>
+      <Real>0.57049787431037069</Real>
+      <Real>0.66909449145376687</Real>
+      <Real>0.61540833325598554</Real>
+      <Real>0.40462117060049313</Real>
+      <Real>0.73468043724464793</Real>
+      <Real>0.86633741609383641</Real>
+      <Real>0.95835075720691043</Real>
+      <Real>0.21099033077949944</Real>
+      <Real>0.10773506329825588</Real>
+      <Real>0.083450195909023125</Real>
+      <Real>0.27376053745632689</Real>
+      <Real>0.86881678181235344</Real>
+      <Real>0.96005866157109443</Real>
+      <Real>0.59182225221499951</Real>
+      <Real>0.9078893903008961</Real>
+      <Real>0.53729434626407346</Real>
+      <Real>0.66397498807473765</Real>
+      <Real>0.6831236697753873</Real>
+      <Real>0.65739902397423711</Real>
+      <Real>0.76963293690931101</Real>
+      <Real>0.075566037624688442</Real>
+      <Real>0.66402847082059568</Real>
+      <Real>0.21405456915208804</Real>
+      <Real>0.70311489429052332</Real>
+      <Real>0.90976817176311153</Real>
+      <Real>0.40087907673150541</Real>
+      <Real>0.8656166781327147</Real>
+      <Real>0.92983532662867507</Real>
+      <Real>0.41922563954294512</Real>
+      <Real>0.23660178109305294</Real>
     </Sequence>
     <Sequence Name="Random parameter indices">
       <Int Name="Length">140</Int>
@@ -974,130 +1113,108 @@
       <Int>12</Int>
       <Int>10</Int>
       <Int>9</Int>
-      <Int>9</Int>
-      <Int>9</Int>
-      <Int>3</Int>
-      <Int>3</Int>
-      <Int>3</Int>
-      <Int>0</Int>
-      <Int>13</Int>
-      <Int>2</Int>
-      <Int>8</Int>
       <Int>4</Int>
-      <Int>2</Int>
-      <Int>12</Int>
-      <Int>13</Int>
-      <Int>11</Int>
-      <Int>6</Int>
-      <Int>3</Int>
-      <Int>5</Int>
       <Int>0</Int>
       <Int>3</Int>
+      <Int>12</Int>
+      <Int>10</Int>
+      <Int>12</Int>
       <Int>10</Int>
       <Int>8</Int>
-      <Int>1</Int>
-      <Int>10</Int>
-      <Int>12</Int>
-      <Int>9</Int>
-      <Int>9</Int>
-      <Int>12</Int>
-      <Int>9</Int>
-      <Int>10</Int>
-      <Int>1</Int>
-      <Int>0</Int>
       <Int>3</Int>
-      <Int>10</Int>
-      <Int>9</Int>
-      <Int>10</Int>
-      <Int>10</Int>
-      <Int>2</Int>
-      <Int>10</Int>
-      <Int>10</Int>
-      <Int>7</Int>
       <Int>12</Int>
       <Int>13</Int>
       <Int>11</Int>
+      <Int>4</Int>
+      <Int>5</Int>
+      <Int>6</Int>
+      <Int>10</Int>
+      <Int>6</Int>
+      <Int>10</Int>
+      <Int>13</Int>
+      <Int>10</Int>
+      <Int>12</Int>
+      <Int>4</Int>
+      <Int>1</Int>
+      <Int>0</Int>
+      <Int>10</Int>
+      <Int>9</Int>
+      <Int>10</Int>
+      <Int>10</Int>
+      <Int>12</Int>
+      <Int>9</Int>
+      <Int>6</Int>
+      <Int>4</Int>
+      <Int>1</Int>
+      <Int>5</Int>
       <Int>11</Int>
-      <Int>11</Int>
+      <Int>13</Int>
       <Int>12</Int>
       <Int>0</Int>
       <Int>13</Int>
       <Int>8</Int>
-      <Int>6</Int>
-      <Int>7</Int>
-      <Int>2</Int>
-      <Int>12</Int>
       <Int>5</Int>
+      <Int>11</Int>
+      <Int>8</Int>
+      <Int>9</Int>
       <Int>6</Int>
-      <Int>12</Int>
-      <Int>2</Int>
+      <Int>3</Int>
       <Int>9</Int>
       <Int>6</Int>
       <Int>2</Int>
-      <Int>11</Int>
-      <Int>0</Int>
+      <Int>10</Int>
       <Int>12</Int>
       <Int>7</Int>
       <Int>4</Int>
       <Int>10</Int>
       <Int>10</Int>
-      <Int>2</Int>
-      <Int>1</Int>
+      <Int>0</Int>
       <Int>5</Int>
-      <Int>9</Int>
-      <Int>1</Int>
-      <Int>10</Int>
       <Int>8</Int>
-      <Int>3</Int>
-      <Int>13</Int>
-      <Int>6</Int>
-      <Int>8</Int>
-      <Int>13</Int>
-      <Int>1</Int>
       <Int>7</Int>
-      <Int>1</Int>
-      <Int>9</Int>
-      <Int>10</Int>
-      <Int>13</Int>
-      <Int>3</Int>
-      <Int>0</Int>
-      <Int>0</Int>
-      <Int>5</Int>
-      <Int>1</Int>
-      <Int>10</Int>
-      <Int>11</Int>
-      <Int>13</Int>
-      <Int>5</Int>
-      <Int>2</Int>
-      <Int>2</Int>
-      <Int>13</Int>
-      <Int>5</Int>
-      <Int>13</Int>
-      <Int>6</Int>
-      <Int>3</Int>
-      <Int>12</Int>
-      <Int>10</Int>
-      <Int>13</Int>
-      <Int>2</Int>
-      <Int>13</Int>
-      <Int>10</Int>
-      <Int>9</Int>
-      <Int>9</Int>
-      <Int>2</Int>
-      <Int>13</Int>
-      <Int>13</Int>
       <Int>10</Int>
       <Int>8</Int>
-      <Int>1</Int>
+      <Int>0</Int>
       <Int>12</Int>
+      <Int>0</Int>
       <Int>1</Int>
-      <Int>11</Int>
+      <Int>1</Int>
       <Int>10</Int>
+      <Int>2</Int>
+      <Int>6</Int>
+      <Int>13</Int>
+      <Int>3</Int>
+      <Int>6</Int>
+      <Int>12</Int>
+      <Int>12</Int>
+      <Int>10</Int>
+      <Int>6</Int>
+      <Int>2</Int>
+      <Int>12</Int>
+      <Int>2</Int>
+      <Int>13</Int>
+      <Int>7</Int>
+      <Int>12</Int>
+      <Int>11</Int>
+      <Int>3</Int>
+      <Int>10</Int>
+      <Int>13</Int>
+      <Int>2</Int>
+      <Int>13</Int>
+      <Int>8</Int>
+      <Int>1</Int>
+      <Int>10</Int>
+      <Int>13</Int>
+      <Int>13</Int>
+      <Int>4</Int>
+      <Int>1</Int>
+      <Int>6</Int>
+      <Int>6</Int>
+      <Int>1</Int>
       <Int>7</Int>
       <Int>13</Int>
       <Int>6</Int>
-      <Int>5</Int>
-      <Int>9</Int>
+      <Int>11</Int>
       <Int>5</Int>
       <Int>10</Int>
       <Int>12</Int>
@@ -1105,11 +1222,33 @@
       <Int>11</Int>
       <Int>10</Int>
       <Int>2</Int>
-      <Int>1</Int>
       <Int>13</Int>
       <Int>0</Int>
       <Int>12</Int>
+      <Int>12</Int>
+      <Int>5</Int>
+      <Int>6</Int>
+      <Int>4</Int>
+      <Int>11</Int>
       <Int>9</Int>
+      <Int>8</Int>
+      <Int>0</Int>
+      <Int>13</Int>
+      <Int>7</Int>
+      <Int>13</Int>
+      <Int>5</Int>
+      <Int>9</Int>
+      <Int>3</Int>
+      <Int>8</Int>
+      <Int>5</Int>
+      <Int>13</Int>
+      <Int>1</Int>
+      <Int>13</Int>
+      <Int>7</Int>
+      <Int>9</Int>
+      <Int>9</Int>
+      <Int>13</Int>
+      <Int>13</Int>
     </Sequence>
   </Seed>
 </ReferenceData>
