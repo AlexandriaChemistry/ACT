@@ -160,3 +160,21 @@ where, for instance, the conda environment *tidy* was made with::
   conda create -n tidy -c conda-forge clang-tools clang
 
 The package *clang* is needed for the header files of the compiler that *clang-tidy* uses. As with any change, check the result with *git diff*, then build ACT and run the tests, for instance with *admin/verify.sh*, before committing it.
+
+======================
+Code testing on GitHub
+======================
+When a branch is pushed to github four `CI`_ (continuous integration) tests are deployed, so-called *github-workflows*. These all include downloading ACT to a test machine, build it and run the tests, all of which should pass. If a single test does not pass the branch cannot be included into the main branch.
+
+.. _CI: https://en.wikipedia.org/wiki/Continuous_integration
+ 
+The four different tests are
+
++ Double precision build on Linux
++ Double precision build on MacOS
++ Single precision build on Linux with explicit SIMD
++ Double precision build on Linux without explicit SIMD
+
+If a pull-request is made to the main branch, an additional tests will be done, to verify that the manual will build. This test too, has to pass.
+
+Finally, if a branch is merged into main, all tests are run again, and the both the on-line manual and the pdf manual are updated.
