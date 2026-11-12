@@ -21,22 +21,22 @@
     <String>o3 epsilon</String>
     <String>o3 sigma</String>
   </Sequence>
-  <Real Name="Fitness-after">53334586.18639005</Real>
+  <Real Name="Fitness-after">54793806.549646839</Real>
   <Sequence Name="Genome-after">
     <Int Name="Length">6</Int>
-    <Real>0.45893351382475883</Real>
-    <Real>0.43273922505413659</Real>
-    <Real>0.088482647006131288</Real>
-    <Real>0.3807387267212064</Real>
-    <Real>0.50419778333979515</Real>
-    <Real>0.28394440055180253</Real>
+    <Real>0.45604715898790499</Real>
+    <Real>0.42768126736344519</Real>
+    <Real>0.085360604045547309</Real>
+    <Real>0.38592867676685128</Real>
+    <Real>0.50372268866616432</Real>
+    <Real>0.25514072248544806</Real>
   </Sequence>
   <Int64 Name="numberObjectiveFunctionCalls">61</Int64>
   <Int64 Name="numEvaluations ForceComputer">244</Int64>
   <Int64 Name="numShellIterations ForceComputer">0</Int64>
   <Int64 Name="numShellConvergenceFailed ForceComputer">0</Int64>
   <Sequence Name="Random numbers">
-    <Int Name="Length">148</Int>
+    <Int Name="Length">180</Int>
     <Real>0.27836172122052455</Real>
     <Real>0.91132550714989458</Real>
     <Real>0.15872918160889912</Real>
@@ -185,69 +185,101 @@
     <Real>0.20555563268469484</Real>
     <Real>0.82627210723663247</Real>
     <Real>0.81268133393773234</Real>
+    <Real>0.14679111540940326</Real>
+    <Real>0.34690148585542613</Real>
+    <Real>0.51996158811271709</Real>
+    <Real>0.43975773512628408</Real>
+    <Real>0.053503285090008949</Real>
+    <Real>0.28839239781216414</Real>
+    <Real>0.88640563595901967</Real>
+    <Real>0.81479172341598916</Real>
+    <Real>0.81574170590912776</Real>
+    <Real>0.67621939818316068</Real>
+    <Real>0.82407973876256391</Real>
+    <Real>0.27911113826916256</Real>
+    <Real>0.21036189230659816</Real>
+    <Real>0.72816474970284573</Real>
+    <Real>0.35836251698724098</Real>
+    <Real>0.42416615959911874</Real>
+    <Real>0.78665795105022096</Real>
+    <Real>0.75480849227206037</Real>
+    <Real>0.079693005516154172</Real>
+    <Real>0.11717194300146563</Real>
+    <Real>0.20540817571530195</Real>
+    <Real>0.52540421955923666</Real>
+    <Real>0.70600330598093963</Real>
+    <Real>0.60861682404671258</Real>
+    <Real>0.61433514995585625</Real>
+    <Real>0.18191459226078979</Real>
+    <Real>0.86515927781322455</Real>
+    <Real>0.27248281666963647</Real>
+    <Real>0.67802574744277044</Real>
+    <Real>0.81140141074530159</Real>
+    <Real>0.25891294138681581</Real>
+    <Real>0.06048463210574611</Real>
   </Sequence>
   <Sequence Name="Random parameter indices">
     <Int Name="Length">60</Int>
     <Int>1</Int>
     <Int>0</Int>
     <Int>3</Int>
-    <Int>4</Int>
     <Int>3</Int>
     <Int>4</Int>
     <Int>4</Int>
     <Int>5</Int>
-    <Int>1</Int>
-    <Int>0</Int>
-    <Int>4</Int>
+    <Int>2</Int>
+    <Int>5</Int>
     <Int>0</Int>
     <Int>5</Int>
     <Int>0</Int>
-    <Int>2</Int>
-    <Int>2</Int>
-    <Int>0</Int>
     <Int>5</Int>
+    <Int>5</Int>
+    <Int>2</Int>
     <Int>1</Int>
     <Int>3</Int>
-    <Int>2</Int>
-    <Int>2</Int>
-    <Int>0</Int>
-    <Int>5</Int>
-    <Int>5</Int>
-    <Int>4</Int>
-    <Int>5</Int>
-    <Int>0</Int>
-    <Int>5</Int>
-    <Int>1</Int>
-    <Int>5</Int>
-    <Int>0</Int>
-    <Int>1</Int>
-    <Int>1</Int>
-    <Int>5</Int>
-    <Int>0</Int>
-    <Int>1</Int>
-    <Int>1</Int>
-    <Int>3</Int>
-    <Int>4</Int>
-    <Int>4</Int>
-    <Int>2</Int>
-    <Int>5</Int>
-    <Int>2</Int>
-    <Int>4</Int>
-    <Int>1</Int>
-    <Int>5</Int>
-    <Int>2</Int>
-    <Int>0</Int>
-    <Int>2</Int>
-    <Int>4</Int>
-    <Int>3</Int>
-    <Int>1</Int>
-    <Int>1</Int>
-    <Int>5</Int>
-    <Int>0</Int>
     <Int>3</Int>
     <Int>0</Int>
     <Int>5</Int>
+    <Int>3</Int>
+    <Int>4</Int>
+    <Int>2</Int>
+    <Int>4</Int>
+    <Int>5</Int>
     <Int>1</Int>
+    <Int>0</Int>
+    <Int>1</Int>
+    <Int>5</Int>
+    <Int>4</Int>
+    <Int>2</Int>
+    <Int>1</Int>
+    <Int>1</Int>
+    <Int>1</Int>
+    <Int>2</Int>
+    <Int>1</Int>
+    <Int>2</Int>
+    <Int>1</Int>
+    <Int>5</Int>
+    <Int>2</Int>
+    <Int>1</Int>
+    <Int>5</Int>
+    <Int>3</Int>
+    <Int>1</Int>
+    <Int>1</Int>
+    <Int>0</Int>
+    <Int>3</Int>
+    <Int>2</Int>
+    <Int>5</Int>
+    <Int>5</Int>
+    <Int>3</Int>
+    <Int>1</Int>
+    <Int>5</Int>
+    <Int>1</Int>
+    <Int>2</Int>
+    <Int>4</Int>
+    <Int>1</Int>
+    <Int>3</Int>
+    <Int>5</Int>
+    <Int>5</Int>
   </Sequence>
   <Seed Name="Seed1997">
     <Int64 Name="MaxIter">10</Int64>
@@ -270,22 +302,22 @@
       <String>o3 epsilon</String>
       <String>o3 sigma</String>
     </Sequence>
-    <Real Name="Fitness-after">57942830.374075584</Real>
+    <Real Name="Fitness-after">65479803.365976714</Real>
     <Sequence Name="Genome-after">
       <Int Name="Length">6</Int>
-      <Real>0.46361519335521462</Real>
-      <Real>0.44586447907001309</Real>
-      <Real>0.088480902380289522</Real>
-      <Real>0.3854621919744064</Real>
-      <Real>0.50564072384186587</Real>
-      <Real>0.28701618078620988</Real>
+      <Real>0.47340186893981306</Real>
+      <Real>0.43093623552673976</Real>
+      <Real>0.088002802358977616</Real>
+      <Real>0.39857364239056414</Real>
+      <Real>0.5</Real>
+      <Real>0.2795284608327413</Real>
     </Sequence>
     <Int64 Name="numberObjectiveFunctionCalls">61</Int64>
     <Int64 Name="numEvaluations ForceComputer">244</Int64>
     <Int64 Name="numShellIterations ForceComputer">0</Int64>
     <Int64 Name="numShellConvergenceFailed ForceComputer">0</Int64>
     <Sequence Name="Random numbers">
-      <Int Name="Length">156</Int>
+      <Int Name="Length">180</Int>
       <Real>0.66266716871670173</Real>
       <Real>0.45007077233743786</Real>
       <Real>0.50308221916815032</Real>
@@ -442,50 +474,68 @@
       <Real>0.47498739013132113</Real>
       <Real>0.86443472707705271</Real>
       <Real>0.0035818771890964349</Real>
+      <Real>0.17283132056183795</Real>
+      <Real>0.41551360895703049</Real>
+      <Real>0.80953259857687876</Real>
+      <Real>0.69532301213512271</Real>
+      <Real>0.039171601679008357</Real>
+      <Real>0.19188220499513309</Real>
+      <Real>0.86558408965274036</Real>
+      <Real>0.90571626281587003</Real>
+      <Real>0.68888576038651772</Real>
+      <Real>0.51361923717869673</Real>
+      <Real>0.46672919123754836</Real>
+      <Real>0.14812166374831462</Real>
+      <Real>0.29397241323102608</Real>
+      <Real>0.99908506975479527</Real>
+      <Real>0.81784537085780362</Real>
+      <Real>0.75608504360217776</Real>
+      <Real>0.52494880172685976</Real>
+      <Real>0.2047974740567394</Real>
+      <Real>0.73690438812270687</Real>
+      <Real>0.060587552575841787</Real>
+      <Real>0.15117217738050789</Real>
+      <Real>0.039293894723886759</Real>
+      <Real>0.092011184940990143</Real>
+      <Real>0.75992188960895801</Real>
     </Sequence>
     <Sequence Name="Random parameter indices">
       <Int Name="Length">60</Int>
       <Int>4</Int>
-      <Int>3</Int>
-      <Int>3</Int>
+      <Int>5</Int>
       <Int>4</Int>
       <Int>4</Int>
-      <Int>4</Int>
+      <Int>1</Int>
       <Int>0</Int>
       <Int>1</Int>
-      <Int>1</Int>
-      <Int>1</Int>
+      <Int>5</Int>
       <Int>4</Int>
+      <Int>5</Int>
+      <Int>4</Int>
+      <Int>3</Int>
       <Int>1</Int>
+      <Int>5</Int>
+      <Int>5</Int>
+      <Int>5</Int>
       <Int>1</Int>
       <Int>2</Int>
-      <Int>0</Int>
-      <Int>5</Int>
-      <Int>5</Int>
-      <Int>5</Int>
-      <Int>5</Int>
-      <Int>1</Int>
-      <Int>3</Int>
       <Int>2</Int>
-      <Int>3</Int>
-      <Int>3</Int>
-      <Int>0</Int>
       <Int>4</Int>
-      <Int>5</Int>
-      <Int>4</Int>
-      <Int>5</Int>
-      <Int>4</Int>
-      <Int>1</Int>
-      <Int>0</Int>
-      <Int>0</Int>
-      <Int>1</Int>
       <Int>2</Int>
+      <Int>4</Int>
+      <Int>5</Int>
+      <Int>4</Int>
+      <Int>5</Int>
       <Int>1</Int>
-      <Int>3</Int>
-      <Int>1</Int>
+      <Int>0</Int>
+      <Int>0</Int>
       <Int>4</Int>
       <Int>4</Int>
-      <Int>3</Int>
+      <Int>4</Int>
+      <Int>4</Int>
+      <Int>5</Int>
+      <Int>4</Int>
+      <Int>2</Int>
       <Int>1</Int>
       <Int>0</Int>
       <Int>2</Int>
@@ -499,12 +549,18 @@
       <Int>5</Int>
       <Int>3</Int>
       <Int>4</Int>
-      <Int>3</Int>
+      <Int>2</Int>
+      <Int>1</Int>
+      <Int>4</Int>
       <Int>3</Int>
       <Int>1</Int>
       <Int>4</Int>
       <Int>5</Int>
-      <Int>5</Int>
+      <Int>3</Int>
+      <Int>1</Int>
+      <Int>4</Int>
+      <Int>4</Int>
+      <Int>0</Int>
     </Sequence>
   </Seed>
 </ReferenceData>

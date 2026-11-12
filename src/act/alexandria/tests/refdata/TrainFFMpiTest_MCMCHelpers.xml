@@ -2,33 +2,33 @@
 <?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
 <ReferenceData>
   <Parameters Name="Best">
-    <Real Name="De c3_b~h1_b">300.43658799999997</Real>
-    <Real Name="b c3_b~h1_b">24.963511</Real>
+    <Real Name="De c3_b~h1_b">309.81662299999999</Real>
+    <Real Name="b c3_b~h1_b">25.071237</Real>
     <Real Name="bondlength ho_b~o3_b">96.146488000000005</Real>
     <Real Name="c ho_b~o3_b">-0.599719</Real>
-    <Real Name="angle c3_b~o3_b~ho_b">107.82226900000001</Real>
+    <Real Name="angle c3_b~o3_b~ho_b">107.673247</Real>
     <Real Name="kt c3_b~o3_b~ho_b">574.73998200000005</Real>
     <Real Name="angle h1_b~c3_b~h1_b">107.29566</Real>
     <Real Name="kt h1_b~c3_b~h1_b">389.217826</Real>
-    <Real Name="angle h1_b~c3_b~o3_b">109.532933</Real>
-    <Real Name="kt h1_b~c3_b~o3_b">222.89665500000001</Real>
+    <Real Name="angle h1_b~c3_b~o3_b">109.11505099999999</Real>
+    <Real Name="kt h1_b~c3_b~o3_b">231.36971700000001</Real>
     <Real Name="c1 h1_b~c3_b~o3_b~ho_b">4.2570490000000003</Real>
-    <Real Name="c2 h1_b~c3_b~o3_b~ho_b">-8.6593640000000001</Real>
-    <Real Name="bondlength c3_b~h1_b">114.14826600000001</Real>
-    <Real Name="c3 h1_b~c3_b~o3_b~ho_b">-16.423615000000002</Real>
+    <Real Name="c2 h1_b~c3_b~o3_b~ho_b">-7.9837059999999997</Real>
+    <Real Name="bondlength c3_b~h1_b">114.345393</Real>
+    <Real Name="c3 h1_b~c3_b~o3_b~ho_b">-16.500990000000002</Real>
     <Real Name="c4 h1_b~c3_b~o3_b~ho_b">-1.263001</Real>
-    <Real Name="c5 h1_b~c3_b~o3_b~ho_b">3.2165889999999999</Real>
-    <Real Name="c c3_b~h1_b">-0.346273</Real>
-    <Real Name="De c3_b~o3_b">475.94611700000002</Real>
+    <Real Name="c5 h1_b~c3_b~o3_b~ho_b">3.362304</Real>
+    <Real Name="c c3_b~h1_b">-0.314216</Real>
+    <Real Name="De c3_b~o3_b">482.18839500000001</Real>
     <Real Name="b c3_b~o3_b">10.704796999999999</Real>
-    <Real Name="bondlength c3_b~o3_b">137.23536200000001</Real>
-    <Real Name="c c3_b~o3_b">-0.46235999999999999</Real>
+    <Real Name="bondlength c3_b~o3_b">137.28151</Real>
+    <Real Name="c c3_b~o3_b">-0.50395400000000001</Real>
     <Real Name="De ho_b~o3_b">749.29535899999996</Real>
-    <Real Name="b ho_b~o3_b">19.212160000000001</Real>
+    <Real Name="b ho_b~o3_b">19.062262</Real>
   </Parameters>
   <Statistics Name="Train">
-    <Real Name="Potential energy RMSD">1971.9567830000001</Real>
-    <Real Name="RMS Force RMSD">3667.720108</Real>
+    <Real Name="Potential energy RMSD">1941.036098</Real>
+    <Real Name="RMS Force RMSD">3697.416659</Real>
   </Statistics>
-  <Real Name="Train chi2">5004300</Real>
+  <Real Name="Train chi2">4899360</Real>
 </ReferenceData>

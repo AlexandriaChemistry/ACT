@@ -225,4 +225,42 @@ TEST_F(MCMCMutatorTest, MutateLennardJones)
     doMutate(before, maxiter, fitstrings, eRms);
 }
 
+// Test: The random numbers of the MCMC steps only depend on the seed and the
+// number of steps, three for each step, not on the objective function, such
+// that they can be drawn before the steps are computed, for instance on a GPU
+TEST_F(MCMCMutatorTest, RandomNumbersIndependentOfFitness)
+{
+    const std::vector<std::string> fitstrings = { "eta", "chi" };
+    std::vector<double>            bases      = { 4.5, 12, 3.3, 10, 5, 13 };
+    const int                      maxiter    = 3;
+    std::vector<std::vector<double>> numbers;
+    std::vector<std::vector<int>>    indices;
+    std::vector<double>              fitness;
+    // The dipole and the electrostatic potential give other values of the
+    // objective function, and therefore other steps that are accepted
+    for (auto erms : { eRMS::MU, eRMS::ESP })
+    {
+        std::vector<alexandria::eRMS> eRms = { erms };
+        BayesConfigHandler bch;
+        bch.setMaxIter(maxiter);
+        auto gth   = new GaTestHelper(1, fitstrings, eRms);
+        auto mymut = new MCMCMutator(1993, &bch, gth->fitnessComputer, gth->sii, false,
+                                     ChargeGenerationAlgorithm::EEM, 10);
+        ga::Genome genome(bases, { { iMolSelect::Train, 10.0 } });
+        ga::Genome best = genome;
+        mymut->mutate(gth->msghandler, &genome, &best, 0.0);
+        size_t nsteps = maxiter*gth->sii->nParam();
+        EXPECT_EQ(3*nsteps, mymut->allRand().size());
+        EXPECT_EQ(nsteps, mymut->randIndices().size());
+        numbers.push_back(mymut->allRand());
+        indices.push_back(mymut->randIndices());
+        fitness.push_back(best.fitness(iMolSelect::Train));
+        delete mymut;
+        delete gth;
+    }
+    EXPECT_NE(fitness[0], fitness[1]);
+    EXPECT_EQ(numbers[0], numbers[1]);
+    EXPECT_EQ(indices[0], indices[1]);
+}
+
 } // namespace alexandria
