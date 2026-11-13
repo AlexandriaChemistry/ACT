@@ -106,6 +106,27 @@ def row_to_molecule(row:list) -> dict:
         mol[COMMENT] = row[len(COLUMNS)]
     return mol
 
+def molecule_to_row(mol:dict) -> list:
+    """Convert a molecule of row_to_molecule back to the columns of alexandria.csv.
+
+    Numbers are written such that they read back as the same number, a
+    missing weight as an empty column, and the lists separated by ';'.
+    """
+    row = []
+    for name in COLUMNS:
+        value = mol.get(name)
+        if value is None:
+            row.append("")
+        elif name in LISTS:
+            row.append(";".join(value))
+        elif name in FLOATS:
+            row.append(repr(float(value)))
+        else:
+            row.append(str(value))
+    if COMMENT in mol and mol[COMMENT]:
+        row.append(mol[COMMENT])
+    return row
+
 def read_mol_csv(filename:str, delimiter:str="|", comment:str="#") -> list:
     """Read the molecules of alexandria.csv, in the order of the file.
 
@@ -121,15 +142,24 @@ def read_mol_csv(filename:str, delimiter:str="|", comment:str="#") -> list:
             mols.append(row_to_molecule(line.split(delimiter)))
     return mols
 
-def write_mol_json(mols:list, filename:str, indent:int=1):
+def write_mol_json(mols:list, filename:str, indent:int=None):
     """Write the molecules to a JSON file in UTF-8.
 
     The characters are written as they are, not as escapes, so that the
-    file can be read and compared as text.
+    file can be read and compared as text. By default each molecule is on
+    a line of its own, such that a change of a molecule is a change of one
+    line, as in the csv file; with indent each member is on its own line.
     """
     with open(filename, "w", encoding="utf-8") as outf:
-        json.dump(mols, outf, ensure_ascii=False, indent=indent)
-        outf.write("\n")
+        if indent is not None:
+            json.dump(mols, outf, ensure_ascii=False, indent=indent)
+            outf.write("\n")
+            return
+        outf.write("[\n")
+        for i, mol in enumerate(mols):
+            outf.write(json.dumps(mol, ensure_ascii=False))
+            outf.write(",\n" if i + 1 < len(mols) else "\n")
+        outf.write("]\n")
 
 def read_mol_json(filename:str) -> list:
     """Read the molecules of a JSON file written by write_mol_json."""

@@ -36,6 +36,7 @@ from actutils import actdata
 from get_csv_rows import *
 from get_mol_dict import *
 from molutils import *
+from mol_csv import row_to_molecule, molecule_to_row, read_mol_json, write_mol_json
 
 try:
     from pubchempy import *
@@ -254,6 +255,17 @@ class Molecule:
         self.check_latex()
         self.check_html()
         self.natom           = self.count_atoms()
+
+    def from_json(self, mol:dict, version:int):
+        """Fill the molecule from a molecule of alexandria.json, see mol_csv.py"""
+        return self.from_row(molecule_to_row(mol), version)
+
+    def to_json(self, version:int):
+        """The molecule as in alexandria.json, see mol_csv.py, None without an id"""
+        row = self.row(version)
+        if not row:
+            return None
+        return row_to_molecule(row.split('|'))
 
     def count_atoms(self)->int:
         natom     = 0
@@ -542,12 +554,20 @@ class Molecules:
         self.mols[mol.alexandria] = mol
 
     def read(self, input_file:str, version, clean:bool):
-        rows    = get_csv_rows(input_file, 18)
-        for row in rows:
-            # Default mol_id = 0 means read from file.
-            mol = Molecule(0)
-            if None == mol.from_row(row, version):
-                self.add_molecule(mol)
+        # alexandria.json in UTF-8, see mol_csv.py, or the csv file
+        if input_file.endswith(".json"):
+            for jmol in read_mol_json(input_file):
+                # Default mol_id = 0 means read from file.
+                mol = Molecule(0)
+                if None == mol.from_json(jmol, version):
+                    self.add_molecule(mol)
+        else:
+            rows    = get_csv_rows(input_file, 18)
+            for row in rows:
+                # Default mol_id = 0 means read from file.
+                mol = Molecule(0)
+                if None == mol.from_row(row, version):
+                    self.add_molecule(mol)
 
         self.make_name_dict()
         self.make_class_dict()
@@ -556,10 +576,23 @@ class Molecules:
             self.clean()
 
     def read_default(self):
-        acsv = ACTDATA + "/alexandria.csv"
-        self.read(acsv, 3, False)
+        # The JSON file if there is one, the csv file otherwise
+        ajson = ACTDATA + "/alexandria.json"
+        if os.path.exists(ajson):
+            self.read(ajson, 3, False)
+        else:
+            self.read(ACTDATA + "/alexandria.csv", 3, False)
 
     def write(self, output_file:str, version:int):
+        # JSON in UTF-8 if the name ends with .json, see mol_csv.py
+        if output_file.endswith(".json"):
+            jmols = []
+            for mol in sorted(self.mols):
+                jmol = self.mols[mol].to_json(version)
+                if jmol:
+                    jmols.append(jmol)
+            write_mol_json(jmols, output_file)
+            return
         outputfile = open(output_file, "w", encoding='utf-8')
 
         try:

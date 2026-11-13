@@ -9,6 +9,7 @@
 install(FILES 
          ACTlogo2.png
          alexandria.csv
+         alexandria.json
          atomization-energies-dft.csv
          atomization-energies.csv
          atomprops.csv
