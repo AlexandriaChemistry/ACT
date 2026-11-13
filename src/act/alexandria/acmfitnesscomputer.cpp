@@ -838,6 +838,10 @@ bool ACMFitnessComputer::setupChain(const DeviationTask &dt)
     GpuChainSetup setup;
     setup.deps   = molDeps_;
     setup.nparam = sii_->optIndex().size();
+    for (auto &oi : *sii_->optIndexPtr())
+    {
+        setup.params.push_back(oi.forceFieldParameter());
+    }
     setup.lossFunction = static_cast<int>(lossFunction_);
     for (auto molptr : dt.selected)
     {
@@ -947,6 +951,11 @@ void ACMFitnessComputer::checkChain(MsgHandler *msghandler, DeviationTask *dt, d
             return;
         }
         gs->chainParameters(parameterValues());
+        int ndiff = gs->chainCheckValues();
+        if (ndiff > 0)
+        {
+            msghandler->fatal(gmx::formatString("GPU chain check: %d values of the force field on the GPU differ from those of the processor", ndiff));
+        }
         gs->chainSkip(dt->skipping);
         std::vector<char> active;
         std::vector<int>  hit;

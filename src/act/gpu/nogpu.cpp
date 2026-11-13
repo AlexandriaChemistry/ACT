@@ -224,6 +224,16 @@ void chainSetParameters(System *, const double *)
 {
 }
 
+void chainApply(System *, int)
+{
+}
+
+void downloadValues(System *, std::vector<double> *recipe, std::vector<double> *acm)
+{
+    recipe->clear();
+    acm->clear();
+}
+
 void chainSkip(System *, bool)
 {
 }

@@ -55,6 +55,12 @@ int32_t ParameterRecipes::slot(const ForceFieldParameter *p)
     return index;
 }
 
+int32_t ParameterRecipes::findSlot(const ForceFieldParameter *p) const
+{
+    auto s = slots_.find(p);
+    return s == slots_.end() ? -1 : s->second;
+}
+
 int ParameterRecipes::directSet(const ForceField *pd, InteractionType itype, const Identifier &id)
 {
     auto key = std::make_pair(itype, id);

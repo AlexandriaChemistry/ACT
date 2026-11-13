@@ -114,6 +114,12 @@ public:
      */
     int32_t slot(const ForceFieldParameter *p);
 
+    /*! \brief The position of a value, if it has one
+     * \param[in] p The parameter of the force field
+     * \return The position in values, -1 if none
+     */
+    int32_t findSlot(const ForceFieldParameter *p) const;
+
 private:
 
     //! The recipes
