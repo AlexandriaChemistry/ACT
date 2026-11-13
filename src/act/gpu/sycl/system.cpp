@@ -3654,6 +3654,11 @@ void chainApply(System *sys, int param, bool charges, bool vsites)
         }
     });
     // Everything that follows from the values is made again, see updateParameters
+    chainMarkChanged(sys, charges, vsites);
+}
+
+void chainMarkChanged(System *sys, bool charges, bool vsites)
+{
     sys->recipeValuesChanged_ = sys->nrowRecipe_ > 0;
     // Until updateParameters made them; only if the GPU constructs the
     // virtual sites, see createAcmVsites
@@ -3727,99 +3732,6 @@ void chainSetSteps(System *sys, const ChainStep *steps, size_t nstep,
     sys->queue_->wait_and_throw();
 }
 
-void chainPropose(System *sys, size_t step)
-{
-    auto dS  = sys->chainSteps_;
-    auto dP  = sys->chainParams_;
-    auto dSz = sys->chainStepSize_;
-    auto dLo = sys->chainLower_;
-    auto dUp = sys->chainUpper_;
-    auto dBd = sys->chainBounded_;
-    auto dSt = sys->chainState_;
-    auto dTr = sys->chainTrial_;
-    sys->queue_->single_task([=]()
-    {
-#if defined(__clang__)
-#pragma clang fp contract(off)
-#endif
-        const ChainStep &st  = dS[step];
-        uint32_t         j   = st.param;
-        double           rnd = st.change;
-        if (rnd == 0.5)
-        {
-            // Make sure the parameter changes, as changeParam
-            rnd = 1;
-        }
-        double old = dP[j];
-        double v   = old + (2*rnd-1)*dSz[j];
-        if (dBd[j])
-        {
-            if (v < dLo[j])
-            {
-                v = dLo[j];
-            }
-            else if (v > dUp[j])
-            {
-                v = dUp[j];
-            }
-        }
-        dP[j]     = v;
-        dSt[3]    = old;
-        dTr[step] = v;
-    });
-}
-
-void chainMetropolis(System *sys, size_t step)
-{
-    auto   dS   = sys->chainSteps_;
-    auto   dP   = sys->chainParams_;
-    auto   dT   = sys->chainTemp_;
-    auto   dSt  = sys->chainState_;
-    auto   dC   = sys->chainChi2_;
-    auto   dAcc = sys->chainAccepted_;
-    auto   dNB  = sys->chainNewBest_;
-    auto   dSC  = sys->chainStepChi2_;
-    auto   dB   = sys->chainBest_;
-    size_t np   = sys->nchainParam_;
-    sys->queue_->single_task([=]()
-    {
-#if defined(__clang__)
-#pragma clang fp contract(off)
-#endif
-        const ChainStep &st    = dS[step];
-        uint32_t         j     = st.param;
-        double           curr  = *dC;
-        double           delta = curr - dSt[0];
-        // Any downhill move, otherwise the Metropolis criterion
-        bool accept = delta < 0;
-        if (!accept)
-        {
-            double probability = sycl::exp(-(st.beta/dT[j])*delta);
-            accept = probability > st.accept;
-        }
-        dSC[step]  = curr;
-        dAcc[step] = accept ? 1 : 0;
-        if (accept)
-        {
-            dSt[0] = curr;
-            if (dSt[2] == 0 || curr < dSt[1])
-            {
-                dSt[1]    = curr;
-                dSt[2]    = 1;
-                dNB[step] = 1;
-                for (size_t k = 0; k < np; k++)
-                {
-                    dB[k] = dP[k];
-                }
-            }
-        }
-        else
-        {
-            dP[j] = dSt[3];
-        }
-    });
-}
-
 void chainResults(System *sys, ChainResults *r)
 {
     size_t n  = sys->nchainStep_;
@@ -3854,58 +3766,268 @@ void chainResults(System *sys, ChainResults *r)
     r->haveBest  = state[2] != 0;
 }
 
+//! The device data of the chain, for its kernels, see createChain
+struct ChainView
+{
+    const ChainMolecule *mols;
+    const uint32_t      *deps;
+    const ChainBound    *bounds;
+    const uint64_t      *extras;
+    const ChainTerm     *terms;
+    const uint64_t      *entry;
+    double              *cache;
+    char                *valid;
+    double              *params;
+    int32_t             *hit;
+    char                *active;
+    double              *boundNow;
+    const double        *acmCharges;
+    const double        *charges;
+    const double        *dimerSums;
+    const double        *epotTerms;
+    double              *chi2;
+    char                *masks;
+    const int32_t       *blockMol;
+    const int32_t       *blockWhat;
+    size_t               nmol;
+    uint32_t             nterm;
+    uint32_t             ntarget;
+    uint32_t             nblock;
+    int                  lossFunction;
+
+    //! The number of values of a set kept of a molecule
+    uint64_t size(size_t m) const
+    {
+        const ChainMolecule &cm = mols[m];
+        return cm.ndep + (cm.dimer >= 0 ? 2*ntarget : 0) + (cm.monomer >= 0 ? 2*cm.nepot : 0) + 1;
+    }
+
+    //! The last set kept with the values of the parameters of a molecule, -1 if none, as prepareDeviation
+    int hitOf(size_t m) const
+    {
+        const ChainMolecule &cm   = mols[m];
+        uint64_t             sz   = size(m);
+        int                  h    = -1;
+        for (int e = 0; e < 2; e++)
+        {
+            const double *key = cache + entry[m] + e*sz;
+            bool same = valid[2*m + e] != 0;
+            for (uint32_t i = 0; i < cm.ndep && same; i++)
+            {
+                same = key[i] == params[deps[cm.depOffset + i]];
+            }
+            h = same ? e : h;
+        }
+        return h;
+    }
+
+    //! Whether a molecule is computed
+    bool activeOf(size_t m, int h, bool canSkip) const
+    {
+        return !(canSkip && h >= 0 && mols[m].skippable);
+    }
+
+    //! The bound of the charges of a molecule, as BoundsDevComputer::moleculeBound
+    double boundOf(size_t m) const
+    {
+#if defined(__clang__)
+#pragma clang fp contract(off)
+#endif
+        const ChainMolecule &cm    = mols[m];
+        double               bound = 0;
+        if (!acmCharges)
+        {
+            return bound;
+        }
+        for (uint32_t k = 0; k < cm.nbound; k++)
+        {
+            const ChainBound &cb = bounds[cm.boundOffset + k];
+            double q = acmCharges[cb.charge] + (cb.secondCharge >= 0 ? charges[cb.secondCharge] : 0.0);
+            for (uint32_t e = 0; e < cb.nextra; e++)
+            {
+                q += acmCharges[extras[cb.extraOffset + e]];
+            }
+            if (q < cb.minimum)
+            {
+                bound += deviationLoss(lossFunction, cb.minimum - q);
+            }
+            else if (q > cb.maximum)
+            {
+                bound += deviationLoss(lossFunction, q - cb.maximum);
+            }
+        }
+        return bound;
+    }
+
+    //! The total chi squared, as finishDeviation and sumChiSquared, with boundNow of the molecules computed
+    double total() const
+    {
+#if defined(__clang__)
+#pragma clang fp contract(off)
+#endif
+        double sum = 0;
+        for (uint32_t t = 0; t < nterm; t++)
+        {
+            const ChainTerm &term = terms[t];
+            double sw = 0, sl = 0;
+            for (size_t m = 0; m < nmol; m++)
+            {
+                const ChainMolecule &cm   = mols[m];
+                uint64_t             sz   = size(m);
+                const double        *kept = cache + entry[m] + (hit[m] > 0 ? sz : 0);
+                bool                 fresh = active[m] != 0;
+                if (term.kind == chainTermDimer && cm.dimer >= 0)
+                {
+                    const double *v = fresh ? dimerSums + 2*(static_cast<uint64_t>(cm.dimer)*ntarget + term.index)
+                                            : kept + cm.ndep + 2*term.index;
+                    sw += v[0];
+                    sl += v[1];
+                }
+                else if (term.kind == chainTermEpot && cm.monomer >= 0)
+                {
+                    const double *v = fresh ? epotTerms + 2*cm.epotOffset
+                                            : kept + cm.ndep + (cm.dimer >= 0 ? 2*ntarget : 0);
+                    for (uint32_t c = 0; c < cm.nepot; c++)
+                    {
+                        sw += v[2*c];
+                        sl += v[2*c + 1];
+                    }
+                }
+                else if (term.kind == chainTermBounds)
+                {
+                    sw += 1;
+                    sl += fresh ? boundNow[m] : kept[sz - 1];
+                }
+            }
+            // As FittingTarget::chiSquaredWeighted
+            if (sl > 0 && sw > 0)
+            {
+                sum += sl*term.weight/sw;
+            }
+        }
+        return sum;
+    }
+
+    /*! \brief Keep the deviations of a molecule, as finishDeviation
+     * \param[in] m     The molecule
+     * \param[in] param A parameter whose value in the key is value instead of that of params, -1 for none
+     * \param[in] value That value
+     */
+    void keep(size_t m, int64_t param, double value) const
+    {
+        const ChainMolecule &cm = mols[m];
+        uint64_t             sz = size(m);
+        double              *e0 = cache + entry[m];
+        double              *e1 = e0 + sz;
+        if (!active[m])
+        {
+            if (hit[m] == 1)
+            {
+                for (uint64_t i = 0; i < sz; i++)
+                {
+                    double t = e0[i];
+                    e0[i]    = e1[i];
+                    e1[i]    = t;
+                }
+                char v          = valid[2*m];
+                valid[2*m]      = valid[2*m + 1];
+                valid[2*m + 1]  = v;
+            }
+            return;
+        }
+        for (uint64_t i = 0; i < sz; i++)
+        {
+            e1[i] = e0[i];
+        }
+        valid[2*m + 1] = valid[2*m];
+        uint64_t k = 0;
+        for (uint32_t i = 0; i < cm.ndep; i++)
+        {
+            uint32_t d = deps[cm.depOffset + i];
+            e0[k++] = (static_cast<int64_t>(d) == param) ? value : params[d];
+        }
+        if (cm.dimer >= 0)
+        {
+            for (uint32_t i = 0; i < 2*ntarget; i++)
+            {
+                e0[k++] = dimerSums[2*static_cast<uint64_t>(cm.dimer)*ntarget + i];
+            }
+        }
+        if (cm.monomer >= 0)
+        {
+            for (uint32_t i = 0; i < 2*cm.nepot; i++)
+            {
+                e0[k++] = epotTerms[2*cm.epotOffset + i];
+            }
+        }
+        e0[k]      = boundNow[m];
+        valid[2*m] = 1;
+    }
+};
+
+//! The view of the chain of a system
+static ChainView chainView(System *sys)
+{
+    ChainView v;
+    v.mols         = sys->chainMols_;
+    v.deps         = sys->chainDeps_;
+    v.bounds       = sys->chainBounds_;
+    v.extras       = sys->chainExtras_;
+    v.terms        = sys->chainTerms_;
+    v.entry        = sys->chainEntry_;
+    v.cache        = sys->chainCache_;
+    v.valid        = sys->chainValid_;
+    v.params       = sys->chainParams_;
+    v.hit          = sys->chainHit_;
+    v.active       = sys->chainActive_;
+    v.boundNow     = sys->chainBoundNow_;
+    v.acmCharges   = sys->acmCharges_;
+    v.charges      = sys->charges_;
+    v.dimerSums    = sys->devDimerSums_;
+    v.epotTerms    = sys->devEpotTerms_;
+    v.chi2         = sys->chainChi2_;
+    v.masks        = sys->chainMasks_;
+    v.blockMol     = sys->chainBlockMol_;
+    v.blockWhat    = sys->chainBlockWhat_;
+    v.nmol         = sys->nchainMol_;
+    v.nterm        = sys->nchainTerm_;
+    v.ntarget      = sys->dev_.ntarget;
+    v.nblock       = sys->nblock_;
+    v.lossFunction = sys->chainLoss_;
+    return v;
+}
+
 void chainSkip(System *sys, bool canSkip)
 {
-    auto    *queue = sys->queue_;
-    auto     dM    = sys->chainMols_;
-    auto     dDep  = sys->chainDeps_;
-    auto     dEn   = sys->chainEntry_;
-    auto     dC    = sys->chainCache_;
-    auto     dV    = sys->chainValid_;
-    auto     dP    = sys->chainParams_;
-    auto     dHit  = sys->chainHit_;
-    auto     dAct  = sys->chainActive_;
-    size_t   nmol  = sys->nchainMol_;
-    uint32_t ntarget = sys->dev_.ntarget;
-    if (nmol > 0)
+    auto   v     = chainView(sys);
+    size_t total = v.nmol + v.nblock;
+    if (total == 0)
     {
-        queue->parallel_for(sycl::range<1>(nmol), [=](sycl::id<1> id)
-        {
-            size_t               m  = id[0];
-            const ChainMolecule &cm = dM[m];
-            uint64_t size = cm.ndep + (cm.dimer >= 0 ? 2*ntarget : 0) + (cm.monomer >= 0 ? 2*cm.nepot : 0) + 1;
-            int      hit  = -1;
-            // The last set that matches, as prepareDeviation
-            for (int e = 0; e < 2; e++)
-            {
-                const double *key = dC + dEn[m] + e*size;
-                bool same = dV[2*m + e] != 0;
-                for (uint32_t i = 0; i < cm.ndep && same; i++)
-                {
-                    same = key[i] == dP[dDep[cm.depOffset + i]];
-                }
-                hit = same ? e : hit;
-            }
-            dHit[m] = hit;
-            dAct[m] = (canSkip && hit >= 0 && cm.skippable) ? 0 : 1;
-        });
+        return;
     }
-    auto     dMask = sys->chainMasks_;
-    auto     dBM   = sys->chainBlockMol_;
-    auto     dBW   = sys->chainBlockWhat_;
-    uint32_t nb    = sys->nblock_;
-    if (nb > 0)
+    // One kernel for the molecules and the masks of the blocks, each block
+    // decides for its molecule again
+    sys->queue_->parallel_for(sycl::range<1>(total), [=](sycl::id<1> id)
     {
-        queue->parallel_for(sycl::range<1>(nb), [=](sycl::id<1> id)
+        size_t w = id[0];
+        if (w < v.nmol)
         {
-            uint32_t b   = id[0];
-            int32_t  mol = dBM[b];
-            char     act = (mol >= 0 && dAct[mol]) ? 1 : 0;
-            dMask[b]        = act;
-            dMask[nb + b]   = (act && dBW[b] < 2) ? 1 : 0;
-            dMask[2*nb + b] = (act && dBW[b] == 2) ? 1 : 0;
-        });
-    }
+            int h       = v.hitOf(w);
+            v.hit[w]    = h;
+            v.active[w] = v.activeOf(w, h, canSkip) ? 1 : 0;
+            return;
+        }
+        uint32_t b   = w - v.nmol;
+        int32_t  mol = v.blockMol[b];
+        char     act = 0;
+        if (mol >= 0)
+        {
+            act = v.activeOf(mol, v.hitOf(mol), canSkip) ? 1 : 0;
+        }
+        v.masks[b]              = act;
+        v.masks[v.nblock + b]   = (act && v.blockWhat[b] < 2) ? 1 : 0;
+        v.masks[2*v.nblock + b] = (act && v.blockWhat[b] == 2) ? 1 : 0;
+    });
 }
 
 const char *chainMask(System *sys, int what)
@@ -3929,168 +4051,162 @@ void chainActive(System *sys, char *active, int *hit)
 
 void chainComputeChi2(System *sys, bool keep)
 {
-    auto    *queue   = sys->queue_;
-    auto     dM      = sys->chainMols_;
-    auto     dDep    = sys->chainDeps_;
-    auto     dBo     = sys->chainBounds_;
-    auto     dEx     = sys->chainExtras_;
-    auto     dT      = sys->chainTerms_;
-    auto     dEn     = sys->chainEntry_;
-    auto     dC      = sys->chainCache_;
-    auto     dV      = sys->chainValid_;
-    auto     dP      = sys->chainParams_;
-    auto     dHit    = sys->chainHit_;
-    auto     dAct    = sys->chainActive_;
-    auto     dBN     = sys->chainBoundNow_;
-    auto     dQa     = sys->acmCharges_;
-    auto     dQ      = sys->charges_;
-    auto     dDS     = sys->devDimerSums_;
-    auto     dETe    = sys->devEpotTerms_;
-    auto     dChi2   = sys->chainChi2_;
-    size_t   nmol    = sys->nchainMol_;
-    uint32_t nterm   = sys->nchainTerm_;
-    uint32_t ntarget = sys->dev_.ntarget;
-    int      lf      = sys->chainLoss_;
-    if (nmol == 0)
+    auto v = chainView(sys);
+    if (v.nmol == 0)
     {
-        queue->memset(dChi2, 0, sizeof(double));
+        sys->queue_->memset(v.chi2, 0, sizeof(double));
         return;
     }
-    // The bounds of the charges of the molecules computed, as BoundsDevComputer::moleculeBound
-    queue->parallel_for(sycl::range<1>(nmol), [=](sycl::id<1> id)
+    sys->queue_->parallel_for(sycl::range<1>(v.nmol), [=](sycl::id<1> id)
+    {
+        size_t m = id[0];
+        v.boundNow[m] = v.active[m] ? v.boundOf(m) : 0.0;
+    });
+    sys->queue_->single_task([=]()
+    {
+        *v.chi2 = v.total();
+    });
+    if (keep)
+    {
+        sys->queue_->parallel_for(sycl::range<1>(v.nmol), [=](sycl::id<1> id)
+        {
+            v.keep(id[0], -1, 0.0);
+        });
+    }
+}
+
+void chainStepBefore(System *sys, size_t step)
+{
+    // The change of the parameter, as MCMCMutator::changeParam, and its values, as chainApply
+    auto dS  = sys->chainSteps_;
+    auto dP  = sys->chainParams_;
+    auto dSz = sys->chainStepSize_;
+    auto dLo = sys->chainLower_;
+    auto dUp = sys->chainUpper_;
+    auto dBd = sys->chainBounded_;
+    auto dSt = sys->chainState_;
+    auto dTr = sys->chainTrial_;
+    auto dRS = sys->chainRecipeSlot_;
+    auto dAI = sys->chainAcmIndex_;
+    auto dRV = sys->recipeValues_;
+    auto dAV = sys->acmValues_;
+    sys->queue_->single_task([=]()
     {
 #if defined(__clang__)
 #pragma clang fp contract(off)
 #endif
-        size_t               m     = id[0];
-        const ChainMolecule &cm    = dM[m];
-        double               bound = 0;
-        if (dAct[m] && dQa)
+        const ChainStep &st  = dS[step];
+        uint32_t         j   = st.param;
+        double           rnd = st.change;
+        if (rnd == 0.5)
         {
-            for (uint32_t k = 0; k < cm.nbound; k++)
+            // Make sure the parameter changes, as changeParam
+            rnd = 1;
+        }
+        double old = dP[j];
+        double x   = old + (2*rnd-1)*dSz[j];
+        if (dBd[j])
+        {
+            if (x < dLo[j])
             {
-                const ChainBound &cb = dBo[cm.boundOffset + k];
-                double q = dQa[cb.charge] + (cb.secondCharge >= 0 ? dQ[cb.secondCharge] : 0.0);
-                for (uint32_t e = 0; e < cb.nextra; e++)
-                {
-                    q += dQa[dEx[cb.extraOffset + e]];
-                }
-                if (q < cb.minimum)
-                {
-                    bound += deviationLoss(lf, cb.minimum - q);
-                }
-                else if (q > cb.maximum)
-                {
-                    bound += deviationLoss(lf, q - cb.maximum);
-                }
+                x = dLo[j];
+            }
+            else if (x > dUp[j])
+            {
+                x = dUp[j];
             }
         }
-        dBN[m] = bound;
+        dP[j]     = x;
+        dSt[3]    = old;
+        dTr[step] = x;
+        if (dRS[j] >= 0 && dRV)
+        {
+            dRV[dRS[j]] = x;
+        }
+        if (dAI[j] >= 0 && dAV)
+        {
+            dAV[dAI[j]] = x;
+        }
     });
-    // The sums of the targets in the order of the molecules and the total,
-    // as finishDeviation and sumChiSquared
-    queue->single_task([=]()
+}
+
+void chainStepAfter(System *sys, size_t step)
+{
+    auto   v    = chainView(sys);
+    auto   dS   = sys->chainSteps_;
+    auto   dT   = sys->chainTemp_;
+    auto   dSt  = sys->chainState_;
+    auto   dAcc = sys->chainAccepted_;
+    auto   dNB  = sys->chainNewBest_;
+    auto   dSC  = sys->chainStepChi2_;
+    auto   dB   = sys->chainBest_;
+    auto   dTr  = sys->chainTrial_;
+    auto   dRS  = sys->chainRecipeSlot_;
+    auto   dAI  = sys->chainAcmIndex_;
+    auto   dRV  = sys->recipeValues_;
+    auto   dAV  = sys->acmValues_;
+    size_t np   = sys->nchainParam_;
+    // The bounds, the chi squared, the Metropolis criterion and the value
+    // of a rejected change, as chainComputeChi2, MCMCMutator::finishStep and chainApply
+    sys->queue_->single_task([=]()
     {
 #if defined(__clang__)
 #pragma clang fp contract(off)
 #endif
-        double total = 0;
-        for (uint32_t t = 0; t < nterm; t++)
+        for (size_t m = 0; m < v.nmol; m++)
         {
-            const ChainTerm &term = dT[t];
-            double sw = 0, sl = 0;
-            for (size_t m = 0; m < nmol; m++)
+            v.boundNow[m] = v.active[m] ? v.boundOf(m) : 0.0;
+        }
+        double curr = v.total();
+        *v.chi2     = curr;
+        const ChainStep &st    = dS[step];
+        uint32_t         j     = st.param;
+        double           delta = curr - dSt[0];
+        bool accept = delta < 0;
+        if (!accept)
+        {
+            double probability = sycl::exp(-(st.beta/dT[j])*delta);
+            accept = probability > st.accept;
+        }
+        dSC[step]  = curr;
+        dAcc[step] = accept ? 1 : 0;
+        if (accept)
+        {
+            dSt[0] = curr;
+            if (dSt[2] == 0 || curr < dSt[1])
             {
-                const ChainMolecule &cm   = dM[m];
-                uint64_t size  = cm.ndep + (cm.dimer >= 0 ? 2*ntarget : 0) + (cm.monomer >= 0 ? 2*cm.nepot : 0) + 1;
-                const double *kept = dC + dEn[m] + (dHit[m] > 0 ? size : 0);
-                bool fresh = dAct[m] != 0;
-                if (term.kind == chainTermDimer && cm.dimer >= 0)
+                dSt[1]    = curr;
+                dSt[2]    = 1;
+                dNB[step] = 1;
+                for (size_t k = 0; k < np; k++)
                 {
-                    const double *v = fresh ? dDS + 2*(static_cast<uint64_t>(cm.dimer)*ntarget + term.index)
-                                            : kept + cm.ndep + 2*term.index;
-                    sw += v[0];
-                    sl += v[1];
+                    dB[k] = v.params[k];
                 }
-                else if (term.kind == chainTermEpot && cm.monomer >= 0)
-                {
-                    const double *v = fresh ? dETe + 2*cm.epotOffset
-                                            : kept + cm.ndep + (cm.dimer >= 0 ? 2*ntarget : 0);
-                    for (uint32_t c = 0; c < cm.nepot; c++)
-                    {
-                        sw += v[2*c];
-                        sl += v[2*c + 1];
-                    }
-                }
-                else if (term.kind == chainTermBounds)
-                {
-                    sw += 1;
-                    sl += fresh ? dBN[m] : kept[size - 1];
-                }
-            }
-            // As FittingTarget::chiSquaredWeighted
-            if (sl > 0 && sw > 0)
-            {
-                total += sl*term.weight/sw;
             }
         }
-        *dChi2 = total;
+        else
+        {
+            double old  = dSt[3];
+            v.params[j] = old;
+            if (dRS[j] >= 0 && dRV)
+            {
+                dRV[dRS[j]] = old;
+            }
+            if (dAI[j] >= 0 && dAV)
+            {
+                dAV[dAI[j]] = old;
+            }
+        }
     });
-    if (!keep)
+    if (v.nmol > 0)
     {
-        return;
+        // The keys are those of the values tried, also if the step was rejected
+        sys->queue_->parallel_for(sycl::range<1>(v.nmol), [=](sycl::id<1> id)
+        {
+            uint32_t j = dS[step].param;
+            v.keep(id[0], j, dTr[step]);
+        });
     }
-    // The sets kept, as finishDeviation
-    queue->parallel_for(sycl::range<1>(nmol), [=](sycl::id<1> id)
-    {
-        size_t               m    = id[0];
-        const ChainMolecule &cm   = dM[m];
-        uint64_t size  = cm.ndep + (cm.dimer >= 0 ? 2*ntarget : 0) + (cm.monomer >= 0 ? 2*cm.nepot : 0) + 1;
-        double  *e0    = dC + dEn[m];
-        double  *e1    = e0 + size;
-        if (!dAct[m])
-        {
-            if (dHit[m] == 1)
-            {
-                for (uint64_t i = 0; i < size; i++)
-                {
-                    double t = e0[i];
-                    e0[i]    = e1[i];
-                    e1[i]    = t;
-                }
-                char v          = dV[2*m];
-                dV[2*m]         = dV[2*m + 1];
-                dV[2*m + 1]     = v;
-            }
-            return;
-        }
-        for (uint64_t i = 0; i < size; i++)
-        {
-            e1[i] = e0[i];
-        }
-        dV[2*m + 1] = dV[2*m];
-        uint64_t k = 0;
-        for (uint32_t i = 0; i < cm.ndep; i++)
-        {
-            e0[k++] = dP[dDep[cm.depOffset + i]];
-        }
-        if (cm.dimer >= 0)
-        {
-            for (uint32_t i = 0; i < 2*ntarget; i++)
-            {
-                e0[k++] = dDS[2*static_cast<uint64_t>(cm.dimer)*ntarget + i];
-            }
-        }
-        if (cm.monomer >= 0)
-        {
-            for (uint32_t i = 0; i < 2*cm.nepot; i++)
-            {
-                e0[k++] = dETe[2*cm.epotOffset + i];
-            }
-        }
-        e0[k]   = dBN[m];
-        dV[2*m] = 1;
-    });
 }
 
 double chainChi2(System *sys)

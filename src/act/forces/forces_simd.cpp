@@ -6536,8 +6536,8 @@ void GpuTrainingSystem::chainBegin(const std::vector<gpu::ChainStep> &steps,
 void GpuTrainingSystem::chainPropose(size_t step, int param, const ForceField *pd)
 {
     auto &im = *impl_;
-    gpu::chainPropose(im.system, step);
-    gpu::chainApply(im.system, param, im.chainCharges[param], im.chainVsites[param]);
+    gpu::chainStepBefore(im.system, step);
+    gpu::chainMarkChanged(im.system, im.chainCharges[param], im.chainVsites[param]);
     // As uploadParameters, all from the values on the GPU
     gpu::updateParameters(im.system, nullptr, nullptr, ONE_4PI_EPS0, pd->epsilonr());
     gpu::chainSkip(im.system, true);
@@ -6546,11 +6546,10 @@ void GpuTrainingSystem::chainPropose(size_t step, int param, const ForceField *p
 void GpuTrainingSystem::chainFinish(size_t step, int param)
 {
     auto &im = *impl_;
-    gpu::chainComputeChi2(im.system, true);
-    gpu::chainMetropolis(im.system, step);
+    gpu::chainStepAfter(im.system, step);
     // The value of a rejected change is that from before again, which the
     // next step makes the charges for, if they depend on it
-    gpu::chainApply(im.system, param, im.chainCharges[param], im.chainVsites[param]);
+    gpu::chainMarkChanged(im.system, im.chainCharges[param], im.chainVsites[param]);
 }
 
 void GpuTrainingSystem::chainEnd(gpu::ChainResults *results)
