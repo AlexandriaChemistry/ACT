@@ -4227,7 +4227,7 @@ void GpuTrainingSystem::multipoleDebug(size_t, const std::vector<gmx::RVec> &) {
 bool GpuTrainingSystem::setChain(const GpuChainSetup &) { return false; }
 bool GpuTrainingSystem::haveChain() const { return false; }
 size_t GpuTrainingSystem::chainEntrySize(size_t) const { return 0; }
-std::pair<bool, bool> GpuTrainingSystem::chainLayout(size_t, size_t *ndimer, size_t *nepot) const { *ndimer = 0; *nepot = 0; return { false, false }; }
+std::pair<bool, bool> GpuTrainingSystem::chainLayout(size_t, size_t *ndimer, size_t *nepot, size_t *nmultipole) const { *ndimer = 0; *nepot = 0; *nmultipole = 0; return { false, false }; }
 void GpuTrainingSystem::chainCache(std::vector<double> *, std::vector<char> *, bool) {}
 void GpuTrainingSystem::chainParameters(const std::vector<double> &) {}
 void GpuTrainingSystem::chainSkip(bool) {}
@@ -6521,6 +6521,7 @@ bool GpuTrainingSystem::setChain(const GpuChainSetup &setup)
         cm.boundOffset = bounds.size();
         cm.nbound      = setup.bounds[k].size();
         cm.skippable   = setup.skippable[k] ? 1 : 0;
+        cm.multipole   = (im.multipolesReady && im.find(k, 3) >= 0) ? 1 : 0;
         if (cm.nbound > 0 && acmFirst[k] < 0)
         {
             // The charges are not those of the GPU
@@ -6659,13 +6660,15 @@ void GpuTrainingSystem::chainCache(std::vector<double> *values, std::vector<char
     }
 }
 
-std::pair<bool, bool> GpuTrainingSystem::chainLayout(size_t mol, size_t *ndimer, size_t *nepot) const
+std::pair<bool, bool> GpuTrainingSystem::chainLayout(size_t mol, size_t *ndimer, size_t *nepot,
+                                                     size_t *nmultipole) const
 {
     const auto &im = *impl_;
     int d   = im.devDimerOf[mol];
     int m   = im.devMonomerOf[mol];
-    *ndimer = d >= 0 ? 2*im.devTargets : 0;
-    *nepot  = m >= 0 ? 2*im.devMonomers[m].nconf : 0;
+    *ndimer     = d >= 0 ? 2*im.devTargets : 0;
+    *nepot      = m >= 0 ? 2*im.devMonomers[m].nconf : 0;
+    *nmultipole = (im.multipolesReady && im.find(mol, 3) >= 0) ? 4 : 0;
     return { d >= 0, m >= 0 };
 }
 
