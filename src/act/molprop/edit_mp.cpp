@@ -428,7 +428,7 @@ static void gen_ehist(MsgHandler                 *msghandler,
 }
 
 /*! \brief Update internal molecule information.
- * This will use an external data file, alexandria.csv, containing
+ * This will use an external data file, alexandria.json, containing
  * information about > 9000 molecules.
  */
 static void updateMolInfo(MsgHandler           *msghandler,

@@ -40,10 +40,12 @@
 #include <string>
 #include <vector>
 
+#include "act/utility/jsonreader.h"
+
 namespace alexandria
 {
     /*! \brief Identifying and chemical information for one compound
-     * from the Alexandria library file alexandria.csv
+     * from the Alexandria library file alexandria.json
      */
     class AlexandriaMol
     {
@@ -78,12 +80,12 @@ namespace alexandria
         std::set<std::string> synonyms;
 
         /*! \brief Constructor
-         * \param[in] line Read from csv file and interpreted.
+         * \param[in] mol A molecule of alexandria.json, see src/act/python/mol_csv.py
          */
-        AlexandriaMol(const std::vector<std::string> &line);
+        explicit AlexandriaMol(const JsonValue &mol);
     };
     
-    /*! \brief Database of all compounds in alexandria.csv, which
+    /*! \brief Database of all compounds in alexandria.json, which
      * can be looked up by InChi or by name
      */
     class AlexandriaMols
@@ -93,19 +95,12 @@ namespace alexandria
         std::map<std::string, AlexandriaMol> mols_;
         //! Translation map from synonym to InChi
         std::map<std::string, std::string>   nameToInChi_;
-        /*! \brief Add a molecule from the columns of a line of alexandria.csv
-         * \param[in] words The columns
-         */
-        void add(const std::vector<std::string> &words);
     public:
-        /*! \brief Constructor, reads alexandria.json or alexandria.csv
-         * The JSON file of src/act/python/mol_csv2json if the first library
-         * directory with either has it, see findLibraryFirst.
-         */
+        //! Constructor, reads alexandria.json of the library, see findLibrary
         AlexandriaMols();
 
-        /*! \brief Constructor, reads a file in the format of alexandria.json or alexandria.csv
-         * \param[in] fileName The file, JSON if it ends with .json, nothing if empty
+        /*! \brief Constructor, reads a file in the format of alexandria.json
+         * \param[in] fileName The file, nothing if empty
          */
         explicit AlexandriaMols(const std::string &fileName);
       

@@ -36,7 +36,7 @@ from actutils import actdata
 from get_csv_rows import *
 from get_mol_dict import *
 from molutils import *
-from mol_csv import row_to_molecule, molecule_to_row, read_mol_json, write_mol_json
+from mol_csv import read_mol_json, write_mol_json
 
 try:
     from pubchempy import *
@@ -201,7 +201,7 @@ def supported_elements() -> str:
     return ['H','He', 'C', 'N', 'O', 'F', 'Ne', 'P', 'S', 'Cl', 'Ar', 'Br', 'Kr', 'I']
 
 class Molecule:
-    """Class to handle an entry from the alexandria.csv database"""
+    """Class to handle an entry of the alexandria.json database"""
 
     def __init__(self, alexandria:int):
         self.alexandria = alexandria
@@ -219,53 +219,71 @@ class Molecule:
         if (self.iupac.find("[") >= 0 or self.iupac.find("]") >= 0) and (len(self.latex_name) == 0):
             self.latex_name = self.iupac.replace("[", "{[}").replace("]", "{]}")
 
-    def from_row(self, row, version:int):
-        if (version != 3):
-            sys.exit("Version %d not supported" % version)
+    def from_json(self, mol:dict):
+        """Fill the molecule from a molecule of alexandria.json, see mol_csv.py.
 
-        if (len(row) < 22):
-            print("row[0] %s invalid input" % ( row[0] ))
-            return None
+        The fields are kept as text, with the lists separated by ';'.
+        """
+        def text(name):
+            value = mol.get(name)
+            return "" if value is None else str(value)
         if self.alexandria <= 0:
-            self.alexandria = int(row[0])
-        self.parentid        = int(row[1])
-        self.iupac           = row[2]
-        self.formula         = row[3]
-        self.charge          = int(row[4])
-        self.mult            = int(row[5])
-        self.weight          = row[6]
-        self.cas             = row[7]
-        self.csid            = row[8]
-        self.pubchem         = row[9]
-        self.stdinchi        = row[10]
-        self.inchikey        = row[11]
-        self.classification  = row[12]
-        self.synonyms        = row[13]
-        self.filename        = row[14]
-        self.point_group     = row[15]
-        self.symmetry_number = row[16]
-        self.rotbond         = row[17]
-        self.html_name       = row[18]
-        self.latex_name      = row[19]
-        self.author          = row[20]
-        self.timestamp       = row[21]
-        self.comment         = None
-        if len(row) >= 23:
-            self.comment     = row[22]
+            self.alexandria = int(mol["alexandria"])
+        self.parentid        = int(mol.get("parentid", 0))
+        self.iupac           = text("iupac")
+        self.formula         = text("formula")
+        self.charge          = int(mol.get("charge", 0))
+        self.mult            = int(mol.get("multiplicity", 1))
+        self.weight          = repr(float(mol["weight"])) if "weight" in mol else ""
+        self.cas             = text("cas")
+        self.csid            = text("csid")
+        self.pubchem         = text("pubchem")
+        self.stdinchi        = text("inchi")
+        self.inchikey        = text("inchikey")
+        self.classification  = ";".join(mol.get("classification", []))
+        self.synonyms        = ";".join(mol.get("synonyms", []))
+        self.filename        = text("filename")
+        self.point_group     = text("point_group")
+        self.symmetry_number = text("symmetry_number")
+        self.rotbond         = text("rotatable_bonds")
+        self.html_name       = text("html_name")
+        self.latex_name      = text("latex_name")
+        self.author          = text("author")
+        self.timestamp       = text("timestamp")
+        self.comment         = mol.get("comment")
         self.check_latex()
         self.check_html()
         self.natom           = self.count_atoms()
 
-    def from_json(self, mol:dict, version:int):
-        """Fill the molecule from a molecule of alexandria.json, see mol_csv.py"""
-        return self.from_row(molecule_to_row(mol), version)
+    def to_json(self) -> dict:
+        """The molecule as in alexandria.json, see mol_csv.py, None without an id.
 
-    def to_json(self, version:int):
-        """The molecule as in alexandria.json, see mol_csv.py, None without an id"""
-        row = self.row(version)
-        if not row:
+        The html and LaTeX names are empty if they are the IUPAC name.
+        """
+        if None == self.alexandria:
             return None
-        return row_to_molecule(row.split('|'))
+        def number(value, kind):
+            return kind(value) if len(str(value)) > 0 else None
+        def items(value):
+            return [ v for v in value.split(";") if len(v) > 0 ]
+        mol = { "alexandria": int(self.alexandria), "parentid": int(self.parentid),
+                "iupac": self.iupac, "formula": self.formula,
+                "charge": int(self.charge), "multiplicity": int(self.mult) }
+        if len(self.weight) > 0:
+            mol["weight"] = float(self.weight)
+        mol.update({ "cas": self.cas, "csid": self.csid, "pubchem": self.pubchem,
+                     "inchi": self.stdinchi, "inchikey": self.inchikey,
+                     "classification": items(self.classification),
+                     "synonyms": items(self.synonyms),
+                     "filename": self.filename, "point_group": self.point_group,
+                     "symmetry_number": number(self.symmetry_number, int),
+                     "rotatable_bonds": number(self.rotbond, int),
+                     "html_name": self.html_name if self.html_name != self.iupac else "",
+                     "latex_name": self.latex_name if self.latex_name != self.iupac else "",
+                     "author": self.author, "timestamp": self.timestamp })
+        if self.comment:
+            mol["comment"] = self.comment
+        return mol
 
     def count_atoms(self)->int:
         natom     = 0
@@ -401,39 +419,6 @@ class Molecule:
                 self.pubchem  = str(compound.cid)
                 self.inchikey = str(compound.inchikey)
 
-    def row(self, version):
-        delim = '|'
-        if (version == 1):
-            myrow = self.iupac + delim + self.formula + delim + self.weight + delim + self.cas + delim + self.csid + delim
-            myrow += self.stdinchi + delim + self.inchikey + delim
-            myrow += self.classification + delim + self.synonyms + delim + self.filename + delim + self.point_group + delim + self.symmetry_number + delim + self.rotbond + delim + self.html_name
-        elif (version == 2):
-            if (None == self.alexandria):
-                return None
-            myrow = str(self.alexandria) + delim + self.iupac + delim + self.formula + delim
-            myrow += str(self.charge) + delim + str(self.mult) + delim + self.weight + delim + self.cas + delim + self.csid + delim
-            myrow += self.pubchem + delim + self.stdinchi + delim + self.inchikey + delim
-            myrow += self.classification + delim + self.synonyms + delim + self.filename + delim + self.point_group + delim + self.symmetry_number + delim + self.rotbond + delim + self.html_name + delim
-            myrow += self.latex_name + delim + self.author + delim + self.timestamp + delim + self.comment
-        elif (version == 3):
-            if (None == self.alexandria):
-                return None
-            myrow = str(self.alexandria) + delim + str(self.parentid) + delim + self.iupac + delim + self.formula + delim
-            myrow += str(self.charge) + delim + str(self.mult) + delim + self.weight + delim + self.cas + delim + self.csid + delim
-            myrow += self.pubchem + delim + self.stdinchi + delim + self.inchikey + delim
-            myrow += self.classification + delim + self.synonyms + delim + self.filename + delim + self.point_group + delim + self.symmetry_number + delim + self.rotbond + delim
-            if self.html_name != self.iupac:
-                myrow += self.html_name
-            myrow += delim
-            if self.latex_name != self.iupac:
-                myrow += self.latex_name
-            myrow += delim + self.author + delim + self.timestamp
-            if self.comment:
-                myrow += delim + self.comment
-        else:
-            mol_csv_die("version")
-        return myrow
-
     def unstamp(self):
         self.author     = ""
         self.timestamp  = ""
@@ -486,7 +471,7 @@ class Molecule:
         return compare_mol_formula(self.formula, other.formula) != 0
 
 class Molecules:
-    """Class to handle the alexandria.csv database"""
+    """Class to handle the alexandria.json database"""
     def __init__(self):
         self.mols            = {}
         self.name_dict       = {}
@@ -553,21 +538,13 @@ class Molecules:
             mol.alexandria = self.next_id()
         self.mols[mol.alexandria] = mol
 
-    def read(self, input_file:str, version, clean:bool):
-        # alexandria.json in UTF-8, see mol_csv.py, or the csv file
-        if input_file.endswith(".json"):
-            for jmol in read_mol_json(input_file):
-                # Default mol_id = 0 means read from file.
-                mol = Molecule(0)
-                if None == mol.from_json(jmol, version):
-                    self.add_molecule(mol)
-        else:
-            rows    = get_csv_rows(input_file, 18)
-            for row in rows:
-                # Default mol_id = 0 means read from file.
-                mol = Molecule(0)
-                if None == mol.from_row(row, version):
-                    self.add_molecule(mol)
+    def read(self, input_file:str, clean:bool=False):
+        """Read the molecules of alexandria.json, in UTF-8, see mol_csv.py"""
+        for jmol in read_mol_json(input_file):
+            # Default mol_id = 0 means read from file.
+            mol = Molecule(0)
+            mol.from_json(jmol)
+            self.add_molecule(mol)
 
         self.make_name_dict()
         self.make_class_dict()
@@ -576,33 +553,16 @@ class Molecules:
             self.clean()
 
     def read_default(self):
-        # The JSON file if there is one, the csv file otherwise
-        ajson = ACTDATA + "/alexandria.json"
-        if os.path.exists(ajson):
-            self.read(ajson, 3, False)
-        else:
-            self.read(ACTDATA + "/alexandria.csv", 3, False)
+        self.read(ACTDATA + "/alexandria.json")
 
-    def write(self, output_file:str, version:int):
-        # JSON in UTF-8 if the name ends with .json, see mol_csv.py
-        if output_file.endswith(".json"):
-            jmols = []
-            for mol in sorted(self.mols):
-                jmol = self.mols[mol].to_json(version)
-                if jmol:
-                    jmols.append(jmol)
-            write_mol_json(jmols, output_file)
-            return
-        outputfile = open(output_file, "w", encoding='utf-8')
-
-        try:
-            for mol in sorted(self.mols):
-                row = self.mols[mol].row(version)
-                if (row):
-                    outputfile.write(row + "\n")
-
-        finally:
-            outputfile.close()
+    def write(self, output_file:str):
+        """Write the molecules as alexandria.json, in UTF-8, see mol_csv.py"""
+        jmols = []
+        for mol in sorted(self.mols):
+            jmol = self.mols[mol].to_json()
+            if jmol:
+                jmols.append(jmol)
+        write_mol_json(jmols, output_file)
 
     def set_pubchem_id(self):
         for mol in self.mols:

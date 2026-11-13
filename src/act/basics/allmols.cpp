@@ -39,106 +39,119 @@
 #include "act/utility/jsonreader.h"
 #include "act/utility/stringutil.h"
 #include "gromacs/utility/stringutil.h"
-#include "gromacs/utility/textreader.h"
 
 namespace alexandria
 {
 
-AlexandriaMol::AlexandriaMol(const std::vector<std::string> &line)
-{
-    if (line.size() >= 20)
-    {
-        iupac    = line[2];
-        formula  = line[3];
-        charge   = my_atoi(line[4], "charge");
-        mult     = my_atoi(line[5], "multiplicity");
-        mass     = my_atof(line[6], "mass");
-        cas      = line[7];
-        csid     = my_atoi(line[8], "chemspider");
-        pubid    = my_atoi(line[9], "pubchem");
-        inchi    = line[10];
-        inchikey = line[11];
-        pointGroup     = line[15];
-        symmetryNumber = my_atoi(line[16], "symmetry number");
-        for(auto ss : split(line[12], ';'))
-        {
-            classid.insert(ss);
-            std::replace(ss.begin(), ss.end(), ' ', '-');
-            classid.insert(ss);
-        }
-        // Synonyms must include the iupac as well in case we are
-        // looking that one up later.
-        synonyms.insert(iupac);
-        for(auto ss : split(line[13], ';'))
-        {
-            if (ss.empty())
-            {
-                continue;
-            }
-            synonyms.insert(ss);
-            std::replace(ss.begin(), ss.end(), ' ', '-');
-            synonyms.insert(ss);
-        }
-        // Add the filename as well
-        const auto fn = line[14].substr(0, line[14].size()-4);
-        if (!fn.empty())
-        {
-            synonyms.insert(fn);
-        }
-    }
-}
-
-/*! \brief The columns of alexandria.csv of a molecule of alexandria.json
- * The names of the members are those of COLUMNS in src/act/python/mol_csv.py,
- * which writes the JSON file. Numbers are written such that they are read
- * back as they are, lists are separated by ';', and missing members are empty.
- * \param[in] mol The molecule
- * \return The columns
+/*! \brief A member of a molecule of alexandria.json as text, empty if it has none
+ * \param[in] mol  The molecule
+ * \param[in] name The member
+ * \return The string, or the number as text
  */
-static std::vector<std::string> jsonColumns(const JsonValue &mol)
+static std::string jsonText(const JsonValue &mol, const std::string &name)
 {
-    static const std::vector<std::string> columns = {
-        "alexandria", "parentid", "iupac", "formula", "charge",
-        "multiplicity", "weight", "cas", "csid", "pubchem", "inchi",
-        "inchikey", "classification", "synonyms", "filename",
-        "point_group", "symmetry_number", "rotatable_bonds",
-        "html_name", "latex_name", "author", "timestamp"
-    };
-    std::vector<std::string> line;
-    for (const auto &name : columns)
+    const JsonValue *v = mol.find(name);
+    if (!v || v->isNull())
     {
-        const JsonValue *v = mol.find(name);
-        std::string      word;
-        if (v)
-        {
-            switch (v->type())
-            {
-            case JsonValue::Type::String:
-                word = v->asString();
-                break;
-            case JsonValue::Type::Number:
-                word = gmx::formatString("%.17g", v->asNumber());
-                break;
-            case JsonValue::Type::Array:
-                for (const auto &e : v->asArray())
-                {
-                    word += (word.empty() ? "" : ";") + e.asString();
-                }
-                break;
-            default:
-                break;
-            }
-        }
-        line.push_back(std::move(word));
+        return std::string();
     }
-    return line;
+    if (v->type() == JsonValue::Type::Number)
+    {
+        return gmx::formatString("%.17g", v->asNumber());
+    }
+    return v->asString();
 }
 
-void AlexandriaMols::add(const std::vector<std::string> &words)
+/*! \brief A member of a molecule of alexandria.json as a number, 0 if it has none
+ * As my_atoi and my_atof of an empty column of the former alexandria.csv.
+ * \param[in] mol  The molecule
+ * \param[in] name The member
+ * \return The number
+ */
+static double jsonNumber(const JsonValue &mol, const std::string &name)
 {
-    if (words.size() >= 20)
+    const JsonValue *v = mol.find(name);
+    if (!v || v->isNull())
     {
-        const AlexandriaMol am(words);
+        return 0;
+    }
+    if (v->type() == JsonValue::Type::String)
+    {
+        return my_atof(v->asString(), name);
+    }
+    return v->asNumber();
+}
+
+AlexandriaMol::AlexandriaMol(const JsonValue &mol)
+{
+    iupac          = jsonText(mol, "iupac");
+    formula        = jsonText(mol, "formula");
+    charge         = static_cast<int>(jsonNumber(mol, "charge"));
+    mult           = static_cast<int>(jsonNumber(mol, "multiplicity"));
+    mass           = jsonNumber(mol, "weight");
+    cas            = jsonText(mol, "cas");
+    csid           = static_cast<int>(jsonNumber(mol, "csid"));
+    pubid          = static_cast<int>(jsonNumber(mol, "pubchem"));
+    inchi          = jsonText(mol, "inchi");
+    inchikey       = jsonText(mol, "inchikey");
+    pointGroup     = jsonText(mol, "point_group");
+    symmetryNumber = static_cast<int>(jsonNumber(mol, "symmetry_number"));
+    auto list = [&mol](const std::string &name)
+    {
+        std::vector<std::string> items;
+        const JsonValue *v = mol.find(name);
+        if (v && v->type() == JsonValue::Type::Array)
+        {
+            for (const auto &e : v->asArray())
+            {
+                items.push_back(e.asString());
+            }
+        }
+        return items;
+    };
+    for (auto ss : list("classification"))
+    {
+        classid.insert(ss);
+        std::replace(ss.begin(), ss.end(), ' ', '-');
+        classid.insert(ss);
+    }
+    // Synonyms must include the iupac as well in case we are
+    // looking that one up later.
+    synonyms.insert(iupac);
+    for (auto ss : list("synonyms"))
+    {
+        if (ss.empty())
+        {
+            continue;
+        }
+        synonyms.insert(ss);
+        std::replace(ss.begin(), ss.end(), ' ', '-');
+        synonyms.insert(ss);
+    }
+    // Add the filename without its extension as well
+    const auto filename = jsonText(mol, "filename");
+    if (filename.size() > 4)
+    {
+        synonyms.insert(filename.substr(0, filename.size()-4));
+    }
+}
+
+AlexandriaMols::AlexandriaMols()
+    : AlexandriaMols(findLibrary("alexandria.json", false))
+{
+}
+
+AlexandriaMols::AlexandriaMols(const std::string &fileName)
+{
+    if (fileName.empty())
+    {
+        return;
+    }
+    // The molecules of the Alexandria library in UTF-8, see src/act/python/mol_csv.py
+    const auto doc = readJsonFile(fileName);
+    for (const auto &mol : doc.asArray())
+    {
+        const AlexandriaMol am(mol);
         if (!am.inchi.empty())
         {
             mols_.insert( { am.inchi, am } );
@@ -147,36 +160,6 @@ void AlexandriaMols::add(const std::vector<std::string> &words)
                 nameToInChi_.insert( { syn, am.inchi } );
             }
         }
-    }
-}
-
-AlexandriaMols::AlexandriaMols()
-    // The JSON file in UTF-8 of src/act/python/mol_csv2json, otherwise the
-    // csv file, whichever the first library directory with either has
-    : AlexandriaMols(findLibraryFirst({ "alexandria.json", "alexandria.csv" }, false))
-{
-}
-
-AlexandriaMols::AlexandriaMols(const std::string &alexandria)
-{
-    if (alexandria.empty())
-    {
-        return;
-    }
-    if (gmx::endsWith(alexandria, ".json"))
-    {
-        const auto doc = readJsonFile(alexandria);
-        for (const auto &mol : doc.asArray())
-        {
-            add(jsonColumns(mol));
-        }
-        return;
-    }
-    gmx::TextReader tr(alexandria);
-    std::string line;
-    while (tr.readLine(&line))
-    {
-        add(gmx::splitDelimitedString(line, '|'));
     }
 }
 

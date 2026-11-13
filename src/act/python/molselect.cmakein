@@ -34,7 +34,7 @@ def parseArguments():
   but also prioritize certain compounds by providing a 'must-have' list.
   ''' % sestr)
   parser     = argparse.ArgumentParser(description=desc)
-  alexandria = act_library_filename("alexandria.csv")
+  alexandria = act_library_filename("alexandria.json")
   parser.add_argument("-a",          "--alexandria",   help="Compound descriptions. Default "+alexandria,                type=str,         default=alexandria)
   outfile = "selection.dat"
   parser.add_argument("-o",          "--outfile",      help="Output selection file for writing. Default "+outfile,     type=str, default=outfile)
@@ -206,7 +206,7 @@ if __name__ == '__main__':
   args       = parseArguments()
 
   M = Molecules()
-  M.read(args.alexandria, 3, False)
+  M.read(args.alexandria)
 
   print("There are %d molecules in the Alexandria Library." % len(M.mols))
   

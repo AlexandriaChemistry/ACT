@@ -44,7 +44,7 @@ def parseArguments():
   an error message.
   '''
   parser  = argparse.ArgumentParser(description=desc)
-  alexdef = act_library_filename("alexandria.csv")
+  alexdef = act_library_filename("alexandria.json")
   parser.add_argument("-a",      "--alexandria",   help="Compound definition file for reading, default "+alexdef,             type=str, default=alexdef)
   defmethods = "B3LYP-aug-cc-pVTZ"
   parser.add_argument("-methods","--methods",      help="Quantum chemistry methods to include, default "+defmethods, type=str, default=defmethods)
@@ -217,7 +217,7 @@ if __name__ == "__main__":
   edit_mp = alexandria + " edit_mp"
 
   M = Molecules()
-  M.read(args.alexandria, 3, False)
+  M.read(args.alexandria)
   mols = get_mols(M, myselection, None, args.output)
   
   if args.output[-4:] != ".xml":
