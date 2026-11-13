@@ -275,6 +275,13 @@ public:
      */
     bool chainReady() const { return chainOk_; }
 
+    /*! \brief Whether the steps of the Monte Carlo chains of several sets can run on the GPU
+     * After calcDeviations with a set for each replica, see runChains and
+     * MCMCMutator::mutateLockstep.
+     * \param[in] nset The number of sets
+     */
+    bool chainsReady(size_t nset) const { return chainsOk_ && nset == chainsSets_; }
+
     /*! \brief Run steps of the Monte Carlo chain on the GPU, see MCMCMutator::mutate
      * Each step changes a parameter, evaluates the training set as
      * calcDeviation and applies the Metropolis criterion, all on the GPU. The
@@ -294,6 +301,26 @@ public:
                   bool                                haveBest,
                   double                              bestChi2,
                   gpu::ChainResults                  *results);
+
+    /*! \brief Run the steps of the Monte Carlo chains of several sets on the GPU, see runChain
+     * Each set has a replica on the GPU, which runs its own chain. All
+     * have as many steps. The force field gets the parameters of the last
+     * set at the end.
+     * \param[in]  msghandler For messages
+     * \param[in]  params     The parameters of each set
+     * \param[in]  steps      The steps of each set
+     * \param[in]  chi2       The chi squared of each set
+     * \param[in]  haveBest   For each set whether there is a lowest chi squared
+     * \param[in]  bestChi2   For each set the lowest chi squared
+     * \param[out] results    The results of each set
+     */
+    void runChains(MsgHandler                                    *msghandler,
+                   const std::vector<const std::vector<double> *> &params,
+                   const std::vector<std::vector<gpu::ChainStep>> &steps,
+                   const std::vector<double>                      &chi2,
+                   const std::vector<char>                        &haveBest,
+                   const std::vector<double>                      &bestChi2,
+                   std::vector<gpu::ChainResults>                 *results);
 
     /*! \brief Computes deviation from target
      * As prepareDeviation, computeEnergies and finishDeviation.
@@ -369,6 +396,12 @@ public:
      */
     void chainCacheTo(size_t replica, const std::vector<double> &values, const std::vector<char> &valid);
 
+    //! The sets kept of all replicas to the chain on the GPU, see chainCacheOf
+    void chainCacheSet();
+
+    //! The sets kept of all replicas from the chain on the GPU, see chainCacheTo
+    void chainCacheGet();
+
     //! The multipoles compared and those that differed, see checkMultipoles
     int multipoleChecks_ = 0, multipoleDiffer_ = 0;
 
@@ -381,14 +414,19 @@ public:
 
     //! Whether the evaluation before allows the steps of the chain on the GPU, see chainReady
     bool                  chainOk_ = false;
+    //! Whether the evaluation of several sets before allows the chains of the replicas, and of how many, see chainsReady
+    bool                  chainsOk_   = false;
+    size_t                chainsSets_ = 0;
     //! The molecules of that evaluation
     std::vector<ACTMol *> chainMols_;
 
     /*! \brief Whether an evaluation allows the steps of the chain on the GPU
-     * \param[in] dt The evaluation, after finishDeviation
+     * \param[in] dt       The evaluation, after finishDeviation
+     * \param[in] nreplica The number of replicas that run a chain, 1 for
+     *                     replica 0 alone, otherwise each that of dt
      * \return Whether it does
      */
-    bool chainAllowed(const DeviationTask &dt);
+    bool chainAllowed(const DeviationTask &dt, size_t nreplica = 1);
 
     /*! \brief Compute the deviations of several sets of parameters
      * As distributeParameters and calcDeviation for each set, at once on

@@ -243,7 +243,7 @@ void downloadValues(System *, std::vector<double> *recipe, std::vector<double> *
 }
 
 void chainSetSteps(System *, const ChainStep *, size_t, const double *, const double *, const double *,
-                   const char *, const double *, double, bool, double)
+                   const char *, const double *, const double *, const char *, const double *)
 {
 }
 
@@ -259,7 +259,7 @@ void chainStepAfter(System *, size_t)
 {
 }
 
-void chainResults(System *, ChainResults *results)
+void chainResults(System *, size_t, ChainResults *results)
 {
     *results = ChainResults();
 }

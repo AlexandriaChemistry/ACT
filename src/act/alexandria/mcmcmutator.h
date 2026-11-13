@@ -239,6 +239,37 @@ private:
                      ga::Genome  *bestGenome,
                      MutateState *state);
 
+    /*! \brief The steps of the chain on the GPU with their random numbers
+     * In the order of proposeStep and changeParam, which do not depend on
+     * whether the steps are accepted.
+     * \param[in] nParam The number of parameters
+     * \return The steps of all iterations
+     */
+    std::vector<gpu::ChainStep> chainSteps(size_t nParam);
+
+    /*! \brief A step of the chain on the GPU again on the processor, see mutateOnGpu
+     * \param[in]    msghandler For messages
+     * \param[inout] genome     The genome
+     * \param[inout] bestGenome The best genome
+     * \param[inout] state      The state of mutate
+     * \param[in]    step       The step
+     * \param[in]    results    The results of the steps on the GPU
+     * \param[in]    s          The index of the step
+     * \param[in]    pp         The parameter step of the iteration
+     * \param[in]    iter       The iteration
+     * \param[in]    lockstep   Whether the force field may have the parameters of another genome
+     */
+    void replayStep(MsgHandler              *msghandler,
+                    ga::Genome              *genome,
+                    ga::Genome              *bestGenome,
+                    MutateState             *state,
+                    const gpu::ChainStep    &step,
+                    const gpu::ChainResults &results,
+                    size_t                   s,
+                    size_t                   pp,
+                    int                      iter,
+                    bool                     lockstep);
+
     /*!
      * \brief Add the parameters to the sums in the second half of the iterations
      * \param[in]    genome The genome
