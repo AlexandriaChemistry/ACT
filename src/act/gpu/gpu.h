@@ -1233,6 +1233,58 @@ void keepEnergies(System *system, const char *use, bool before);
  */
 void computeDeviations(System *system, const char *use, double *dimerSums, double *epotTerms);
 
+//! A structure of the multipoles of a molecule, in a block of its own, see MultipoleSystem
+struct MultipoleStructure
+{
+    //! The block and the slot of the structure in it
+    uint32_t block       = 0;
+    uint32_t slot        = 0;
+    //! The molecule, the structures of each are one after the other
+    uint32_t mol         = 0;
+    //! The number of particles and the first of their atomic numbers
+    uint32_t natom       = 0;
+    uint64_t atomNumbers = 0;
+    //! The first of the three reference values of the dipole, -1 if none
+    int64_t  dipole      = -1;
+    //! The first of the six reference values of the quadrupole, -1 if none
+    int64_t  quadrupole  = -1;
+};
+
+/*! \brief The dipoles and quadrupoles of the molecules, as MultiPoleDevComputer
+ * The moments are those of the charges of the blocks, the generated charge
+ * plus the second charge of each particle, around the center of the atomic
+ * numbers, in the structures with the shells relaxed.
+ */
+struct MultipoleSystem
+{
+    const MultipoleStructure *structures   = nullptr;
+    size_t                    nstructure   = 0;
+    const int32_t            *atomNumbers  = nullptr;
+    size_t                    natomNumber  = 0;
+    const double             *references   = nullptr;
+    size_t                    nreference   = 0;
+    //! The number of molecules, those without structures included
+    size_t                    nmol         = 0;
+    //! The loss function, as DeviationSystem::lossFunction
+    int                       lossFunction = 0;
+};
+
+/*! \brief Copy what computeMultipoles needs to the GPU
+ * \param[in] system    The system
+ * \param[in] multipoles The structures and their references
+ */
+void createMultipoles(System *system, const MultipoleSystem &multipoles);
+
+/*! \brief The deviations of the dipoles and quadrupoles of the molecules whose blocks are used
+ * For each molecule the number of structures and the sum of the losses,
+ * for the dipole and for the quadrupole, four values per molecule, as
+ * MultiPoleDevComputer adds them to the targets.
+ * \param[in]  system The system
+ * \param[in]  use    Whether each block is used, the molecules of the unused ones are not computed
+ * \param[out] sums   The four values of each molecule, nullptr to keep them on the GPU
+ */
+void computeMultipoles(System *system, const char *use, double *sums);
+
 /*! \brief The start of the particles of a block in the arrays of all blocks
  * The charges of the blocks have four values per particle there, the
  * charge, the second charge and their widths.

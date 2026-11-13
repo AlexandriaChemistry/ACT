@@ -343,6 +343,9 @@ public:
                                const ForceField              *forcefield,
                                LossFunction                   lossFunction);
 
+
+    //! \return The multipole
+    MolPropObservable observable() const { return mpo_; }
 };
 
 /*!

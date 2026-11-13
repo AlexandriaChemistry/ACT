@@ -68,6 +68,11 @@ ACMFitnessComputer::~ACMFitnessComputer()
         fprintf(stderr, "GPU deviation check on the GPU: %d evaluations compared, %d differ\n",
                 gpuChecks_, gpuDiffer_);
     }
+    if (multipoleChecks_ > 0)
+    {
+        fprintf(stderr, "GPU multipole check: %d compared, %d differ by more than 1e-3\n",
+                multipoleChecks_, multipoleDiffer_);
+    }
     if (std::getenv("ACT_GPU_CHAIN_CHECK"))
     {
         fprintf(stderr, "GPU chain check: %d evaluations compared, %d differ\n",
@@ -455,7 +460,11 @@ bool ACMFitnessComputer::needChargeProperties(MsgHandler                        
                                                   rmsName(erms), iMolSelectName(ims).c_str()));
             }
         }
-        need = need || d->second;
+        // The GPU computes the dipoles and quadrupoles itself, see
+        // ForceComputer::setGpuMultipoles, unless the processor generates
+        // the charges after all
+        bool onGpu = ((erms == eRMS::MU || erms == eRMS::QUAD) && forceComp_->gpuMultipoles());
+        need = need || (d->second && !onGpu);
     }
     return need;
 }
@@ -787,6 +796,15 @@ bool ACMFitnessComputer::prepareDeviation(MsgHandler    *msghandler,
         }
         selected = std::move(kept);
     }
+    // The structures and references of the multipoles on the GPU, once
+    if (gpuCharges && gpuOk && !selected.empty() && forceComp_->gpuMultipoles())
+    {
+        auto gs = forceComp_->gpuTrainingSystem();
+        if (gs && !gs->multipolesReady())
+        {
+            (void) gs->setMultipoles(static_cast<int>(lossFunction_));
+        }
+    }
     if (!allTypes && !(gpuOk && forceComp_->gpuRecipeRows()))
     {
         for (auto molptr : selected)
@@ -982,6 +1000,86 @@ void ACMFitnessComputer::runChain(MsgHandler                         *msghandler
     numberCalcDevCalled_ += steps.size();
     // The force field has the parameters at the end
     sii_->updateForceField(msghandler, std::set<int>(), results->params);
+}
+
+void ACMFitnessComputer::checkMultipoles(MsgHandler *msghandler, const DeviationTask *dt)
+{
+    static const bool check = std::getenv("ACT_GPU_MULTIPOLE_CHECK") != nullptr;
+    auto gs = forceComp_->gpuTrainingSystem();
+    if (!check || !gs || !dt->gpuCharges || dt->replica != 0 || !dt->targets)
+    {
+        return;
+    }
+    std::vector<double> sums;
+    if (!gs->multipoleSums(&sums))
+    {
+        return;
+    }
+    // The same as the processor for each molecule computed, see MultiPoleDevComputer
+    for (size_t m = 0; m < dt->selected.size() && 4*m + 3 < sums.size(); m++)
+    {
+        if (dt->skipping && !dt->active[m])
+        {
+            continue;
+        }
+        // All parameters of the topology, the processor does not have those
+        // that only the GPU needs, such as those of the virtual sites
+        {
+            std::set<InteractionType> itUpdate;
+            for (const auto &oi : sii_->optIndex())
+            {
+                itUpdate.insert(oi.iType());
+            }
+            auto mymols = molgen_->actmolsPtr();
+            updateMolecule(msghandler, dt->selected[m], dt->selected[m] - &(*mymols->begin()), itUpdate,
+                           true, false, true);
+        }
+        std::map<eRMS, FittingTarget> mine;
+        for (auto erms : { eRMS::MU, eRMS::QUAD })
+        {
+            mine.insert({ erms, FittingTarget(erms, iMolSelect::Train) });
+        }
+        int t = 0;
+        for (auto mpo : { MolPropObservable::DIPOLE, MolPropObservable::QUADRUPOLE })
+        {
+            MultiPoleDevComputer mdc(mpo);
+            mdc.calcDeviation(msghandler, forceComp_, { dt->selected[m] }, &mine, sii_->forcefield(), lossFunction_);
+            const auto &ft = mine.find(t == 0 ? eRMS::MU : eRMS::QUAD)->second;
+            double n = sums[4*m + 2*t], l = sums[4*m + 2*t + 1];
+            multipoleChecks_ += 1;
+            double tol = 1e-3*std::max(1.0, std::abs(ft.chiSquared()));
+            if (n != ft.totalWeight() || std::abs(l - ft.chiSquared()) > tol)
+            {
+                multipoleDiffer_ += 1;
+                if (multipoleDiffer_ <= 2)
+                {
+                    // As MultiPoleDevComputer, on a copy of the structure
+                    std::vector<gmx::RVec> hx;
+                    for (auto &qp : *dt->selected[m]->qProps())
+                    {
+                        if (qp.qPqmConst().hasMultipole(MolPropObservable::DIPOLE))
+                        {
+                            auto qact = qp.qPactConst();
+                            hx        = qact.x();
+                            std::vector<gmx::RVec>            forces(hx.size());
+                            std::map<InteractionType, double> energies;
+                            forceComp_->compute(msghandler, sii_->forcefield(), dt->selected[m]->topology(),
+                                                &hx, &forces, &energies);
+                            break;
+                        }
+                    }
+                    gs->multipoleDebug(m, hx);
+                }
+                if (multipoleDiffer_ <= 10)
+                {
+                    fprintf(stderr, "GPU multipole check: %s %s count %g/%g loss %g on the GPU %g\n",
+                            dt->selected[m]->getMolname().c_str(), t == 0 ? "dipole" : "quadrupole",
+                            ft.totalWeight(), n, ft.chiSquared(), l);
+                }
+            }
+            t++;
+        }
+    }
 }
 
 void ACMFitnessComputer::chainCacheTo(size_t replica, const std::vector<double> &values, const std::vector<char> &valid)
@@ -1274,6 +1372,35 @@ double ACMFitnessComputer::finishDeviation(MsgHandler *msghandler, DeviationTask
             }
             continue;
         }
+        // The dipoles and quadrupoles of the GPU, those of the molecules
+        // skipped as kept, see ForceComputer::setGpuMultipoles
+        auto mdc = dynamic_cast<MultiPoleDevComputer *>(mydev);
+        auto gs  = forceComp_->gpuTrainingSystem();
+        if (mdc && dt->gpuDeviations && gs && gs->multipolesReady() &&
+            (mdc->observable() == MolPropObservable::DIPOLE || mdc->observable() == MolPropObservable::QUADRUPOLE))
+        {
+            int  t    = mdc->observable() == MolPropObservable::DIPOLE ? 0 : 1;
+            auto erms = t == 0 ? eRMS::MU : eRMS::QUAD;
+            auto &cache = molCache_.size() > dt->replica ? molCache_[dt->replica] : molCache_.emplace_back();
+            for (size_t m = 0; m < selected.size(); m++)
+            {
+                GpuMoleculeDeviations        fresh;
+                const GpuMoleculeDeviations *dev = nullptr;
+                if (dt->skipping && !dt->active[m])
+                {
+                    dev = &cache[m][dt->hit[m]].dev;
+                }
+                else if (forceComp_->gpuMoleculeDeviations(m, &fresh))
+                {
+                    dev = &fresh;
+                }
+                if (dev && dev->multipole && dev->multipoles.size() == 4)
+                {
+                    targets->find(erms)->second.increase(dev->multipoles[2*t], dev->multipoles[2*t + 1]);
+                }
+            }
+            continue;
+        }
         // The energies were computed, see computeEnergies
         auto fe = dynamic_cast<ForceEnergyDevComputer *>(mydev);
         if (fe && dt->gpuDeviations)
@@ -1382,6 +1509,7 @@ double ACMFitnessComputer::finishDeviation(MsgHandler *msghandler, DeviationTask
             fe->setComputeEnergies(true);
         }
     }
+    checkMultipoles(msghandler, dt);
     // Sum the terms of the chi-squared once we have done calculations
     // for all the molecules.
     sii_->sumChiSquared(msghandler, task == CalcDev::Compute, ims);
@@ -1470,6 +1598,15 @@ void ACMFitnessComputer::fillDevComputers(MsgHandler *msghandler,
     if (sii_->target(iMolSelect::Train, eRMS::MU)->weight() > 0)
     {
         devComputers_.push_back(new MultiPoleDevComputer(MolPropObservable::DIPOLE));
+    }
+    {
+        // The dipoles and quadrupoles on the GPU, if there is no ESP, which
+        // needs the charges on the processor anyway. ACT_NO_GPU_MULTIPOLES
+        // turns it off.
+        bool multipoles = (sii_->target(iMolSelect::Train, eRMS::MU)->weight() > 0 ||
+                           sii_->target(iMolSelect::Train, eRMS::QUAD)->weight() > 0);
+        bool esp        = sii_->target(iMolSelect::Train, eRMS::ESP)->weight() > 0;
+        forceComp_->setGpuMultipoles(multipoles && !esp && std::getenv("ACT_NO_GPU_MULTIPOLES") == nullptr);
     }
     if (sii_->target(iMolSelect::Train, eRMS::QUAD)->weight() > 0)
     {

@@ -369,6 +369,16 @@ public:
      */
     void chainCacheTo(size_t replica, const std::vector<double> &values, const std::vector<char> &valid);
 
+    //! The multipoles compared and those that differed, see checkMultipoles
+    int multipoleChecks_ = 0, multipoleDiffer_ = 0;
+
+    /*! \brief For developers, compare the multipoles of the GPU with those of the processor
+     * With ACT_GPU_MULTIPOLE_CHECK set, for each molecule computed.
+     * \param[in] msghandler For messages
+     * \param[in] dt         The evaluation
+     */
+    void checkMultipoles(MsgHandler *msghandler, const DeviationTask *dt);
+
     //! Whether the evaluation before allows the steps of the chain on the GPU, see chainReady
     bool                  chainOk_ = false;
     //! The molecules of that evaluation

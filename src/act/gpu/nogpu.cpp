@@ -198,6 +198,14 @@ const int *deviceNotFinite(System *)
     return nullptr;
 }
 
+void createMultipoles(System *, const MultipoleSystem &)
+{
+}
+
+void computeMultipoles(System *, const char *, double *)
+{
+}
+
 uint64_t blockAtomOffset(const System *, size_t)
 {
     return 0;
