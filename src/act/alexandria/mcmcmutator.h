@@ -212,6 +212,7 @@ private:
      * \param[in]    iter       Current iteration number
      * \param[in]    lockstep   Whether the force field may have the parameters
      *                          of another genome, see mutateLockstep
+     * \param[in]    decided    Whether the step is accepted, -1 to decide here
      * \return whether the change was accepted
      */
     bool finishStep(MsgHandler                         *msghandler,
@@ -222,7 +223,21 @@ private:
                     const std::map<iMolSelect, double> &currEval,
                     size_t                              pp,
                     int                                 iter,
-                    bool                                lockstep);
+                    bool                                lockstep,
+                    int                                 decided = -1);
+
+    /*! \brief The steps of mutate on the GPU, see ACMFitnessComputer::runChain
+     * The steps are replayed on the processor with the decisions of the
+     * GPU, for the statistics, the output and the best genome.
+     * \param[in]    msghandler For messages
+     * \param[inout] genome     The genome
+     * \param[inout] bestGenome The best genome
+     * \param[inout] state      The state of mutate
+     */
+    void mutateOnGpu(MsgHandler  *msghandler,
+                     ga::Genome  *genome,
+                     ga::Genome  *bestGenome,
+                     MutateState *state);
 
     /*!
      * \brief Add the parameters to the sums in the second half of the iterations

@@ -1977,6 +1977,57 @@ void ForceComputer::computeRelaxedEnergiesGpu(MsgHandler                        
     gs.copyChargesToMolecules();
 }
 
+void ForceComputer::chainEvaluateGpu(const ForceField *pd, const std::vector<ACTMol *> &allmols) const
+{
+    // As computeRelaxedEnergiesGpu with the deviations only, for the steps
+    // of the chain, see GpuTrainingSystem::chainPropose: the parameters are
+    // on the GPU already, the masks of the blocks are those of the chain,
+    // and nothing waits for the GPU
+    auto &gs = *gpuSystem_;
+    gs.setKeepEnergies(keepGpuEnergies_);
+    gs.setDeviationsOnly(true);
+    gpu::RelaxSettings settings = { msForceToler_, gmx::square(shellMaxDistance(pd)), minShellStep, maxShellStep, maxiter_,
+                                    stallIterations_, shellWallAngleTolerance };
+    settings.poll = false;
+    for (auto molptr : allmols)
+    {
+        auto &tops = molptr->fragmentHandler()->topologies();
+        nEval_ += molptr->conformationData(0)->nconf()*(tops.size() + (tops.size() > 1 ? 1 : 0));
+    }
+    const bool keepShells = keepShells_;
+    gs.resetShells();
+    gs.constructVsites();
+    const bool restoreKept = keepShells && gs.haveKeptShells();
+    gs.compute(-1, !restoreKept, true);
+    if (restoreKept && gs.restoreShells(-2))
+    {
+        gs.computeForces(-2);
+    }
+    const bool all[2] = { true, true };
+    size_t nf = 0;
+    (void) gs.relax(-1, all, settings, &nf);
+    gs.compute(-2, false);
+    if (restoreKept && gs.restoreShells(2))
+    {
+        gs.computeForces(2);
+    }
+    (void) gs.relax(2, all, settings, &nf);
+    gs.compute(2, false);
+    if (keepShells)
+    {
+        gs.keepShells();
+    }
+    gs.computeDeviations();
+    gs.setDeviationsOnly(false);
+}
+
+void ForceComputer::chainStatisticsGpu() const
+{
+    size_t nf = 0;
+    nShellIter_           += gpuSystem_->relaxStatistics(&nf);
+    nShellConvergeFailed_ += nf;
+}
+
 bool ForceComputer::computeRelaxedEnergiesReplicas(MsgHandler                          *msghandler,
                                                    const ForceField                    *pd,
                                                    const std::vector<ACTMol *>         &allmols,

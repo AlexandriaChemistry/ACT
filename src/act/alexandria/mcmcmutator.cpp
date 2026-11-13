@@ -189,6 +189,12 @@ void MCMCMutator::mutate(MsgHandler                *msghandler,
         genome->setFitness(ims_test, chi2_test);
     }
     startMutate(msghandler, &state, true);
+    if (!evaluateTestSet_ && fitComp_->chainReady())
+    {
+        mutateOnGpu(msghandler, genome, bestGenome, &state);
+        endMutate(bestGenome, &state);
+        return;
+    }
     // Optimization loop
     const auto imsTrain = iMolSelect::Train;
     const auto imsTest  = iMolSelect::Test;
@@ -232,6 +238,60 @@ void MCMCMutator::mutate(MsgHandler                *msghandler,
         }
     }
     endMutate(bestGenome, &state);
+}
+
+void MCMCMutator::mutateOnGpu(MsgHandler  *msghandler,
+                              ga::Genome  *genome,
+                              ga::Genome  *bestGenome,
+                              MutateState *state)
+{
+    const auto imsTrain = iMolSelect::Train;
+    size_t     nParam   = genome->nBase();
+    // The random numbers in the order of proposeStep and changeParam, which
+    // do not depend on whether the steps are accepted
+    std::vector<gpu::ChainStep> steps;
+    for (int iter = 0; iter < bch_->maxIter(); iter++)
+    {
+        double beta = bch_->computeBeta(myGeneration_, maxGenerations_, iter);
+        for (size_t pp = 0; pp < nParam; pp++)
+        {
+            gpu::ChainStep st;
+            st.param  = randIndex();
+            st.change = randNum();
+            st.accept = randNum();
+            st.beta   = beta;
+            steps.push_back(st);
+        }
+    }
+    gpu::ChainResults results;
+    bool haveBest = bestGenome->hasFitness(imsTrain);
+    fitComp_->runChain(msghandler, genome->bases(), steps, state->prevEval[imsTrain], haveBest,
+                       haveBest ? bestGenome->fitness(imsTrain) : 0.0, &results);
+    // The steps again on the processor, as the GPU did them, for the
+    // statistics, the output and the best genome
+    size_t s = 0;
+    for (int iter = 0; iter < bch_->maxIter(); iter++)
+    {
+        for (size_t pp = 0; pp < nParam; pp++, s++)
+        {
+            Proposal proposal;
+            proposal.paramIndex   = steps[s].param;
+            proposal.storeParam   = genome->bases()[proposal.paramIndex];
+            proposal.acceptRandom = steps[s].accept;
+            attemptedMoves_[proposal.paramIndex] += 1;
+            genome->setBase(proposal.paramIndex, results.trial[s]);
+            std::map<iMolSelect, double> currEval = { { imsTrain, results.chi2[s] } };
+            (void) finishStep(msghandler, genome, bestGenome, state, proposal, currEval, pp, iter, true,
+                              results.accepted[s] ? 1 : 0);
+            collectStep(genome, state, iter);
+        }
+    }
+    if (genome->bases() != results.params)
+    {
+        msghandler->fatal("The parameters of the steps on the processor differ from those on the GPU");
+    }
+    // Writing a checkpoint above changed the force field
+    sii_->updateForceField(msghandler, std::set<int>(), genome->bases());
 }
 
 void MCMCMutator::mutateLockstep(MsgHandler                       *msghandler,
@@ -319,7 +379,8 @@ bool MCMCMutator::finishStep(MsgHandler                         *msghandler,
                              const std::map<iMolSelect, double> &currEval,
                              size_t                              pp,
                              int                                 iter,
-                             bool                                lockstep)
+                             bool                                lockstep,
+                             int                                 decided)
 {
     const auto imsTrain   = iMolSelect::Train;
     const auto imsTest    = iMolSelect::Test;
@@ -331,8 +392,13 @@ bool MCMCMutator::finishStep(MsgHandler                         *msghandler,
     bool accept = (deltaEval < 0);
 
     // For an uphill move apply the Metropolis Criteria
-    // to decide whether to accept or reject the new parameter
-    if (!accept)
+    // to decide whether to accept or reject the new parameter,
+    // unless the GPU decided already, see mutateOnGpu
+    if (decided >= 0)
+    {
+        accept = decided != 0;
+    }
+    else if (!accept)
     {
         // Get beta for the MCMC algorithm.
         state->beta0 = bch_->computeBeta(myGeneration_, maxGenerations_, iter);

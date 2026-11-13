@@ -37,6 +37,7 @@
 
 #include <memory>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "act/basics/interactiontype.h"
@@ -372,6 +373,14 @@ public:
      */
     size_t chainEntrySize(size_t mol) const;
 
+    /*! \brief The layout of a set kept of a molecule, see gpu::chainEntrySize
+     * \param[in]  mol     The molecule
+     * \param[out] ndimer  The number of sums of its dimer, 0 if it has none
+     * \param[out] nepot   The number of terms of its potential energy, 0 if none
+     * \return Whether it has a dimer and potential energy terms, as GpuMoleculeDeviations
+     */
+    std::pair<bool, bool> chainLayout(size_t mol, size_t *ndimer, size_t *nepot) const;
+
     /*! \brief Set or get the sets kept, see gpu::chainSetCache
      * \param[inout] values For each molecule two sets
      * \param[inout] valid  For each molecule whether each is valid
@@ -409,6 +418,46 @@ public:
      *         make them from the recipes
      */
     int chainCheckValues();
+
+    /*! \return Whether the steps of the chain can run on the GPU alone,
+     * all that the evaluations need follows from the parameters there
+     */
+    bool chainCapable() const;
+
+    /*! \brief Start the steps of the chain, see gpu::chainSetSteps
+     * The parameters on the GPU must be those of chi2, see chainParameters,
+     * and the sets kept those of the processor, see chainCache. The
+     * evaluations use the masks of the chain, see gpu::chainMask, until chainEnd.
+     */
+    void chainBegin(const std::vector<gpu::ChainStep> &steps,
+                    const std::vector<double>         &stepSize,
+                    const std::vector<double>         &lower,
+                    const std::vector<double>         &upper,
+                    const std::vector<char>           &bounded,
+                    const std::vector<double>         &temperature,
+                    double chi2, bool haveBest, double bestChi2);
+
+    /*! \brief Change the parameter of a step and prepare its evaluation
+     * The values on the GPU follow, as uploadParameters, and the molecules
+     * whose parameters did not change are skipped.
+     * \param[in] step  The step
+     * \param[in] param The parameter it changes
+     * \param[in] pd    The force field, for the dielectric constant
+     */
+    void chainPropose(size_t step, int param, const ForceField *pd);
+
+    /*! \brief The chi squared of the evaluation of a step and the Metropolis criterion
+     * \param[in] step  The step
+     * \param[in] param The parameter it changed
+     */
+    void chainFinish(size_t step, int param);
+
+    /*! \brief The results of the steps, waits for the GPU
+     * What the processor kept of the charges and the values on the GPU is
+     * made again in the next evaluation.
+     * \param[out] results The results
+     */
+    void chainEnd(gpu::ChainResults *results);
 
     //! Copy the shells of the relaxed monomers to the dimers, as copyRelaxedMonomerShells
     void copyRelaxedMonomerShells();

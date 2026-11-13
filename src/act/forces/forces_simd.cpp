@@ -4222,12 +4222,21 @@ size_t GpuTrainingSystem::relaxStatistics(size_t *nFailed) { *nFailed = 0; retur
 bool GpuTrainingSystem::setChain(const GpuChainSetup &) { return false; }
 bool GpuTrainingSystem::haveChain() const { return false; }
 size_t GpuTrainingSystem::chainEntrySize(size_t) const { return 0; }
+std::pair<bool, bool> GpuTrainingSystem::chainLayout(size_t, size_t *ndimer, size_t *nepot) const { *ndimer = 0; *nepot = 0; return { false, false }; }
 void GpuTrainingSystem::chainCache(std::vector<double> *, std::vector<char> *, bool) {}
 void GpuTrainingSystem::chainParameters(const std::vector<double> &) {}
 void GpuTrainingSystem::chainSkip(bool) {}
 void GpuTrainingSystem::chainActive(std::vector<char> *, std::vector<int> *) {}
 double GpuTrainingSystem::chainChi2(bool) { return 0; }
 int GpuTrainingSystem::chainCheckValues() { return -1; }
+bool GpuTrainingSystem::chainCapable() const { return false; }
+void GpuTrainingSystem::chainBegin(const std::vector<gpu::ChainStep> &, const std::vector<double> &,
+                                   const std::vector<double> &, const std::vector<double> &,
+                                   const std::vector<char> &, const std::vector<double> &,
+                                   double, bool, double) {}
+void GpuTrainingSystem::chainPropose(size_t, int, const ForceField *) {}
+void GpuTrainingSystem::chainFinish(size_t, int) {}
+void GpuTrainingSystem::chainEnd(gpu::ChainResults *results) { *results = gpu::ChainResults(); }
 void GpuTrainingSystem::copyRelaxedMonomerShells() {}
 void GpuTrainingSystem::saveDimers() {}
 void GpuTrainingSystem::restoreDimers() {}
@@ -4380,6 +4389,8 @@ public:
     std::vector<int>                   devDimerOf, devMonomerOf;
     //! Whether there is a Monte Carlo chain on the GPU, see setChain
     bool                               chain = false;
+    //! Whether all parameters have a value on the GPU, see setChain
+    bool                               chainMapped = false;
     //! Whether the values of the recipes and of the charge generation were uploaded, see uploadParameters
     bool                               recipeUploaded = false, acmUploaded = false;
     //! The results of computeDeviations, see gpu::computeDeviations
@@ -4729,6 +4740,25 @@ public:
             return mols[mol]->conformationData(what)->energies;
         }
         return replicaEnergies[replica][3*mol + what];
+    }
+
+    //! Whether the masks are those that the chain makes on the GPU, see GpuTrainingSystem::chainStep
+    bool              chainRun = false;
+    //! The mask of the last call of mask
+    std::vector<char> maskStore;
+
+    /*! \brief The mask of the blocks for what, see use, on the GPU during the chain
+     * \param[in] what -1 for all, -2 for the monomers, 2 for the dimers
+     * \return The mask, until the next call
+     */
+    const char *mask(int what)
+    {
+        if (chainRun)
+        {
+            return gpu::chainMask(system, what);
+        }
+        maskStore = use(what);
+        return maskStore.data();
     }
 
     //! Whether to use each block for what, -1 for all, -2 for the monomers
@@ -5714,8 +5744,7 @@ std::pair<double, double> GpuTrainingSystem::chargeDifference() const
 
 void GpuTrainingSystem::resetShells()
 {
-    auto u = impl_->use(-1);
-    gpu::resetShells(impl_->system, u.data());
+    gpu::resetShells(impl_->system, impl_->mask(-1));
 }
 
 void GpuTrainingSystem::keepShells()
@@ -5725,8 +5754,7 @@ void GpuTrainingSystem::keepShells()
     im.notFinite  = false;
     if (im.shellsKept)
     {
-        auto u = im.use(-1);
-        gpu::keepShells(im.system, u.data(), false);
+        gpu::keepShells(im.system, im.mask(-1), false);
     }
 }
 
@@ -5737,8 +5765,7 @@ bool GpuTrainingSystem::restoreShells(int what)
     {
         return false;
     }
-    auto u = im.use(what);
-    gpu::keepShells(im.system, u.data(), true);
+    gpu::keepShells(im.system, im.mask(what), true);
     return true;
 }
 
@@ -6011,6 +6038,12 @@ void GpuTrainingSystem::computeDeviations()
     size_t nmc = im.devMonomers.empty() ? 0 : im.devMonomers.back().confOffset + im.devMonomers.back().nconf;
     im.devDimerSums.resize(2*im.devDimers.size()*im.devTargets);
     im.devEpotTerms.resize(2*nmc);
+    if (im.chainRun)
+    {
+        // The deviations stay on the GPU, see chainStep
+        gpu::computeDeviations(im.system, im.mask(-1), nullptr, nullptr);
+        return;
+    }
     auto u = im.use(-1);
     gpu::computeDeviations(im.system, u.data(), im.devDimerSums.data(), im.devEpotTerms.data());
     im.devComputed = true;
@@ -6166,8 +6199,7 @@ void GpuTrainingSystem::constructVsites()
 void GpuTrainingSystem::computeForces(int what)
 {
     auto &im = *impl_;
-    auto  u  = im.use(what);
-    gpu::computeBlocks(im.system, u.data(), nullptr, true);
+    gpu::computeBlocks(im.system, im.mask(what), nullptr, true);
 }
 
 bool GpuTrainingSystem::haveKeptShells() const
@@ -6178,13 +6210,13 @@ bool GpuTrainingSystem::haveKeptShells() const
 void GpuTrainingSystem::compute(int what, bool forces, bool backup)
 {
     auto &im = *impl_;
-    auto  u  = im.use(what);
     if (im.devOnly)
     {
         // The energies stay on the GPU for computeDeviations
-        gpu::computeBlocksKeep(im.system, u.data(), forces, backup);
+        gpu::computeBlocksKeep(im.system, im.mask(what), forces, backup);
         return;
     }
+    auto  u  = im.use(what);
     std::vector<const double *> eptr(im.blocks.size(), nullptr);
     gpu::computeBlocksInPlace(im.system, u.data(), eptr.data(), forces);
     if (im.devReady)
@@ -6237,7 +6269,7 @@ size_t GpuTrainingSystem::relax(int what, const bool relaxMonomer[2], const gpu:
                                 size_t *nFailed)
 {
     auto &im = *impl_;
-    auto  u  = im.use(what == 2 ? 2 : -2);
+    const char *u = im.mask(what == 2 ? 2 : -2);
     std::vector<char> relax(2*im.blocks.size(), 0);
     for (size_t b = 0; b < im.blocks.size(); b++)
     {
@@ -6253,7 +6285,7 @@ size_t GpuTrainingSystem::relax(int what, const bool relaxMonomer[2], const gpu:
     }
     size_t nComputed = 0;
     bool   notFinite = false;
-    gpu::relaxBlocks(im.system, u.data(), relax.data(), settings, &nComputed, &notFinite, nFailed);
+    gpu::relaxBlocks(im.system, u, relax.data(), settings, &nComputed, &notFinite, nFailed);
     if (notFinite)
     {
         im.notFinite = true;
@@ -6361,13 +6393,14 @@ bool GpuTrainingSystem::setChain(const GpuChainSetup &setup)
             acmIndex[k] = a - im.acmValues.begin();
         }
     }
+    size_t none = 0;
+    for (size_t k = 0; k < setup.nparam; k++)
+    {
+        none += (recipeSlot[k] < 0 && acmIndex[k] < 0) ? 1 : 0;
+    }
+    im.chainMapped = (none == 0 && setup.params.size() == setup.nparam);
     if (std::getenv("ACT_GPU_CHAIN_CHECK"))
     {
-        size_t none = 0;
-        for (size_t k = 0; k < setup.nparam; k++)
-        {
-            none += (recipeSlot[k] < 0 && acmIndex[k] < 0) ? 1 : 0;
-        }
         fprintf(stderr, "GPU chain: %zu of %zu parameters have no value on the GPU, %zu replicas, recipe rows %d, charge recipes %d\n",
                 none, setup.nparam, im.nreplica, im.recipeRows, im.chargeRecipes ? 1 : 0);
     }
@@ -6424,6 +6457,16 @@ void GpuTrainingSystem::chainCache(std::vector<double> *values, std::vector<char
     }
 }
 
+std::pair<bool, bool> GpuTrainingSystem::chainLayout(size_t mol, size_t *ndimer, size_t *nepot) const
+{
+    const auto &im = *impl_;
+    int d   = im.devDimerOf[mol];
+    int m   = im.devMonomerOf[mol];
+    *ndimer = d >= 0 ? 2*im.devTargets : 0;
+    *nepot  = m >= 0 ? 2*im.devMonomers[m].nconf : 0;
+    return { d >= 0, m >= 0 };
+}
+
 void GpuTrainingSystem::chainParameters(const std::vector<double> &params)
 {
     gpu::chainSetParameters(impl_->system, params.data());
@@ -6446,6 +6489,64 @@ double GpuTrainingSystem::chainChi2(bool keep)
 {
     gpu::chainComputeChi2(impl_->system, keep);
     return gpu::chainChi2(impl_->system);
+}
+
+bool GpuTrainingSystem::chainCapable() const
+{
+    const auto &im = *impl_;
+    // Everything the steps need follows from the parameters on the GPU
+    return (im.chain && im.chainMapped && im.devReady && im.nreplica == 1 && im.recipeRows == 1 &&
+            im.recipeUploaded && im.chargeRecipes && (im.acmMols.empty() || im.acmUploaded) &&
+            !(im.acmVsites && !im.acmVsitesOnGpu));
+}
+
+void GpuTrainingSystem::chainBegin(const std::vector<gpu::ChainStep> &steps,
+                                   const std::vector<double>         &stepSize,
+                                   const std::vector<double>         &lower,
+                                   const std::vector<double>         &upper,
+                                   const std::vector<char>           &bounded,
+                                   const std::vector<double>         &temperature,
+                                   double chi2, bool haveBest, double bestChi2)
+{
+    auto &im = *impl_;
+    gpu::chainSetSteps(im.system, steps.data(), steps.size(), stepSize.data(), lower.data(),
+                       upper.data(), bounded.data(), temperature.data(), chi2, haveBest, bestChi2);
+    im.chainRun = true;
+}
+
+void GpuTrainingSystem::chainPropose(size_t step, int param, const ForceField *pd)
+{
+    auto &im = *impl_;
+    gpu::chainPropose(im.system, step);
+    gpu::chainApply(im.system, param);
+    // As uploadParameters, all from the values on the GPU
+    gpu::updateParameters(im.system, nullptr, nullptr, ONE_4PI_EPS0, pd->epsilonr());
+    gpu::chainSkip(im.system, true);
+}
+
+void GpuTrainingSystem::chainFinish(size_t step, int param)
+{
+    auto &im = *impl_;
+    gpu::chainComputeChi2(im.system, true);
+    gpu::chainMetropolis(im.system, step);
+    // The value of a rejected change is that from before again
+    gpu::chainApply(im.system, param);
+}
+
+void GpuTrainingSystem::chainEnd(gpu::ChainResults *results)
+{
+    auto &im = *impl_;
+    gpu::chainResults(im.system, results);
+    im.chainRun = false;
+    // The charges, the virtual sites and the values on the GPU are those of
+    // the last step, which the processor does not know: all are made again
+    // in the next evaluation, see uploadParameters
+    im.acmLastValues.clear();
+    im.acmLastX.clear();
+    im.chargeLast.clear();
+    im.acmVsiteLast.clear();
+    im.acmGenerated = true;
+    im.devComputed  = false;
 }
 
 int GpuTrainingSystem::chainCheckValues()

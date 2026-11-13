@@ -646,6 +646,17 @@ private:
         return gpuSystem_ && !gpuResidentUnavailable_ ? gpuSystem_.get() : nullptr;
     }
 
+    /*! \brief Evaluate a step of the chain on the GPU, see GpuTrainingSystem::chainPropose
+     * Nothing waits for the GPU, the statistics of the relaxation are added
+     * by chainStatisticsGpu.
+     * \param[in] pd      The force field
+     * \param[in] allmols The molecules of the GPU system
+     */
+    void chainEvaluateGpu(const ForceField *pd, const std::vector<ACTMol *> &allmols) const;
+
+    //! Add the statistics of the relaxations of the steps of the chain, waits for the GPU
+    void chainStatisticsGpu() const;
+
     /*! \brief Make the system of these molecules on the GPU, see setGpuResident
      * If the GPU cannot compute them, the processor computes everything
      * from then on.
