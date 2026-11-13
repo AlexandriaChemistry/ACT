@@ -4391,6 +4391,8 @@ public:
     bool                               chain = false;
     //! Whether all parameters have a value on the GPU, see setChain
     bool                               chainMapped = false;
+    //! For each parameter whether the charges and the virtual sites of the charge generation depend on it
+    std::vector<char>                  chainCharges, chainVsites;
     //! Whether the values of the recipes and of the charge generation were uploaded, see uploadParameters
     bool                               recipeUploaded = false, acmUploaded = false;
     //! The results of computeDeviations, see gpu::computeDeviations
@@ -6399,6 +6401,23 @@ bool GpuTrainingSystem::setChain(const GpuChainSetup &setup)
         none += (recipeSlot[k] < 0 && acmIndex[k] < 0) ? 1 : 0;
     }
     im.chainMapped = (none == 0 && setup.params.size() == setup.nparam);
+    // Which parameters the charges and the virtual sites of the charge
+    // generation depend on, see uploadParameters
+    im.chainCharges.assign(setup.nparam, 0);
+    im.chainVsites.assign(setup.nparam, 0);
+    for (size_t k = 0; k < setup.nparam; k++)
+    {
+        size_t slot = recipeSlot[k];
+        bool   q    = acmIndex[k] >= 0;
+        bool   v    = false;
+        if (recipeSlot[k] >= 0)
+        {
+            q = q || std::find(im.chargeSlots.begin(), im.chargeSlots.end(), slot) != im.chargeSlots.end();
+            v = std::find(im.acmVsiteSlots.begin(), im.acmVsiteSlots.end(), slot) != im.acmVsiteSlots.end();
+        }
+        im.chainCharges[k] = (q || v) ? 1 : 0;
+        im.chainVsites[k]  = v ? 1 : 0;
+    }
     if (std::getenv("ACT_GPU_CHAIN_CHECK"))
     {
         fprintf(stderr, "GPU chain: %zu of %zu parameters have no value on the GPU, %zu replicas, recipe rows %d, charge recipes %d\n",
@@ -6518,7 +6537,7 @@ void GpuTrainingSystem::chainPropose(size_t step, int param, const ForceField *p
 {
     auto &im = *impl_;
     gpu::chainPropose(im.system, step);
-    gpu::chainApply(im.system, param);
+    gpu::chainApply(im.system, param, im.chainCharges[param], im.chainVsites[param]);
     // As uploadParameters, all from the values on the GPU
     gpu::updateParameters(im.system, nullptr, nullptr, ONE_4PI_EPS0, pd->epsilonr());
     gpu::chainSkip(im.system, true);
@@ -6529,8 +6548,9 @@ void GpuTrainingSystem::chainFinish(size_t step, int param)
     auto &im = *impl_;
     gpu::chainComputeChi2(im.system, true);
     gpu::chainMetropolis(im.system, step);
-    // The value of a rejected change is that from before again
-    gpu::chainApply(im.system, param);
+    // The value of a rejected change is that from before again, which the
+    // next step makes the charges for, if they depend on it
+    gpu::chainApply(im.system, param, im.chainCharges[param], im.chainVsites[param]);
 }
 
 void GpuTrainingSystem::chainEnd(gpu::ChainResults *results)

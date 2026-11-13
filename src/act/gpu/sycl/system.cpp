@@ -3627,7 +3627,7 @@ void chainSetParameters(System *sys, const double *params)
     }
 }
 
-void chainApply(System *sys, int param)
+void chainApply(System *sys, int param, bool charges, bool vsites)
 {
     size_t np = sys->nchainParam_;
     if (np == 0)
@@ -3655,9 +3655,16 @@ void chainApply(System *sys, int param)
     });
     // Everything that follows from the values is made again, see updateParameters
     sys->recipeValuesChanged_ = sys->nrowRecipe_ > 0;
-    // Only if the GPU constructs the virtual sites, see createAcmVsites
-    sys->acmVsitesChanged_    = sys->acmVsites_ != nullptr;
-    sys->acmChanged_          = sys->nacmMolecule_ > 0;
+    // Until updateParameters made them; only if the GPU constructs the
+    // virtual sites, see createAcmVsites
+    if (vsites && sys->acmVsites_ != nullptr)
+    {
+        sys->acmVsitesChanged_ = true;
+    }
+    if (charges && sys->nacmMolecule_ > 0)
+    {
+        sys->acmChanged_ = true;
+    }
 }
 
 void downloadValues(System *sys, std::vector<double> *recipe, std::vector<double> *acm)

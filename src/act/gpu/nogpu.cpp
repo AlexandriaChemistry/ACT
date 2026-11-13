@@ -224,7 +224,7 @@ void chainSetParameters(System *, const double *)
 {
 }
 
-void chainApply(System *, int)
+void chainApply(System *, int, bool, bool)
 {
 }
 
