@@ -4844,7 +4844,7 @@ public:
         {
             return mols[bl.mol]->conformationData(bl.what)->energies;
         }
-        return replicaEnergies[bl.replica][3*bl.mol + bl.what];
+        return replicaEnergies[bl.replica][nwhat*bl.mol + bl.what];
     }
 
     //! The charges generated for a replica to the molecules and their fragments
