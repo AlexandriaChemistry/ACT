@@ -875,6 +875,28 @@ ACTMessage ACTMol::GenerateAcmCharges(MsgHandler             *msg_handler,
     return imm;
 }
 
+size_t ACTMol::setMultipoleConformations()
+{
+    auto &cd = conformationData_[3];
+    std::vector<const std::vector<gmx::RVec> *> xs;
+    for (const auto &qp : qProps_)
+    {
+        const auto &qm = qp.qPqmConst();
+        if (qm.hasMultipole(MolPropObservable::DIPOLE) || qm.hasMultipole(MolPropObservable::QUADRUPOLE))
+        {
+            xs.push_back(&qp.qPactConst().x());
+        }
+    }
+    // All structures again, setX resizes the arrays for another number
+    cd.confs.clear();
+    cd.confs.resize(xs.size());
+    for (size_t c = 0; c < xs.size(); c++)
+    {
+        cd.setX(c, *xs[c]);
+    }
+    return xs.size();
+}
+
 void ACTMol::updateQprops(const ForceField          *pd,
                           const ForceComputer       *forceComp,
                           std::vector<gmx::RVec>    *forces)

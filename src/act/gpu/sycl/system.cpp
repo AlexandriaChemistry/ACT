@@ -1584,6 +1584,10 @@ void generateAcmCharges(System *sys)
                 {
                     dQ[4*(dB[m.dimerBlock].atomOffset + f.atomStart + a)] = qm[f.atomStart + a];
                 }
+                if (m.multipoleBlock != noBlock)
+                {
+                    dQ[4*(dB[m.multipoleBlock].atomOffset + f.atomStart + a)] = qm[f.atomStart + a];
+                }
             }
         }
     });
@@ -4107,7 +4111,8 @@ void chainSkip(System *sys, bool canSkip)
             act = v.activeOf(mol, v.hitOf(mol), canSkip) ? 1 : 0;
         }
         v.masks[b]              = act;
-        v.masks[v.nblock + b]   = (act && v.blockWhat[b] < 2) ? 1 : 0;
+        // The monomers and the structures of the multipoles, see GpuTrainingSystem::Impl::use
+        v.masks[v.nblock + b]   = (act && v.blockWhat[b] != 2) ? 1 : 0;
         v.masks[2*v.nblock + b] = (act && v.blockWhat[b] == 2) ? 1 : 0;
     });
 }

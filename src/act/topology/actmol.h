@@ -144,8 +144,9 @@ private:
     //! Is this a linear molecule? Will be checked first when generating a topology.
     bool                             isLinear_ = false;
     //! The conformations from all experiments, with the data for computing
-    //! them, of the two monomers first, then of the dimer
-    ConformationData                 conformationData_[3];
+    //! them, of the two monomers first, then of the dimer, and last the
+    //! structures of the multipoles, see setMultipoleConformations
+    ConformationData                 conformationData_[4];
     //! \brief Routine to gather the CoordsEnergy
     
     /*! \brief
@@ -307,10 +308,19 @@ public:
      */
     std::vector<CoordsEnergy> *monomerCoords(size_t index) { return &conformationData_[index].confs; }
     /*! \brief Data for computing all conformations at once
-     * \param[in] what 0 or 1 for the monomers, 2 for the dimer
+     * \param[in] what 0 or 1 for the monomers, 2 for the dimer, 3 for the
+     *                 structures of the multipoles, see setMultipoleConformations
      * \return The data
      */
     ConformationData *conformationData(size_t what) { return &conformationData_[what]; }
+
+    /*! \brief The structures of the multipoles as conformations, for the GPU
+     * Those of the charge properties with a dipole or a quadrupole of
+     * reference, in their order, with their coordinates now, see
+     * MultiPoleDevComputer. They are conformationData(3) of the whole topology.
+     * \return The number of structures
+     */
+    size_t setMultipoleConformations();
     //! \return the number of real atoms, i.e. not shells or vsites
     int nRealAtoms() const { return realAtoms_.size(); }
     
