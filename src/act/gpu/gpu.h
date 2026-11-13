@@ -1312,6 +1312,8 @@ struct ChainMolecule
     uint32_t nbound      = 0;
     //! Whether it may be skipped when its parameters did not change
     uint32_t skippable   = 0;
+    //! Whether it has deviations of the multipoles, see computeMultipoles
+    uint32_t multipole   = 0;
 };
 
 //! The bound of the charge of a particle and those that are added to it
@@ -1337,7 +1339,9 @@ enum ChainTermKind : int32_t
     //! The potential energy of the monomers
     chainTermEpot   = 1,
     //! The bounds of the charges
-    chainTermBounds = 2
+    chainTermBounds = 2,
+    //! The multipoles, ChainTerm::index 0 for the dipole, 1 for the quadrupole
+    chainTermMultipole = 3
 };
 
 //! A term of the total chi squared, in the order of the fitting targets
@@ -1394,7 +1398,8 @@ void createChain(System *system, const ChainSystem &chain);
 /*! \brief The number of values of the sets kept of a molecule
  * In this order: the values of its parameters, the sums of its dimer
  * (two per target), the terms of its potential energy (two per
- * conformation) and its bound.
+ * conformation), the deviations of its multipoles (four, see
+ * computeMultipoles) and its bound.
  * \param[in] system The system
  * \param[in] mol    The molecule
  * \return The number of values of one set

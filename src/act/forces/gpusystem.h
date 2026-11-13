@@ -416,9 +416,10 @@ public:
      * \param[in]  mol     The molecule
      * \param[out] ndimer  The number of sums of its dimer, 0 if it has none
      * \param[out] nepot   The number of terms of its potential energy, 0 if none
+     * \param[out] nmultipole The number of deviations of its multipoles, 0 if none
      * \return Whether it has a dimer and potential energy terms, as GpuMoleculeDeviations
      */
-    std::pair<bool, bool> chainLayout(size_t mol, size_t *ndimer, size_t *nepot) const;
+    std::pair<bool, bool> chainLayout(size_t mol, size_t *ndimer, size_t *nepot, size_t *nmultipole) const;
 
     /*! \brief Set or get the sets kept, see gpu::chainSetCache
      * \param[inout] values For each molecule two sets

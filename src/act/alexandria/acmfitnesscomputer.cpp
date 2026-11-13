@@ -898,6 +898,11 @@ bool ACMFitnessComputer::setupChain(const DeviationTask &dt)
         {
             term.kind = gpu::chainTermBounds;
         }
+        else if ((ft.first == eRMS::MU || ft.first == eRMS::QUAD) && gs->multipolesReady())
+        {
+            term.kind  = gpu::chainTermMultipole;
+            term.index = ft.first == eRMS::MU ? 0 : 1;
+        }
         else
         {
             continue;
@@ -941,6 +946,7 @@ bool ACMFitnessComputer::chainAllowed(const DeviationTask &dt)
     {
         bool onGpu = (std::find(rms.begin(), rms.end(), ft.first) != rms.end() ||
                       (ft.first == eRMS::EPOT && epot) || (ft.first == eRMS::BOUNDS && haveBounds) ||
+                      ((ft.first == eRMS::MU || ft.first == eRMS::QUAD) && gs->multipolesReady()) ||
                       ft.first == eRMS::TOT);
         if (!onGpu && (ft.second.totalWeight() != 0 || ft.second.chiSquared() != 0))
         {
@@ -1095,8 +1101,8 @@ void ACMFitnessComputer::chainCacheTo(size_t replica, const std::vector<double> 
     for (size_t m = 0; m < nmol; m++)
     {
         size_t size  = gs->chainEntrySize(m);
-        size_t ndimer = 0, nepot = 0;
-        auto   have  = gs->chainLayout(m, &ndimer, &nepot);
+        size_t ndimer = 0, nepot = 0, nmultipole = 0;
+        auto   have  = gs->chainLayout(m, &ndimer, &nepot, &nmultipole);
         size_t ndep  = molDeps_[m].size();
         for (int e = 0; e < 2; e++, off += size)
         {
@@ -1113,6 +1119,8 @@ void ACMFitnessComputer::chainCacheTo(size_t replica, const std::vector<double> 
             entry.dev.epot      = have.second;
             entry.dev.targets.assign(v + ndep, v + ndep + ndimer);
             entry.dev.epotTerms.assign(v + ndep + ndimer, v + ndep + ndimer + nepot);
+            entry.dev.multipole = nmultipole > 0;
+            entry.dev.multipoles.assign(v + ndep + ndimer + nepot, v + ndep + ndimer + nepot + nmultipole);
             entry.bound         = v[size - 1];
         }
     }
@@ -1142,6 +1150,14 @@ void ACMFitnessComputer::chainCacheOf(size_t replica, std::vector<double> *value
                 if (entry->dev.epot)
                 {
                     v.insert(v.end(), entry->dev.epotTerms.begin(), entry->dev.epotTerms.end());
+                }
+                size_t nd = 0, ne = 0, nmp = 0;
+                (void) gs->chainLayout(m, &nd, &ne, &nmp);
+                if (nmp > 0)
+                {
+                    auto mp = entry->dev.multipoles;
+                    mp.resize(nmp, 0.0);
+                    v.insert(v.end(), mp.begin(), mp.end());
                 }
                 v.push_back(entry->bound);
             }

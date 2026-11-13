@@ -3709,7 +3709,7 @@ void createChain(System *sys, const ChainSystem &c)
     for (size_t m = 0; m < c.nmol; m++)
     {
         const auto &cm = c.mols[m];
-        uint64_t size  = cm.ndep + (cm.dimer >= 0 ? 2*ntarget : 0) + (cm.monomer >= 0 ? 2*cm.nepot : 0) + 1;
+        uint64_t size  = cm.ndep + (cm.dimer >= 0 ? 2*ntarget : 0) + (cm.monomer >= 0 ? 2*cm.nepot : 0) + (cm.multipole ? 4 : 0) + 1;
         sys->chainEntryHost_[m] = total;
         sys->chainSizeHost_[m]  = size;
         total += 2*size;
@@ -3748,6 +3748,7 @@ void createChain(System *sys, const ChainSystem &c)
                 case chainTermDimer:  n = cm.dimer >= 0 ? 1 : 0; break;
                 case chainTermEpot:   n = cm.monomer >= 0 ? cm.nepot : 0; break;
                 case chainTermBounds: n = 1; break;
+                case chainTermMultipole: n = cm.multipole ? 1 : 0; break;
                 }
                 pos[t*c.nmol + m] = cursor;
                 cursor           += n;
@@ -3983,6 +3984,7 @@ struct ChainView
     const double        *charges;
     const double        *dimerSums;
     const double        *epotTerms;
+    const double        *multipoles;
     double              *chi2;
     const uint64_t      *pos;
     const uint64_t      *termStart;
@@ -4001,7 +4003,7 @@ struct ChainView
     uint64_t size(size_t m) const
     {
         const ChainMolecule &cm = mols[m];
-        return cm.ndep + (cm.dimer >= 0 ? 2*ntarget : 0) + (cm.monomer >= 0 ? 2*cm.nepot : 0) + 1;
+        return cm.ndep + (cm.dimer >= 0 ? 2*ntarget : 0) + (cm.monomer >= 0 ? 2*cm.nepot : 0) + (cm.multipole ? 4 : 0) + 1;
     }
 
     //! The last set kept with the values of the parameters of a molecule, -1 if none, as prepareDeviation
@@ -4098,6 +4100,13 @@ struct ChainView
                 g[0] = 1;
                 g[1] = fresh ? b : kept[sz - 1];
             }
+            else if (term.kind == chainTermMultipole && cm.multipole)
+            {
+                const double *v = fresh ? multipoles + 4*m
+                                        : kept + cm.ndep + (cm.dimer >= 0 ? 2*ntarget : 0) + (cm.monomer >= 0 ? 2*cm.nepot : 0);
+                g[0] = v[2*term.index];
+                g[1] = v[2*term.index + 1];
+            }
         }
     }
 
@@ -4169,6 +4178,13 @@ struct ChainView
                 e0[k++] = epotTerms[2*cm.epotOffset + i];
             }
         }
+        if (cm.multipole)
+        {
+            for (uint32_t i = 0; i < 4; i++)
+            {
+                e0[k++] = multipoles[4*m + i];
+            }
+        }
         e0[k]      = boundNow[m];
         valid[2*m] = 1;
     }
@@ -4194,6 +4210,7 @@ static ChainView chainView(System *sys)
     v.charges      = sys->charges_;
     v.dimerSums    = sys->devDimerSums_;
     v.epotTerms    = sys->devEpotTerms_;
+    v.multipoles   = sys->mpSums_;
     v.chi2         = sys->chainChi2_;
     v.pos          = sys->chainPos_;
     v.termStart    = sys->chainTermStart_;
