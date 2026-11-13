@@ -649,8 +649,8 @@ private:
      */
     void setGpuMultipoles(bool multipoles) { gpuMultipoles_ = multipoles; }
 
-    //! \return Whether the GPU computes the dipoles and quadrupoles, if it computes the molecules
-    bool gpuMultipoles() const { return gpuMultipoles_ && useGpuResident() && !gpuResidentUnavailable_ && gpuReplicas_ <= 1; }
+    //! \return Whether the GPU computes the dipoles and quadrupoles, of each replica, if it computes the molecules
+    bool gpuMultipoles() const { return gpuMultipoles_ && useGpuResident() && !gpuResidentUnavailable_; }
 
     GpuTrainingSystem *gpuTrainingSystem() const
     {
