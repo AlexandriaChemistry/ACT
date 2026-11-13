@@ -10,7 +10,8 @@ This directory contains Python scripts and utilities that complement the C++ `al
 - **molutils.py** — Molecular structure helpers (geometry manipulation, formula parsing).
 - **molprops.py** — Python representation of molecular properties; parses ACT XML/CSV output.
 - **elements.py** — Periodic table data (atomic numbers, masses, covalent radii).
-- **mol_csv_api.py** — API for reading and writing molecule data from CSV files.
+- **mol_csv_api.py** — API for reading and writing the molecules of the Alexandria library, alexandria.json.
+- **mol_csv.py** — Reads and writes alexandria.json in UTF-8.
 - **get_mol_dict.py** — Builds a dictionary of molecules from a directory of structure files.
 - **get_csv_rows.py** — Extracts rows matching given criteria from ACT CSV output files.
 - **jacobi.py** — Jacobi eigenvalue solver used for inertia-tensor diagonalisation.

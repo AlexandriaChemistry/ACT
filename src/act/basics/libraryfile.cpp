@@ -65,21 +65,9 @@ static std::string installedDataDirectory()
 std::string findLibrary(const std::string &filename,
                         bool               useCWD)
 {
-    return findLibraryFirst({ filename }, useCWD);
-}
-
-std::string findLibraryFirst(const std::vector<std::string> &filenames,
-                             bool                            useCWD)
-{
-    if (useCWD)
+    if (useCWD && gmx_fexist(filename))
     {
-        for (const auto &filename : filenames)
-        {
-            if (gmx_fexist(filename))
-            {
-                return filename;
-            }
-        }
+        return filename;
     }
     // The directory in the environment variable ACTDATA, if set, comes
     // before that of the installation.
@@ -92,11 +80,7 @@ std::string findLibraryFirst(const std::vector<std::string> &filenames,
     dirs.push_back(installedDataDirectory());
     for (const auto &dir : dirs)
     {
-        if (dir.empty())
-        {
-            continue;
-        }
-        for (const auto &filename : filenames)
+        if (!dir.empty())
         {
             std::string libFile = gmx::Path::join(dir, filename);
             if (gmx_fexist(libFile))

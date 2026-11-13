@@ -29,7 +29,7 @@ ACT/
 │   │   └── coulombintegrals/ # Coulomb / Slater integrals
 │   ├── gromacs/              # GROMACS infrastructure (math, utilities, commandline, mdtypes, …)
 │   └── testutils/            # Shared Google Test helpers (refdata, TestFileManager, …)
-├── share/                    # Data files: atomprops.csv, alexandria.csv, force field XMLs, …
+├── share/                    # Data files: atomprops.csv, alexandria.json, force field XMLs, …
 ├── cmake/                    # CMake modules inherited from GROMACS
 ├── docs/                     # Sphinx documentation source
 ├── scripts/                  # Shell/Python helper scripts (ACTRC env setup, …)
@@ -224,7 +224,7 @@ Sub-commands registered in `src/act/alexandria/alex_modules.cpp`:
 
 ## Data Files (`share/`)
 
-- `alexandria.csv` — atom types
+- `alexandria.json` — the molecules of the Alexandria library (names, formulas, InChI, classification), in UTF-8
 - `atomprops.csv` — element properties
 - `atom_bond.xml` — bond parameters
 - `atomization-energies.csv` — atomisation energies
