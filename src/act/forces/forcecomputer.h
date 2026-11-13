@@ -201,6 +201,8 @@ private:
     mutable size_t nShellConvergeFailed_ = 0;
     //! The molecules on the GPU, see computeRelaxedEnergiesGpu, shared by copies
     mutable std::shared_ptr<GpuTrainingSystem> gpuSystem_;
+    //! Whether the GPU computes the dipoles and quadrupoles, see setGpuMultipoles
+    bool gpuMultipoles_ = false;
 
     /*! \brief Compute the energies of relaxed shells on the GPU
      * As computeRelaxedEnergies, with all topologies and conformations on
@@ -641,6 +643,15 @@ private:
     /*! \return The system of the molecules on the GPU, for the Monte Carlo
      * chain there, nullptr if there is none or the processor computes them
      */
+    /*! \brief Whether the GPU computes the dipoles and quadrupoles, see GpuTrainingSystem::setMultipoleBlocks
+     * Before the GPU system is made.
+     * \param[in] multipoles Whether it does
+     */
+    void setGpuMultipoles(bool multipoles) { gpuMultipoles_ = multipoles; }
+
+    //! \return Whether the GPU computes the dipoles and quadrupoles, if it computes the molecules
+    bool gpuMultipoles() const { return gpuMultipoles_ && useGpuResident() && !gpuResidentUnavailable_ && gpuReplicas_ <= 1; }
+
     GpuTrainingSystem *gpuTrainingSystem() const
     {
         return gpuSystem_ && !gpuResidentUnavailable_ ? gpuSystem_.get() : nullptr;

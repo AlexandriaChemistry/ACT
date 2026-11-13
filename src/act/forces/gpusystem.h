@@ -42,6 +42,7 @@
 
 #include "act/basics/interactiontype.h"
 #include "act/gpu/gpu.h"
+#include "gromacs/math/vectypes.h"
 
 namespace alexandria
 {
@@ -66,6 +67,12 @@ struct GpuMoleculeDeviations
     bool                epot  = false;
     //! For each conformation, the weight and the loss of the potential energy
     std::vector<double> epotTerms;
+    /*! Whether the GPU computed its dipoles and quadrupoles, see
+     * GpuTrainingSystem::setMultipoles: the number of structures and the
+     * sum of the losses of the dipoles, and the same of the quadrupoles
+     */
+    bool                multipole = false;
+    std::vector<double> multipoles;
 };
 
 /*! \brief The energy targets that GpuTrainingSystem::computeDeviations computes
@@ -363,6 +370,30 @@ public:
      * \param[in] multipoles Whether to make them
      */
     void setMultipoleBlocks(bool multipoles);
+
+    /*! \brief Copy the structures and the references of the multipoles to the GPU
+     * Needs prepare with setMultipoleBlocks first.
+     * \param[in] lossFunction The loss function, as GpuDeviationSetup
+     * \return Whether there are any
+     */
+    bool setMultipoles(int lossFunction);
+
+    //! \return Whether the GPU has the multipoles, see setMultipoles
+    bool multipolesReady() const;
+
+    /*! \brief The deviations of the dipoles and quadrupoles of the molecules computed last
+     * See gpu::computeMultipoles, the molecules of the monomers used last,
+     * after their relaxation. Waits for the GPU.
+     * \param[out] sums Four values for each molecule
+     * \return Whether the GPU has the multipoles, see setMultipoles
+     */
+    bool multipoleSums(std::vector<double> *sums);
+
+    /*! \brief For developers, print the structure of the multipoles of a molecule on the GPU and the processor
+     * \param[in] mol   The molecule
+     * \param[in] hostX The structure as the processor computes it
+     */
+    void multipoleDebug(size_t mol, const std::vector<gmx::RVec> &hostX);
 
     /*! \brief Prepare the Monte Carlo chain on the GPU, see gpu::createChain
      * Needs setDeviations first. The sets kept are empty.

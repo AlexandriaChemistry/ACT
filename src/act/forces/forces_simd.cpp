@@ -4220,6 +4220,10 @@ bool GpuTrainingSystem::haveKeptShells() const { return false; }
 size_t GpuTrainingSystem::relax(int, const bool[2], const gpu::RelaxSettings &, size_t *nFailed) { *nFailed = 0; return 0; }
 size_t GpuTrainingSystem::relaxStatistics(size_t *nFailed) { *nFailed = 0; return 0; }
 void GpuTrainingSystem::setMultipoleBlocks(bool) {}
+bool GpuTrainingSystem::setMultipoles(int) { return false; }
+bool GpuTrainingSystem::multipoleSums(std::vector<double> *) { return false; }
+bool GpuTrainingSystem::multipolesReady() const { return false; }
+void GpuTrainingSystem::multipoleDebug(size_t, const std::vector<gmx::RVec> &) {}
 bool GpuTrainingSystem::setChain(const GpuChainSetup &) { return false; }
 bool GpuTrainingSystem::haveChain() const { return false; }
 size_t GpuTrainingSystem::chainEntrySize(size_t) const { return 0; }
@@ -4392,6 +4396,10 @@ public:
     static constexpr int               nwhat = 4;
     //! Whether to make blocks of the structures of the multipoles, see setMultipoleBlocks
     bool                               multipoleBlocks = false;
+    //! Whether the GPU has the structures and references of the multipoles, see setMultipoles
+    bool                               multipolesReady = false;
+    //! The deviations of the multipoles of each molecule, see computeDeviations
+    std::vector<double>                devMultipoles;
     //! Whether there is a Monte Carlo chain on the GPU, see setChain
     bool                               chain = false;
     //! Whether all parameters have a value on the GPU, see setChain
@@ -5113,6 +5121,7 @@ bool GpuTrainingSystem::prepare(const ForceField *pd, const std::vector<ACTMol *
     }
     im.system = gpu::createSystem(sblocks.data(), sblocks.size());
     im.chain  = false;
+    im.multipolesReady = false;
     im.recipeUploaded = false;
     im.acmUploaded    = false;
     if (im.system && charges)
@@ -6055,10 +6064,21 @@ void GpuTrainingSystem::computeDeviations()
     {
         // The deviations stay on the GPU, see chainStep
         gpu::computeDeviations(im.system, im.mask(-1), nullptr, nullptr);
+        if (im.multipolesReady)
+        {
+            gpu::computeMultipoles(im.system, im.mask(-2), nullptr);
+        }
         return;
     }
     auto u = im.use(-1);
     gpu::computeDeviations(im.system, u.data(), im.devDimerSums.data(), im.devEpotTerms.data());
+    if (im.multipolesReady)
+    {
+        // The molecules of the monomers used, after their relaxation
+        auto um = im.use(-2);
+        im.devMultipoles.resize(4*im.mols.size());
+        gpu::computeMultipoles(im.system, um.data(), im.devMultipoles.data());
+    }
     im.devComputed = true;
 }
 
@@ -6087,7 +6107,18 @@ bool GpuTrainingSystem::moleculeDeviations(size_t mol, GpuMoleculeDeviations *de
         dev->epotTerms.assign(im.devEpotTerms.begin() + 2*mo.confOffset,
                               im.devEpotTerms.begin() + 2*(mo.confOffset + mo.nconf));
     }
+    dev->multipole = im.multipolesReady && im.find(mol, 3) >= 0 && im.devMultipoles.size() >= 4*(mol + 1);
+    dev->multipoles.clear();
+    if (dev->multipole)
+    {
+        dev->multipoles.assign(im.devMultipoles.begin() + 4*mol, im.devMultipoles.begin() + 4*(mol + 1));
+    }
     return true;
+}
+
+bool GpuTrainingSystem::multipolesReady() const
+{
+    return impl_->multipolesReady;
 }
 
 bool GpuTrainingSystem::deviationSums(std::vector<std::pair<double, double>> *sums) const
@@ -6317,6 +6348,136 @@ size_t GpuTrainingSystem::relax(int what, const bool relaxMonomer[2], const gpu:
 void GpuTrainingSystem::setMultipoleBlocks(bool multipoles)
 {
     impl_->multipoleBlocks = multipoles;
+}
+
+bool GpuTrainingSystem::setMultipoles(int lossFunction)
+{
+    auto &im = *impl_;
+    im.multipolesReady = false;
+    if (!im.multipoleBlocks)
+    {
+        return false;
+    }
+    std::vector<gpu::MultipoleStructure> structures;
+    std::vector<int32_t>                 atomNumbers;
+    std::vector<double>                  references;
+    for (size_t k = 0; k < im.mols.size(); k++)
+    {
+        int b = im.find(k, 3);
+        if (b < 0)
+        {
+            continue;
+        }
+        auto        molptr = im.mols[k];
+        const auto &bl     = im.blocks[b];
+        const auto &atoms  = molptr->topology()->atoms();
+        // In the order of setMultipoleConformations
+        size_t c = 0;
+        for (const auto &qp : *molptr->qProps())
+        {
+            const auto &qm  = qp.qPqmConst();
+            const auto &act = qp.qPactConst();
+            bool dip  = qm.hasMultipole(MolPropObservable::DIPOLE);
+            bool quad = qm.hasMultipole(MolPropObservable::QUADRUPOLE);
+            if (!(dip || quad))
+            {
+                continue;
+            }
+            gpu::MultipoleStructure st;
+            st.block       = b;
+            st.slot        = bl.slotOfConf[c];
+            st.mol         = k;
+            st.natom       = atoms.size();
+            st.atomNumbers = atomNumbers.size();
+            for (const auto &a : atoms)
+            {
+                atomNumbers.push_back(a.atomicNumber());
+            }
+            // Only those MultiPoleDevComputer uses
+            if (dip && act.hasMultipole(MolPropObservable::DIPOLE))
+            {
+                st.dipole = references.size();
+                auto v    = qm.getMultipole(nullptr, MolPropObservable::DIPOLE);
+                references.insert(references.end(), v.begin(), v.end());
+            }
+            if (quad && act.hasMultipole(MolPropObservable::QUADRUPOLE))
+            {
+                st.quadrupole = references.size();
+                auto v        = qm.getMultipole(nullptr, MolPropObservable::QUADRUPOLE);
+                references.insert(references.end(), v.begin(), v.end());
+            }
+            structures.push_back(st);
+            c++;
+        }
+    }
+    gpu::MultipoleSystem mp;
+    mp.structures   = structures.data();
+    mp.nstructure   = structures.size();
+    mp.atomNumbers  = atomNumbers.data();
+    mp.natomNumber  = atomNumbers.size();
+    mp.references   = references.data();
+    mp.nreference   = references.size();
+    mp.nmol         = im.mols.size();
+    mp.lossFunction = lossFunction;
+    gpu::createMultipoles(im.system, mp);
+    im.multipolesReady = !structures.empty();
+    return im.multipolesReady;
+}
+
+void GpuTrainingSystem::multipoleDebug(size_t mol, const std::vector<gmx::RVec> &hostX)
+{
+    auto &im = *impl_;
+    int   b  = im.find(mol, 3);
+    if (b < 0)
+    {
+        fprintf(stderr, "GPU multipole debug: no block for molecule %zu\n", mol);
+        return;
+    }
+    const auto &bl     = im.blocks[b];
+    auto        molptr = im.mols[mol];
+    auto       *cdata  = molptr->conformationData(3);
+    size_t      st     = cdata->arrays.stride;
+    size_t      natom  = cdata->arrays.natom;
+    std::vector<int64_t> x(3*natom*st);
+    gpu::downloadBlock(im.system, b, x.data(), nullptr);
+    size_t ncharge = 0;
+    for (const auto &bb : im.blocks)
+    {
+        ncharge += im.mols[bb.mol]->conformationData(bb.what)->arrays.natom;
+    }
+    std::vector<double> q(4*ncharge);
+    gpu::downloadCharges(im.system, q.data());
+    uint64_t off = gpu::blockAtomOffset(im.system, b);
+    // The structure as MultiPoleDevComputer computes it on the processor
+    const std::vector<gmx::RVec> *hx = hostX.size() == natom ? &hostX : nullptr;
+    const auto &atoms = molptr->topology()->atoms();
+    size_t slot = bl.slotOfConf[0];
+    fprintf(stderr, "GPU multipole debug: %s block %d slot %zu of %zu, %zu particles\n",
+            molptr->getMolname().c_str(), b, slot, st, natom);
+    for (size_t a = 0; a < natom; a++)
+    {
+        double gx[3];
+        for (int m = 0; m < 3; m++)
+        {
+            gx[m] = fromCoordinate(x[(3*a+m)*st + slot]);
+        }
+        fprintf(stderr, "  %2zu %-6s GPU x %9.5f %9.5f %9.5f q %9.5f + %9.5f | CPU x %9.5f %9.5f %9.5f q %9.5f + %9.5f\n",
+                a, atoms[a].ffType().c_str(), gx[0], gx[1], gx[2], q[4*(off + a)], q[4*(off + a) + 1],
+                hx ? (*hx)[a][0] : 0.0, hx ? (*hx)[a][1] : 0.0, hx ? (*hx)[a][2] : 0.0,
+                atoms[a].charge(), atoms[a].totalCharge() - atoms[a].charge());
+    }
+}
+
+bool GpuTrainingSystem::multipoleSums(std::vector<double> *sums)
+{
+    auto &im = *impl_;
+    if (!im.multipolesReady)
+    {
+        return false;
+    }
+    sums->resize(4*im.mols.size());
+    gpu::computeMultipoles(im.system, im.mask(-2), sums->data());
+    return true;
 }
 
 bool GpuTrainingSystem::setChain(const GpuChainSetup &setup)

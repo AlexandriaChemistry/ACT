@@ -732,6 +732,15 @@ public:
     double                         *chainGather_    = nullptr;
     //! The weighted chi squared of each term
     double                         *chainTermChi2_  = nullptr;
+    //! The structures of the multipoles, see createMultipoles
+    MultipoleStructure             *mpStructures_   = nullptr;
+    size_t                          nmpStructure_   = 0;
+    int32_t                        *mpAtomNumbers_  = nullptr;
+    double                         *mpReferences_   = nullptr;
+    //! For each molecule, the number and the loss of the dipoles and the quadrupoles
+    double                         *mpSums_         = nullptr;
+    size_t                          nmpMol_         = 0;
+    int                             mpLoss_         = 0;
     //! For each parameter its value of the recipes and of the charge generation, see ChainSystem
     int32_t                        *chainRecipeSlot_ = nullptr;
     int32_t                        *chainAcmIndex_   = nullptr;
@@ -3511,6 +3520,149 @@ void computeDeviations(System *sys, const char *use, double *dimerSums, double *
     queue->wait_and_throw();
     std::copy(hS, hS + nd, dimerSums);
     std::copy(hS + nd, hS + nd + ne, epotTerms);
+}
+
+void createMultipoles(System *sys, const MultipoleSystem &mp)
+{
+    sys->release(sys->mpStructures_);
+    sys->release(sys->mpAtomNumbers_);
+    sys->release(sys->mpReferences_);
+    sys->release(sys->mpSums_);
+    sys->nmpStructure_  = mp.nstructure;
+    sys->nmpMol_        = mp.nmol;
+    sys->mpLoss_        = mp.lossFunction;
+    sys->mpStructures_  = sys->allocate<MultipoleStructure>(mp.nstructure);
+    sys->mpAtomNumbers_ = sys->allocate<int32_t>(mp.natomNumber);
+    sys->mpReferences_  = sys->allocate<double>(mp.nreference);
+    sys->mpSums_        = sys->allocate<double>(4*mp.nmol);
+    sys->upload(sys->mpStructures_, mp.structures, mp.nstructure);
+    sys->upload(sys->mpAtomNumbers_, mp.atomNumbers, mp.natomNumber);
+    sys->upload(sys->mpReferences_, mp.references, mp.nreference);
+    sys->queue_->memset(sys->mpSums_, 0, std::max<size_t>(4*mp.nmol, 1)*sizeof(double));
+    sys->queue_->wait_and_throw();
+}
+
+void computeMultipoles(System *sys, const char *use, double *sums)
+{
+    size_t ns = sys->nmpStructure_;
+    if (ns == 0)
+    {
+        return;
+    }
+    auto dU   = sys->deviceMask(use, sys->nblock_);
+    auto dB   = sys->blocks_;
+    auto dX   = sys->x_;
+    auto dQ   = sys->charges_;
+    auto dMS  = sys->mpStructures_;
+    auto dAN  = sys->mpAtomNumbers_;
+    auto dRef = sys->mpReferences_;
+    auto dSum = sys->mpSums_;
+    int  lf   = sys->mpLoss_;
+    // One work item per molecule, its structures in their order, as
+    // MultiPoleDevComputer::calcDeviation
+    sys->queue_->parallel_for(sycl::range<1>(ns), [=](sycl::id<1> id)
+    {
+#if defined(__clang__)
+#pragma clang fp contract(off)
+#endif
+        size_t first = id[0];
+        uint32_t mol = dMS[first].mol;
+        if (first > 0 && dMS[first - 1].mol == mol)
+        {
+            // Not the first structure of its molecule
+            return;
+        }
+        if (!dU[dMS[first].block])
+        {
+            return;
+        }
+        double ndip = 0, ldip = 0, nquad = 0, lquad = 0;
+        for (size_t k = first; k < ns && dMS[k].mol == mol; k++)
+        {
+            const MultipoleStructure &st = dMS[k];
+            const DeviceSystemBlock  &b  = dB[st.block];
+            const int64_t            *x  = dX + b.xOffset + st.slot;
+            uint64_t                  sd = b.stride;
+            // The center of the atomic numbers, in single precision as QtypeProps::computeCoC
+            float coc[3] = { 0, 0, 0 };
+            int   atntot = 0;
+            for (uint32_t a = 0; a < st.natom; a++)
+            {
+                int atn = dAN[st.atomNumbers + a];
+                atntot += atn;
+                for (int m = 0; m < 3; m++)
+                {
+                    coc[m] += toNm(x[(3*a+m)*sd])*atn;
+                }
+            }
+            if (atntot > 0)
+            {
+                float inv = 1.0/atntot;
+                for (int m = 0; m < 3; m++)
+                {
+                    coc[m] = inv*coc[m];
+                }
+            }
+            // As QtypeProps::calcMoments
+            double dip[3]  = { 0, 0, 0 };
+            double quad[6] = { 0, 0, 0, 0, 0, 0 };
+            for (uint32_t a = 0; a < st.natom; a++)
+            {
+                const double *q4 = dQ + 4*(b.atomOffset + a);
+                double        q  = q4[0] + q4[1];
+                float         r[3];
+                for (int m = 0; m < 3; m++)
+                {
+                    r[m] = toNm(x[(3*a+m)*sd]) - coc[m];
+                }
+                int qi = 0;
+                for (int m = 0; m < 3; m++)
+                {
+                    dip[m] += r[m]*q;
+                    for (int n = m; n < 3; n++)
+                    {
+                        quad[qi++] += 1.5*q*(r[m]*r[n]);
+                    }
+                }
+            }
+            // Traceless, the diagonal at 0, 3 and 5
+            double tr = 0;
+            for (int d : { 0, 3, 5 })
+            {
+                tr += quad[d]/3.0;
+            }
+            for (int d : { 0, 3, 5 })
+            {
+                quad[d] -= tr;
+            }
+            if (st.dipole >= 0)
+            {
+                for (int m = 0; m < 3; m++)
+                {
+                    ldip += deviationLoss(lf, dip[m] - dRef[st.dipole + m]);
+                }
+                ndip += 1;
+            }
+            if (st.quadrupole >= 0)
+            {
+                for (int m = 0; m < 6; m++)
+                {
+                    lquad += deviationLoss(lf, quad[m] - dRef[st.quadrupole + m]);
+                }
+                nquad += 1;
+            }
+        }
+        double *out = dSum + 4*mol;
+        out[0] = ndip;
+        out[1] = ldip;
+        out[2] = nquad;
+        out[3] = lquad;
+    });
+    if (sums)
+    {
+        sys->queue_->memcpy(sums, dSum, 4*sys->nmpMol_*sizeof(double));
+        sys->queue_->wait_and_throw();
+    }
 }
 
 uint64_t blockAtomOffset(const System *sys, size_t block)
