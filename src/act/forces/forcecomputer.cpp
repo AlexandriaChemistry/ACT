@@ -1997,10 +1997,11 @@ void ForceComputer::chainEvaluateGpu(const ForceField *pd, const std::vector<ACT
     // developers ACT_GPU_CHAIN_NOPOLL submits all.
     static const bool noPoll = std::getenv("ACT_GPU_CHAIN_NOPOLL") != nullptr;
     settings.poll = !noPoll;
+    // Each replica computes the molecules, see GpuTrainingSystem::setChain
     for (auto molptr : allmols)
     {
         auto &tops = molptr->fragmentHandler()->topologies();
-        nEval_ += molptr->conformationData(0)->nconf()*(tops.size() + (tops.size() > 1 ? 1 : 0));
+        nEval_ += gs.nreplica()*molptr->conformationData(0)->nconf()*(tops.size() + (tops.size() > 1 ? 1 : 0));
     }
     const bool keepShells = keepShells_;
     gs.resetShells();
