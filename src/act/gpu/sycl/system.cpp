@@ -725,6 +725,13 @@ public:
     int32_t                        *chainBlockMol_  = nullptr;
     int32_t                        *chainBlockWhat_ = nullptr;
     double                         *chainChi2_      = nullptr;
+    //! For each term and molecule where its pairs of weight and loss go in chainGather_, see chainSums
+    uint64_t                       *chainPos_       = nullptr;
+    //! The first pair of each term in chainGather_, and the number of pairs at the end
+    uint64_t                       *chainTermStart_ = nullptr;
+    double                         *chainGather_    = nullptr;
+    //! The weighted chi squared of each term
+    double                         *chainTermChi2_  = nullptr;
     //! For each parameter its value of the recipes and of the charge generation, see ChainSystem
     int32_t                        *chainRecipeSlot_ = nullptr;
     int32_t                        *chainAcmIndex_   = nullptr;
@@ -3530,6 +3537,10 @@ void createChain(System *sys, const ChainSystem &c)
     sys->release(sys->chainChi2_);
     sys->release(sys->chainRecipeSlot_);
     sys->release(sys->chainAcmIndex_);
+    sys->release(sys->chainPos_);
+    sys->release(sys->chainTermStart_);
+    sys->release(sys->chainGather_);
+    sys->release(sys->chainTermChi2_);
     uint32_t ntarget = sys->dev_.ntarget;
     sys->nchainMol_   = c.nmol;
     sys->nchainTerm_  = c.nterm;
@@ -3564,6 +3575,37 @@ void createChain(System *sys, const ChainSystem &c)
     sys->chainBlockMol_  = sys->allocate<int32_t>(sys->nblock_);
     sys->chainBlockWhat_ = sys->allocate<int32_t>(sys->nblock_);
     sys->chainChi2_      = sys->allocate<double>(1);
+    {
+        // The pairs of each term one after the other, in the order of the
+        // molecules, such that each term is summed in that order, see chainSums
+        std::vector<uint64_t> pos(c.nterm*c.nmol, 0), start(c.nterm + 1, 0);
+        uint64_t              cursor = 0;
+        for (size_t t = 0; t < c.nterm; t++)
+        {
+            start[t] = cursor;
+            for (size_t m = 0; m < c.nmol; m++)
+            {
+                const auto &cm = c.mols[m];
+                uint64_t    n  = 0;
+                switch (c.terms[t].kind)
+                {
+                case chainTermDimer:  n = cm.dimer >= 0 ? 1 : 0; break;
+                case chainTermEpot:   n = cm.monomer >= 0 ? cm.nepot : 0; break;
+                case chainTermBounds: n = 1; break;
+                }
+                pos[t*c.nmol + m] = cursor;
+                cursor           += n;
+            }
+        }
+        start[c.nterm] = cursor;
+        sys->chainPos_       = sys->allocate<uint64_t>(pos.size());
+        sys->chainTermStart_ = sys->allocate<uint64_t>(start.size());
+        sys->chainGather_    = sys->allocate<double>(2*cursor);
+        sys->chainTermChi2_  = sys->allocate<double>(c.nterm);
+        sys->upload(sys->chainPos_, pos.data(), pos.size());
+        sys->upload(sys->chainTermStart_, start.data(), start.size());
+        sys->queue_->wait_and_throw();
+    }
     sys->chainRecipeSlot_ = sys->allocate<int32_t>(c.nparam);
     sys->chainAcmIndex_   = sys->allocate<int32_t>(c.nparam);
     {
@@ -3786,6 +3828,10 @@ struct ChainView
     const double        *dimerSums;
     const double        *epotTerms;
     double              *chi2;
+    const uint64_t      *pos;
+    const uint64_t      *termStart;
+    double              *gather;
+    double              *termChi2;
     char                *masks;
     const int32_t       *blockMol;
     const int32_t       *blockWhat;
@@ -3859,53 +3905,60 @@ struct ChainView
         return bound;
     }
 
-    //! The total chi squared, as finishDeviation and sumChiSquared, with boundNow of the molecules computed
-    double total() const
+    /*! \brief The pairs of weight and loss of a molecule for each term, as finishDeviation
+     * The bound of a molecule computed is made first. The values are those
+     * computed now or those kept, see chainSums.
+     */
+    void gatherOf(size_t m) const
+    {
+        const ChainMolecule &cm    = mols[m];
+        uint64_t             sz    = size(m);
+        const double        *kept  = cache + entry[m] + (hit[m] > 0 ? sz : 0);
+        bool                 fresh = active[m] != 0;
+        double               b     = fresh ? boundOf(m) : 0.0;
+        boundNow[m] = b;
+        for (uint32_t t = 0; t < nterm; t++)
+        {
+            const ChainTerm &term = terms[t];
+            double          *g    = gather + 2*pos[t*nmol + m];
+            if (term.kind == chainTermDimer && cm.dimer >= 0)
+            {
+                const double *v = fresh ? dimerSums + 2*(static_cast<uint64_t>(cm.dimer)*ntarget + term.index)
+                                        : kept + cm.ndep + 2*term.index;
+                g[0] = v[0];
+                g[1] = v[1];
+            }
+            else if (term.kind == chainTermEpot && cm.monomer >= 0)
+            {
+                const double *v = fresh ? epotTerms + 2*cm.epotOffset
+                                        : kept + cm.ndep + (cm.dimer >= 0 ? 2*ntarget : 0);
+                for (uint32_t c = 0; c < 2*cm.nepot; c++)
+                {
+                    g[c] = v[c];
+                }
+            }
+            else if (term.kind == chainTermBounds)
+            {
+                g[0] = 1;
+                g[1] = fresh ? b : kept[sz - 1];
+            }
+        }
+    }
+
+    //! The weighted chi squared of a term, the pairs summed in order, as FittingTarget
+    void termSum(uint32_t t) const
     {
 #if defined(__clang__)
 #pragma clang fp contract(off)
 #endif
-        double sum = 0;
-        for (uint32_t t = 0; t < nterm; t++)
+        double sw = 0, sl = 0;
+        for (uint64_t k = termStart[t]; k < termStart[t + 1]; k++)
         {
-            const ChainTerm &term = terms[t];
-            double sw = 0, sl = 0;
-            for (size_t m = 0; m < nmol; m++)
-            {
-                const ChainMolecule &cm   = mols[m];
-                uint64_t             sz   = size(m);
-                const double        *kept = cache + entry[m] + (hit[m] > 0 ? sz : 0);
-                bool                 fresh = active[m] != 0;
-                if (term.kind == chainTermDimer && cm.dimer >= 0)
-                {
-                    const double *v = fresh ? dimerSums + 2*(static_cast<uint64_t>(cm.dimer)*ntarget + term.index)
-                                            : kept + cm.ndep + 2*term.index;
-                    sw += v[0];
-                    sl += v[1];
-                }
-                else if (term.kind == chainTermEpot && cm.monomer >= 0)
-                {
-                    const double *v = fresh ? epotTerms + 2*cm.epotOffset
-                                            : kept + cm.ndep + (cm.dimer >= 0 ? 2*ntarget : 0);
-                    for (uint32_t c = 0; c < cm.nepot; c++)
-                    {
-                        sw += v[2*c];
-                        sl += v[2*c + 1];
-                    }
-                }
-                else if (term.kind == chainTermBounds)
-                {
-                    sw += 1;
-                    sl += fresh ? boundNow[m] : kept[sz - 1];
-                }
-            }
-            // As FittingTarget::chiSquaredWeighted
-            if (sl > 0 && sw > 0)
-            {
-                sum += sl*term.weight/sw;
-            }
+            sw += gather[2*k];
+            sl += gather[2*k + 1];
         }
-        return sum;
+        // As FittingTarget::chiSquaredWeighted
+        termChi2[t] = (sl > 0 && sw > 0) ? sl*terms[t].weight/sw : 0.0;
     }
 
     /*! \brief Keep the deviations of a molecule, as finishDeviation
@@ -3986,6 +4039,10 @@ static ChainView chainView(System *sys)
     v.dimerSums    = sys->devDimerSums_;
     v.epotTerms    = sys->devEpotTerms_;
     v.chi2         = sys->chainChi2_;
+    v.pos          = sys->chainPos_;
+    v.termStart    = sys->chainTermStart_;
+    v.gather       = sys->chainGather_;
+    v.termChi2     = sys->chainTermChi2_;
     v.masks        = sys->chainMasks_;
     v.blockMol     = sys->chainBlockMol_;
     v.blockWhat    = sys->chainBlockWhat_;
@@ -3995,6 +4052,31 @@ static ChainView chainView(System *sys)
     v.nblock       = sys->nblock_;
     v.lossFunction = sys->chainLoss_;
     return v;
+}
+
+/*! \brief The bounds of the molecules and the weighted chi squared of each term, on the GPU
+ * The values of the molecules are gathered in parallel, each term is
+ * summed in the order of the molecules by a thread of its own, such that
+ * the sums are those of finishDeviation.
+ * \param[in] sys The system
+ */
+static void chainSums(System *sys)
+{
+    auto v = chainView(sys);
+    if (v.nmol > 0)
+    {
+        sys->queue_->parallel_for(sycl::range<1>(v.nmol), [=](sycl::id<1> id)
+        {
+            v.gatherOf(id[0]);
+        });
+    }
+    if (v.nterm > 0)
+    {
+        sys->queue_->parallel_for(sycl::range<1>(v.nterm), [=](sycl::id<1> id)
+        {
+            v.termSum(id[0]);
+        });
+    }
 }
 
 void chainSkip(System *sys, bool canSkip)
@@ -4057,14 +4139,18 @@ void chainComputeChi2(System *sys, bool keep)
         sys->queue_->memset(v.chi2, 0, sizeof(double));
         return;
     }
-    sys->queue_->parallel_for(sycl::range<1>(v.nmol), [=](sycl::id<1> id)
-    {
-        size_t m = id[0];
-        v.boundNow[m] = v.active[m] ? v.boundOf(m) : 0.0;
-    });
+    chainSums(sys);
     sys->queue_->single_task([=]()
     {
-        *v.chi2 = v.total();
+#if defined(__clang__)
+#pragma clang fp contract(off)
+#endif
+        double sum = 0;
+        for (uint32_t t = 0; t < v.nterm; t++)
+        {
+            sum += v.termChi2[t];
+        }
+        *v.chi2 = sum;
     });
     if (keep)
     {
@@ -4146,16 +4232,10 @@ void chainStepAfter(System *sys, size_t step)
     auto   dRV  = sys->recipeValues_;
     auto   dAV  = sys->acmValues_;
     size_t np   = sys->nchainParam_;
-    // The bounds of the molecules in parallel: one thread for all is slow,
-    // in particular on the MI250X (BFdb 6P on dardel 295 s against 244 s)
-    if (v.nmol > 0)
-    {
-        sys->queue_->parallel_for(sycl::range<1>(v.nmol), [=](sycl::id<1> id)
-        {
-            size_t m = id[0];
-            v.boundNow[m] = v.active[m] ? v.boundOf(m) : 0.0;
-        });
-    }
+    // The bounds and the sums of the terms in parallel: one thread for all
+    // is slow, in particular on the MI250X (BFdb 6P on dardel 295 s against
+    // 244 s with the bounds alone)
+    chainSums(sys);
     // The chi squared, the Metropolis criterion and the value of a rejected
     // change, as chainComputeChi2, MCMCMutator::finishStep and chainApply
     sys->queue_->single_task([=]()
@@ -4163,7 +4243,11 @@ void chainStepAfter(System *sys, size_t step)
 #if defined(__clang__)
 #pragma clang fp contract(off)
 #endif
-        double curr = v.total();
+        double curr = 0;
+        for (uint32_t t = 0; t < v.nterm; t++)
+        {
+            curr += v.termChi2[t];
+        }
         *v.chi2     = curr;
         const ChainStep &st    = dS[step];
         uint32_t         j     = st.param;
