@@ -4219,6 +4219,7 @@ void GpuTrainingSystem::computeForces(int) {}
 bool GpuTrainingSystem::haveKeptShells() const { return false; }
 size_t GpuTrainingSystem::relax(int, const bool[2], const gpu::RelaxSettings &, size_t *nFailed) { *nFailed = 0; return 0; }
 size_t GpuTrainingSystem::relaxStatistics(size_t *nFailed) { *nFailed = 0; return 0; }
+void GpuTrainingSystem::setMultipoleBlocks(bool) {}
 bool GpuTrainingSystem::setChain(const GpuChainSetup &) { return false; }
 bool GpuTrainingSystem::haveChain() const { return false; }
 size_t GpuTrainingSystem::chainEntrySize(size_t) const { return 0; }
@@ -4387,6 +4388,10 @@ public:
     std::vector<gpu::DeviationDimer>   devDimers;
     std::vector<gpu::DeviationMonomer> devMonomers;
     std::vector<int>                   devDimerOf, devMonomerOf;
+    //! The kinds of blocks: the two monomers, the dimer and the structures of the multipoles
+    static constexpr int               nwhat = 4;
+    //! Whether to make blocks of the structures of the multipoles, see setMultipoleBlocks
+    bool                               multipoleBlocks = false;
     //! Whether there is a Monte Carlo chain on the GPU, see setChain
     bool                               chain = false;
     //! Whether all parameters have a value on the GPU, see setChain
@@ -4721,17 +4726,17 @@ public:
     //! Make blockIndex, after the blocks were made
     void indexBlocks()
     {
-        blockIndex.assign(3*mols.size()*nreplica, -1);
+        blockIndex.assign(nwhat*mols.size()*nreplica, -1);
         for (size_t b = 0; b < blocks.size(); b++)
         {
-            blockIndex[(blocks[b].replica*mols.size() + blocks[b].mol)*3 + blocks[b].what] = b;
+            blockIndex[(blocks[b].replica*mols.size() + blocks[b].mol)*nwhat + blocks[b].what] = b;
         }
     }
 
     //! The index of the block of a molecule and topology, -1 if none
     int find(size_t mol, int what, size_t replica = 0) const
     {
-        return blockIndex[(replica*mols.size() + mol)*3 + what];
+        return blockIndex[(replica*mols.size() + mol)*nwhat + what];
     }
 
     //! The energies of a molecule and topology of a replica, as energiesOf
@@ -4741,7 +4746,7 @@ public:
         {
             return mols[mol]->conformationData(what)->energies;
         }
-        return replicaEnergies[replica][3*mol + what];
+        return replicaEnergies[replica][nwhat*mol + what];
     }
 
     //! Whether the masks are those that the chain makes on the GPU, see GpuTrainingSystem::chainStep
@@ -4769,7 +4774,7 @@ public:
         std::vector<char> u(blocks.size(), 0);
         for (size_t b = 0; b < blocks.size(); b++)
         {
-            u[b] = ((what == -1 || blocks[b].what == what || (what == -2 && blocks[b].what < 2)) &&
+            u[b] = ((what == -1 || blocks[b].what == what || (what == -2 && blocks[b].what != 2)) &&
                     (active.empty() || active[b])) ? 1 : 0;
         }
         return u;
@@ -4788,7 +4793,8 @@ public:
         }
         else
         {
-            for (size_t f = 0; f < 2; f++)
+            // The dimer and the structures of the multipoles, the whole molecule
+            for (size_t f = 0; f < tops.size(); f++)
             {
                 addShellFragment(&tops[f], pols[f], fh->atomStart()[f], maxShellDistance2, shells);
             }
@@ -5004,9 +5010,12 @@ bool GpuTrainingSystem::prepare(const ForceField *pd, const std::vector<ACTMol *
         auto  molptr = allmols[k];
         auto &tops   = molptr->fragmentHandler()->topologies();
         im.nconf.push_back(molptr->conformationData(0)->nconf());
-        for (int what = 0; what < 3; what++)
+        // The structures of the multipoles if asked, see setMultipoleBlocks
+        size_t nmultipole = im.multipoleBlocks ? molptr->setMultipoleConformations() : 0;
+        for (int what = 0; what < Impl::nwhat; what++)
         {
-            if ((what < 2 && what >= static_cast<int>(tops.size())) || (what == 2 && tops.size() < 2))
+            if ((what < 2 && what >= static_cast<int>(tops.size())) || (what == 2 && tops.size() < 2) ||
+                (what == 3 && nmultipole == 0))
             {
                 continue;
             }
@@ -5065,13 +5074,13 @@ bool GpuTrainingSystem::prepare(const ForceField *pd, const std::vector<ACTMol *
     {
         for (auto molptr : allmols)
         {
-            for (int what = 0; what < 3; what++)
+            for (int what = 0; what < Impl::nwhat; what++)
             {
                 im.replicaEnergies[r].push_back(molptr->conformationData(what)->energies);
             }
         }
     }
-    im.replicaEnergies[0].resize(3*allmols.size());
+    im.replicaEnergies[0].resize(Impl::nwhat*allmols.size());
     im.indexBlocks();
     std::vector<gpu::SystemBlock> sblocks;
     for (auto &bl : im.blocks)
@@ -5160,6 +5169,8 @@ bool GpuTrainingSystem::prepare(const ForceField *pd, const std::vector<ACTMol *
             m.nfragment     = tops.size();
             int dimer       = im.find(k, 2, replica);
             m.dimerBlock    = dimer >= 0 ? static_cast<uint32_t>(dimer) : gpu::noBlock;
+            int multipole   = im.find(k, 3, replica);
+            m.multipoleBlock = multipole >= 0 ? static_cast<uint32_t>(multipole) : gpu::noBlock;
             for (size_t f = 0; f < tops.size(); f++)
             {
                 int block = im.find(k, f, replica);
@@ -5679,11 +5690,11 @@ void GpuTrainingSystem::selectReplica(size_t replica)
     {
         for (size_t k = 0; k < im.mols.size(); k++)
         {
-            for (int what = 0; what < 3; what++)
+            for (int what = 0; what < Impl::nwhat; what++)
             {
                 auto &e = im.mols[k]->conformationData(what)->energies;
-                std::swap(e, im.replicaEnergies[im.resident][3*k + what]);
-                std::swap(e, im.replicaEnergies[replica][3*k + what]);
+                std::swap(e, im.replicaEnergies[im.resident][Impl::nwhat*k + what]);
+                std::swap(e, im.replicaEnergies[replica][Impl::nwhat*k + what]);
             }
         }
         im.resident = replica;
@@ -6247,7 +6258,7 @@ void GpuTrainingSystem::compute(int what, bool forces, bool backup)
         {
             for (size_t k = 0; k < im.mols.size(); k++)
             {
-                for (int w = 0; w < 3; w++)
+                for (int w = 0; w < Impl::nwhat; w++)
                 {
                     int b = im.find(k, w, r);
                     if (b >= 0 && u[b] && eptr[b])
@@ -6279,6 +6290,12 @@ size_t GpuTrainingSystem::relax(int what, const bool relaxMonomer[2], const gpu:
         {
             relax[2*b] = 1;
         }
+        else if (im.blocks[b].what == 3)
+        {
+            // The structures of the multipoles, with the monomers
+            relax[2*b]   = 1;
+            relax[2*b+1] = 1;
+        }
         else
         {
             relax[2*b]   = relaxMonomer[0] ? 1 : 0;
@@ -6295,6 +6312,11 @@ size_t GpuTrainingSystem::relax(int what, const bool relaxMonomer[2], const gpu:
         moveCoordinate(0, std::numeric_limits<double>::quiet_NaN());
     }
     return nComputed;
+}
+
+void GpuTrainingSystem::setMultipoleBlocks(bool multipoles)
+{
+    impl_->multipoleBlocks = multipoles;
 }
 
 bool GpuTrainingSystem::setChain(const GpuChainSetup &setup)

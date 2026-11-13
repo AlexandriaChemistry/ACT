@@ -356,6 +356,14 @@ public:
      */
     size_t relaxStatistics(size_t *nFailed);
 
+    /*! \brief Whether prepare makes blocks of the structures of the multipoles
+     * The structures of the charge properties with a dipole or quadrupole
+     * of reference, see ACTMol::setMultipoleConformations, whose shells are
+     * relaxed with the monomers, for the moments on the GPU.
+     * \param[in] multipoles Whether to make them
+     */
+    void setMultipoleBlocks(bool multipoles);
+
     /*! \brief Prepare the Monte Carlo chain on the GPU, see gpu::createChain
      * Needs setDeviations first. The sets kept are empty.
      * \param[in] setup The molecules, bounds and terms

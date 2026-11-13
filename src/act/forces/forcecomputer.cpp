@@ -1745,6 +1745,9 @@ bool ForceComputer::prepareGpuResident(const ForceField *pd, const std::vector<A
     if (!gpuSystem_)
     {
         gpuSystem_ = std::make_shared<GpuTrainingSystem>();
+        // For developers, the blocks of the structures of the multipoles,
+        // which nothing uses yet
+        gpuSystem_->setMultipoleBlocks(std::getenv("ACT_GPU_MULTIPOLE_BLOCKS") != nullptr);
     }
     if (!gpuSystem_->prepare(pd, allmols, shellMaxDistance(pd), gpuCharges(pd), this, gpuReplicas_))
     {

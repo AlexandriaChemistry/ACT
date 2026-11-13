@@ -828,6 +828,8 @@ struct AcmMolecule
     uint32_t firstFragment, nfragment;
     //! The block with all fragments, or noBlock
     uint32_t dimerBlock;
+    //! The block of the structures of the multipoles, with all fragments, or noBlock
+    uint32_t multipoleBlock;
 };
 
 //! Charge generation with SQE on the GPU, see createAcm
@@ -1318,7 +1320,7 @@ struct ChainSystem
     size_t               nterm     = 0;
     //! For each block its molecule, -1 if not of replica 0
     const int32_t       *blockMol  = nullptr;
-    //! For each block what it is, 0 or 1 a monomer, 2 a dimer
+    //! For each block what it is, 0 or 1 a monomer, 2 a dimer, 3 the structures of the multipoles
     const int32_t       *blockWhat = nullptr;
     //! The number of parameters
     size_t               nparam    = 0;
