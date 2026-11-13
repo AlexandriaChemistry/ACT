@@ -6132,7 +6132,7 @@ void GpuTrainingSystem::computeDeviations()
     {
         // The molecules of the monomers used, after their relaxation
         auto um = im.use(-2);
-        im.devMultipoles.resize(4*im.mols.size());
+        im.devMultipoles.resize(4*im.nreplica*im.mols.size());
         gpu::computeMultipoles(im.system, um.data(), im.devMultipoles.data());
     }
     im.devComputed = true;
@@ -6163,11 +6163,12 @@ bool GpuTrainingSystem::moleculeDeviations(size_t mol, GpuMoleculeDeviations *de
         dev->epotTerms.assign(im.devEpotTerms.begin() + 2*mo.confOffset,
                               im.devEpotTerms.begin() + 2*(mo.confOffset + mo.nconf));
     }
-    dev->multipole = im.multipolesReady && im.find(mol, 3) >= 0 && im.devMultipoles.size() >= 4*(mol + 1);
+    // Those of the replica, see setMultipoles
+    dev->multipole = im.multipolesReady && im.find(mol, 3) >= 0 && im.devMultipoles.size() >= 4*(rk + 1);
     dev->multipoles.clear();
     if (dev->multipole)
     {
-        dev->multipoles.assign(im.devMultipoles.begin() + 4*mol, im.devMultipoles.begin() + 4*(mol + 1));
+        dev->multipoles.assign(im.devMultipoles.begin() + 4*rk, im.devMultipoles.begin() + 4*(rk + 1));
     }
     return true;
 }
@@ -6417,9 +6418,13 @@ bool GpuTrainingSystem::setMultipoles(int lossFunction)
     std::vector<gpu::MultipoleStructure> structures;
     std::vector<int32_t>                 atomNumbers;
     std::vector<double>                  references;
-    for (size_t k = 0; k < im.mols.size(); k++)
+    // The molecules of each replica, replica 0 first, such that each
+    // replica has its own, see moleculeDeviations
+    size_t nmol = im.mols.size();
+    for (size_t rk = 0; rk < im.nreplica*nmol; rk++)
     {
-        int b = im.find(k, 3);
+        size_t k = rk % nmol;
+        int    b = im.find(k, 3, rk / nmol);
         if (b < 0)
         {
             continue;
@@ -6442,7 +6447,7 @@ bool GpuTrainingSystem::setMultipoles(int lossFunction)
             gpu::MultipoleStructure st;
             st.block       = b;
             st.slot        = bl.slotOfConf[c];
-            st.mol         = k;
+            st.mol         = rk;
             st.natom       = atoms.size();
             st.atomNumbers = atomNumbers.size();
             for (const auto &a : atoms)
@@ -6473,7 +6478,7 @@ bool GpuTrainingSystem::setMultipoles(int lossFunction)
     mp.natomNumber  = atomNumbers.size();
     mp.references   = references.data();
     mp.nreference   = references.size();
-    mp.nmol         = im.mols.size();
+    mp.nmol         = im.nreplica*nmol;
     mp.lossFunction = lossFunction;
     gpu::createMultipoles(im.system, mp);
     im.multipolesReady = !structures.empty();
@@ -6531,7 +6536,7 @@ bool GpuTrainingSystem::multipoleSums(std::vector<double> *sums)
     {
         return false;
     }
-    sums->resize(4*im.mols.size());
+    sums->resize(4*im.nreplica*im.mols.size());
     gpu::computeMultipoles(im.system, im.mask(-2), sums->data());
     return true;
 }
@@ -6554,16 +6559,7 @@ bool GpuTrainingSystem::setChain(const GpuChainSetup &setup)
         acmFirst[k] = first;
         first      += im.mols[k]->atomsConst().size();
     }
-    // The multipoles of the chain are those of replica 0 only, see gpu::ChainView::gatherOf
     const size_t nrep = im.nreplica;
-    if (nrep > 1 && im.multipolesReady)
-    {
-        if (std::getenv("ACT_GPU_CHAIN_WHY"))
-        {
-            fprintf(stderr, "GPU chain: no multipoles with %zu replicas\n", nrep);
-        }
-        return false;
-    }
     // The molecules of each replica one after the other, see gpu::ChainSystem.
     // The dependencies are those of replica 0 for all.
     std::vector<gpu::ChainMolecule> mols(nrep*nmol);
@@ -6600,7 +6596,7 @@ bool GpuTrainingSystem::setChain(const GpuChainSetup &setup)
             cm.boundOffset = bounds.size();
             cm.nbound      = setup.bounds[k].size();
             cm.skippable   = setup.skippable[k] ? 1 : 0;
-            cm.multipole   = (im.multipolesReady && im.find(k, 3) >= 0) ? 1 : 0;
+            cm.multipole   = (im.multipolesReady && im.find(k, 3, r) >= 0) ? 1 : 0;
             if (cm.nbound > 0 && acmFirst[k] < 0)
             {
                 // The charges are not those of the GPU

@@ -1239,7 +1239,7 @@ struct MultipoleStructure
     //! The block and the slot of the structure in it
     uint32_t block       = 0;
     uint32_t slot        = 0;
-    //! The molecule, the structures of each are one after the other
+    //! The molecule, replica*nmol + molecule, the structures of each are one after the other
     uint32_t mol         = 0;
     //! The number of particles and the first of their atomic numbers
     uint32_t natom       = 0;
@@ -1263,7 +1263,7 @@ struct MultipoleSystem
     size_t                    natomNumber  = 0;
     const double             *references   = nullptr;
     size_t                    nreference   = 0;
-    //! The number of molecules, those without structures included
+    //! The number of molecules of all replicas, those without structures included
     size_t                    nmol         = 0;
     //! The loss function, as DeviationSystem::lossFunction
     int                       lossFunction = 0;
