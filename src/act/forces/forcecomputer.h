@@ -638,6 +638,14 @@ private:
         return gpuSystem_ && gpuSystem_->deviationsReady();
     }
 
+    /*! \return The system of the molecules on the GPU, for the Monte Carlo
+     * chain there, nullptr if there is none or the processor computes them
+     */
+    GpuTrainingSystem *gpuTrainingSystem() const
+    {
+        return gpuSystem_ && !gpuResidentUnavailable_ ? gpuSystem_.get() : nullptr;
+    }
+
     /*! \brief Make the system of these molecules on the GPU, see setGpuResident
      * If the GPU cannot compute them, the processor computes everything
      * from then on.

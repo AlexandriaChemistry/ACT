@@ -198,6 +198,54 @@ const int *deviceNotFinite(System *)
     return nullptr;
 }
 
+uint64_t blockAtomOffset(const System *, size_t)
+{
+    return 0;
+}
+
+void createChain(System *, const ChainSystem &)
+{
+}
+
+size_t chainEntrySize(const System *, size_t)
+{
+    return 0;
+}
+
+void chainSetCache(System *, const double *, const char *)
+{
+}
+
+void chainGetCache(System *, double *, char *)
+{
+}
+
+void chainSetParameters(System *, const double *)
+{
+}
+
+void chainSkip(System *, bool)
+{
+}
+
+const char *chainMask(System *, int)
+{
+    return nullptr;
+}
+
+void chainActive(System *, char *, int *)
+{
+}
+
+void chainComputeChi2(System *, bool)
+{
+}
+
+double chainChi2(System *)
+{
+    return 0;
+}
+
 void saveCoordinates(System *, size_t)
 {
 }

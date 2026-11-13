@@ -68,6 +68,11 @@ ACMFitnessComputer::~ACMFitnessComputer()
         fprintf(stderr, "GPU deviation check on the GPU: %d evaluations compared, %d differ\n",
                 gpuChecks_, gpuDiffer_);
     }
+    if (std::getenv("ACT_GPU_CHAIN_CHECK"))
+    {
+        fprintf(stderr, "GPU chain check: %d evaluations compared, %d differ\n",
+                chainChecks_, chainDiffer_);
+    }
     // For developers, how many molecules were computed and skipped, see prepareDeviation
     if (std::getenv("ACT_GPU_SKIP_STATS") && nComputedMol_ + nSkippedMol_ > 0)
     {
@@ -817,7 +822,178 @@ bool ACMFitnessComputer::prepareDeviation(MsgHandler    *msghandler,
     dt->selected = std::move(selected);
     dt->ntrain   = ntrain;
     dt->nlocal   = nlocal;
+    checkChain(msghandler, dt, -1);
     return true;
+}
+
+bool ACMFitnessComputer::setupChain(const DeviationTask &dt)
+{
+    auto gs = forceComp_->gpuTrainingSystem();
+    if (!gs || !forceComp_->gpuDeviationsReady() || !dt.targets ||
+        molDeps_.size() != dt.selected.size())
+    {
+        return false;
+    }
+    auto pd = sii_->forcefield();
+    GpuChainSetup setup;
+    setup.deps   = molDeps_;
+    setup.nparam = sii_->optIndex().size();
+    setup.lossFunction = static_cast<int>(lossFunction_);
+    for (auto molptr : dt.selected)
+    {
+        std::vector<GpuChainBound> bounds;
+        for (const auto &cb : BoundsDevComputer::chargeBounds(molptr, pd))
+        {
+            bounds.push_back({ cb.atom, cb.minimum, cb.maximum, cb.extra });
+        }
+        setup.bounds.push_back(std::move(bounds));
+        setup.skippable.push_back(molptr->fragmentHandler()->sqeOnGpu(pd) ? 1 : 0);
+    }
+    // The terms of the total in the order of sumChiSquared
+    std::vector<eRMS> rms;
+    bool              epot = false;
+    ForceEnergyDevComputer::gpuTargets(*dt.targets, &rms, &epot);
+    bool haveBounds = false;
+    for (auto *mydev : devComputers_)
+    {
+        haveBounds = haveBounds || dynamic_cast<BoundsDevComputer *>(mydev) != nullptr;
+    }
+    for (const auto &ft : *dt.targets)
+    {
+        gpu::ChainTerm term;
+        term.weight = ft.second.weight();
+        auto j      = std::find(rms.begin(), rms.end(), ft.first);
+        if (j != rms.end())
+        {
+            term.kind  = gpu::chainTermDimer;
+            term.index = j - rms.begin();
+        }
+        else if (ft.first == eRMS::EPOT && epot)
+        {
+            term.kind = gpu::chainTermEpot;
+        }
+        else if (ft.first == eRMS::BOUNDS && haveBounds)
+        {
+            term.kind = gpu::chainTermBounds;
+        }
+        else
+        {
+            continue;
+        }
+        setup.terms.push_back(term);
+    }
+    if (!gs->setChain(setup))
+    {
+        return false;
+    }
+    std::vector<double> values;
+    std::vector<char>   valid;
+    chainCacheOf(dt.replica, &values, &valid);
+    gs->chainCache(&values, &valid, true);
+    return true;
+}
+
+void ACMFitnessComputer::chainCacheOf(size_t replica, std::vector<double> *values, std::vector<char> *valid) const
+{
+    auto gs = forceComp_->gpuTrainingSystem();
+    values->clear();
+    valid->clear();
+    size_t nmol = molDeps_.size();
+    for (size_t m = 0; m < nmol; m++)
+    {
+        size_t size = gs->chainEntrySize(m);
+        for (int e = 0; e < 2; e++)
+        {
+            const MolCacheEntry *entry = (replica < molCache_.size() && m < molCache_[replica].size())
+                ? &molCache_[replica][m][e] : nullptr;
+            std::vector<double> v;
+            if (entry && entry->valid)
+            {
+                v = entry->key;
+                if (entry->dev.dimer)
+                {
+                    v.insert(v.end(), entry->dev.targets.begin(), entry->dev.targets.end());
+                }
+                if (entry->dev.epot)
+                {
+                    v.insert(v.end(), entry->dev.epotTerms.begin(), entry->dev.epotTerms.end());
+                }
+                v.push_back(entry->bound);
+            }
+            v.resize(size, 0.0);
+            values->insert(values->end(), v.begin(), v.end());
+            valid->push_back(entry && entry->valid ? 1 : 0);
+        }
+    }
+}
+
+void ACMFitnessComputer::checkChain(MsgHandler *msghandler, DeviationTask *dt, double chi2)
+{
+    static const bool check = std::getenv("ACT_GPU_CHAIN_CHECK") != nullptr;
+    auto gs = forceComp_->gpuTrainingSystem();
+    if (!check || !gs || dt->replica != 0 || sii_->commRec()->isParallelCalc())
+    {
+        return;
+    }
+    if (chi2 < 0)
+    {
+        dt->chainCheck = false;
+        if (!dt->haveKeys || dt->task != CalcDev::Compute)
+        {
+            return;
+        }
+        if (!gs->haveChain() && !setupChain(*dt))
+        {
+            return;
+        }
+        gs->chainParameters(parameterValues());
+        gs->chainSkip(dt->skipping);
+        std::vector<char> active;
+        std::vector<int>  hit;
+        gs->chainActive(&active, &hit);
+        if (active != dt->active || hit != dt->hit)
+        {
+            msghandler->fatal("GPU chain check: the molecules skipped differ from those of the processor");
+        }
+        dt->chainCheck = true;
+        return;
+    }
+    if (!dt->chainCheck || !dt->gpuDeviations)
+    {
+        return;
+    }
+    double gpuChi2 = gs->chainChi2(dt->haveKeys);
+    std::vector<double> values, hostValues;
+    std::vector<char>   valid, hostValid;
+    gs->chainCache(&values, &valid, false);
+    chainCacheOf(dt->replica, &hostValues, &hostValid);
+    // Only the values of the valid sets
+    for (size_t m = 0, off = 0; m < molDeps_.size(); m++)
+    {
+        size_t size = gs->chainEntrySize(m);
+        for (int e = 0; e < 2; e++, off += size)
+        {
+            if (!valid[2*m + e])
+            {
+                std::fill(values.begin() + off, values.begin() + off + size, 0.0);
+            }
+        }
+    }
+    chainChecks_ += 1;
+    if (gpuChi2 != chi2 || values != hostValues || valid != hostValid)
+    {
+        chainDiffer_ += 1;
+        if (chainDiffer_ <= 10)
+        {
+            size_t nv = 0;
+            for (size_t i = 0; i < values.size() && i < hostValues.size(); i++)
+            {
+                nv += values[i] != hostValues[i] ? 1 : 0;
+            }
+            fprintf(stderr, "GPU chain check %d: chi2 %.17g on the GPU %.17g, %zu of %zu kept values differ, valid %s\n",
+                    chainChecks_, chi2, gpuChi2, nv, values.size(), valid == hostValid ? "same" : "differ");
+        }
+    }
 }
 
 ForceEnergyDevComputer::EnergyTask ACMFitnessComputer::energyTask(const DeviationTask &dt) const
@@ -1086,6 +1262,7 @@ double ACMFitnessComputer::finishDeviation(MsgHandler *msghandler, DeviationTask
                                           rmsName(erms)).c_str());
     }
     numberCalcDevCalled_ += 1;
+    checkChain(msghandler, dt, etot->second.chiSquared());
     if (etot->second.chiSquared() == 0 && ntrain > 0)
     {
         std::string msg = gmx::formatString("Zero %s chi squared for %s - this cannot be correct.\n", 

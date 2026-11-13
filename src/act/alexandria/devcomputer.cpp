@@ -1230,6 +1230,15 @@ bool ForceEnergyDevComputer::calcDeviationGpu(const ForceComputer           *for
     return true;
 }
 
+void ForceEnergyDevComputer::gpuTargets(const std::map<eRMS, FittingTarget> &targets,
+                                        std::vector<eRMS>                   *rms,
+                                        bool                                *epot)
+{
+    auto et = energyTargets(targets);
+    *rms    = et.rms;
+    *epot   = et.epot;
+}
+
 void ForceEnergyDevComputer::addGpuDeviations(const std::vector<const GpuMoleculeDeviations *> &molecules,
                                               std::map<eRMS, FittingTarget>                    *targets) const
 {

@@ -437,6 +437,17 @@ public:
     bool calcDeviationGpu(const ForceComputer           *forceComputer,
                           std::map<eRMS, FittingTarget> *targets) const;
 
+    /*! \brief The targets the GPU computes the deviations of, in its order
+     * As setupGpuDeviations: the targets of the dimers, then whether the
+     * potential energy is one.
+     * \param[in]  targets The fitting targets
+     * \param[out] rms     The targets of the dimers
+     * \param[out] epot    Whether the potential energy is a target
+     */
+    static void gpuTargets(const std::map<eRMS, FittingTarget> &targets,
+                           std::vector<eRMS>                   *rms,
+                           bool                                *epot);
+
     /*! \brief Add the deviations of the molecules to the targets
      * As calcDeviationGpu, from the deviations of each molecule, computed
      * on the GPU now or before, in the order of the molecules.
