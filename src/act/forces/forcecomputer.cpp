@@ -1988,7 +1988,13 @@ void ForceComputer::chainEvaluateGpu(const ForceField *pd, const std::vector<ACT
     gs.setDeviationsOnly(true);
     gpu::RelaxSettings settings = { msForceToler_, gmx::square(shellMaxDistance(pd)), minShellStep, maxShellStep, maxiter_,
                                     stallIterations_, shellWallAngleTolerance };
-    settings.poll = false;
+    // Asking the GPU every few iterations whether the relaxation is done
+    // waits for it, but is faster than submitting all iterations (BFdb 6P
+    // 57.6 s against 68.2 s), and a displacement that is not finite keeps
+    // the shells from being kept, as in computeRelaxedEnergiesGpu. For
+    // developers ACT_GPU_CHAIN_NOPOLL submits all.
+    static const bool noPoll = std::getenv("ACT_GPU_CHAIN_NOPOLL") != nullptr;
+    settings.poll = !noPoll;
     for (auto molptr : allmols)
     {
         auto &tops = molptr->fragmentHandler()->topologies();
@@ -2005,13 +2011,15 @@ void ForceComputer::chainEvaluateGpu(const ForceField *pd, const std::vector<ACT
     }
     const bool all[2] = { true, true };
     size_t nf = 0;
-    (void) gs.relax(-1, all, settings, &nf);
+    nShellIter_ += gs.relax(-1, all, settings, &nf);
+    nShellConvergeFailed_ += nf;
     gs.compute(-2, false);
     if (restoreKept && gs.restoreShells(2))
     {
         gs.computeForces(2);
     }
-    (void) gs.relax(2, all, settings, &nf);
+    nShellIter_ += gs.relax(2, all, settings, &nf);
+    nShellConvergeFailed_ += nf;
     gs.compute(2, false);
     if (keepShells)
     {
