@@ -240,15 +240,8 @@ void MCMCMutator::mutate(MsgHandler                *msghandler,
     endMutate(bestGenome, &state);
 }
 
-void MCMCMutator::mutateOnGpu(MsgHandler  *msghandler,
-                              ga::Genome  *genome,
-                              ga::Genome  *bestGenome,
-                              MutateState *state)
+std::vector<gpu::ChainStep> MCMCMutator::chainSteps(size_t nParam)
 {
-    const auto imsTrain = iMolSelect::Train;
-    size_t     nParam   = genome->nBase();
-    // The random numbers in the order of proposeStep and changeParam, which
-    // do not depend on whether the steps are accepted
     std::vector<gpu::ChainStep> steps;
     for (int iter = 0; iter < bch_->maxIter(); iter++)
     {
@@ -263,6 +256,41 @@ void MCMCMutator::mutateOnGpu(MsgHandler  *msghandler,
             steps.push_back(st);
         }
     }
+    return steps;
+}
+
+void MCMCMutator::replayStep(MsgHandler              *msghandler,
+                             ga::Genome              *genome,
+                             ga::Genome              *bestGenome,
+                             MutateState             *state,
+                             const gpu::ChainStep    &step,
+                             const gpu::ChainResults &results,
+                             size_t                   s,
+                             size_t                   pp,
+                             int                      iter,
+                             bool                     lockstep)
+{
+    const auto imsTrain = iMolSelect::Train;
+    Proposal proposal;
+    proposal.paramIndex   = step.param;
+    proposal.storeParam   = genome->bases()[proposal.paramIndex];
+    proposal.acceptRandom = step.accept;
+    attemptedMoves_[proposal.paramIndex] += 1;
+    genome->setBase(proposal.paramIndex, results.trial[s]);
+    std::map<iMolSelect, double> currEval = { { imsTrain, results.chi2[s] } };
+    (void) finishStep(msghandler, genome, bestGenome, state, proposal, currEval, pp, iter, lockstep,
+                      results.accepted[s] ? 1 : 0);
+    collectStep(genome, state, iter);
+}
+
+void MCMCMutator::mutateOnGpu(MsgHandler  *msghandler,
+                              ga::Genome  *genome,
+                              ga::Genome  *bestGenome,
+                              MutateState *state)
+{
+    const auto imsTrain = iMolSelect::Train;
+    size_t     nParam   = genome->nBase();
+    auto       steps    = chainSteps(nParam);
     gpu::ChainResults results;
     bool haveBest = bestGenome->hasFitness(imsTrain);
     fitComp_->runChain(msghandler, genome->bases(), steps, state->prevEval[imsTrain], haveBest,
@@ -274,16 +302,7 @@ void MCMCMutator::mutateOnGpu(MsgHandler  *msghandler,
     {
         for (size_t pp = 0; pp < nParam; pp++, s++)
         {
-            Proposal proposal;
-            proposal.paramIndex   = steps[s].param;
-            proposal.storeParam   = genome->bases()[proposal.paramIndex];
-            proposal.acceptRandom = steps[s].accept;
-            attemptedMoves_[proposal.paramIndex] += 1;
-            genome->setBase(proposal.paramIndex, results.trial[s]);
-            std::map<iMolSelect, double> currEval = { { imsTrain, results.chi2[s] } };
-            (void) finishStep(msghandler, genome, bestGenome, state, proposal, currEval, pp, iter, true,
-                              results.accepted[s] ? 1 : 0);
-            collectStep(genome, state, iter);
+            replayStep(msghandler, genome, bestGenome, state, steps[s], results, s, pp, iter, true);
         }
     }
     if (genome->bases() != results.params)
@@ -331,6 +350,44 @@ void MCMCMutator::mutateLockstep(MsgHandler                       *msghandler,
     // All genomes have the same number of parameters and iterations
     const auto *bch    = mutators[0]->bch_;
     size_t      nParam = genomes[0]->nBase();
+    if (fitComp->chainsReady(n))
+    {
+        // Each genome a chain of its own on the GPU, see mutateOnGpu
+        std::vector<std::vector<gpu::ChainStep>> steps(n);
+        std::vector<char>                        haveBest(n);
+        std::vector<double>                      prevChi2(n), bestChi2(n);
+        for (size_t i = 0; i < n; i++)
+        {
+            steps[i]    = mutators[i]->chainSteps(nParam);
+            haveBest[i] = bestGenomes[i]->hasFitness(imsTrain) ? 1 : 0;
+            bestChi2[i] = haveBest[i] ? bestGenomes[i]->fitness(imsTrain) : 0.0;
+            prevChi2[i] = states[i].prevEval[imsTrain];
+        }
+        std::vector<gpu::ChainResults> results;
+        fitComp->runChains(msghandler, params, steps, prevChi2, haveBest, bestChi2, &results);
+        // The steps again on the processor in the order of the loop below
+        size_t s = 0;
+        for (int iter = 0; iter < bch->maxIter(); iter++)
+        {
+            for (size_t pp = 0; pp < nParam; pp++, s++)
+            {
+                for (size_t i = 0; i < n; i++)
+                {
+                    mutators[i]->replayStep(msghandler, genomes[i], bestGenomes[i], &states[i], steps[i][s],
+                                            results[i], s, pp, iter, true);
+                }
+            }
+        }
+        for (size_t i = 0; i < n; i++)
+        {
+            if (genomes[i]->bases() != results[i].params)
+            {
+                msghandler->fatal("The parameters of the steps on the processor differ from those on the GPU");
+            }
+            mutators[i]->endMutate(bestGenomes[i], &states[i]);
+        }
+        return;
+    }
     std::vector<Proposal> proposals(n);
     for (int iter = 0; iter < bch->maxIter(); iter++)
     {

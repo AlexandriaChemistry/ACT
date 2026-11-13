@@ -725,6 +725,10 @@ public:
     int32_t                        *chainBlockMol_  = nullptr;
     int32_t                        *chainBlockWhat_ = nullptr;
     double                         *chainChi2_      = nullptr;
+    //! The replicas of the chain and the values of the recipes and the charge generation of each, see ChainSystem
+    size_t                          nchainReplica_      = 1;
+    size_t                          nchainRecipeValue_  = 0;
+    size_t                          nchainAcmValue_     = 0;
     //! For each term and molecule where its pairs of weight and loss go in chainGather_, see chainSums
     uint64_t                       *chainPos_       = nullptr;
     //! The first pair of each term in chainGather_, and the number of pairs at the end
@@ -3698,9 +3702,13 @@ void createChain(System *sys, const ChainSystem &c)
     sys->release(sys->chainGather_);
     sys->release(sys->chainTermChi2_);
     uint32_t ntarget = sys->dev_.ntarget;
+    size_t nrep       = std::max<size_t>(c.nreplica, 1);
     sys->nchainMol_   = c.nmol;
     sys->nchainTerm_  = c.nterm;
     sys->nchainParam_ = c.nparam;
+    sys->nchainReplica_     = nrep;
+    sys->nchainRecipeValue_ = c.nrecipeValue;
+    sys->nchainAcmValue_    = c.nacmValue;
     sys->chainLoss_   = c.lossFunction;
     // The sets kept of each molecule, see chainEntrySize
     sys->chainEntryHost_.assign(c.nmol, 0);
@@ -3723,25 +3731,31 @@ void createChain(System *sys, const ChainSystem &c)
     sys->chainEntry_     = sys->allocate<uint64_t>(c.nmol);
     sys->chainCache_     = sys->allocate<double>(total);
     sys->chainValid_     = sys->allocate<char>(2*c.nmol);
-    sys->chainParams_    = sys->allocate<double>(c.nparam);
+    sys->chainParams_    = sys->allocate<double>(nrep*c.nparam);
     sys->chainHit_       = sys->allocate<int32_t>(c.nmol);
     sys->chainActive_    = sys->allocate<char>(c.nmol);
     sys->chainBoundNow_  = sys->allocate<double>(c.nmol);
     sys->chainMasks_     = sys->allocate<char>(3*sys->nblock_);
     sys->chainBlockMol_  = sys->allocate<int32_t>(sys->nblock_);
     sys->chainBlockWhat_ = sys->allocate<int32_t>(sys->nblock_);
-    sys->chainChi2_      = sys->allocate<double>(1);
+    sys->chainChi2_      = sys->allocate<double>(nrep);
     {
         // The pairs of each term one after the other, in the order of the
         // molecules, such that each term is summed in that order, see chainSums
-        std::vector<uint64_t> pos(c.nterm*c.nmol, 0), start(c.nterm + 1, 0);
+        // For each replica each term, of its molecules only
+        std::vector<uint64_t> pos(c.nterm*c.nmol, 0), start(nrep*c.nterm + 1, 0);
         uint64_t              cursor = 0;
-        for (size_t t = 0; t < c.nterm; t++)
+        for (size_t rt = 0; rt < nrep*c.nterm; rt++)
         {
-            start[t] = cursor;
+            size_t r = rt / c.nterm, t = rt % c.nterm;
+            start[rt] = cursor;
             for (size_t m = 0; m < c.nmol; m++)
             {
                 const auto &cm = c.mols[m];
+                if (cm.replica != r)
+                {
+                    continue;
+                }
                 uint64_t    n  = 0;
                 switch (c.terms[t].kind)
                 {
@@ -3754,11 +3768,11 @@ void createChain(System *sys, const ChainSystem &c)
                 cursor           += n;
             }
         }
-        start[c.nterm] = cursor;
+        start[nrep*c.nterm] = cursor;
         sys->chainPos_       = sys->allocate<uint64_t>(pos.size());
         sys->chainTermStart_ = sys->allocate<uint64_t>(start.size());
         sys->chainGather_    = sys->allocate<double>(2*cursor);
-        sys->chainTermChi2_  = sys->allocate<double>(c.nterm);
+        sys->chainTermChi2_  = sys->allocate<double>(nrep*c.nterm);
         sys->upload(sys->chainPos_, pos.data(), pos.size());
         sys->upload(sys->chainTermStart_, start.data(), start.size());
         sys->queue_->wait_and_throw();
@@ -3821,7 +3835,7 @@ void chainSetParameters(System *sys, const double *params)
 {
     if (sys->nchainParam_ > 0)
     {
-        sys->queue_->memcpy(sys->chainParams_, params, sys->nchainParam_*sizeof(double));
+        sys->queue_->memcpy(sys->chainParams_, params, sys->nchainReplica_*sys->nchainParam_*sizeof(double));
         sys->queue_->wait_and_throw();
     }
 }
@@ -3838,18 +3852,22 @@ void chainApply(System *sys, int param, bool charges, bool vsites)
     auto   dAI = sys->chainAcmIndex_;
     auto   dRV = sys->recipeValues_;
     auto   dAV = sys->acmValues_;
+    size_t nrv = sys->nchainRecipeValue_, nav = sys->nchainAcmValue_;
     size_t first = param < 0 ? 0 : param;
     size_t n     = param < 0 ? np : 1;
-    sys->queue_->parallel_for(sycl::range<1>(n), [=](sycl::id<1> id)
+    // The parameter of each replica, at the values of that replica
+    sys->queue_->parallel_for(sycl::range<1>(sys->nchainReplica_*n), [=](sycl::id<1> id)
     {
-        size_t k = first + id[0];
+        size_t r = id[0] / n;
+        size_t k = first + id[0] % n;
+        double x = dP[r*np + k];
         if (dRS[k] >= 0 && dRV)
         {
-            dRV[dRS[k]] = dP[k];
+            dRV[r*nrv + dRS[k]] = x;
         }
         if (dAI[k] >= 0 && dAV)
         {
-            dAV[dAI[k]] = dP[k];
+            dAV[r*nav + dAI[k]] = x;
         }
     });
     // Everything that follows from the values is made again, see updateParameters
@@ -3889,9 +3907,10 @@ void downloadValues(System *sys, std::vector<double> *recipe, std::vector<double
 void chainSetSteps(System *sys, const ChainStep *steps, size_t nstep,
                    const double *stepSize, const double *lower, const double *upper,
                    const char *bounded, const double *temperature,
-                   double chi2, bool haveBest, double bestChi2)
+                   const double *chi2, const char *haveBest, const double *bestChi2)
 {
-    size_t np = sys->nchainParam_;
+    size_t np   = sys->nchainParam_;
+    size_t nrep = sys->nchainReplica_;
     for (auto p : { &sys->chainStepSize_, &sys->chainLower_, &sys->chainUpper_, &sys->chainTemp_,
                     &sys->chainState_, &sys->chainStepChi2_, &sys->chainTrial_, &sys->chainBest_ })
     {
@@ -3901,37 +3920,42 @@ void chainSetSteps(System *sys, const ChainStep *steps, size_t nstep,
     sys->release(sys->chainBounded_);
     sys->release(sys->chainAccepted_);
     sys->release(sys->chainNewBest_);
+    // The steps, their results and the parameters of each replica one after the other
     sys->nchainStep_    = nstep;
-    sys->chainSteps_    = sys->allocate<ChainStep>(nstep);
+    sys->chainSteps_    = sys->allocate<ChainStep>(nrep*nstep);
     sys->chainStepSize_ = sys->allocate<double>(np);
     sys->chainLower_    = sys->allocate<double>(np);
     sys->chainUpper_    = sys->allocate<double>(np);
     sys->chainTemp_     = sys->allocate<double>(np);
     sys->chainBounded_  = sys->allocate<char>(np);
-    sys->chainState_    = sys->allocate<double>(4);
-    sys->chainAccepted_ = sys->allocate<char>(nstep);
-    sys->chainNewBest_  = sys->allocate<char>(nstep);
-    sys->chainStepChi2_ = sys->allocate<double>(nstep);
-    sys->chainTrial_    = sys->allocate<double>(nstep);
-    sys->chainBest_     = sys->allocate<double>(np);
-    double state[4] = { chi2, bestChi2, haveBest ? 1.0 : 0.0, 0.0 };
-    sys->upload(sys->chainSteps_, steps, nstep);
+    sys->chainState_    = sys->allocate<double>(4*nrep);
+    sys->chainAccepted_ = sys->allocate<char>(nrep*nstep);
+    sys->chainNewBest_  = sys->allocate<char>(nrep*nstep);
+    sys->chainStepChi2_ = sys->allocate<double>(nrep*nstep);
+    sys->chainTrial_    = sys->allocate<double>(nrep*nstep);
+    sys->chainBest_     = sys->allocate<double>(nrep*np);
+    std::vector<double> state;
+    for (size_t r = 0; r < nrep; r++)
+    {
+        state.insert(state.end(), { chi2[r], bestChi2[r], haveBest[r] ? 1.0 : 0.0, 0.0 });
+    }
+    sys->upload(sys->chainSteps_, steps, nrep*nstep);
     sys->upload(sys->chainStepSize_, stepSize, np);
     sys->upload(sys->chainLower_, lower, np);
     sys->upload(sys->chainUpper_, upper, np);
     sys->upload(sys->chainTemp_, temperature, np);
     sys->upload(sys->chainBounded_, bounded, np);
-    sys->upload(sys->chainState_, state, 4);
-    sys->queue_->memset(sys->chainNewBest_, 0, std::max<size_t>(nstep, 1));
-    sys->queue_->memset(sys->chainAccepted_, 0, std::max<size_t>(nstep, 1));
+    sys->upload(sys->chainState_, state.data(), state.size());
+    sys->queue_->memset(sys->chainNewBest_, 0, std::max<size_t>(nrep*nstep, 1));
+    sys->queue_->memset(sys->chainAccepted_, 0, std::max<size_t>(nrep*nstep, 1));
     if (np > 0)
     {
-        sys->queue_->memcpy(sys->chainBest_, sys->chainParams_, np*sizeof(double));
+        sys->queue_->memcpy(sys->chainBest_, sys->chainParams_, nrep*np*sizeof(double));
     }
     sys->queue_->wait_and_throw();
 }
 
-void chainResults(System *sys, ChainResults *r)
+void chainResults(System *sys, size_t replica, ChainResults *r)
 {
     size_t n  = sys->nchainStep_;
     size_t np = sys->nchainParam_;
@@ -3942,22 +3966,23 @@ void chainResults(System *sys, ChainResults *r)
     r->params.assign(np, 0.0);
     r->best.assign(np, 0.0);
     double state[4] = { 0, 0, 0, 0 };
-    auto *q = sys->queue_;
+    auto  *q = sys->queue_;
+    size_t s0 = replica*n, p0 = replica*np;
     if (n > 0)
     {
-        q->memcpy(r->accepted.data(), sys->chainAccepted_, n);
-        q->memcpy(r->newBest.data(), sys->chainNewBest_, n);
-        q->memcpy(r->chi2.data(), sys->chainStepChi2_, n*sizeof(double));
-        q->memcpy(r->trial.data(), sys->chainTrial_, n*sizeof(double));
+        q->memcpy(r->accepted.data(), sys->chainAccepted_ + s0, n);
+        q->memcpy(r->newBest.data(), sys->chainNewBest_ + s0, n);
+        q->memcpy(r->chi2.data(), sys->chainStepChi2_ + s0, n*sizeof(double));
+        q->memcpy(r->trial.data(), sys->chainTrial_ + s0, n*sizeof(double));
     }
     if (np > 0)
     {
-        q->memcpy(r->params.data(), sys->chainParams_, np*sizeof(double));
-        q->memcpy(r->best.data(), sys->chainBest_, np*sizeof(double));
+        q->memcpy(r->params.data(), sys->chainParams_ + p0, np*sizeof(double));
+        q->memcpy(r->best.data(), sys->chainBest_ + p0, np*sizeof(double));
     }
     if (sys->chainState_)
     {
-        q->memcpy(state, sys->chainState_, sizeof(state));
+        q->memcpy(state, sys->chainState_ + 4*replica, sizeof(state));
     }
     q->wait_and_throw();
     r->finalChi2 = state[0];
@@ -3998,6 +4023,9 @@ struct ChainView
     uint32_t             ntarget;
     uint32_t             nblock;
     int                  lossFunction;
+    //! The parameters of a replica, and the replicas
+    size_t               nparam;
+    size_t               nreplica;
 
     //! The number of values of a set kept of a molecule
     uint64_t size(size_t m) const
@@ -4016,9 +4044,10 @@ struct ChainView
         {
             const double *key = cache + entry[m] + e*sz;
             bool same = valid[2*m + e] != 0;
+            const double *p = params + cm.replica*nparam;
             for (uint32_t i = 0; i < cm.ndep && same; i++)
             {
-                same = key[i] == params[deps[cm.depOffset + i]];
+                same = key[i] == p[deps[cm.depOffset + i]];
             }
             h = same ? e : h;
         }
@@ -4110,20 +4139,34 @@ struct ChainView
         }
     }
 
-    //! The weighted chi squared of a term, the pairs summed in order, as FittingTarget
-    void termSum(uint32_t t) const
+    //! The weighted chi squared of a term of a replica, rt = replica*nterm + term, the pairs summed in order, as FittingTarget
+    void termSum(size_t rt) const
     {
 #if defined(__clang__)
 #pragma clang fp contract(off)
 #endif
         double sw = 0, sl = 0;
-        for (uint64_t k = termStart[t]; k < termStart[t + 1]; k++)
+        for (uint64_t k = termStart[rt]; k < termStart[rt + 1]; k++)
         {
             sw += gather[2*k];
             sl += gather[2*k + 1];
         }
         // As FittingTarget::chiSquaredWeighted
-        termChi2[t] = (sl > 0 && sw > 0) ? sl*terms[t].weight/sw : 0.0;
+        termChi2[rt] = (sl > 0 && sw > 0) ? sl*terms[rt % nterm].weight/sw : 0.0;
+    }
+
+    //! The total chi squared of a replica, the terms in their order, as sumChiSquared
+    double total(size_t r) const
+    {
+#if defined(__clang__)
+#pragma clang fp contract(off)
+#endif
+        double sum = 0;
+        for (uint32_t t = 0; t < nterm; t++)
+        {
+            sum += termChi2[r*nterm + t];
+        }
+        return sum;
     }
 
     /*! \brief Keep the deviations of a molecule, as finishDeviation
@@ -4158,11 +4201,12 @@ struct ChainView
             e1[i] = e0[i];
         }
         valid[2*m + 1] = valid[2*m];
-        uint64_t k = 0;
+        uint64_t      k = 0;
+        const double *p = params + cm.replica*nparam;
         for (uint32_t i = 0; i < cm.ndep; i++)
         {
             uint32_t d = deps[cm.depOffset + i];
-            e0[k++] = (static_cast<int64_t>(d) == param) ? value : params[d];
+            e0[k++] = (static_cast<int64_t>(d) == param) ? value : p[d];
         }
         if (cm.dimer >= 0)
         {
@@ -4224,6 +4268,8 @@ static ChainView chainView(System *sys)
     v.ntarget      = sys->dev_.ntarget;
     v.nblock       = sys->nblock_;
     v.lossFunction = sys->chainLoss_;
+    v.nparam       = sys->nchainParam_;
+    v.nreplica     = sys->nchainReplica_;
     return v;
 }
 
@@ -4245,7 +4291,7 @@ static void chainSums(System *sys)
     }
     if (v.nterm > 0)
     {
-        sys->queue_->parallel_for(sycl::range<1>(v.nterm), [=](sycl::id<1> id)
+        sys->queue_->parallel_for(sycl::range<1>(v.nreplica*v.nterm), [=](sycl::id<1> id)
         {
             v.termSum(id[0]);
         });
@@ -4310,21 +4356,13 @@ void chainComputeChi2(System *sys, bool keep)
     auto v = chainView(sys);
     if (v.nmol == 0)
     {
-        sys->queue_->memset(v.chi2, 0, sizeof(double));
+        sys->queue_->memset(v.chi2, 0, v.nreplica*sizeof(double));
         return;
     }
     chainSums(sys);
-    sys->queue_->single_task([=]()
+    sys->queue_->parallel_for(sycl::range<1>(v.nreplica), [=](sycl::id<1> id)
     {
-#if defined(__clang__)
-#pragma clang fp contract(off)
-#endif
-        double sum = 0;
-        for (uint32_t t = 0; t < v.nterm; t++)
-        {
-            sum += v.termChi2[t];
-        }
-        *v.chi2 = sum;
+        v.chi2[id[0]] = v.total(id[0]);
     });
     if (keep)
     {
@@ -4337,25 +4375,31 @@ void chainComputeChi2(System *sys, bool keep)
 
 void chainStepBefore(System *sys, size_t step)
 {
-    // The change of the parameter, as MCMCMutator::changeParam, and its values, as chainApply
-    auto dS  = sys->chainSteps_;
-    auto dP  = sys->chainParams_;
-    auto dSz = sys->chainStepSize_;
-    auto dLo = sys->chainLower_;
-    auto dUp = sys->chainUpper_;
-    auto dBd = sys->chainBounded_;
-    auto dSt = sys->chainState_;
-    auto dTr = sys->chainTrial_;
-    auto dRS = sys->chainRecipeSlot_;
-    auto dAI = sys->chainAcmIndex_;
-    auto dRV = sys->recipeValues_;
-    auto dAV = sys->acmValues_;
-    sys->queue_->single_task([=]()
+    // The change of the parameter of each replica, as MCMCMutator::changeParam,
+    // and its values, as chainApply
+    auto   dS   = sys->chainSteps_;
+    auto   dP   = sys->chainParams_;
+    auto   dSz  = sys->chainStepSize_;
+    auto   dLo  = sys->chainLower_;
+    auto   dUp  = sys->chainUpper_;
+    auto   dBd  = sys->chainBounded_;
+    auto   dSt  = sys->chainState_;
+    auto   dTr  = sys->chainTrial_;
+    auto   dRS  = sys->chainRecipeSlot_;
+    auto   dAI  = sys->chainAcmIndex_;
+    auto   dRV  = sys->recipeValues_;
+    auto   dAV  = sys->acmValues_;
+    size_t np   = sys->nchainParam_, nstep = sys->nchainStep_;
+    size_t nrv  = sys->nchainRecipeValue_, nav = sys->nchainAcmValue_;
+    size_t nrep = sys->nchainReplica_;
+    sys->queue_->parallel_for(sycl::range<1>(nrep), [=](sycl::id<1> id)
     {
 #if defined(__clang__)
 #pragma clang fp contract(off)
 #endif
-        const ChainStep &st  = dS[step];
+        size_t           r   = id[0];
+        size_t           rs  = r*nstep + step;
+        const ChainStep &st  = dS[rs];
         uint32_t         j   = st.param;
         double           rnd = st.change;
         if (rnd == 0.5)
@@ -4363,8 +4407,9 @@ void chainStepBefore(System *sys, size_t step)
             // Make sure the parameter changes, as changeParam
             rnd = 1;
         }
-        double old = dP[j];
-        double x   = old + (2*rnd-1)*dSz[j];
+        double *p   = dP + r*np;
+        double  old = p[j];
+        double  x   = old + (2*rnd-1)*dSz[j];
         if (dBd[j])
         {
             if (x < dLo[j])
@@ -4376,16 +4421,16 @@ void chainStepBefore(System *sys, size_t step)
                 x = dUp[j];
             }
         }
-        dP[j]     = x;
-        dSt[3]    = old;
-        dTr[step] = x;
+        p[j]        = x;
+        dSt[4*r+3]  = old;
+        dTr[rs]     = x;
         if (dRS[j] >= 0 && dRV)
         {
-            dRV[dRS[j]] = x;
+            dRV[r*nrv + dRS[j]] = x;
         }
         if (dAI[j] >= 0 && dAV)
         {
-            dAV[dAI[j]] = x;
+            dAV[r*nav + dAI[j]] = x;
         }
     });
 }
@@ -4405,60 +4450,61 @@ void chainStepAfter(System *sys, size_t step)
     auto   dAI  = sys->chainAcmIndex_;
     auto   dRV  = sys->recipeValues_;
     auto   dAV  = sys->acmValues_;
-    size_t np   = sys->nchainParam_;
+    size_t np   = sys->nchainParam_, nstep = sys->nchainStep_;
+    size_t nrv  = sys->nchainRecipeValue_, nav = sys->nchainAcmValue_;
     // The bounds and the sums of the terms in parallel: one thread for all
     // is slow, in particular on the MI250X (BFdb 6P on dardel 295 s against
     // 244 s with the bounds alone)
     chainSums(sys);
-    // The chi squared, the Metropolis criterion and the value of a rejected
-    // change, as chainComputeChi2, MCMCMutator::finishStep and chainApply
-    sys->queue_->single_task([=]()
+    // For each replica the chi squared, the Metropolis criterion and the value
+    // of a rejected change, as chainComputeChi2, MCMCMutator::finishStep and chainApply
+    sys->queue_->parallel_for(sycl::range<1>(v.nreplica), [=](sycl::id<1> id)
     {
 #if defined(__clang__)
 #pragma clang fp contract(off)
 #endif
-        double curr = 0;
-        for (uint32_t t = 0; t < v.nterm; t++)
-        {
-            curr += v.termChi2[t];
-        }
-        *v.chi2     = curr;
-        const ChainStep &st    = dS[step];
+        size_t           r     = id[0];
+        size_t           rs    = r*nstep + step;
+        double          *state = dSt + 4*r;
+        double          *p     = v.params + r*np;
+        double           curr  = v.total(r);
+        v.chi2[r]              = curr;
+        const ChainStep &st    = dS[rs];
         uint32_t         j     = st.param;
-        double           delta = curr - dSt[0];
+        double           delta = curr - state[0];
         bool accept = delta < 0;
         if (!accept)
         {
             double probability = sycl::exp(-(st.beta/dT[j])*delta);
             accept = probability > st.accept;
         }
-        dSC[step]  = curr;
-        dAcc[step] = accept ? 1 : 0;
+        dSC[rs]  = curr;
+        dAcc[rs] = accept ? 1 : 0;
         if (accept)
         {
-            dSt[0] = curr;
-            if (dSt[2] == 0 || curr < dSt[1])
+            state[0] = curr;
+            if (state[2] == 0 || curr < state[1])
             {
-                dSt[1]    = curr;
-                dSt[2]    = 1;
-                dNB[step] = 1;
+                state[1] = curr;
+                state[2] = 1;
+                dNB[rs]  = 1;
                 for (size_t k = 0; k < np; k++)
                 {
-                    dB[k] = v.params[k];
+                    dB[r*np + k] = p[k];
                 }
             }
         }
         else
         {
-            double old  = dSt[3];
-            v.params[j] = old;
+            double old = state[3];
+            p[j]       = old;
             if (dRS[j] >= 0 && dRV)
             {
-                dRV[dRS[j]] = old;
+                dRV[r*nrv + dRS[j]] = old;
             }
             if (dAI[j] >= 0 && dAV)
             {
-                dAV[dAI[j]] = old;
+                dAV[r*nav + dAI[j]] = old;
             }
         }
     });
@@ -4467,8 +4513,10 @@ void chainStepAfter(System *sys, size_t step)
         // The keys are those of the values tried, also if the step was rejected
         sys->queue_->parallel_for(sycl::range<1>(v.nmol), [=](sycl::id<1> id)
         {
-            uint32_t j = dS[step].param;
-            v.keep(id[0], j, dTr[step]);
+            size_t   m  = id[0];
+            size_t   rs = v.mols[m].replica*nstep + step;
+            uint32_t j  = dS[rs].param;
+            v.keep(m, j, dTr[rs]);
         });
     }
 }

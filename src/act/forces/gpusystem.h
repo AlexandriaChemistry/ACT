@@ -396,7 +396,9 @@ public:
     void multipoleDebug(size_t mol, const std::vector<gmx::RVec> &hostX);
 
     /*! \brief Prepare the Monte Carlo chain on the GPU, see gpu::createChain
-     * Needs setDeviations first. The sets kept are empty.
+     * Needs setDeviations first. The sets kept are empty. Each replica runs
+     * a chain of its own, the molecules of the chain are those of all
+     * replicas, replica 0 first, see gpu::ChainSystem.
      * \param[in] setup The molecules, bounds and terms
      * \return Whether the GPU can do it, it needs the charges of the
      *         molecules with bounds
@@ -407,7 +409,7 @@ public:
     bool haveChain() const;
 
     /*! \brief The number of values of a set kept of a molecule, see gpu::chainEntrySize
-     * \param[in] mol The molecule
+     * \param[in] mol The molecule of the chain, replica*nmol + molecule
      * \return The number
      */
     size_t chainEntrySize(size_t mol) const;
@@ -422,14 +424,14 @@ public:
     std::pair<bool, bool> chainLayout(size_t mol, size_t *ndimer, size_t *nepot, size_t *nmultipole) const;
 
     /*! \brief Set or get the sets kept, see gpu::chainSetCache
-     * \param[inout] values For each molecule two sets
-     * \param[inout] valid  For each molecule whether each is valid
+     * \param[inout] values For each molecule of each replica two sets, replica 0 first
+     * \param[inout] valid  For each molecule of each replica whether each is valid
      * \param[in]    set    Whether to set them, otherwise get them
      */
     void chainCache(std::vector<double> *values, std::vector<char> *valid, bool set);
 
     /*! \brief The values of the parameters, see gpu::chainSetParameters
-     * \param[in] params The values
+     * \param[in] params The values of each replica, replica 0 first
      */
     void chainParameters(const std::vector<double> &params);
 
@@ -439,14 +441,14 @@ public:
     void chainSkip(bool canSkip);
 
     /*! \brief Which molecules are computed, see gpu::chainActive
-     * \param[out] active For each molecule whether it is computed
-     * \param[out] hit    For each molecule the set kept with its values, -1 if none
+     * \param[out] active For each molecule of each replica whether it is computed
+     * \param[out] hit    For each molecule of each replica the set kept with its values, -1 if none
      */
     void chainActive(std::vector<char> *active, std::vector<int> *hit);
 
     /*! \brief The chi squared on the GPU, see gpu::chainComputeChi2 and gpu::chainChi2
      * \param[in] keep Whether to keep the deviations
-     * \return The chi squared, waits for the GPU
+     * \return The chi squared of replica 0, waits for the GPU
      */
     double chainChi2(bool keep);
 
@@ -459,15 +461,20 @@ public:
      */
     int chainCheckValues();
 
-    /*! \return Whether the steps of the chain can run on the GPU alone,
-     * all that the evaluations need follows from the parameters there
+    /*! \brief Whether the steps of the chain can run on the GPU alone
+     * \param[in] nreplica The replicas that run a chain, all those of the system
+     * \return Whether all that the evaluations need follows from the parameters there
      */
-    bool chainCapable() const;
+    bool chainCapable(size_t nreplica = 1) const;
 
     /*! \brief Start the steps of the chain, see gpu::chainSetSteps
      * The parameters on the GPU must be those of chi2, see chainParameters,
      * and the sets kept those of the processor, see chainCache. The
      * evaluations use the masks of the chain, see gpu::chainMask, until chainEnd.
+     * \param[in] steps    The steps of each replica, replica 0 first, as many for each
+     * \param[in] chi2     For each replica the chi squared of its parameters
+     * \param[in] haveBest For each replica whether there is a best one
+     * \param[in] bestChi2 For each replica the chi squared of the best
      */
     void chainBegin(const std::vector<gpu::ChainStep> &steps,
                     const std::vector<double>         &stepSize,
@@ -475,29 +482,31 @@ public:
                     const std::vector<double>         &upper,
                     const std::vector<char>           &bounded,
                     const std::vector<double>         &temperature,
-                    double chi2, bool haveBest, double bestChi2);
+                    const std::vector<double>         &chi2,
+                    const std::vector<char>           &haveBest,
+                    const std::vector<double>         &bestChi2);
 
     /*! \brief Change the parameter of a step and prepare its evaluation
      * The values on the GPU follow, as uploadParameters, and the molecules
      * whose parameters did not change are skipped.
-     * \param[in] step  The step
-     * \param[in] param The parameter it changes
-     * \param[in] pd    The force field, for the dielectric constant
+     * \param[in] step   The step
+     * \param[in] params The parameter it changes, of each replica
+     * \param[in] pd     The force field, for the dielectric constant
      */
-    void chainPropose(size_t step, int param, const ForceField *pd);
+    void chainPropose(size_t step, const std::vector<int> &params, const ForceField *pd);
 
     /*! \brief The chi squared of the evaluation of a step and the Metropolis criterion
-     * \param[in] step  The step
-     * \param[in] param The parameter it changed
+     * \param[in] step   The step
+     * \param[in] params The parameter it changed, of each replica
      */
-    void chainFinish(size_t step, int param);
+    void chainFinish(size_t step, const std::vector<int> &params);
 
     /*! \brief The results of the steps, waits for the GPU
      * What the processor kept of the charges and the values on the GPU is
      * made again in the next evaluation.
-     * \param[out] results The results
+     * \param[out] results The results of each replica
      */
-    void chainEnd(gpu::ChainResults *results);
+    void chainEnd(std::vector<gpu::ChainResults> *results);
 
     //! Copy the shells of the relaxed monomers to the dimers, as copyRelaxedMonomerShells
     void copyRelaxedMonomerShells();

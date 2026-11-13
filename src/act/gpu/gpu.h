@@ -1314,6 +1314,8 @@ struct ChainMolecule
     uint32_t skippable   = 0;
     //! Whether it has deviations of the multipoles, see computeMultipoles
     uint32_t multipole   = 0;
+    //! The replica, whose parameters it has, see ChainSystem::nreplica
+    uint32_t replica     = 0;
 };
 
 //! The bound of the charge of a particle and those that are added to it
@@ -1378,11 +1380,20 @@ struct ChainSystem
     const int32_t       *blockMol  = nullptr;
     //! For each block what it is, 0 or 1 a monomer, 2 a dimer, 3 the structures of the multipoles
     const int32_t       *blockWhat = nullptr;
-    //! The number of parameters
+    //! The number of parameters, of each replica
     size_t               nparam    = 0;
-    //! For each parameter its position among the values of the recipes, see updateRecipeValues, -1 if none
+    /*! The number of replicas, each with its own parameters, steps and chi
+     * squared. The molecules are those of all replicas, each knows its
+     * replica, see ChainMolecule::replica, the parameters on the GPU are
+     * nparam for each replica, one after the other.
+     */
+    size_t               nreplica  = 1;
+    //! The number of values of the recipes and of the charge generation of a replica
+    size_t               nrecipeValue = 0;
+    size_t               nacmValue    = 0;
+    //! For each parameter its position among the values of the recipes of replica 0, see updateRecipeValues, -1 if none
     const int32_t       *recipeSlot = nullptr;
-    //! For each parameter its position among the values of updateAcm, -1 if none
+    //! For each parameter its position among the values of updateAcm of replica 0, -1 if none
     const int32_t       *acmIndex   = nullptr;
     //! The loss function, as DeviationSystem::lossFunction
     int                  lossFunction = 0;
@@ -1422,7 +1433,7 @@ void chainGetCache(System *system, double *values, char *valid);
 
 /*! \brief Set the values of the parameters on the GPU
  * \param[in] system The system
- * \param[in] params The values, ChainSystem::nparam
+ * \param[in] params The values, ChainSystem::nparam of each replica
  */
 void chainSetParameters(System *system, const double *params);
 
@@ -1465,23 +1476,23 @@ struct ChainStep
     double   beta   = 0;
 };
 
-/*! \brief Set up the steps of the chain
+/*! \brief Set up the steps of the chain, of each replica
  * \param[in] system      The system
- * \param[in] steps       The steps
- * \param[in] nstep       Their number
+ * \param[in] steps       The steps of each replica, nstep of replica 0 first
+ * \param[in] nstep       The number of steps of a replica
  * \param[in] stepSize    For each parameter, the largest change
  * \param[in] lower       For each parameter, the lower bound
  * \param[in] upper       For each parameter, the upper bound
  * \param[in] bounded     For each parameter, whether it has bounds
  * \param[in] temperature For each parameter, its weight of the temperature
- * \param[in] chi2        The chi squared of the parameters on the GPU now
- * \param[in] haveBest    Whether there is a best chi squared
- * \param[in] bestChi2    The best chi squared
+ * \param[in] chi2        For each replica the chi squared of its parameters on the GPU now
+ * \param[in] haveBest    For each replica whether there is a best chi squared
+ * \param[in] bestChi2    For each replica the best chi squared
  */
 void chainSetSteps(System *system, const ChainStep *steps, size_t nstep,
                    const double *stepSize, const double *lower, const double *upper,
                    const char *bounded, const double *temperature,
-                   double chi2, bool haveBest, double bestChi2);
+                   const double *chi2, const char *haveBest, const double *bestChi2);
 
 /*! \brief Before the evaluation of a step: change its parameter, as MCMCMutator::changeParam, and its values, as chainApply
  * The processor tells updateParameters what to make again, see chainMarkChanged.
@@ -1510,11 +1521,12 @@ struct ChainResults
     bool                haveBest  = false;
 };
 
-/*! \brief The results of the steps, waits for the GPU
+/*! \brief The results of the steps of a replica, waits for the GPU
  * \param[in]  system  The system
+ * \param[in]  replica The replica
  * \param[out] results The results
  */
-void chainResults(System *system, ChainResults *results);
+void chainResults(System *system, size_t replica, ChainResults *results);
 
 /*! \brief Which molecules to compute, from the values of the parameters on the GPU
  * As ACMFitnessComputer::prepareDeviation: a molecule is skipped if
@@ -1552,7 +1564,7 @@ void chainActive(System *system, char *active, int *hit);
  */
 void chainComputeChi2(System *system, bool keep);
 
-/*! \brief The chi squared of the last chainComputeChi2
+/*! \brief The chi squared of replica 0 of the last chainComputeChi2
  * \param[in] system The system
  * \return The chi squared
  */
