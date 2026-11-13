@@ -4146,17 +4146,23 @@ void chainStepAfter(System *sys, size_t step)
     auto   dRV  = sys->recipeValues_;
     auto   dAV  = sys->acmValues_;
     size_t np   = sys->nchainParam_;
-    // The bounds, the chi squared, the Metropolis criterion and the value
-    // of a rejected change, as chainComputeChi2, MCMCMutator::finishStep and chainApply
+    // The bounds of the molecules in parallel: one thread for all is slow,
+    // in particular on the MI250X (BFdb 6P on dardel 295 s against 244 s)
+    if (v.nmol > 0)
+    {
+        sys->queue_->parallel_for(sycl::range<1>(v.nmol), [=](sycl::id<1> id)
+        {
+            size_t m = id[0];
+            v.boundNow[m] = v.active[m] ? v.boundOf(m) : 0.0;
+        });
+    }
+    // The chi squared, the Metropolis criterion and the value of a rejected
+    // change, as chainComputeChi2, MCMCMutator::finishStep and chainApply
     sys->queue_->single_task([=]()
     {
 #if defined(__clang__)
 #pragma clang fp contract(off)
 #endif
-        for (size_t m = 0; m < v.nmol; m++)
-        {
-            v.boundNow[m] = v.active[m] ? v.boundOf(m) : 0.0;
-        }
         double curr = v.total();
         *v.chi2     = curr;
         const ChainStep &st    = dS[step];
