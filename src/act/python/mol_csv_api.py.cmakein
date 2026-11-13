@@ -36,7 +36,7 @@ from actutils import actdata
 from get_csv_rows import *
 from get_mol_dict import *
 from molutils import *
-from mol_csv import read_mol_json, write_mol_json
+from mol_json import read_mol_json, write_mol_json
 
 try:
     from pubchempy import *
@@ -220,7 +220,7 @@ class Molecule:
             self.latex_name = self.iupac.replace("[", "{[}").replace("]", "{]}")
 
     def from_json(self, mol:dict):
-        """Fill the molecule from a molecule of alexandria.json, see mol_csv.py.
+        """Fill the molecule from a molecule of alexandria.json, see mol_json.py.
 
         The fields are kept as text, with the lists separated by ';'.
         """
@@ -256,7 +256,7 @@ class Molecule:
         self.natom           = self.count_atoms()
 
     def to_json(self) -> dict:
-        """The molecule as in alexandria.json, see mol_csv.py, None without an id.
+        """The molecule as in alexandria.json, see mol_json.py, None without an id.
 
         The html and LaTeX names are empty if they are the IUPAC name.
         """
@@ -539,7 +539,7 @@ class Molecules:
         self.mols[mol.alexandria] = mol
 
     def read(self, input_file:str, clean:bool=False):
-        """Read the molecules of alexandria.json, in UTF-8, see mol_csv.py"""
+        """Read the molecules of alexandria.json, in UTF-8, see mol_json.py"""
         for jmol in read_mol_json(input_file):
             # Default mol_id = 0 means read from file.
             mol = Molecule(0)
@@ -556,7 +556,7 @@ class Molecules:
         self.read(ACTDATA + "/alexandria.json")
 
     def write(self, output_file:str):
-        """Write the molecules as alexandria.json, in UTF-8, see mol_csv.py"""
+        """Write the molecules as alexandria.json, in UTF-8, see mol_json.py"""
         jmols = []
         for mol in sorted(self.mols):
             jmol = self.mols[mol].to_json()
