@@ -147,7 +147,7 @@ AlexandriaMols::AlexandriaMols(const std::string &fileName)
     {
         return;
     }
-    // The molecules of the Alexandria library in UTF-8, see src/act/python/mol_csv.py
+    // The molecules of the Alexandria library in UTF-8, see src/act/python/mol_json.py
     const auto doc = readJsonFile(fileName);
     for (const auto &mol : doc.asArray())
     {
