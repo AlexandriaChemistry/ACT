@@ -111,6 +111,36 @@ struct GpuTypeEnergies
  * and after computing, selectReplica puts the energies and charges of one
  * replica in the molecules.
  */
+//! The bound of the charge of a particle, as BoundsDevComputer::ChargeBound
+struct GpuChainBound
+{
+    //! The particle in the molecule
+    int              atom    = 0;
+    double           minimum = 0;
+    double           maximum = 0;
+    //! The particles whose charges are added
+    std::vector<int> extra;
+};
+
+/*! \brief What the Monte Carlo chain on the GPU needs, see GpuTrainingSystem::setChain
+ * The molecules are those of prepare, in their order.
+ */
+struct GpuChainSetup
+{
+    //! For each molecule the parameters it depends on
+    std::vector<std::vector<int>>           deps;
+    //! For each molecule the bounds of its charges
+    std::vector<std::vector<GpuChainBound>> bounds;
+    //! For each molecule whether it may be skipped
+    std::vector<char>                       skippable;
+    //! The terms of the total chi squared, in the order of the targets
+    std::vector<gpu::ChainTerm>             terms;
+    //! The number of parameters
+    size_t                                  nparam       = 0;
+    //! The loss function, as GpuDeviationSetup
+    int                                     lossFunction = 0;
+};
+
 class GpuTrainingSystem
 {
 public:
@@ -321,6 +351,52 @@ public:
      * \return The number of slots computed in all iterations
      */
     size_t relaxStatistics(size_t *nFailed);
+
+    /*! \brief Prepare the Monte Carlo chain on the GPU, see gpu::createChain
+     * Needs setDeviations first. The sets kept are empty.
+     * \param[in] setup The molecules, bounds and terms
+     * \return Whether the GPU can do it, it needs the charges of the
+     *         molecules with bounds
+     */
+    bool setChain(const GpuChainSetup &setup);
+
+    //! \return Whether there is a chain, see setChain
+    bool haveChain() const;
+
+    /*! \brief The number of values of a set kept of a molecule, see gpu::chainEntrySize
+     * \param[in] mol The molecule
+     * \return The number
+     */
+    size_t chainEntrySize(size_t mol) const;
+
+    /*! \brief Set or get the sets kept, see gpu::chainSetCache
+     * \param[inout] values For each molecule two sets
+     * \param[inout] valid  For each molecule whether each is valid
+     * \param[in]    set    Whether to set them, otherwise get them
+     */
+    void chainCache(std::vector<double> *values, std::vector<char> *valid, bool set);
+
+    /*! \brief The values of the parameters, see gpu::chainSetParameters
+     * \param[in] params The values
+     */
+    void chainParameters(const std::vector<double> &params);
+
+    /*! \brief Which molecules to compute on the GPU, see gpu::chainSkip
+     * \param[in] canSkip Whether molecules may be skipped
+     */
+    void chainSkip(bool canSkip);
+
+    /*! \brief Which molecules are computed, see gpu::chainActive
+     * \param[out] active For each molecule whether it is computed
+     * \param[out] hit    For each molecule the set kept with its values, -1 if none
+     */
+    void chainActive(std::vector<char> *active, std::vector<int> *hit);
+
+    /*! \brief The chi squared on the GPU, see gpu::chainComputeChi2 and gpu::chainChi2
+     * \param[in] keep Whether to keep the deviations
+     * \return The chi squared, waits for the GPU
+     */
+    double chainChi2(bool keep);
 
     //! Copy the shells of the relaxed monomers to the dimers, as copyRelaxedMonomerShells
     void copyRelaxedMonomerShells();

@@ -507,6 +507,11 @@ public:
      */
     const char *deviceMask(const char *h, size_t n)
     {
+        // The masks the GPU made, see chainMask
+        if (chainMasks_ && h >= chainMasks_ && h < chainMasks_ + 3*nblock_)
+        {
+            return h;
+        }
         std::string key(h, n);
         auto        found = masks_.find(key);
         if (found != masks_.end())
@@ -694,6 +699,32 @@ public:
     double                         *devDimerSums_      = nullptr;
     HostArray<double>               devSumsHost_;
     int                             maxIterAllocated_ = 0;
+    //! The Monte Carlo chain, see createChain
+    ChainMolecule                  *chainMols_      = nullptr;
+    size_t                          nchainMol_      = 0;
+    uint32_t                       *chainDeps_      = nullptr;
+    ChainBound                     *chainBounds_    = nullptr;
+    uint64_t                       *chainExtras_    = nullptr;
+    ChainTerm                      *chainTerms_     = nullptr;
+    uint32_t                        nchainTerm_     = 0;
+    int                             chainLoss_      = 0;
+    //! The first value of the first set kept of each molecule, and the size of a set
+    uint64_t                       *chainEntry_     = nullptr;
+    std::vector<uint64_t>           chainEntryHost_;
+    std::vector<uint64_t>           chainSizeHost_;
+    uint64_t                        chainCacheSize_ = 0;
+    double                         *chainCache_     = nullptr;
+    char                           *chainValid_     = nullptr;
+    double                         *chainParams_    = nullptr;
+    size_t                          nchainParam_    = 0;
+    int32_t                        *chainHit_       = nullptr;
+    char                           *chainActive_    = nullptr;
+    double                         *chainBoundNow_  = nullptr;
+    //! The masks of the blocks, for all, the monomers and the dimers, see chainMask
+    char                           *chainMasks_     = nullptr;
+    int32_t                        *chainBlockMol_  = nullptr;
+    int32_t                        *chainBlockWhat_ = nullptr;
+    double                         *chainChi2_      = nullptr;
 };
 
 /*! \brief The range of the first work item of each wavefront, for findRangeFrom
@@ -3448,6 +3479,368 @@ void computeDeviations(System *sys, const char *use, double *dimerSums, double *
     queue->wait_and_throw();
     std::copy(hS, hS + nd, dimerSums);
     std::copy(hS + nd, hS + nd + ne, epotTerms);
+}
+
+uint64_t blockAtomOffset(const System *sys, size_t block)
+{
+    return sys->blocksHost_[block].atomOffset;
+}
+
+void createChain(System *sys, const ChainSystem &c)
+{
+    for (auto p : { &sys->chainDeps_ })
+    {
+        sys->release(*p);
+    }
+    sys->release(sys->chainMols_);
+    sys->release(sys->chainBounds_);
+    sys->release(sys->chainExtras_);
+    sys->release(sys->chainTerms_);
+    sys->release(sys->chainEntry_);
+    sys->release(sys->chainCache_);
+    sys->release(sys->chainValid_);
+    sys->release(sys->chainParams_);
+    sys->release(sys->chainHit_);
+    sys->release(sys->chainActive_);
+    sys->release(sys->chainBoundNow_);
+    sys->release(sys->chainMasks_);
+    sys->release(sys->chainBlockMol_);
+    sys->release(sys->chainBlockWhat_);
+    sys->release(sys->chainChi2_);
+    uint32_t ntarget = sys->dev_.ntarget;
+    sys->nchainMol_   = c.nmol;
+    sys->nchainTerm_  = c.nterm;
+    sys->nchainParam_ = c.nparam;
+    sys->chainLoss_   = c.lossFunction;
+    // The sets kept of each molecule, see chainEntrySize
+    sys->chainEntryHost_.assign(c.nmol, 0);
+    sys->chainSizeHost_.assign(c.nmol, 0);
+    uint64_t total = 0;
+    for (size_t m = 0; m < c.nmol; m++)
+    {
+        const auto &cm = c.mols[m];
+        uint64_t size  = cm.ndep + (cm.dimer >= 0 ? 2*ntarget : 0) + (cm.monomer >= 0 ? 2*cm.nepot : 0) + 1;
+        sys->chainEntryHost_[m] = total;
+        sys->chainSizeHost_[m]  = size;
+        total += 2*size;
+    }
+    sys->chainCacheSize_ = total;
+    sys->chainMols_      = sys->allocate<ChainMolecule>(c.nmol);
+    sys->chainDeps_      = sys->allocate<uint32_t>(c.ndep);
+    sys->chainBounds_    = sys->allocate<ChainBound>(c.nbound);
+    sys->chainExtras_    = sys->allocate<uint64_t>(c.nextra);
+    sys->chainTerms_     = sys->allocate<ChainTerm>(c.nterm);
+    sys->chainEntry_     = sys->allocate<uint64_t>(c.nmol);
+    sys->chainCache_     = sys->allocate<double>(total);
+    sys->chainValid_     = sys->allocate<char>(2*c.nmol);
+    sys->chainParams_    = sys->allocate<double>(c.nparam);
+    sys->chainHit_       = sys->allocate<int32_t>(c.nmol);
+    sys->chainActive_    = sys->allocate<char>(c.nmol);
+    sys->chainBoundNow_  = sys->allocate<double>(c.nmol);
+    sys->chainMasks_     = sys->allocate<char>(3*sys->nblock_);
+    sys->chainBlockMol_  = sys->allocate<int32_t>(sys->nblock_);
+    sys->chainBlockWhat_ = sys->allocate<int32_t>(sys->nblock_);
+    sys->chainChi2_      = sys->allocate<double>(1);
+    sys->upload(sys->chainMols_, c.mols, c.nmol);
+    sys->upload(sys->chainDeps_, c.deps, c.ndep);
+    sys->upload(sys->chainBounds_, c.bounds, c.nbound);
+    sys->upload(sys->chainExtras_, c.extras, c.nextra);
+    sys->upload(sys->chainTerms_, c.terms, c.nterm);
+    sys->upload(sys->chainEntry_, sys->chainEntryHost_.data(), c.nmol);
+    sys->upload(sys->chainBlockMol_, c.blockMol, sys->nblock_);
+    sys->upload(sys->chainBlockWhat_, c.blockWhat, sys->nblock_);
+    sys->queue_->memset(sys->chainValid_, 0, std::max<size_t>(2*c.nmol, 1));
+    sys->queue_->memset(sys->chainCache_, 0, std::max<uint64_t>(total, 1)*sizeof(double));
+    sys->queue_->memset(sys->chainActive_, 1, std::max<size_t>(c.nmol, 1));
+    sys->queue_->memset(sys->chainHit_, 0xff, std::max<size_t>(c.nmol, 1)*sizeof(int32_t));
+    sys->queue_->wait_and_throw();
+}
+
+size_t chainEntrySize(const System *sys, size_t mol)
+{
+    return sys->chainSizeHost_[mol];
+}
+
+void chainSetCache(System *sys, const double *values, const char *valid)
+{
+    if (sys->chainCacheSize_ > 0)
+    {
+        sys->queue_->memcpy(sys->chainCache_, values, sys->chainCacheSize_*sizeof(double));
+    }
+    if (sys->nchainMol_ > 0)
+    {
+        sys->queue_->memcpy(sys->chainValid_, valid, 2*sys->nchainMol_);
+    }
+    sys->queue_->wait_and_throw();
+}
+
+void chainGetCache(System *sys, double *values, char *valid)
+{
+    if (sys->chainCacheSize_ > 0)
+    {
+        sys->queue_->memcpy(values, sys->chainCache_, sys->chainCacheSize_*sizeof(double));
+    }
+    if (sys->nchainMol_ > 0)
+    {
+        sys->queue_->memcpy(valid, sys->chainValid_, 2*sys->nchainMol_);
+    }
+    sys->queue_->wait_and_throw();
+}
+
+void chainSetParameters(System *sys, const double *params)
+{
+    if (sys->nchainParam_ > 0)
+    {
+        sys->queue_->memcpy(sys->chainParams_, params, sys->nchainParam_*sizeof(double));
+        sys->queue_->wait_and_throw();
+    }
+}
+
+void chainSkip(System *sys, bool canSkip)
+{
+    auto    *queue = sys->queue_;
+    auto     dM    = sys->chainMols_;
+    auto     dDep  = sys->chainDeps_;
+    auto     dEn   = sys->chainEntry_;
+    auto     dC    = sys->chainCache_;
+    auto     dV    = sys->chainValid_;
+    auto     dP    = sys->chainParams_;
+    auto     dHit  = sys->chainHit_;
+    auto     dAct  = sys->chainActive_;
+    size_t   nmol  = sys->nchainMol_;
+    uint32_t ntarget = sys->dev_.ntarget;
+    if (nmol > 0)
+    {
+        queue->parallel_for(sycl::range<1>(nmol), [=](sycl::id<1> id)
+        {
+            size_t               m  = id[0];
+            const ChainMolecule &cm = dM[m];
+            uint64_t size = cm.ndep + (cm.dimer >= 0 ? 2*ntarget : 0) + (cm.monomer >= 0 ? 2*cm.nepot : 0) + 1;
+            int      hit  = -1;
+            // The last set that matches, as prepareDeviation
+            for (int e = 0; e < 2; e++)
+            {
+                const double *key = dC + dEn[m] + e*size;
+                bool same = dV[2*m + e] != 0;
+                for (uint32_t i = 0; i < cm.ndep && same; i++)
+                {
+                    same = key[i] == dP[dDep[cm.depOffset + i]];
+                }
+                hit = same ? e : hit;
+            }
+            dHit[m] = hit;
+            dAct[m] = (canSkip && hit >= 0 && cm.skippable) ? 0 : 1;
+        });
+    }
+    auto     dMask = sys->chainMasks_;
+    auto     dBM   = sys->chainBlockMol_;
+    auto     dBW   = sys->chainBlockWhat_;
+    uint32_t nb    = sys->nblock_;
+    if (nb > 0)
+    {
+        queue->parallel_for(sycl::range<1>(nb), [=](sycl::id<1> id)
+        {
+            uint32_t b   = id[0];
+            int32_t  mol = dBM[b];
+            char     act = (mol >= 0 && dAct[mol]) ? 1 : 0;
+            dMask[b]        = act;
+            dMask[nb + b]   = (act && dBW[b] < 2) ? 1 : 0;
+            dMask[2*nb + b] = (act && dBW[b] == 2) ? 1 : 0;
+        });
+    }
+}
+
+const char *chainMask(System *sys, int what)
+{
+    int k = (what == -1) ? 0 : (what == -2 ? 1 : 2);
+    return sys->chainMasks_ + k*sys->nblock_;
+}
+
+void chainActive(System *sys, char *active, int *hit)
+{
+    size_t nmol = sys->nchainMol_;
+    if (nmol > 0)
+    {
+        std::vector<int32_t> h(nmol);
+        sys->queue_->memcpy(active, sys->chainActive_, nmol);
+        sys->queue_->memcpy(h.data(), sys->chainHit_, nmol*sizeof(int32_t));
+        sys->queue_->wait_and_throw();
+        std::copy(h.begin(), h.end(), hit);
+    }
+}
+
+void chainComputeChi2(System *sys, bool keep)
+{
+    auto    *queue   = sys->queue_;
+    auto     dM      = sys->chainMols_;
+    auto     dDep    = sys->chainDeps_;
+    auto     dBo     = sys->chainBounds_;
+    auto     dEx     = sys->chainExtras_;
+    auto     dT      = sys->chainTerms_;
+    auto     dEn     = sys->chainEntry_;
+    auto     dC      = sys->chainCache_;
+    auto     dV      = sys->chainValid_;
+    auto     dP      = sys->chainParams_;
+    auto     dHit    = sys->chainHit_;
+    auto     dAct    = sys->chainActive_;
+    auto     dBN     = sys->chainBoundNow_;
+    auto     dQa     = sys->acmCharges_;
+    auto     dQ      = sys->charges_;
+    auto     dDS     = sys->devDimerSums_;
+    auto     dETe    = sys->devEpotTerms_;
+    auto     dChi2   = sys->chainChi2_;
+    size_t   nmol    = sys->nchainMol_;
+    uint32_t nterm   = sys->nchainTerm_;
+    uint32_t ntarget = sys->dev_.ntarget;
+    int      lf      = sys->chainLoss_;
+    if (nmol == 0)
+    {
+        queue->memset(dChi2, 0, sizeof(double));
+        return;
+    }
+    // The bounds of the charges of the molecules computed, as BoundsDevComputer::moleculeBound
+    queue->parallel_for(sycl::range<1>(nmol), [=](sycl::id<1> id)
+    {
+#if defined(__clang__)
+#pragma clang fp contract(off)
+#endif
+        size_t               m     = id[0];
+        const ChainMolecule &cm    = dM[m];
+        double               bound = 0;
+        if (dAct[m] && dQa)
+        {
+            for (uint32_t k = 0; k < cm.nbound; k++)
+            {
+                const ChainBound &cb = dBo[cm.boundOffset + k];
+                double q = dQa[cb.charge] + (cb.secondCharge >= 0 ? dQ[cb.secondCharge] : 0.0);
+                for (uint32_t e = 0; e < cb.nextra; e++)
+                {
+                    q += dQa[dEx[cb.extraOffset + e]];
+                }
+                if (q < cb.minimum)
+                {
+                    bound += deviationLoss(lf, cb.minimum - q);
+                }
+                else if (q > cb.maximum)
+                {
+                    bound += deviationLoss(lf, q - cb.maximum);
+                }
+            }
+        }
+        dBN[m] = bound;
+    });
+    // The sums of the targets in the order of the molecules and the total,
+    // as finishDeviation and sumChiSquared
+    queue->single_task([=]()
+    {
+#if defined(__clang__)
+#pragma clang fp contract(off)
+#endif
+        double total = 0;
+        for (uint32_t t = 0; t < nterm; t++)
+        {
+            const ChainTerm &term = dT[t];
+            double sw = 0, sl = 0;
+            for (size_t m = 0; m < nmol; m++)
+            {
+                const ChainMolecule &cm   = dM[m];
+                uint64_t size  = cm.ndep + (cm.dimer >= 0 ? 2*ntarget : 0) + (cm.monomer >= 0 ? 2*cm.nepot : 0) + 1;
+                const double *kept = dC + dEn[m] + (dHit[m] > 0 ? size : 0);
+                bool fresh = dAct[m] != 0;
+                if (term.kind == chainTermDimer && cm.dimer >= 0)
+                {
+                    const double *v = fresh ? dDS + 2*(static_cast<uint64_t>(cm.dimer)*ntarget + term.index)
+                                            : kept + cm.ndep + 2*term.index;
+                    sw += v[0];
+                    sl += v[1];
+                }
+                else if (term.kind == chainTermEpot && cm.monomer >= 0)
+                {
+                    const double *v = fresh ? dETe + 2*cm.epotOffset
+                                            : kept + cm.ndep + (cm.dimer >= 0 ? 2*ntarget : 0);
+                    for (uint32_t c = 0; c < cm.nepot; c++)
+                    {
+                        sw += v[2*c];
+                        sl += v[2*c + 1];
+                    }
+                }
+                else if (term.kind == chainTermBounds)
+                {
+                    sw += 1;
+                    sl += fresh ? dBN[m] : kept[size - 1];
+                }
+            }
+            // As FittingTarget::chiSquaredWeighted
+            if (sl > 0 && sw > 0)
+            {
+                total += sl*term.weight/sw;
+            }
+        }
+        *dChi2 = total;
+    });
+    if (!keep)
+    {
+        return;
+    }
+    // The sets kept, as finishDeviation
+    queue->parallel_for(sycl::range<1>(nmol), [=](sycl::id<1> id)
+    {
+        size_t               m    = id[0];
+        const ChainMolecule &cm   = dM[m];
+        uint64_t size  = cm.ndep + (cm.dimer >= 0 ? 2*ntarget : 0) + (cm.monomer >= 0 ? 2*cm.nepot : 0) + 1;
+        double  *e0    = dC + dEn[m];
+        double  *e1    = e0 + size;
+        if (!dAct[m])
+        {
+            if (dHit[m] == 1)
+            {
+                for (uint64_t i = 0; i < size; i++)
+                {
+                    double t = e0[i];
+                    e0[i]    = e1[i];
+                    e1[i]    = t;
+                }
+                char v          = dV[2*m];
+                dV[2*m]         = dV[2*m + 1];
+                dV[2*m + 1]     = v;
+            }
+            return;
+        }
+        for (uint64_t i = 0; i < size; i++)
+        {
+            e1[i] = e0[i];
+        }
+        dV[2*m + 1] = dV[2*m];
+        uint64_t k = 0;
+        for (uint32_t i = 0; i < cm.ndep; i++)
+        {
+            e0[k++] = dP[dDep[cm.depOffset + i]];
+        }
+        if (cm.dimer >= 0)
+        {
+            for (uint32_t i = 0; i < 2*ntarget; i++)
+            {
+                e0[k++] = dDS[2*static_cast<uint64_t>(cm.dimer)*ntarget + i];
+            }
+        }
+        if (cm.monomer >= 0)
+        {
+            for (uint32_t i = 0; i < 2*cm.nepot; i++)
+            {
+                e0[k++] = dETe[2*cm.epotOffset + i];
+            }
+        }
+        e0[k]   = dBN[m];
+        dV[2*m] = 1;
+    });
+}
+
+double chainChi2(System *sys)
+{
+    double chi2 = 0;
+    sys->queue_->memcpy(&chi2, sys->chainChi2_, sizeof(double));
+    sys->queue_->wait_and_throw();
+    return chi2;
 }
 } // namespace gpu
 

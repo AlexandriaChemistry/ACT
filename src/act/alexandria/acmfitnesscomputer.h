@@ -110,6 +110,9 @@ private:
     std::vector<std::vector<std::array<MolCacheEntry, 2>>> molCache_;
     //! The version of the deviations on the GPU of molCache_, see ForceComputer::gpuDeviationsVersion
     size_t                                         cacheVersion_ = 0;
+    //! The evaluations the chain on the GPU was compared with and those that differed, see checkChain
+    int                                            chainChecks_ = 0, chainDiffer_ = 0;
+
     //! The number of molecules computed and skipped, for the log
     size_t                                         nComputedMol_ = 0, nSkippedMol_ = 0;
     //! Whether ForceComputer::gpuResidentWhyNot was written to the log
@@ -306,7 +309,31 @@ public:
         std::vector<int>                 hit;
         //! Whether the keys are known, such that the deviations can be kept
         bool                             haveKeys = false;
+        //! Whether the chain on the GPU checks this evaluation, see checkChain
+        bool                             chainCheck = false;
     };
+
+    /*! \brief Make the Monte Carlo chain on the GPU for the molecules of the dependencies
+     * \param[in] dt The evaluation, after prepareDeviation
+     * \return Whether the GPU has it
+     */
+    bool setupChain(const DeviationTask &dt);
+
+    /*! \brief The cache of a replica as the chain on the GPU has it, see GpuTrainingSystem::chainCache
+     * \param[in]  replica The replica
+     * \param[out] values  The values of the sets
+     * \param[out] valid   Whether each is valid
+     */
+    void chainCacheOf(size_t replica, std::vector<double> *values, std::vector<char> *valid) const;
+
+    /*! \brief For developers, compare the chain on the GPU with this evaluation
+     * With ACT_GPU_CHAIN_CHECK set: after prepareDeviation the molecules
+     * skipped, after finishDeviation the chi squared and the sets kept.
+     * \param[in] msghandler For messages
+     * \param[in] dt         The evaluation
+     * \param[in] chi2       The chi squared, after finishDeviation, otherwise negative
+     */
+    void checkChain(MsgHandler *msghandler, DeviationTask *dt, double chi2);
 
     /*! \brief Compute the deviations of several sets of parameters
      * As distributeParameters and calcDeviation for each set, at once on

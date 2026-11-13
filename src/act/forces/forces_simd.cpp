@@ -4219,6 +4219,14 @@ void GpuTrainingSystem::computeForces(int) {}
 bool GpuTrainingSystem::haveKeptShells() const { return false; }
 size_t GpuTrainingSystem::relax(int, const bool[2], const gpu::RelaxSettings &, size_t *nFailed) { *nFailed = 0; return 0; }
 size_t GpuTrainingSystem::relaxStatistics(size_t *nFailed) { *nFailed = 0; return 0; }
+bool GpuTrainingSystem::setChain(const GpuChainSetup &) { return false; }
+bool GpuTrainingSystem::haveChain() const { return false; }
+size_t GpuTrainingSystem::chainEntrySize(size_t) const { return 0; }
+void GpuTrainingSystem::chainCache(std::vector<double> *, std::vector<char> *, bool) {}
+void GpuTrainingSystem::chainParameters(const std::vector<double> &) {}
+void GpuTrainingSystem::chainSkip(bool) {}
+void GpuTrainingSystem::chainActive(std::vector<char> *, std::vector<int> *) {}
+double GpuTrainingSystem::chainChi2(bool) { return 0; }
 void GpuTrainingSystem::copyRelaxedMonomerShells() {}
 void GpuTrainingSystem::saveDimers() {}
 void GpuTrainingSystem::restoreDimers() {}
@@ -4369,6 +4377,8 @@ public:
     std::vector<gpu::DeviationDimer>   devDimers;
     std::vector<gpu::DeviationMonomer> devMonomers;
     std::vector<int>                   devDimerOf, devMonomerOf;
+    //! Whether there is a Monte Carlo chain on the GPU, see setChain
+    bool                               chain = false;
     //! The results of computeDeviations, see gpu::computeDeviations
     std::vector<double>                devDimerSums, devEpotTerms;
     //! Whether each block is computed, see setActiveMolecules
@@ -5058,6 +5068,7 @@ bool GpuTrainingSystem::prepare(const ForceField *pd, const std::vector<ACTMol *
         sblocks.push_back(sb);
     }
     im.system = gpu::createSystem(sblocks.data(), sblocks.size());
+    im.chain  = false;
     if (im.system && charges)
     {
         // The fragments of the molecules, the ACM particles and bonds, and
@@ -5950,6 +5961,8 @@ bool GpuTrainingSystem::setDeviations(const GpuDeviationSetup &setup)
     d.nreplica       = im.nreplica;
     d.lossFunction   = setup.lossFunction;
     gpu::createDeviations(im.system, d);
+    // The chain uses the dimers and the topologies of the deviations
+    im.chain = false;
     im.devSetup    = setup;
     im.devRefState = std::move(refState);
     // Where the results of each replica and molecule are
@@ -6241,6 +6254,164 @@ size_t GpuTrainingSystem::relax(int what, const bool relaxMonomer[2], const gpu:
         moveCoordinate(0, std::numeric_limits<double>::quiet_NaN());
     }
     return nComputed;
+}
+
+bool GpuTrainingSystem::setChain(const GpuChainSetup &setup)
+{
+    auto &im = *impl_;
+    im.chain = false;
+    size_t nmol = im.mols.size();
+    if (!im.devReady || setup.deps.size() != nmol || setup.bounds.size() != nmol ||
+        setup.skippable.size() != nmol)
+    {
+        return false;
+    }
+    // The first charge of each molecule among those generated, see applyCharges
+    std::vector<int64_t> acmFirst(nmol, -1);
+    size_t first = 0;
+    for (auto k : im.acmMols)
+    {
+        acmFirst[k] = first;
+        first      += im.mols[k]->atomsConst().size();
+    }
+    std::vector<gpu::ChainMolecule> mols(nmol);
+    std::vector<uint32_t>           deps;
+    std::vector<gpu::ChainBound>    bounds;
+    std::vector<uint64_t>           extras;
+    for (size_t k = 0; k < nmol; k++)
+    {
+        auto &cm      = mols[k];
+        cm.dimer      = im.devDimerOf[k];
+        cm.monomer    = im.devMonomerOf[k];
+        if (cm.monomer >= 0)
+        {
+            cm.epotOffset = im.devMonomers[cm.monomer].confOffset;
+            cm.nepot      = im.devMonomers[cm.monomer].nconf;
+        }
+        cm.depOffset  = deps.size();
+        cm.ndep       = setup.deps[k].size();
+        for (auto d : setup.deps[k])
+        {
+            deps.push_back(d);
+        }
+        cm.boundOffset = bounds.size();
+        cm.nbound      = setup.bounds[k].size();
+        cm.skippable   = setup.skippable[k] ? 1 : 0;
+        if (cm.nbound > 0 && acmFirst[k] < 0)
+        {
+            // The charges are not those of the GPU
+            return false;
+        }
+        auto  fh     = im.mols[k]->fragmentHandler();
+        auto &tops   = fh->topologies();
+        auto &astart = fh->atomStart();
+        for (const auto &b : setup.bounds[k])
+        {
+            gpu::ChainBound cb;
+            cb.charge  = acmFirst[k] + b.atom;
+            cb.minimum = b.minimum;
+            cb.maximum = b.maximum;
+            // The second charge, in the block of the fragment of the particle
+            for (size_t f = 0; f < tops.size(); f++)
+            {
+                int a = b.atom - static_cast<int>(astart[f]);
+                if (a >= 0 && a < static_cast<int>(tops[f].atoms().size()))
+                {
+                    int bl = im.find(k, f);
+                    if (bl >= 0)
+                    {
+                        cb.secondCharge = 4*(gpu::blockAtomOffset(im.system, bl) + a) + 1;
+                    }
+                }
+            }
+            cb.extraOffset = extras.size();
+            cb.nextra      = b.extra.size();
+            for (auto e : b.extra)
+            {
+                extras.push_back(acmFirst[k] + e);
+            }
+            bounds.push_back(cb);
+        }
+    }
+    std::vector<int32_t> blockMol(im.blocks.size(), -1), blockWhat(im.blocks.size(), 0);
+    for (size_t b = 0; b < im.blocks.size(); b++)
+    {
+        blockMol[b]  = im.blocks[b].replica == 0 ? static_cast<int32_t>(im.blocks[b].mol) : -1;
+        blockWhat[b] = im.blocks[b].what;
+    }
+    gpu::ChainSystem c;
+    c.mols         = mols.data();
+    c.nmol         = nmol;
+    c.deps         = deps.data();
+    c.ndep         = deps.size();
+    c.bounds       = bounds.data();
+    c.nbound       = bounds.size();
+    c.extras       = extras.data();
+    c.nextra       = extras.size();
+    c.terms        = setup.terms.data();
+    c.nterm        = setup.terms.size();
+    c.blockMol     = blockMol.data();
+    c.blockWhat    = blockWhat.data();
+    c.nparam       = setup.nparam;
+    c.lossFunction = setup.lossFunction;
+    gpu::createChain(im.system, c);
+    im.chain = true;
+    return true;
+}
+
+bool GpuTrainingSystem::haveChain() const
+{
+    return impl_->chain;
+}
+
+size_t GpuTrainingSystem::chainEntrySize(size_t mol) const
+{
+    return gpu::chainEntrySize(impl_->system, mol);
+}
+
+void GpuTrainingSystem::chainCache(std::vector<double> *values, std::vector<char> *valid, bool set)
+{
+    auto  &im   = *impl_;
+    size_t n    = 0;
+    for (size_t k = 0; k < im.mols.size(); k++)
+    {
+        n += 2*chainEntrySize(k);
+    }
+    if (set)
+    {
+        GMX_RELEASE_ASSERT(values->size() == n && valid->size() == 2*im.mols.size(), "Wrong size of the sets kept");
+        gpu::chainSetCache(im.system, values->data(), valid->data());
+    }
+    else
+    {
+        values->resize(n);
+        valid->resize(2*im.mols.size());
+        gpu::chainGetCache(im.system, values->data(), valid->data());
+    }
+}
+
+void GpuTrainingSystem::chainParameters(const std::vector<double> &params)
+{
+    gpu::chainSetParameters(impl_->system, params.data());
+}
+
+void GpuTrainingSystem::chainSkip(bool canSkip)
+{
+    gpu::chainSkip(impl_->system, canSkip);
+}
+
+void GpuTrainingSystem::chainActive(std::vector<char> *active, std::vector<int> *hit)
+{
+    auto &im = *impl_;
+    active->resize(im.mols.size());
+    hit->resize(im.mols.size());
+    gpu::chainActive(im.system, active->data(), hit->data());
+}
+
+double GpuTrainingSystem::chainChi2(bool keep)
+{
+    gpu::chainComputeChi2(impl_->system, keep);
+    return gpu::chainChi2(impl_->system);
 }
 
 size_t GpuTrainingSystem::relaxStatistics(size_t *nFailed)

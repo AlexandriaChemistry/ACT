@@ -1229,6 +1229,180 @@ void keepEnergies(System *system, const char *use, bool before);
  */
 void computeDeviations(System *system, const char *use, double *dimerSums, double *epotTerms);
 
+/*! \brief The start of the particles of a block in the arrays of all blocks
+ * The charges of the blocks have four values per particle there, the
+ * charge, the second charge and their widths.
+ * \param[in] system The system
+ * \param[in] block  The block
+ * \return The index of its first particle
+ */
+uint64_t blockAtomOffset(const System *system, size_t block);
+
+//! A molecule of the Monte Carlo chain on the GPU, see ChainSystem
+struct ChainMolecule
+{
+    //! The dimer among DeviationSystem::dimers, -1 if none
+    int32_t  dimer       = -1;
+    //! The topology among DeviationSystem::monomers, -1 if none
+    int32_t  monomer     = -1;
+    //! The first term of its potential energy among those of all topologies, and their number
+    uint64_t epotOffset  = 0;
+    uint32_t nepot       = 0;
+    //! The parameters its blocks depend on, in ChainSystem::deps
+    uint64_t depOffset   = 0;
+    uint32_t ndep        = 0;
+    //! The bounds of its charges, in ChainSystem::bounds
+    uint64_t boundOffset = 0;
+    uint32_t nbound      = 0;
+    //! Whether it may be skipped when its parameters did not change
+    uint32_t skippable   = 0;
+};
+
+//! The bound of the charge of a particle and those that are added to it
+struct ChainBound
+{
+    //! The charge, among those of generateAcmCharges
+    uint64_t charge       = 0;
+    //! The second charge, among the charges of the blocks, -1 for none
+    int64_t  secondCharge = -1;
+    //! The bounds
+    double   minimum      = 0;
+    double   maximum      = 0;
+    //! The charges added, of shells and virtual sites, in ChainSystem::extras
+    uint64_t extraOffset  = 0;
+    uint32_t nextra       = 0;
+};
+
+//! What a term of the total chi squared is, see ChainTerm
+enum ChainTermKind : int32_t
+{
+    //! A target of the dimers, ChainTerm::index among DeviationSystem::targets
+    chainTermDimer  = 0,
+    //! The potential energy of the monomers
+    chainTermEpot   = 1,
+    //! The bounds of the charges
+    chainTermBounds = 2
+};
+
+//! A term of the total chi squared, in the order of the fitting targets
+struct ChainTerm
+{
+    //! ChainTermKind
+    int32_t kind   = chainTermDimer;
+    int32_t index  = 0;
+    //! The weight of the target
+    double  weight = 0;
+};
+
+/*! \brief What the Monte Carlo chain on the GPU needs to compute the chi squared
+ * As ACMFitnessComputer::prepareDeviation and finishDeviation for the
+ * deviations of the GPU, of replica 0: which molecules are skipped since
+ * the values of the parameters they depend on are those of one of the
+ * two sets kept, the bounds of the charges, the sums of the targets and
+ * the total, and the sets kept of each molecule.
+ */
+struct ChainSystem
+{
+    const ChainMolecule *mols      = nullptr;
+    size_t               nmol      = 0;
+    //! The indices of the parameters
+    const uint32_t      *deps      = nullptr;
+    size_t               ndep      = 0;
+    const ChainBound    *bounds    = nullptr;
+    size_t               nbound    = 0;
+    const uint64_t      *extras    = nullptr;
+    size_t               nextra    = 0;
+    const ChainTerm     *terms     = nullptr;
+    size_t               nterm     = 0;
+    //! For each block its molecule, -1 if not of replica 0
+    const int32_t       *blockMol  = nullptr;
+    //! For each block what it is, 0 or 1 a monomer, 2 a dimer
+    const int32_t       *blockWhat = nullptr;
+    //! The number of parameters
+    size_t               nparam    = 0;
+    //! The loss function, as DeviationSystem::lossFunction
+    int                  lossFunction = 0;
+};
+
+/*! \brief Copy what the chain needs to the GPU, the sets kept are empty
+ * Needs createDeviations first.
+ * \param[in] system The system
+ * \param[in] chain  The molecules, bounds and terms
+ */
+void createChain(System *system, const ChainSystem &chain);
+
+/*! \brief The number of values of the sets kept of a molecule
+ * In this order: the values of its parameters, the sums of its dimer
+ * (two per target), the terms of its potential energy (two per
+ * conformation) and its bound.
+ * \param[in] system The system
+ * \param[in] mol    The molecule
+ * \return The number of values of one set
+ */
+size_t chainEntrySize(const System *system, size_t mol);
+
+/*! \brief Set the sets kept of all molecules
+ * \param[in] system The system
+ * \param[in] values For each molecule two sets of chainEntrySize, one after the other
+ * \param[in] valid  For each molecule whether each set is valid, two per molecule
+ */
+void chainSetCache(System *system, const double *values, const char *valid);
+
+/*! \brief Get the sets kept of all molecules, as chainSetCache
+ * \param[in]  system The system
+ * \param[out] values The values
+ * \param[out] valid  Whether each is valid
+ */
+void chainGetCache(System *system, double *values, char *valid);
+
+/*! \brief Set the values of the parameters on the GPU
+ * \param[in] system The system
+ * \param[in] params The values, ChainSystem::nparam
+ */
+void chainSetParameters(System *system, const double *params);
+
+/*! \brief Which molecules to compute, from the values of the parameters on the GPU
+ * As ACMFitnessComputer::prepareDeviation: a molecule is skipped if
+ * skipping is allowed, it may be skipped, and the values of its
+ * parameters are those of a set kept. The masks of the blocks, see
+ * chainMask, follow.
+ * \param[in] system  The system
+ * \param[in] canSkip Whether molecules may be skipped
+ */
+void chainSkip(System *system, bool canSkip);
+
+/*! \brief The mask of the blocks to compute after chainSkip, on the GPU
+ * It can be passed as use to the functions of the system.
+ * \param[in] system The system
+ * \param[in] what   -1 for all blocks, -2 for the monomers, 2 for the dimers
+ * \return The mask on the GPU
+ */
+const char *chainMask(System *system, int what);
+
+/*! \brief Which molecules are computed and which set kept each has, see chainSkip
+ * \param[in]  system The system
+ * \param[out] active For each molecule whether it is computed
+ * \param[out] hit    For each molecule the set kept with its values, -1 if none
+ */
+void chainActive(System *system, char *active, int *hit);
+
+/*! \brief The total chi squared from the deviations of computeDeviations and the sets kept
+ * As ACMFitnessComputer::finishDeviation and StaticIndividualInfo::sumChiSquared.
+ * With keep, the deviations of the molecules computed become the first
+ * set kept of each, the one before the second, those of the molecules
+ * skipped are swapped to the set with their values. Nothing waits for the
+ * GPU, see chainChi2.
+ * \param[in] system The system
+ * \param[in] keep   Whether to keep the deviations
+ */
+void chainComputeChi2(System *system, bool keep);
+
+/*! \brief The chi squared of the last chainComputeChi2
+ * \param[in] system The system
+ * \return The chi squared
+ */
+double chainChi2(System *system);
+
 } // namespace gpu
 
 } // namespace alexandria
