@@ -215,6 +215,48 @@ TEST_F(TrainFFMpiTest, GAGenePool)
     trainfftest::barrier();
 }
 
+// Test: with fewer individuals than processes, the process left over is idle
+// and leaves the communicator of ACT. The others must not use a collective
+// of all processes then: the charge map was broadcast to all of them, which
+// the barrier of the idle process matched, such that the processes hung at
+// the end of the program, or here.
+TEST_F(TrainFFMpiTest, IdleProcess)
+{
+    if (gmx_node_num() != popSize)
+    {
+        // Only with as many processes as the other tests have individuals
+        return;
+    }
+    // The GA needs an even population
+    auto options = combine(gaOptions("MCMC", 1), mcmcOptions(2));
+    for (auto &o : options)
+    {
+        if (o.first == "-pop_size")
+        {
+            o.second = std::to_string(popSize - 1);
+        }
+    }
+    options.push_back({ "-fit", "sigma epsilon" });
+    options.push_back({ "-fc_allelec", "1" });
+    options.push_back({ "-fc_exch", "1" });
+    options.push_back({ "-fc_disp", "1" });
+    auto output = trainfftest::runTrainFF(&fileManager(), "idle", "lj-pc.xml", "booze-inter", options);
+    EXPECT_EQ(0, output.status);
+    if (gmx_node_rank() == 0)
+    {
+        EXPECT_GT(output.finalChi2, 0);
+        EXPECT_NE(std::string::npos, output.forceField.find("</alexandria_chemistry>"));
+    }
+    // A collective of all processes, as at the end of the program
+    int rank = gmx_node_rank();
+    int sum  = 0;
+#if GMX_MPI
+    MPI_Allreduce(&rank, &sum, 1, MPI_INT, MPI_SUM, MPI_COMM_WORLD);
+#endif
+    EXPECT_EQ(gmx_node_num()*(gmx_node_num() - 1)/2, sum);
+    trainfftest::barrier();
+}
+
 //! \return the contents of a file
 static std::string fileContents(const std::string &fileName)
 {

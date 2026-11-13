@@ -140,7 +140,9 @@ ChargeMap fetchChargeMap(MsgHandler                  *msghandler,
 void broadcastChargeMap(const CommunicationRecord *cr,
                         ChargeMap                 *qmap)
 {
-    auto mycomm = MPI_COMM_WORLD;
+    // Not MPI_COMM_WORLD: idle processes have left the communicator of
+    // ACT, and would not take part, see CommunicationRecord::init
+    auto mycomm = cr->comm_world();
     int nqmap   = qmap->size();
     cr->bcast(&nqmap, mycomm);
     if (cr->isMaster())
