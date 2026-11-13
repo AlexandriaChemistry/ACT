@@ -314,6 +314,14 @@ public:
     size_t relax(int what, const bool relaxMonomer[2], const gpu::RelaxSettings &settings,
                  size_t *nFailed);
 
+    /*! \brief The statistics of the relaxations that did not poll the GPU
+     * See gpu::RelaxSettings::poll. Waits for the GPU. As relax, a
+     * displacement that was not finite means the shells are not kept.
+     * \param[out] nFailed The number of slots whose shells did not converge
+     * \return The number of slots computed in all iterations
+     */
+    size_t relaxStatistics(size_t *nFailed);
+
     //! Copy the shells of the relaxed monomers to the dimers, as copyRelaxedMonomerShells
     void copyRelaxedMonomerShells();
 
