@@ -1379,6 +1379,13 @@ void chainSetParameters(System *system, const double *params);
  */
 void chainApply(System *system, int param, bool charges = true, bool vsites = true);
 
+/*! \brief Make the recipes again in updateParameters, and the charges and virtual sites if asked, see chainApply
+ * \param[in] system  The system
+ * \param[in] charges Whether the charges must be generated again
+ * \param[in] vsites  Whether the virtual sites of the charge generation must be made again
+ */
+void chainMarkChanged(System *system, bool charges, bool vsites);
+
 /*! \brief The values of the recipes and of the charge generation of replica 0 on the GPU
  * \param[in]  system The system
  * \param[out] recipe The values of the recipes, as many as there are of a replica
@@ -1417,18 +1424,18 @@ void chainSetSteps(System *system, const ChainStep *steps, size_t nstep,
                    const char *bounded, const double *temperature,
                    double chi2, bool haveBest, double bestChi2);
 
-/*! \brief Change the parameter of a step, as MCMCMutator::changeParam
+/*! \brief Before the evaluation of a step: change its parameter, as MCMCMutator::changeParam, and its values, as chainApply
+ * The processor tells updateParameters what to make again, see chainMarkChanged.
  * \param[in] system The system
  * \param[in] step   The step
  */
-void chainPropose(System *system, size_t step);
+void chainStepBefore(System *system, size_t step);
 
-/*! \brief Accept or reject the step from the chi squared of chainComputeChi2, as MCMCMutator::finishStep
- * A rejected change is undone, a new lowest chi squared keeps the parameters.
+/*! \brief After the evaluation of a step: the chi squared and the sets kept, as chainComputeChi2, and the Metropolis criterion, as MCMCMutator::finishStep, which undoes a rejected change
  * \param[in] system The system
  * \param[in] step   The step
  */
-void chainMetropolis(System *system, size_t step);
+void chainStepAfter(System *system, size_t step);
 
 //! The results of the steps of the chain, see chainResults
 struct ChainResults

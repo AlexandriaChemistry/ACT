@@ -239,11 +239,15 @@ void chainSetSteps(System *, const ChainStep *, size_t, const double *, const do
 {
 }
 
-void chainPropose(System *, size_t)
+void chainMarkChanged(System *, bool, bool)
 {
 }
 
-void chainMetropolis(System *, size_t)
+void chainStepBefore(System *, size_t)
+{
+}
+
+void chainStepAfter(System *, size_t)
 {
 }
 
