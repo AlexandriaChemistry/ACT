@@ -40,6 +40,7 @@ gmx_add_unit_test(
     ${testname}
     ${exename}
     # files with code for tests
+    jsonreaderTest.cpp
     jsontreeTest.cpp
     latexutilTest.cpp
     memorycheckTest.cpp

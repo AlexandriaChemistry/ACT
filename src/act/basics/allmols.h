@@ -93,9 +93,21 @@ namespace alexandria
         std::map<std::string, AlexandriaMol> mols_;
         //! Translation map from synonym to InChi
         std::map<std::string, std::string>   nameToInChi_;
+        /*! \brief Add a molecule from the columns of a line of alexandria.csv
+         * \param[in] words The columns
+         */
+        void add(const std::vector<std::string> &words);
     public:
-        //! Constructor, reads input file and stores it
+        /*! \brief Constructor, reads alexandria.json or alexandria.csv
+         * The JSON file of src/act/python/mol_csv2json if the first library
+         * directory with either has it, see findLibraryFirst.
+         */
         AlexandriaMols();
+
+        /*! \brief Constructor, reads a file in the format of alexandria.json or alexandria.csv
+         * \param[in] fileName The file, JSON if it ends with .json, nothing if empty
+         */
+        explicit AlexandriaMols(const std::string &fileName);
       
         /*! \brief Look up an AlexandriaMol
          * \param[in] inchi The Standard InChi of the compound

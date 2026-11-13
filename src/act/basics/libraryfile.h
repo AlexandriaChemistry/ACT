@@ -35,6 +35,7 @@
 #define ACT_LIBFILE_H
 
 #include <string>
+#include <vector>
 
 namespace alexandria
 {
@@ -52,6 +53,17 @@ namespace alexandria
  */
 std::string findLibrary(const std::string &filename,
                         bool               useCWD);
+
+/*! \brief Find the first of several files in the library directories
+ * As findLibrary, the directories in their order, and in each the files in
+ * their order, such that for instance a newer format of a file is used if a
+ * directory has it, but an older one in an earlier directory comes first.
+ * \param[in] filenames The names of the files, the preferred first
+ * \param[in] useCWD    Whether to look in the current directory first
+ * \return The path of the file found, empty if none
+ */
+std::string findLibraryFirst(const std::vector<std::string> &filenames,
+                             bool                            useCWD);
                             
 } // namespace
 
