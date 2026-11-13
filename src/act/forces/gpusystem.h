@@ -48,6 +48,7 @@ namespace alexandria
 class ACTMol;
 class ForceComputer;
 class ForceField;
+class ForceFieldParameter;
 struct DeviationReference;
 
 /*! \brief The deviations of one molecule of one replica, see GpuTrainingSystem::moleculeDeviations
@@ -137,6 +138,8 @@ struct GpuChainSetup
     std::vector<gpu::ChainTerm>             terms;
     //! The number of parameters
     size_t                                  nparam       = 0;
+    //! The parameter of the force field of each, nparam
+    std::vector<const ForceFieldParameter *> params;
     //! The loss function, as GpuDeviationSetup
     int                                     lossFunction = 0;
 };
@@ -397,6 +400,15 @@ public:
      * \return The chi squared, waits for the GPU
      */
     double chainChi2(bool keep);
+
+    /*! \brief For developers, whether the GPU makes the values that the processor would upload
+     * The values of the parameters on the GPU, see chainParameters, are
+     * copied to those of the recipes and the charge generation, see
+     * gpu::chainApply, and compared with those of the force field now.
+     * \return The number of values that differ, -1 if the GPU does not
+     *         make them from the recipes
+     */
+    int chainCheckValues();
 
     //! Copy the shells of the relaxed monomers to the dimers, as copyRelaxedMonomerShells
     void copyRelaxedMonomerShells();

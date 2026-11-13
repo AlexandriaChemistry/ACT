@@ -4227,6 +4227,7 @@ void GpuTrainingSystem::chainParameters(const std::vector<double> &) {}
 void GpuTrainingSystem::chainSkip(bool) {}
 void GpuTrainingSystem::chainActive(std::vector<char> *, std::vector<int> *) {}
 double GpuTrainingSystem::chainChi2(bool) { return 0; }
+int GpuTrainingSystem::chainCheckValues() { return -1; }
 void GpuTrainingSystem::copyRelaxedMonomerShells() {}
 void GpuTrainingSystem::saveDimers() {}
 void GpuTrainingSystem::restoreDimers() {}
@@ -4379,6 +4380,8 @@ public:
     std::vector<int>                   devDimerOf, devMonomerOf;
     //! Whether there is a Monte Carlo chain on the GPU, see setChain
     bool                               chain = false;
+    //! Whether the values of the recipes and of the charge generation were uploaded, see uploadParameters
+    bool                               recipeUploaded = false, acmUploaded = false;
     //! The results of computeDeviations, see gpu::computeDeviations
     std::vector<double>                devDimerSums, devEpotTerms;
     //! Whether each block is computed, see setActiveMolecules
@@ -5069,6 +5072,8 @@ bool GpuTrainingSystem::prepare(const ForceField *pd, const std::vector<ACTMol *
     }
     im.system = gpu::createSystem(sblocks.data(), sblocks.size());
     im.chain  = false;
+    im.recipeUploaded = false;
+    im.acmUploaded    = false;
     if (im.system && charges)
     {
         // The fragments of the molecules, the ACM particles and bonds, and
@@ -5577,6 +5582,7 @@ void GpuTrainingSystem::uploadParameters(const ForceField *pd)
         if (every || values != im.acmLastValues)
         {
             gpu::updateAcm(im.system, values.data());
+            im.acmUploaded = true;
             im.acmLastValues = values;
             im.acmGenerated  = true;
         }
@@ -5622,6 +5628,7 @@ void GpuTrainingSystem::uploadParameters(const ForceField *pd)
             }
         }
         gpu::updateRecipeValues(im.system, im.recipeValues.data());
+        im.recipeUploaded = true;
         gpu::updateParameters(im.system, nullptr, im.chargeRecipes ? nullptr : charges.data(),
                               ONE_4PI_EPS0, pd->epsilonr());
     }
@@ -6339,7 +6346,34 @@ bool GpuTrainingSystem::setChain(const GpuChainSetup &setup)
         blockMol[b]  = im.blocks[b].replica == 0 ? static_cast<int32_t>(im.blocks[b].mol) : -1;
         blockWhat[b] = im.blocks[b].what;
     }
+    // Where each parameter goes on the GPU, those of replica 0
+    std::vector<int32_t> recipeSlot(setup.nparam, -1), acmIndex(setup.nparam, -1);
+    for (size_t k = 0; k < setup.params.size() && k < setup.nparam; k++)
+    {
+        auto p = setup.params[k];
+        if (im.recipeRows == 1)
+        {
+            recipeSlot[k] = im.recipes.findSlot(p);
+        }
+        auto a = std::find(im.acmValues.begin(), im.acmValues.end(), p);
+        if (a != im.acmValues.end())
+        {
+            acmIndex[k] = a - im.acmValues.begin();
+        }
+    }
+    if (std::getenv("ACT_GPU_CHAIN_CHECK"))
+    {
+        size_t none = 0;
+        for (size_t k = 0; k < setup.nparam; k++)
+        {
+            none += (recipeSlot[k] < 0 && acmIndex[k] < 0) ? 1 : 0;
+        }
+        fprintf(stderr, "GPU chain: %zu of %zu parameters have no value on the GPU, %zu replicas, recipe rows %d, charge recipes %d\n",
+                none, setup.nparam, im.nreplica, im.recipeRows, im.chargeRecipes ? 1 : 0);
+    }
     gpu::ChainSystem c;
+    c.recipeSlot   = recipeSlot.data();
+    c.acmIndex     = acmIndex.data();
     c.mols         = mols.data();
     c.nmol         = nmol;
     c.deps         = deps.data();
@@ -6412,6 +6446,56 @@ double GpuTrainingSystem::chainChi2(bool keep)
 {
     gpu::chainComputeChi2(impl_->system, keep);
     return gpu::chainChi2(impl_->system);
+}
+
+int GpuTrainingSystem::chainCheckValues()
+{
+    auto &im = *impl_;
+    // The values on the GPU are complete once the processor uploaded them
+    if (!im.chain || im.recipeRows != 1 || !im.recipeUploaded || (!im.acmMols.empty() && !im.acmUploaded))
+    {
+        return -1;
+    }
+    // As stageParameters
+    im.recipes.update();
+    const auto &hostRecipe = im.recipes.values();
+    std::vector<double> hostAcm;
+    for (auto p : im.acmValues)
+    {
+        hostAcm.push_back(p->value());
+    }
+    gpu::chainApply(im.system, -1);
+    std::vector<double> recipe, acm;
+    gpu::downloadValues(im.system, &recipe, &acm);
+    int ndiff = 0;
+    auto report = [&ndiff](const char *what, size_t i, double gpu, double host)
+    {
+        if (ndiff < 8)
+        {
+            fprintf(stderr, "GPU chain values: %s %zu GPU %.17g processor %.17g\n", what, i, gpu, host);
+        }
+        ndiff += 1;
+    };
+    for (size_t i = 0; i < hostRecipe.size(); i++)
+    {
+        if (i >= recipe.size() || recipe[i] != hostRecipe[i])
+        {
+            report("recipe", i, i < recipe.size() ? recipe[i] : 0.0, hostRecipe[i]);
+        }
+    }
+    for (size_t i = 0; i < hostAcm.size(); i++)
+    {
+        if (i >= acm.size() || acm[i] != hostAcm[i])
+        {
+            report("acm", i, i < acm.size() ? acm[i] : 0.0, hostAcm[i]);
+        }
+    }
+    if (ndiff > 0 || recipe.size() < hostRecipe.size() || acm.size() < hostAcm.size())
+    {
+        fprintf(stderr, "GPU chain values: %zu recipe values (GPU %zu), %zu charge generation values (GPU %zu)\n",
+                hostRecipe.size(), recipe.size(), hostAcm.size(), acm.size());
+    }
+    return ndiff;
 }
 
 size_t GpuTrainingSystem::relaxStatistics(size_t *nFailed)

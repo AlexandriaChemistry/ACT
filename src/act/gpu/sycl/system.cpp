@@ -725,6 +725,9 @@ public:
     int32_t                        *chainBlockMol_  = nullptr;
     int32_t                        *chainBlockWhat_ = nullptr;
     double                         *chainChi2_      = nullptr;
+    //! For each parameter its value of the recipes and of the charge generation, see ChainSystem
+    int32_t                        *chainRecipeSlot_ = nullptr;
+    int32_t                        *chainAcmIndex_   = nullptr;
 };
 
 /*! \brief The range of the first work item of each wavefront, for findRangeFrom
@@ -3507,6 +3510,8 @@ void createChain(System *sys, const ChainSystem &c)
     sys->release(sys->chainBlockMol_);
     sys->release(sys->chainBlockWhat_);
     sys->release(sys->chainChi2_);
+    sys->release(sys->chainRecipeSlot_);
+    sys->release(sys->chainAcmIndex_);
     uint32_t ntarget = sys->dev_.ntarget;
     sys->nchainMol_   = c.nmol;
     sys->nchainTerm_  = c.nterm;
@@ -3541,6 +3546,14 @@ void createChain(System *sys, const ChainSystem &c)
     sys->chainBlockMol_  = sys->allocate<int32_t>(sys->nblock_);
     sys->chainBlockWhat_ = sys->allocate<int32_t>(sys->nblock_);
     sys->chainChi2_      = sys->allocate<double>(1);
+    sys->chainRecipeSlot_ = sys->allocate<int32_t>(c.nparam);
+    sys->chainAcmIndex_   = sys->allocate<int32_t>(c.nparam);
+    {
+        std::vector<int32_t> none(c.nparam, -1);
+        sys->upload(sys->chainRecipeSlot_, c.recipeSlot ? c.recipeSlot : none.data(), c.nparam);
+        sys->upload(sys->chainAcmIndex_, c.acmIndex ? c.acmIndex : none.data(), c.nparam);
+        sys->queue_->wait_and_throw();
+    }
     sys->upload(sys->chainMols_, c.mols, c.nmol);
     sys->upload(sys->chainDeps_, c.deps, c.ndep);
     sys->upload(sys->chainBounds_, c.bounds, c.nbound);
@@ -3594,6 +3607,54 @@ void chainSetParameters(System *sys, const double *params)
         sys->queue_->memcpy(sys->chainParams_, params, sys->nchainParam_*sizeof(double));
         sys->queue_->wait_and_throw();
     }
+}
+
+void chainApply(System *sys, int param)
+{
+    size_t np = sys->nchainParam_;
+    if (np == 0)
+    {
+        return;
+    }
+    auto   dP  = sys->chainParams_;
+    auto   dRS = sys->chainRecipeSlot_;
+    auto   dAI = sys->chainAcmIndex_;
+    auto   dRV = sys->recipeValues_;
+    auto   dAV = sys->acmValues_;
+    size_t first = param < 0 ? 0 : param;
+    size_t n     = param < 0 ? np : 1;
+    sys->queue_->parallel_for(sycl::range<1>(n), [=](sycl::id<1> id)
+    {
+        size_t k = first + id[0];
+        if (dRS[k] >= 0 && dRV)
+        {
+            dRV[dRS[k]] = dP[k];
+        }
+        if (dAI[k] >= 0 && dAV)
+        {
+            dAV[dAI[k]] = dP[k];
+        }
+    });
+    // Everything that follows from the values is made again, see updateParameters
+    sys->recipeValuesChanged_ = sys->nrowRecipe_ > 0;
+    // Only if the GPU constructs the virtual sites, see createAcmVsites
+    sys->acmVsitesChanged_    = sys->acmVsites_ != nullptr;
+    sys->acmChanged_          = sys->nacmMolecule_ > 0;
+}
+
+void downloadValues(System *sys, std::vector<double> *recipe, std::vector<double> *acm)
+{
+    recipe->assign(sys->nrecipeValue_, 0.0);
+    acm->assign(sys->nacmValue_, 0.0);
+    if (sys->recipeValues_ && sys->nrecipeValue_ > 0)
+    {
+        sys->queue_->memcpy(recipe->data(), sys->recipeValues_, sys->nrecipeValue_*sizeof(double));
+    }
+    if (sys->acmValues_ && sys->nacmValue_ > 0)
+    {
+        sys->queue_->memcpy(acm->data(), sys->acmValues_, sys->nacmValue_*sizeof(double));
+    }
+    sys->queue_->wait_and_throw();
 }
 
 void chainSkip(System *sys, bool canSkip)

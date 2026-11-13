@@ -1320,6 +1320,10 @@ struct ChainSystem
     const int32_t       *blockWhat = nullptr;
     //! The number of parameters
     size_t               nparam    = 0;
+    //! For each parameter its position among the values of the recipes, see updateRecipeValues, -1 if none
+    const int32_t       *recipeSlot = nullptr;
+    //! For each parameter its position among the values of updateAcm, -1 if none
+    const int32_t       *acmIndex   = nullptr;
     //! The loss function, as DeviationSystem::lossFunction
     int                  lossFunction = 0;
 };
@@ -1360,6 +1364,21 @@ void chainGetCache(System *system, double *values, char *valid);
  * \param[in] params The values, ChainSystem::nparam
  */
 void chainSetParameters(System *system, const double *params);
+
+/*! \brief Copy values of the parameters on the GPU to the values of the recipes and of the charge generation
+ * Those of replica 0, as the processor would with updateRecipeValues and
+ * updateAcm, and the recipes and the charges are made again.
+ * \param[in] system The system
+ * \param[in] param  The parameter, -1 for all
+ */
+void chainApply(System *system, int param);
+
+/*! \brief The values of the recipes and of the charge generation of replica 0 on the GPU
+ * \param[in]  system The system
+ * \param[out] recipe The values of the recipes, as many as there are of a replica
+ * \param[out] acm    The values of the charge generation, as many as there are of a replica
+ */
+void downloadValues(System *system, std::vector<double> *recipe, std::vector<double> *acm);
 
 /*! \brief Which molecules to compute, from the values of the parameters on the GPU
  * As ACMFitnessComputer::prepareDeviation: a molecule is skipped if
