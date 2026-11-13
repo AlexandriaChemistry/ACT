@@ -1804,6 +1804,10 @@ void ForceComputer::computeRelaxedEnergiesGpu(MsgHandler                        
     const bool keepShells = keepShells_ && resetTheShells;
     gpu::RelaxSettings settings = { msForceToler_, gmx::square(shellMaxDistance(pd)), minShellStep, maxShellStep, maxiter_,
                                     stallIterations_, shellWallAngleTolerance };
+    // For developers, the relaxation without asking the GPU whether it is
+    // done, as in the steps of the Monte Carlo chain on the GPU
+    static const bool noPoll = std::getenv("ACT_GPU_RELAX_NOPOLL") != nullptr;
+    settings.poll = !noPoll;
     for (auto molptr : allmols)
     {
         auto &tops = molptr->fragmentHandler()->topologies();
@@ -1934,6 +1938,13 @@ void ForceComputer::computeRelaxedEnergiesGpu(MsgHandler                        
     }
     { ScopedTimer rt(relaxT); size_t nf = 0; nShellIter_ += gs.relax(2, all, settings, &nf); nShellConvergeFailed_ += nf; }
     { ScopedTimer et(energyT); gs.compute(2, false); }
+    if (!settings.poll)
+    {
+        // Whether to keep the shells depends on them, see keepShells
+        size_t nf = 0;
+        nShellIter_ += gs.relaxStatistics(&nf);
+        nShellConvergeFailed_ += nf;
+    }
     if (keepShells)
     {
         gs.keepShells();

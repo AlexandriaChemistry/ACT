@@ -404,6 +404,12 @@ struct RelaxSettings
     int    stallIterations;
     //! Largest ratio of the force across the core-shell vector to the force for a shell at the wall, see shellWallAngleTolerance
     double wallAngleToler;
+    /*! Whether relaxBlocks asks the GPU every few iterations whether all
+     * slots are done, and returns the statistics. Otherwise it submits all
+     * iterations without waiting, and adds the statistics to those that
+     * relaxStatistics returns.
+     */
+    bool   poll = true;
 };
 
 /*! \brief The interactions of one potential in the conformations of a molecule, see computePairBlocks
@@ -1009,10 +1015,37 @@ void keepShells(System *system, const char *use, bool restore);
  * \param[out] nFailed   The number of slots whose shells did not converge,
  *                       those that stopped without progress and those left
  *                       after the last iteration
+ * Without RelaxSettings::poll the outputs are zero, see relaxStatistics.
  */
 void relaxBlocks(System *system, const char *use, const char *relax,
                  const RelaxSettings &settings, size_t *nComputed, bool *notFinite,
                  size_t *nFailed);
+
+//! The statistics of the relaxations submitted without waiting, see RelaxSettings::poll
+struct RelaxStatistics
+{
+    //! The number of slots computed in all iterations
+    uint64_t computed  = 0;
+    //! The number of slots whose shells did not converge
+    uint64_t failed    = 0;
+    //! Whether a displacement was not finite
+    bool     notFinite = false;
+};
+
+/*! \brief The statistics of the relaxations without polling since the last call
+ * Waits for the GPU, the counters start again.
+ * \param[in]  system The system
+ * \param[out] stats  The statistics
+ */
+void relaxStatistics(System *system, RelaxStatistics *stats);
+
+/*! \brief Whether a displacement was not finite in the last relaxation, on the GPU
+ * For work that depends on it without waiting, such as keepShells.
+ * \param[in] system The system
+ * \return The flag on the device, nonzero if not finite
+ */
+const int *deviceNotFinite(System *system);
+
 
 /*! \brief Copy the coordinates of particles from one block to another, in all slots
  * As copyRelaxedMonomerShells in forcecomputer.cpp, which copies the shells

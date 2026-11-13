@@ -656,6 +656,8 @@ public:
     int                            *valid_ = nullptr;
     //! The number of slots whose shells did not converge, see relaxBlocks
     uint64_t                       *nfailed_ = nullptr;
+    //! The statistics of the relaxations without polling, see relaxStatistics: computed, failed, not finite
+    uint64_t                       *relaxStats_ = nullptr;
     //! Whether each particle of all blocks is a shell
     char                           *isShell_ = nullptr;
     //! The kept coordinates of each block, see saveCoordinates
@@ -988,6 +990,8 @@ System *createSystem(const SystemBlock *blocks, size_t nblock)
     sys->partDxF_      = sys->allocate<double>(sys->nmovingPart_);
     sys->valid_        = sys->allocate<int>(1);
     sys->nfailed_      = sys->allocate<uint64_t>(1);
+    sys->relaxStats_   = sys->allocate<uint64_t>(3);
+    sys->queue_->memset(sys->relaxStats_, 0, 3*sizeof(uint64_t));
     sys->converged_    = sys->allocate<char>(std::max<uint64_t>(sys->nslotAll_, 1));
     sys->queue_->memset(sys->converged_, 0, std::max<uint64_t>(sys->nslotAll_, 1));
     sys->saved_.assign(nblock, nullptr);
@@ -2485,7 +2489,8 @@ void relaxBlocks(System *sys, const char *use, const char *relax,
     bool allDone    = false;
     int  nsubmitted = 0;
     const int checkEvery = 4;
-    char *hDone = sys->doneHost_.reserve(*queue, maxIter*nslotAll);
+    // Without polling, all iterations, those after all slots are done do nothing
+    char *hDone = settings.poll ? sys->doneHost_.reserve(*queue, maxIter*nslotAll) : nullptr;
     while (iter < settings.maxIter && !allDone)
     {
         // The squared forces of the shells and the step products, see relaxation.cpp
@@ -2823,7 +2828,7 @@ void relaxBlocks(System *sys, const char *use, const char *relax,
             });
         }
         iter++;
-        if (nsubmitted % checkEvery == 0 || iter >= settings.maxIter)
+        if (settings.poll && (nsubmitted % checkEvery == 0 || iter >= settings.maxIter))
         {
             queue->memcpy(hDone, dDone, nslotAll);
             queue->wait_and_throw();
@@ -2855,6 +2860,36 @@ void relaxBlocks(System *sys, const char *use, const char *relax,
             count.fetch_add(1);
         }
     });
+    if (!settings.poll)
+    {
+        // The statistics stay on the GPU, see relaxStatistics
+        auto dRS = sys->relaxStats_;
+        int  nit = nsubmitted;
+        queue->parallel_for(sycl::range<1>(nslotAll), [=](sycl::id<1> id)
+        {
+            uint64_t s = id[0];
+            uint64_t n = 0;
+            for (int i = 0; i < nit; i++)
+            {
+                n += dHist[i*nslotAll + s] ? 0 : 1;
+            }
+            using Counter = sycl::atomic_ref<uint64_t, sycl::memory_order::relaxed, sycl::memory_scope::device,
+                                             sycl::access::address_space::global_space>;
+            if (n > 0)
+            {
+                Counter(dRS[0]).fetch_add(n);
+            }
+            if (s == 0)
+            {
+                Counter(dRS[1]).fetch_add(*dNF);
+                if (*dVal)
+                {
+                    Counter(dRS[2]).fetch_or(1);
+                }
+            }
+        });
+        return;
+    }
     // The slots computed in each iteration, those that did not converge
     int      validFlag = 0;
     uint64_t failed    = 0;
@@ -2868,6 +2903,25 @@ void relaxBlocks(System *sys, const char *use, const char *relax,
         *nComputed += std::count(hDone + i*nslotAll, hDone + (i+1)*nslotAll, 0);
     }
     *notFinite = validFlag != 0;
+}
+
+void relaxStatistics(System *sys, RelaxStatistics *stats)
+{
+    uint64_t h[3] = { 0, 0, 0 };
+    if (sys->relaxStats_)
+    {
+        sys->queue_->memcpy(h, sys->relaxStats_, sizeof(h));
+        sys->queue_->wait_and_throw();
+        sys->queue_->memset(sys->relaxStats_, 0, sizeof(h)).wait();
+    }
+    stats->computed  = h[0];
+    stats->failed    = h[1];
+    stats->notFinite = h[2] != 0;
+}
+
+const int *deviceNotFinite(System *sys)
+{
+    return sys->valid_;
 }
 
 void copyCoordinates(System *sys, size_t from, size_t to, const uint32_t *pairs, size_t n,

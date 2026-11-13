@@ -4218,6 +4218,7 @@ void GpuTrainingSystem::compute(int, bool, bool) {}
 void GpuTrainingSystem::computeForces(int) {}
 bool GpuTrainingSystem::haveKeptShells() const { return false; }
 size_t GpuTrainingSystem::relax(int, const bool[2], const gpu::RelaxSettings &, size_t *nFailed) { *nFailed = 0; return 0; }
+size_t GpuTrainingSystem::relaxStatistics(size_t *nFailed) { *nFailed = 0; return 0; }
 void GpuTrainingSystem::copyRelaxedMonomerShells() {}
 void GpuTrainingSystem::saveDimers() {}
 void GpuTrainingSystem::restoreDimers() {}
@@ -6240,6 +6241,20 @@ size_t GpuTrainingSystem::relax(int what, const bool relaxMonomer[2], const gpu:
         moveCoordinate(0, std::numeric_limits<double>::quiet_NaN());
     }
     return nComputed;
+}
+
+size_t GpuTrainingSystem::relaxStatistics(size_t *nFailed)
+{
+    auto &im = *impl_;
+    gpu::RelaxStatistics stats;
+    gpu::relaxStatistics(im.system, &stats);
+    *nFailed = stats.failed;
+    if (stats.notFinite)
+    {
+        im.notFinite = true;
+        moveCoordinate(0, std::numeric_limits<double>::quiet_NaN());
+    }
+    return stats.computed;
 }
 
 void GpuTrainingSystem::copyRelaxedMonomerShells()

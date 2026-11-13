@@ -188,6 +188,16 @@ void copyCoordinates(System *, size_t, size_t, const uint32_t *, size_t, const u
 {
 }
 
+void relaxStatistics(System *, RelaxStatistics *stats)
+{
+    *stats = RelaxStatistics();
+}
+
+const int *deviceNotFinite(System *)
+{
+    return nullptr;
+}
+
 void saveCoordinates(System *, size_t)
 {
 }
