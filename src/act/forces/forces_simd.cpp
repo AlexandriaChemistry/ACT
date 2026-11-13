@@ -4277,7 +4277,11 @@ public:
          * see stageRows
          */
         std::vector<size_t> rowVersion;
-
+        /*! \brief The floating point operations of a conformation, see Timings::addFlops
+         * Of a full evaluation with and without forces, and of a step of the
+         * relaxation of the shells, see blockFlops
+         */
+        double              flopsForces = 0, flopsEnergies = 0, flopsRelax = 0;
     };
     std::vector<Block>    blocks;
     gpu::System          *system = nullptr;
@@ -4788,6 +4792,39 @@ public:
         return replicaEnergies[replica][nwhat*mol + what];
     }
 
+    /*! \brief Count the floating point operations of the blocks used, see Timings::addFlops
+     * Not during the chain, whose masks are on the GPU.
+     * \param[in] what   The blocks, as use
+     * \param[in] kind   0 with forces, 1 without, 2 the average of a step of the relaxation
+     * \param[in] nsteps For kind 2, the slots computed in all steps
+     */
+    void countFlops(int what, int kind, size_t nsteps = 0) const
+    {
+        if (chainRun || !Timings::instance().countFlops())
+        {
+            return;
+        }
+        auto   u     = use(what);
+        double flops = 0, relax = 0, nslot = 0;
+        for (size_t b = 0; b < blocks.size(); b++)
+        {
+            if (!u[b])
+            {
+                continue;
+            }
+            const auto &bl = blocks[b];
+            double      n  = bl.confOfSlot.size();
+            flops += n*(kind == 0 ? bl.flopsForces : bl.flopsEnergies);
+            relax += n*bl.flopsRelax;
+            nslot += n;
+        }
+        if (kind == 2)
+        {
+            flops = nslot > 0 ? nsteps*relax/nslot : 0;
+        }
+        Timings::instance().addFlops(flops);
+    }
+
     //! Whether the masks are those that the chain makes on the GPU, see GpuTrainingSystem::chainStep
     bool              chainRun = false;
     //! The mask of the last call of mask
@@ -4995,6 +5032,52 @@ GpuTrainingSystem::GpuTrainingSystem() : impl_(new Impl) {}
 
 GpuTrainingSystem::~GpuTrainingSystem() = default;
 
+/*! \brief The floating point operations of a conformation of a block, see Timings::addFlops
+ * As interactionFlops counts them for the processor, for all interactions
+ * of the topology of the block, with and without forces, and for a step of
+ * the relaxation of its shells: the forces on the shells from their
+ * interactions, and moving them (about 30 operations each).
+ * \param[in]  pd            The force field
+ * \param[in]  top           The topology of the block
+ * \param[in]  nshell        The number of shells that move
+ * \param[out] flopsForces   With forces
+ * \param[out] flopsEnergies Without forces
+ * \param[out] flopsRelax    Of a step of the relaxation
+ */
+static void blockFlops(const ForceField *pd, const Topology *top, size_t nshell,
+                       double *flopsForces, double *flopsEnergies, double *flopsRelax)
+{
+    *flopsForces = *flopsEnergies = *flopsRelax = 0;
+    const auto &atoms = top->atoms();
+    const auto &nb    = top->nonBondedPairs();
+    for (auto itype : top->interactionTypes())
+    {
+        Potential mypot = pd->potential(itype);
+        if (Potential::NONE == mypot)
+        {
+            mypot = defaultPotential(itype);
+        }
+        if (energyTypes(mypot).empty())
+        {
+            continue;
+        }
+        if (nb.hasType(itype))
+        {
+            *flopsForces   += interactionFlops(mypot, nb.range(itype), atoms, true);
+            *flopsEnergies += interactionFlops(mypot, nb.range(itype), atoms, false);
+            *flopsRelax    += interactionFlops(mypot, nb.shellEntries(itype, true), atoms, true);
+        }
+        else
+        {
+            const auto &ev = top->entry(itype);
+            *flopsForces   += interactionFlops(mypot, TopologyEntryRange(ev), atoms, true);
+            *flopsEnergies += interactionFlops(mypot, TopologyEntryRange(ev), atoms, false);
+            *flopsRelax    += interactionFlops(mypot, top->shellEntries(itype, ev, true), atoms, true);
+        }
+    }
+    *flopsRelax += 30.0*nshell;
+}
+
 bool GpuTrainingSystem::prepare(const ForceField *pd, const std::vector<ACTMol *> &allmols, double maxShellDistance,
                                 bool charges, const ForceComputer *fc, size_t nreplica)
 {
@@ -5097,6 +5180,10 @@ bool GpuTrainingSystem::prepare(const ForceField *pd, const std::vector<ACTMol *
                     bl.resets.push_back(i);
                     bl.resets.push_back(atoms[i].parents()[0]);
                 }
+            }
+            if (Timings::instance().countFlops())
+            {
+                blockFlops(pd, top, bl.shells.movingShells.size(), &bl.flopsForces, &bl.flopsEnergies, &bl.flopsRelax);
             }
             bl.confOfSlot.resize(ca.nconf);
             bl.slotOfConf.resize(ca.nconf);
@@ -6300,6 +6387,7 @@ void GpuTrainingSystem::constructVsites()
 void GpuTrainingSystem::computeForces(int what)
 {
     auto &im = *impl_;
+    im.countFlops(what, 0);
     gpu::computeBlocks(im.system, im.mask(what), nullptr, true);
 }
 
@@ -6311,6 +6399,7 @@ bool GpuTrainingSystem::haveKeptShells() const
 void GpuTrainingSystem::compute(int what, bool forces, bool backup)
 {
     auto &im = *impl_;
+    im.countFlops(what, forces ? 0 : 1);
     if (im.devOnly)
     {
         // The energies stay on the GPU for computeDeviations
@@ -6393,6 +6482,7 @@ size_t GpuTrainingSystem::relax(int what, const bool relaxMonomer[2], const gpu:
     size_t nComputed = 0;
     bool   notFinite = false;
     gpu::relaxBlocks(im.system, u, relax.data(), settings, &nComputed, &notFinite, nFailed);
+    im.countFlops(what == 2 ? 2 : -2, 2, nComputed);
     if (notFinite)
     {
         im.notFinite = true;
