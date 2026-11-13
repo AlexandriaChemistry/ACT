@@ -132,6 +132,32 @@ class ForceFieldParameter
     //! \return the value before it was set to the nearest bound, see wasReset
     double valueBeforeReset() const { return valueBefore_; }
 
+    /*! \brief Give a parameter that depends on others a new value
+     * The same as assigning ForceFieldParameter(unit(), value, 0, 1, value,
+     * value, Mutability::Dependent, true, true), without copying the unit.
+     * \param[in] value         The value
+     * \param[in] internalValue The value in the units of the program
+     */
+    void setDependent(double value, double internalValue)
+    {
+        value_               = value;
+        internalValue_       = internalValue;
+        originalValue_       = value;
+        reset_               = false;
+        valueBefore_         = 0;
+        uncertainty_         = 0;
+        originalUncertainty_ = 0;
+        ntrain_              = 1;
+        originalNtrain_      = 1;
+        minimum_             = value;
+        maximum_             = value;
+        mutability_          = Mutability::Dependent;
+        strict_              = true;
+        nonNegative_         = true;
+        index_               = 0;
+        updated_             = false;
+    }
+
     //! \brief Return unit of parameter
     const std::string &unit() const { return unit_; }
     
