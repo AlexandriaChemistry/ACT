@@ -34,6 +34,8 @@
 
 #include "act/forcefield/combinationkernels.h"
 #include <map>
+#include <string>
+#include <vector>
 
 #include "act/forcefield/forcefield_parameter.h"
 #include "act/forcefield/potential.h"
@@ -146,6 +148,87 @@ void evalCombinationRule(Potential                     ftype,
                          const ForceFieldParameterMap &jvdw,
                          bool                          same,
                          ForceFieldParameterMap       *pmap);
+
+/*! \brief The combination of the parameters of one potential, for many pairs
+ * evalCombinationRule looks up the rule, unit and position of each
+ * parameter by name for every pair. During training the pairs of a particle
+ * type are made again after each change of its parameters, therefore this
+ * does the lookups once, for particle types that have the same parameters
+ * as the one it was made for.
+ */
+class CombinationPlan
+{
+public:
+    /*! \brief Constructor
+     * \param[in] ftype     The force function ACT style
+     * \param[in] combrules Map of combination rules per parameter
+     * \param[in] ivdw      Parameters of a particle type
+     * \throws if a rule is missing, as evalCombinationRule
+     */
+    CombinationPlan(Potential                     ftype,
+                    const CombRuleSet            &combrules,
+                    const ForceFieldParameterMap &ivdw);
+
+    /*! \brief Whether a particle type has the parameters of the plan
+     * \param[in] vdw The parameters of the particle type
+     * \return true if the names are the same, in the same order
+     */
+    bool matches(const ForceFieldParameterMap &vdw) const;
+
+    /*! \brief Combine the parameters of two particle types
+     * Both have to match, see matches().
+     * \param[in]  ivdw        Parameters for particle i
+     * \param[in]  jvdw        Parameters for particle j
+     * \param[in]  includePair For Kronecker, whether the pair interacts
+     * \param[out] pmap        The pair parameters, made or changed in place
+     * \throws as evalCombinationRule
+     */
+    void combine(const ForceFieldParameterMap &ivdw,
+                 const ForceFieldParameterMap &jvdw,
+                 bool                          includePair,
+                 ForceFieldParameterMap       *pmap) const;
+
+    /*! \brief Combine parameter values in the units of the program
+     * \param[in]  vi          The values of particle i, in the order of the plan
+     * \param[in]  vj          The values of particle j
+     * \param[in]  includePair For Kronecker, whether the pair interacts
+     * \param[out] out         The values of the pair
+     * \throws if they cannot be combined
+     */
+    void pairValues(const double *vi,
+                    const double *vj,
+                    bool          includePair,
+                    double       *out) const;
+
+    /*! \brief Store the values of a pair as dependent parameters
+     * Changes the parameters in place if the pair has the same names and
+     * units, otherwise replaces them.
+     * \param[in]    out  The values of the pair, see pairValues
+     * \param[inout] pmap The pair parameters
+     */
+    void store(const double *out, ForceFieldParameterMap *pmap) const;
+
+    //! \return The number of parameters
+    size_t size() const { return names_.size(); }
+
+private:
+    //! The potential
+    Potential                    ftype_;
+    //! The names of the parameters, in the order of the map
+    std::vector<std::string>     names_;
+    //! The units of the parameters of the particle types
+    std::vector<std::string>     sourceUnits_;
+    //! The units of the parameters in the pair
+    std::vector<std::string>     units_;
+    //! The conversion of each unit, see convertToGromacs
+    std::vector<double>          factors_;
+    //! The combination rule of each parameter
+    std::vector<CombRule>        rules_;
+    //! The exponent of each parameter, for GeneralizedMean
+    std::vector<double>          exponents_;
+    //! The positions of sigma, epsilon and gamma
+    combination::PairCombination pc_;
+};
 
 /*! \brief How the parameters of a potential are combined into those of a pair
  * \param[in] ftype The potential

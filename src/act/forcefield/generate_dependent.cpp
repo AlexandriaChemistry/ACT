@@ -28,8 +28,10 @@
 #include "generate_dependent.h"
 
 #include <algorithm>
+#include <memory>
 #include <vector>
 
+#include "act/forcefield/combinationrules.h"
 #include "act/forcefield/forcefield.h"
 #include "act/forcefield/forcefield_parametername.h"
 
@@ -209,6 +211,10 @@ static void generateParameterPairs(MsgHandler      *msghandler,
         updated.push_back(supdated);
     }
     const auto &ptypes = cache->ptypes;
+    // The rules are looked up once, for the particle types that have the
+    // parameters of the first that needs pairs, see CombinationPlan.
+    std::unique_ptr<CombinationPlan> plan;
+    std::vector<bool>                planned;
 
     // Now do the double loop
     int nid = 0;
@@ -228,6 +234,23 @@ static void generateParameterPairs(MsgHandler      *msghandler,
                 includePair = ((ActParticle::Vsite == pti && ActParticle::Atom == ptj) ||
                                (ActParticle::Vsite == ptj && ActParticle::Atom == pti));
             }
+            if (!plan)
+            {
+                plan = std::make_unique<CombinationPlan>(forcesVdw->potential(), comb_rule,
+                                                         *singles[i].params);
+                for(const auto &single : singles)
+                {
+                    planned.push_back(plan->size() > 0 && plan->matches(*single.params));
+                }
+            }
+            auto pair = cache->pairs[i*nsingle+j];
+            if (pair && planned[i] && planned[j] && !(msghandler && msghandler->debug()))
+            {
+                // Change the parameters of the pair in place
+                plan->combine(*singles[i].params, *singles[j].params, includePair, pair);
+                nid += 1;
+                continue;
+            }
             // Fill the parameters, potential dependent
             ForceFieldParameterMap pmap;
             evalCombinationRule(forcesVdw->potential(),
@@ -246,7 +269,6 @@ static void generateParameterPairs(MsgHandler      *msghandler,
                     }
                     msghandler->writeDebug(mystr);
                 }
-                auto pair = cache->pairs[i*nsingle+j];
                 if (pair)
                 {
                     // The same as insert_or_assign, without looking up the identifier
