@@ -1431,7 +1431,7 @@ void chainSetSteps(System *system, const ChainStep *steps, size_t nstep,
  */
 void chainStepBefore(System *system, size_t step);
 
-/*! \brief After the evaluation of a step: the chi squared and the sets kept, as chainComputeChi2, and the Metropolis criterion, as MCMCMutator::finishStep, which undoes a rejected change
+/*! \brief After the evaluation of a step: the chi squared and the sets kept, as chainComputeChi2, and the Metropolis criterion, as MCMCMutator::finishStep, which undoes a rejected change, in three kernels
  * \param[in] system The system
  * \param[in] step   The step
  */
