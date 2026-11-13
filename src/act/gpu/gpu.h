@@ -1369,11 +1369,15 @@ void chainSetParameters(System *system, const double *params);
 
 /*! \brief Copy values of the parameters on the GPU to the values of the recipes and of the charge generation
  * Those of replica 0, as the processor would with updateRecipeValues and
- * updateAcm, and the recipes and the charges are made again.
- * \param[in] system The system
- * \param[in] param  The parameter, -1 for all
+ * updateAcm. The recipes are made again by updateParameters, and so are
+ * the charges and the virtual sites of the charge generation if asked,
+ * until updateParameters made them.
+ * \param[in] system  The system
+ * \param[in] param   The parameter, -1 for all
+ * \param[in] charges Whether the charges must be generated again
+ * \param[in] vsites  Whether the virtual sites of the charge generation must be made again
  */
-void chainApply(System *system, int param);
+void chainApply(System *system, int param, bool charges = true, bool vsites = true);
 
 /*! \brief The values of the recipes and of the charge generation of replica 0 on the GPU
  * \param[in]  system The system
