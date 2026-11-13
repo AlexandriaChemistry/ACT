@@ -234,6 +234,24 @@ void downloadValues(System *, std::vector<double> *recipe, std::vector<double> *
     acm->clear();
 }
 
+void chainSetSteps(System *, const ChainStep *, size_t, const double *, const double *, const double *,
+                   const char *, const double *, double, bool, double)
+{
+}
+
+void chainPropose(System *, size_t)
+{
+}
+
+void chainMetropolis(System *, size_t)
+{
+}
+
+void chainResults(System *, ChainResults *results)
+{
+    *results = ChainResults();
+}
+
 void chainSkip(System *, bool)
 {
 }

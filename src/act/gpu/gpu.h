@@ -1226,6 +1226,8 @@ void keepEnergies(System *system, const char *use, bool before);
  *                       of the losses over its conformations, in order, 2*ntarget per dimer
  * \param[out] epotTerms For each conformation of each topology of DeviationSystem::monomers,
  *                       the weight and the loss of the potential energy, 2 per conformation
+ * Without dimerSums the results stay on the GPU, for chainComputeChi2, and
+ * nothing waits for the GPU.
  */
 void computeDeviations(System *system, const char *use, double *dimerSums, double *epotTerms);
 
@@ -1379,6 +1381,70 @@ void chainApply(System *system, int param);
  * \param[out] acm    The values of the charge generation, as many as there are of a replica
  */
 void downloadValues(System *system, std::vector<double> *recipe, std::vector<double> *acm);
+
+//! A step of the chain, with the random numbers the processor drew, see MCMCMutator::proposeStep
+struct ChainStep
+{
+    //! The parameter changed
+    uint32_t param  = 0;
+    //! The random number of the change, see MCMCMutator::changeParam
+    double   change = 0;
+    //! The random number of the Metropolis criterion
+    double   accept = 0;
+    //! The inverse temperature
+    double   beta   = 0;
+};
+
+/*! \brief Set up the steps of the chain
+ * \param[in] system      The system
+ * \param[in] steps       The steps
+ * \param[in] nstep       Their number
+ * \param[in] stepSize    For each parameter, the largest change
+ * \param[in] lower       For each parameter, the lower bound
+ * \param[in] upper       For each parameter, the upper bound
+ * \param[in] bounded     For each parameter, whether it has bounds
+ * \param[in] temperature For each parameter, its weight of the temperature
+ * \param[in] chi2        The chi squared of the parameters on the GPU now
+ * \param[in] haveBest    Whether there is a best chi squared
+ * \param[in] bestChi2    The best chi squared
+ */
+void chainSetSteps(System *system, const ChainStep *steps, size_t nstep,
+                   const double *stepSize, const double *lower, const double *upper,
+                   const char *bounded, const double *temperature,
+                   double chi2, bool haveBest, double bestChi2);
+
+/*! \brief Change the parameter of a step, as MCMCMutator::changeParam
+ * \param[in] system The system
+ * \param[in] step   The step
+ */
+void chainPropose(System *system, size_t step);
+
+/*! \brief Accept or reject the step from the chi squared of chainComputeChi2, as MCMCMutator::finishStep
+ * A rejected change is undone, a new lowest chi squared keeps the parameters.
+ * \param[in] system The system
+ * \param[in] step   The step
+ */
+void chainMetropolis(System *system, size_t step);
+
+//! The results of the steps of the chain, see chainResults
+struct ChainResults
+{
+    //! For each step whether it was accepted and whether it gave a new lowest chi squared
+    std::vector<char>   accepted, newBest;
+    //! For each step the chi squared and the value of the parameter tried
+    std::vector<double> chi2, trial;
+    //! The parameters at the end and those with the lowest chi squared
+    std::vector<double> params, best;
+    //! The chi squared at the end, and the lowest
+    double              finalChi2 = 0, bestChi2 = 0;
+    bool                haveBest  = false;
+};
+
+/*! \brief The results of the steps, waits for the GPU
+ * \param[in]  system  The system
+ * \param[out] results The results
+ */
+void chainResults(System *system, ChainResults *results);
 
 /*! \brief Which molecules to compute, from the values of the parameters on the GPU
  * As ACMFitnessComputer::prepareDeviation: a molecule is skipped if

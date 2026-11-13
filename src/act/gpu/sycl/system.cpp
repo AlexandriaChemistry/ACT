@@ -728,6 +728,17 @@ public:
     //! For each parameter its value of the recipes and of the charge generation, see ChainSystem
     int32_t                        *chainRecipeSlot_ = nullptr;
     int32_t                        *chainAcmIndex_   = nullptr;
+    //! The steps of the chain, see chainSetSteps
+    ChainStep                      *chainSteps_      = nullptr;
+    size_t                          nchainStep_      = 0;
+    double                         *chainStepSize_   = nullptr, *chainLower_ = nullptr, *chainUpper_ = nullptr;
+    double                         *chainTemp_       = nullptr;
+    char                           *chainBounded_    = nullptr;
+    //! The chi squared now, the lowest, whether there is one, the value before the change
+    double                         *chainState_      = nullptr;
+    char                           *chainAccepted_   = nullptr, *chainNewBest_ = nullptr;
+    double                         *chainStepChi2_   = nullptr, *chainTrial_ = nullptr;
+    double                         *chainBest_       = nullptr;
 };
 
 /*! \brief The range of the first work item of each wavefront, for findRangeFrom
@@ -2146,19 +2157,21 @@ static void computeBlocksLow(System *sys, const char *use, bool wantEnergies, co
     if (wantEnergies)
     {
         // The energies of the blocks computed are stored one after the other,
-        // such that only those are copied to the host
-        eStart.resize(nb);
-        for (uint32_t b = 0; b < nb; b++)
-        {
-            eStart[b] = nenergy;
-            if (use[b])
-            {
-                const auto &db = sys->blocksHost_[b];
-                nenergy += static_cast<uint64_t>(db.nenergy)*pairEnergyTerms*db.stride;
-            }
-        }
+        // such that only those are copied to the host. The energies kept are
+        // at fixed places, see fixedStart_, and then the mask may be on the
+        // GPU, see chainMask.
         if (!keep)
         {
+            eStart.resize(nb);
+            for (uint32_t b = 0; b < nb; b++)
+            {
+                eStart[b] = nenergy;
+                if (use[b])
+                {
+                    const auto &db = sys->blocksHost_[b];
+                    nenergy += static_cast<uint64_t>(db.nenergy)*pairEnergyTerms*db.stride;
+                }
+            }
             sys->upload(sys->energyStart_, eStart.data(), nb);
         }
         auto dES = keep ? sys->fixedStart_ : sys->energyStart_;
@@ -3467,6 +3480,11 @@ void computeDeviations(System *sys, const char *use, double *dimerSums, double *
             dDS[2*(k*ntarget + j) + 1] = sl;
         });
     }
+    if (!dimerSums)
+    {
+        // They stay on the GPU, see chainComputeChi2
+        return;
+    }
     // The sums of the dimers and the terms of the potential energy to the host
     size_t  nd = 2*static_cast<size_t>(ndimer)*ntarget;
     size_t  ne = 2*nmc;
@@ -3655,6 +3673,178 @@ void downloadValues(System *sys, std::vector<double> *recipe, std::vector<double
         sys->queue_->memcpy(acm->data(), sys->acmValues_, sys->nacmValue_*sizeof(double));
     }
     sys->queue_->wait_and_throw();
+}
+
+void chainSetSteps(System *sys, const ChainStep *steps, size_t nstep,
+                   const double *stepSize, const double *lower, const double *upper,
+                   const char *bounded, const double *temperature,
+                   double chi2, bool haveBest, double bestChi2)
+{
+    size_t np = sys->nchainParam_;
+    for (auto p : { &sys->chainStepSize_, &sys->chainLower_, &sys->chainUpper_, &sys->chainTemp_,
+                    &sys->chainState_, &sys->chainStepChi2_, &sys->chainTrial_, &sys->chainBest_ })
+    {
+        sys->release(*p);
+    }
+    sys->release(sys->chainSteps_);
+    sys->release(sys->chainBounded_);
+    sys->release(sys->chainAccepted_);
+    sys->release(sys->chainNewBest_);
+    sys->nchainStep_    = nstep;
+    sys->chainSteps_    = sys->allocate<ChainStep>(nstep);
+    sys->chainStepSize_ = sys->allocate<double>(np);
+    sys->chainLower_    = sys->allocate<double>(np);
+    sys->chainUpper_    = sys->allocate<double>(np);
+    sys->chainTemp_     = sys->allocate<double>(np);
+    sys->chainBounded_  = sys->allocate<char>(np);
+    sys->chainState_    = sys->allocate<double>(4);
+    sys->chainAccepted_ = sys->allocate<char>(nstep);
+    sys->chainNewBest_  = sys->allocate<char>(nstep);
+    sys->chainStepChi2_ = sys->allocate<double>(nstep);
+    sys->chainTrial_    = sys->allocate<double>(nstep);
+    sys->chainBest_     = sys->allocate<double>(np);
+    double state[4] = { chi2, bestChi2, haveBest ? 1.0 : 0.0, 0.0 };
+    sys->upload(sys->chainSteps_, steps, nstep);
+    sys->upload(sys->chainStepSize_, stepSize, np);
+    sys->upload(sys->chainLower_, lower, np);
+    sys->upload(sys->chainUpper_, upper, np);
+    sys->upload(sys->chainTemp_, temperature, np);
+    sys->upload(sys->chainBounded_, bounded, np);
+    sys->upload(sys->chainState_, state, 4);
+    sys->queue_->memset(sys->chainNewBest_, 0, std::max<size_t>(nstep, 1));
+    sys->queue_->memset(sys->chainAccepted_, 0, std::max<size_t>(nstep, 1));
+    if (np > 0)
+    {
+        sys->queue_->memcpy(sys->chainBest_, sys->chainParams_, np*sizeof(double));
+    }
+    sys->queue_->wait_and_throw();
+}
+
+void chainPropose(System *sys, size_t step)
+{
+    auto dS  = sys->chainSteps_;
+    auto dP  = sys->chainParams_;
+    auto dSz = sys->chainStepSize_;
+    auto dLo = sys->chainLower_;
+    auto dUp = sys->chainUpper_;
+    auto dBd = sys->chainBounded_;
+    auto dSt = sys->chainState_;
+    auto dTr = sys->chainTrial_;
+    sys->queue_->single_task([=]()
+    {
+#if defined(__clang__)
+#pragma clang fp contract(off)
+#endif
+        const ChainStep &st  = dS[step];
+        uint32_t         j   = st.param;
+        double           rnd = st.change;
+        if (rnd == 0.5)
+        {
+            // Make sure the parameter changes, as changeParam
+            rnd = 1;
+        }
+        double old = dP[j];
+        double v   = old + (2*rnd-1)*dSz[j];
+        if (dBd[j])
+        {
+            if (v < dLo[j])
+            {
+                v = dLo[j];
+            }
+            else if (v > dUp[j])
+            {
+                v = dUp[j];
+            }
+        }
+        dP[j]     = v;
+        dSt[3]    = old;
+        dTr[step] = v;
+    });
+}
+
+void chainMetropolis(System *sys, size_t step)
+{
+    auto   dS   = sys->chainSteps_;
+    auto   dP   = sys->chainParams_;
+    auto   dT   = sys->chainTemp_;
+    auto   dSt  = sys->chainState_;
+    auto   dC   = sys->chainChi2_;
+    auto   dAcc = sys->chainAccepted_;
+    auto   dNB  = sys->chainNewBest_;
+    auto   dSC  = sys->chainStepChi2_;
+    auto   dB   = sys->chainBest_;
+    size_t np   = sys->nchainParam_;
+    sys->queue_->single_task([=]()
+    {
+#if defined(__clang__)
+#pragma clang fp contract(off)
+#endif
+        const ChainStep &st    = dS[step];
+        uint32_t         j     = st.param;
+        double           curr  = *dC;
+        double           delta = curr - dSt[0];
+        // Any downhill move, otherwise the Metropolis criterion
+        bool accept = delta < 0;
+        if (!accept)
+        {
+            double probability = sycl::exp(-(st.beta/dT[j])*delta);
+            accept = probability > st.accept;
+        }
+        dSC[step]  = curr;
+        dAcc[step] = accept ? 1 : 0;
+        if (accept)
+        {
+            dSt[0] = curr;
+            if (dSt[2] == 0 || curr < dSt[1])
+            {
+                dSt[1]    = curr;
+                dSt[2]    = 1;
+                dNB[step] = 1;
+                for (size_t k = 0; k < np; k++)
+                {
+                    dB[k] = dP[k];
+                }
+            }
+        }
+        else
+        {
+            dP[j] = dSt[3];
+        }
+    });
+}
+
+void chainResults(System *sys, ChainResults *r)
+{
+    size_t n  = sys->nchainStep_;
+    size_t np = sys->nchainParam_;
+    r->accepted.assign(n, 0);
+    r->newBest.assign(n, 0);
+    r->chi2.assign(n, 0.0);
+    r->trial.assign(n, 0.0);
+    r->params.assign(np, 0.0);
+    r->best.assign(np, 0.0);
+    double state[4] = { 0, 0, 0, 0 };
+    auto *q = sys->queue_;
+    if (n > 0)
+    {
+        q->memcpy(r->accepted.data(), sys->chainAccepted_, n);
+        q->memcpy(r->newBest.data(), sys->chainNewBest_, n);
+        q->memcpy(r->chi2.data(), sys->chainStepChi2_, n*sizeof(double));
+        q->memcpy(r->trial.data(), sys->chainTrial_, n*sizeof(double));
+    }
+    if (np > 0)
+    {
+        q->memcpy(r->params.data(), sys->chainParams_, np*sizeof(double));
+        q->memcpy(r->best.data(), sys->chainBest_, np*sizeof(double));
+    }
+    if (sys->chainState_)
+    {
+        q->memcpy(state, sys->chainState_, sizeof(state));
+    }
+    q->wait_and_throw();
+    r->finalChi2 = state[0];
+    r->bestChi2  = state[1];
+    r->haveBest  = state[2] != 0;
 }
 
 void chainSkip(System *sys, bool canSkip)

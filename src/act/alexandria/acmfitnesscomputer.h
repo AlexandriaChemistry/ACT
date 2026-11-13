@@ -268,6 +268,33 @@ public:
      */
     CalcDev distributeTasks(CalcDev task);
     
+    /*! \brief Whether the steps of the Monte Carlo chain can run on the GPU
+     * After an evaluation of the training set on this node alone, whose
+     * deviations the GPU computed and whose molecules may be skipped, see
+     * runChain. ACT_NO_GPU_CHAIN turns it off, and so does ACT_GPU_CHAIN_CHECK.
+     */
+    bool chainReady() const { return chainOk_; }
+
+    /*! \brief Run steps of the Monte Carlo chain on the GPU, see MCMCMutator::mutate
+     * Each step changes a parameter, evaluates the training set as
+     * calcDeviation and applies the Metropolis criterion, all on the GPU. The
+     * force field gets the parameters at the end.
+     * \param[in]  msghandler For messages
+     * \param[in]  params     The parameters, of chi2
+     * \param[in]  steps      The steps, with their random numbers
+     * \param[in]  chi2       The chi squared of params, from the evaluation before
+     * \param[in]  haveBest   Whether there is a lowest chi squared
+     * \param[in]  bestChi2   The lowest chi squared
+     * \param[out] results    The results of the steps
+     */
+    void runChain(MsgHandler                         *msghandler,
+                  const std::vector<double>          &params,
+                  const std::vector<gpu::ChainStep>  &steps,
+                  double                              chi2,
+                  bool                                haveBest,
+                  double                              bestChi2,
+                  gpu::ChainResults                  *results);
+
     /*! \brief Computes deviation from target
      * As prepareDeviation, computeEnergies and finishDeviation.
      * \param[in] msghandler   Message Handler
@@ -334,6 +361,24 @@ public:
      * \param[in] chi2       The chi squared, after finishDeviation, otherwise negative
      */
     void checkChain(MsgHandler *msghandler, DeviationTask *dt, double chi2);
+
+    /*! \brief The sets kept of a replica from those of the chain on the GPU, see chainCacheOf
+     * \param[in] replica The replica
+     * \param[in] values  The values of the sets
+     * \param[in] valid   Whether each is valid
+     */
+    void chainCacheTo(size_t replica, const std::vector<double> &values, const std::vector<char> &valid);
+
+    //! Whether the evaluation before allows the steps of the chain on the GPU, see chainReady
+    bool                  chainOk_ = false;
+    //! The molecules of that evaluation
+    std::vector<ACTMol *> chainMols_;
+
+    /*! \brief Whether an evaluation allows the steps of the chain on the GPU
+     * \param[in] dt The evaluation, after finishDeviation
+     * \return Whether it does
+     */
+    bool chainAllowed(const DeviationTask &dt);
 
     /*! \brief Compute the deviations of several sets of parameters
      * As distributeParameters and calcDeviation for each set, at once on
