@@ -924,12 +924,34 @@ bool ACMFitnessComputer::chainAllowed(const DeviationTask &dt)
 {
     static const bool off = (std::getenv("ACT_NO_GPU_CHAIN") != nullptr ||
                              std::getenv("ACT_GPU_CHAIN_CHECK") != nullptr);
-    auto gs = forceComp_->gpuTrainingSystem();
-    if (off || !gs || dt.task != CalcDev::Compute || dt.ims != iMolSelect::Train || dt.replica != 0 ||
-        !dt.gpuDeviations || !dt.haveKeys || !dt.skipping || compactCheck() ||
-        sii_->commRec()->isParallelCalc() || dt.selected.empty())
+    // For developers, why the chain does not run, once for each reason
+    static const bool          why = std::getenv("ACT_GPU_CHAIN_WHY") != nullptr;
+    static std::set<std::string> told;
+    auto no = [](const std::string &reason)
     {
+        if (why && told.insert(reason).second)
+        {
+            fprintf(stderr, "GPU chain not used: %s\n", reason.c_str());
+        }
         return false;
+    };
+    auto gs = forceComp_->gpuTrainingSystem();
+    if (off || !gs)
+    {
+        return no(off ? "switched off" : "no GPU system");
+    }
+    if (dt.task != CalcDev::Compute || dt.ims != iMolSelect::Train || dt.replica != 0)
+    {
+        return no("not a calculation of the training set of replica 0");
+    }
+    if (!dt.gpuDeviations || !dt.haveKeys || !dt.skipping)
+    {
+        return no(gmx::formatString("GPU deviations %d, keys %d, skipping %d",
+                                    dt.gpuDeviations, dt.haveKeys, dt.skipping));
+    }
+    if (compactCheck() || sii_->commRec()->isParallelCalc() || dt.selected.empty())
+    {
+        return no("deviation check, helpers or no molecules");
     }
     // Only the deviations of the energies and the bounds are on the GPU,
     // the other targets must have nothing, as in this evaluation, for
@@ -950,14 +972,18 @@ bool ACMFitnessComputer::chainAllowed(const DeviationTask &dt)
                       ft.first == eRMS::TOT);
         if (!onGpu && (ft.second.totalWeight() != 0 || ft.second.chiSquared() != 0))
         {
-            return false;
+            return no(gmx::formatString("the target %s is not on the GPU", rmsName(ft.first)));
         }
     }
     if (!gs->haveChain() && !setupChain(dt))
     {
-        return false;
+        return no("the chain could not be made");
     }
-    return gs->chainCapable();
+    if (!gs->chainCapable())
+    {
+        return no("the GPU system cannot run the chain alone");
+    }
+    return true;
 }
 
 void ACMFitnessComputer::runChain(MsgHandler                         *msghandler,
@@ -1238,6 +1264,29 @@ void ACMFitnessComputer::checkChain(MsgHandler *msghandler, DeviationTask *dt, d
             }
             fprintf(stderr, "GPU chain check %d: chi2 %.17g on the GPU %.17g, %zu of %zu kept values differ, valid %s\n",
                     chainChecks_, chi2, gpuChi2, nv, values.size(), valid == hostValid ? "same" : "differ");
+            // Where they differ: molecule, set and position in the set
+            int shown = 0;
+            for (size_t m = 0, off = 0; m < molDeps_.size() && shown < 6; m++)
+            {
+                size_t size = gs->chainEntrySize(m);
+                size_t nd = 0, ne = 0, nmp = 0;
+                (void) gs->chainLayout(m, &nd, &ne, &nmp);
+                for (int e = 0; e < 2; e++, off += size)
+                {
+                    for (size_t i = 0; i < size && shown < 6; i++)
+                    {
+                        if (values[off + i] != hostValues[off + i])
+                        {
+                            size_t ndep = molDeps_[m].size();
+                            const char *part = i < ndep ? "key" : i < ndep + nd ? "dimer" : i < ndep + nd + ne ? "epot" :
+                                               i < ndep + nd + ne + nmp ? "multipole" : "bound";
+                            fprintf(stderr, "    mol %zu %s set %d %s %zu: GPU %.17g processor %.17g\n", m,
+                                    dt->selected[m]->getMolname().c_str(), e, part, i, values[off + i], hostValues[off + i]);
+                            shown++;
+                        }
+                    }
+                }
+            }
         }
     }
 }

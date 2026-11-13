@@ -4308,6 +4308,11 @@ public:
     bool                  acmVsitesOnGpu = false;
     //! Whether the GPU makes the fixed parts of the charges, see makeChargeRecipes
     bool                  chargeRecipes = false;
+    //! Whether the charge recipes have second charges, which the processor gets from the GPU, see applyCharges
+    bool                  secondCharges = false;
+    //! The charges of the blocks with the second charges, and those of a replica, see makeChargeRecipes
+    std::vector<double>   blockCharges;
+    size_t                chargesPerReplica = 0;
     //! Why prepare failed, see GpuTrainingSystem::whyNot
     std::string           whyNot;
     //! The values of its fixed charges, and those last sent
@@ -4665,6 +4670,8 @@ public:
     void makeChargeRecipes(const ForceField *pd, size_t chargesReplica)
     {
         chargeRecipes = false;
+        secondCharges = false;
+        chargesPerReplica = chargesReplica;
         chargeSlots.clear();
         chargeLast.clear();
         if (acmMols.empty())
@@ -4676,6 +4683,11 @@ public:
         {
             if (acm.count(k) == 0 && !mols[k]->fragmentHandler()->fixedCharges())
             {
+                if (std::getenv("ACT_GPU_CHAIN_WHY"))
+                {
+                    fprintf(stderr, "GPU charge recipes not used: %s has charges neither from the GPU nor fixed\n",
+                            mols[k]->getMolname().c_str());
+                }
                 return;
             }
         }
@@ -4695,13 +4707,29 @@ public:
                 {
                     continue;
                 }
-                if (pt->hasChargeVS())
-                {
-                    return;
-                }
                 gpu::ChargeRecipe r;
                 r.replica  = static_cast<uint32_t>(bl.replica);
                 r.position = 4*(bl.replica*chargesReplica + seg.charge/4 + a);
+                if (pt->hasChargeVS())
+                {
+                    // The second charge and its width, as ParticleType::chargeVS
+                    // and zetaVS, which the generated charges depend on too
+                    secondCharges = true;
+                    gpu::ChargeRecipe rv = r;
+                    rv.position += 1;
+                    rv.slot      = recipes.slot(&pt->parameterConst(chargeVSName));
+                    rv.internal  = 0;
+                    cr.push_back(rv);
+                    slots.insert({ bl.replica, rv.slot });
+                    if (pt->hasParameter(zetaVSName))
+                    {
+                        rv.position += 2;
+                        rv.slot      = recipes.slot(&pt->parameterConst(zetaVSName));
+                        rv.internal  = 1;
+                        cr.push_back(rv);
+                        slots.insert({ bl.replica, rv.slot });
+                    }
+                }
                 // As QgenAcm: the charge is fixed unless it is generated
                 const auto &q   = pt->parameterConst("charge");
                 bool        gen = (pt->hasInteractionType(InteractionType::ELECTRONEGATIVITYEQUALIZATION) &&
@@ -4851,6 +4879,18 @@ public:
                     segments[b].ncharge == 4*fatoms->size())
                 {
                     q4 = st->charges.data() + segments[b].charge;
+                }
+                else if (chargeRecipes && recipeRows == 1 && secondCharges && b >= 0 &&
+                         static_cast<size_t>(b) < segments.size() &&
+                         segments[b].ncharge == 4*fatoms->size())
+                {
+                    // The second charges and the widths that the GPU made
+                    // from the recipes, see copyChargesToMolecules
+                    size_t first = 4*replica*chargesPerReplica + segments[b].charge;
+                    if (first + 4*fatoms->size() <= blockCharges.size())
+                    {
+                        q4 = blockCharges.data() + first;
+                    }
                 }
                 for (size_t a = 0; a < fatoms->size(); a++)
                 {
@@ -5729,6 +5769,19 @@ void GpuTrainingSystem::copyChargesToMolecules()
         gpu::downloadAcmCharges(im.system, im.acmCharges.data());
         im.chargesOf    = std::numeric_limits<size_t>::max();
     }
+    if (im.chargeRecipes && im.recipeRows == 1 && im.secondCharges)
+    {
+        // The second charges follow the parameters, but the processor does
+        // not update them in the topologies, for instance for the bounds
+        size_t n = 0;
+        for (const auto &bl : im.blocks)
+        {
+            n += im.mols[bl.mol]->conformationData(bl.what)->arrays.natom;
+        }
+        im.blockCharges.resize(4*n);
+        gpu::downloadCharges(im.system, im.blockCharges.data());
+        im.chargesOf = std::numeric_limits<size_t>::max();
+    }
     im.applyCharges(im.resident);
 }
 
@@ -6585,6 +6638,18 @@ bool GpuTrainingSystem::setChain(const GpuChainSetup &setup)
         none += (recipeSlot[k] < 0 && acmIndex[k] < 0) ? 1 : 0;
     }
     im.chainMapped = (none == 0 && setup.params.size() == setup.nparam);
+    if (none > 0 && std::getenv("ACT_GPU_CHAIN_WHY"))
+    {
+        for (size_t k = 0; k < setup.nparam && k < setup.params.size(); k++)
+        {
+            if (recipeSlot[k] < 0 && acmIndex[k] < 0)
+            {
+                fprintf(stderr, "GPU chain: parameter %zu (%g, %s) has no value on the GPU\n", k,
+                        setup.params[k] ? setup.params[k]->value() : 0.0,
+                        setup.params[k] ? setup.params[k]->unit().c_str() : "none");
+            }
+        }
+    }
     // Which parameters the charges and the virtual sites of the charge
     // generation depend on, see uploadParameters
     im.chainCharges.assign(setup.nparam, 0);
@@ -6700,9 +6765,18 @@ bool GpuTrainingSystem::chainCapable() const
 {
     const auto &im = *impl_;
     // Everything the steps need follows from the parameters on the GPU
-    return (im.chain && im.chainMapped && im.devReady && im.nreplica == 1 && im.recipeRows == 1 &&
-            im.recipeUploaded && im.chargeRecipes && (im.acmMols.empty() || im.acmUploaded) &&
-            !(im.acmVsites && !im.acmVsitesOnGpu));
+    bool capable = (im.chain && im.chainMapped && im.devReady && im.nreplica == 1 && im.recipeRows == 1 &&
+                    im.recipeUploaded && im.chargeRecipes && (im.acmMols.empty() || im.acmUploaded) &&
+                    !(im.acmVsites && !im.acmVsitesOnGpu));
+    static bool told = false;
+    if (!capable && !told && std::getenv("ACT_GPU_CHAIN_WHY"))
+    {
+        told = true;
+        fprintf(stderr, "GPU chain capable: chain %d mapped %d deviations %d replicas %zu recipe rows %d uploaded %d charge recipes %d charge molecules %zu uploaded %d charge vsites %d on GPU %d\n",
+                im.chain, im.chainMapped, im.devReady, im.nreplica, im.recipeRows, im.recipeUploaded,
+                im.chargeRecipes, im.acmMols.size(), im.acmUploaded, im.acmVsites, im.acmVsitesOnGpu);
+    }
+    return capable;
 }
 
 void GpuTrainingSystem::chainBegin(const std::vector<gpu::ChainStep> &steps,
