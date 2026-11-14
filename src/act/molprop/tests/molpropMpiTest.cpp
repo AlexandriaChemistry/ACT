@@ -67,11 +67,11 @@ protected:
     {
         cr_.init(cr_.size());
         MsgHandler msghandler;
-        auto       fileName = fileManager_.getInputFilePath("molprop/molprop.xml");
+        const auto fileName = fileManager_.getInputFilePath("molprop/molprop.xml");
         MolPropRead(&msghandler, fileName.c_str(), &ref_);
         // Alcohols with frequencies and intensities
         std::vector<MolProp> booze;
-        auto       boozeName = fileManager_.getInputFilePath("molprop/booze-mono.xml");
+        const auto boozeName = fileManager_.getInputFilePath("molprop/booze-mono.xml");
         MolPropRead(&msghandler, boozeName.c_str(), &booze);
         for (auto &mp : booze)
         {
@@ -88,9 +88,9 @@ protected:
     //! \return the contents of the molecules written to a file of this rank
     std::string written(const std::vector<MolProp> &mps, const std::string &name)
     {
-        auto fileName = fileManager_.getTemporaryFilePath(gmx::formatString("%s%d.xml", name.c_str(), cr_.rank()));
+        const auto fileName = fileManager_.getTemporaryFilePath(gmx::formatString("%s%d.xml", name.c_str(), cr_.rank()));
         MolPropWrite(fileName.c_str(), mps, false);
-        std::ifstream     in(fileName);
+        const std::ifstream in(fileName);
         std::stringstream ss;
         ss << in.rdbuf();
         return ss.str();

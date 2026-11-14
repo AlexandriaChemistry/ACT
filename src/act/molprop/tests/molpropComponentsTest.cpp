@@ -166,13 +166,13 @@ TEST(MultipoleNamesTest, QuadrupoleNamesCount)
 
 TEST(MultipoleNamesTest, OctupoleNamesCount)
 {
-    auto names = multipoleNames(MolPropObservable::OCTUPOLE);
+    const auto names = multipoleNames(MolPropObservable::OCTUPOLE);
     EXPECT_EQ(10u, names.size());
 }
 
 TEST(MultipoleNamesTest, HexadecapoleNamesCount)
 {
-    auto names = multipoleNames(MolPropObservable::HEXADECAPOLE);
+    const auto names = multipoleNames(MolPropObservable::HEXADECAPOLE);
     EXPECT_EQ(15u, names.size());
 }
 
@@ -238,7 +238,7 @@ TEST(MultipoleNamesTest, MultipoleIndexByVectorQuadrupole)
 
 TEST(SingleAtomTest, Construction)
 {
-    SingleAtom sa(5);
+    const SingleAtom sa(5);
     EXPECT_EQ(5, sa.aI());
 }
 
@@ -268,7 +268,7 @@ TEST(SingleAtomTest, LessOperator)
 
 TEST(AtomPairTest, Construction)
 {
-    AtomPair ap(3, 7);
+    const AtomPair ap(3, 7);
     EXPECT_EQ(3, ap.aI());
     EXPECT_EQ(7, ap.aJ());
 }
@@ -293,15 +293,15 @@ TEST(AtomPairTest, EqualityFalse)
 
 TEST(AtomPairTest, SwapAtoms)
 {
-    AtomPair ap(3, 7);
-    AtomPair swapped = ap.swap();
+    const AtomPair ap(3, 7);
+    const AtomPair swapped = ap.swap();
     EXPECT_EQ(7, swapped.aI());
     EXPECT_EQ(3, swapped.aJ());
 }
 
 TEST(AtomPairTest, GetMethod)
 {
-    AtomPair ap(4, 9);
+    const AtomPair ap(4, 9);
     int ai, aj;
     ap.get(&ai, &aj);
     EXPECT_EQ(4, ai);
@@ -314,7 +314,7 @@ TEST(AtomPairTest, GetMethod)
 
 TEST(BondTest, Construction)
 {
-    Bond b(1, 2, 1.5);
+    const Bond b(1, 2, 1.5);
     EXPECT_EQ(1, b.aI());
     EXPECT_EQ(2, b.aJ());
     EXPECT_DOUBLE_EQ(1.5, b.bondOrder());
@@ -322,7 +322,7 @@ TEST(BondTest, Construction)
 
 TEST(BondTest, GetMethod)
 {
-    Bond b(1, 2, 2.0);
+    const Bond b(1, 2, 2.0);
     int ai, aj;
     double bo;
     b.get(&ai, &aj, &bo);
@@ -351,8 +351,8 @@ TEST(BondTest, EqualityFalse)
 
 TEST(BondTest, Swap)
 {
-    Bond b(1, 2, 1.5);
-    Bond swapped = b.swap();
+    const Bond b(1, 2, 1.5);
+    const Bond swapped = b.swap();
     EXPECT_EQ(2, swapped.aI());
     EXPECT_EQ(1, swapped.aJ());
     EXPECT_DOUBLE_EQ(1.5, swapped.bondOrder());
@@ -361,7 +361,7 @@ TEST(BondTest, Swap)
 TEST(BondTest, RenumberAtoms)
 {
     Bond b(0, 1, 1.0);
-    std::vector<int> renumber = {10, 11, 12};
+    const std::vector<int> renumber = {10, 11, 12};
     b.renumberAtoms(renumber);
     EXPECT_EQ(10, b.aI());
     EXPECT_EQ(11, b.aJ());
@@ -380,19 +380,19 @@ TEST(BondTest, SetBondOrder)
 
 TEST(TopologyEntryTest, CheckPassesWithCorrectCount)
 {
-    Bond b(1, 2, 1.0);
+    const Bond b(1, 2, 1.0);
     EXPECT_NO_THROW(b.check(2));
 }
 
 TEST(TopologyEntryTest, CheckThrowsWithWrongCount)
 {
-    Bond b(1, 2, 1.0);
+    const Bond b(1, 2, 1.0);
     EXPECT_THROW(b.check(3), gmx::InternalError);
 }
 
 TEST(TopologyEntryTest, AtomIndexOutOfRangeThrows)
 {
-    Bond b(1, 2, 1.0);
+    const Bond b(1, 2, 1.0);
     EXPECT_THROW(b.atomIndex(5), gmx::InternalError);
 }
 
@@ -412,9 +412,9 @@ TEST(TopologyEntryTest, AddBondOrderAndRetrieve)
 
 TEST(AngleTest, Construction)
 {
-    Bond bij(0, 1, 1.0);
-    Bond bjk(1, 2, 1.0);
-    Angle angle(bij, bjk);
+    const Bond bij(0, 1, 1.0);
+    const Bond bjk(1, 2, 1.0);
+    const Angle angle(bij, bjk);
     ASSERT_EQ(3u, angle.atomIndices().size());
     EXPECT_EQ(0, angle.atomIndex(0));
     EXPECT_EQ(1, angle.atomIndex(1));
@@ -424,8 +424,8 @@ TEST(AngleTest, Construction)
 
 TEST(AngleTest, SetLinear)
 {
-    Bond bij(0, 1, 1.0);
-    Bond bjk(1, 2, 1.0);
+    const Bond bij(0, 1, 1.0);
+    const Bond bjk(1, 2, 1.0);
     Angle angle(bij, bjk);
     angle.setLinear(true);
     EXPECT_TRUE(angle.isLinear());
@@ -433,9 +433,9 @@ TEST(AngleTest, SetLinear)
 
 TEST(AngleTest, BondAccessors)
 {
-    Bond bij(0, 1, 1.0);
-    Bond bjk(1, 2, 2.0);
-    Angle angle(bij, bjk);
+    const Bond bij(0, 1, 1.0);
+    const Bond bjk(1, 2, 2.0);
+    const Angle angle(bij, bjk);
     EXPECT_EQ(0, angle.bij().aI());
     EXPECT_EQ(1, angle.bij().aJ());
     EXPECT_EQ(1, angle.bjk().aI());
@@ -444,8 +444,8 @@ TEST(AngleTest, BondAccessors)
 
 TEST(AngleTest, InvalidBondsThrow)
 {
-    Bond bij(0, 1, 1.0);
-    Bond bjk(2, 3, 1.0);
+    const Bond bij(0, 1, 1.0);
+    const Bond bjk(2, 3, 1.0);
     EXPECT_THROW(Angle angle(bij, bjk), gmx::InvalidInputError);
 }
 
@@ -455,10 +455,10 @@ TEST(AngleTest, InvalidBondsThrow)
 
 TEST(ImproperTest, Construction)
 {
-    Bond bij(0, 1, 1.0);
-    Bond bik(0, 2, 1.0);
-    Bond bil(0, 3, 1.0);
-    Improper imp(bij, bik, bil);
+    const Bond bij(0, 1, 1.0);
+    const Bond bik(0, 2, 1.0);
+    const Bond bil(0, 3, 1.0);
+    const Improper imp(bij, bik, bil);
     ASSERT_EQ(4u, imp.atomIndices().size());
     EXPECT_EQ(0, imp.atomIndex(0));
     EXPECT_EQ(1, imp.atomIndex(1));
@@ -468,9 +468,9 @@ TEST(ImproperTest, Construction)
 
 TEST(ImproperTest, InconsistentBondsThrow)
 {
-    Bond bij(0, 1, 1.0);
-    Bond bik(1, 2, 1.0);
-    Bond bil(0, 3, 1.0);
+    const Bond bij(0, 1, 1.0);
+    const Bond bik(1, 2, 1.0);
+    const Bond bil(0, 3, 1.0);
     EXPECT_THROW(Improper imp(bij, bik, bil), gmx::InvalidInputError);
 }
 
@@ -480,10 +480,10 @@ TEST(ImproperTest, InconsistentBondsThrow)
 
 TEST(ProperTest, Construction)
 {
-    Bond bij(0, 1, 1.0);
-    Bond bjk(1, 2, 1.0);
-    Bond bkl(2, 3, 1.0);
-    Proper prop(bij, bjk, bkl);
+    const Bond bij(0, 1, 1.0);
+    const Bond bjk(1, 2, 1.0);
+    const Bond bkl(2, 3, 1.0);
+    const Proper prop(bij, bjk, bkl);
     ASSERT_EQ(4u, prop.atomIndices().size());
     EXPECT_EQ(0, prop.atomIndex(0));
     EXPECT_EQ(1, prop.atomIndex(1));
@@ -493,9 +493,9 @@ TEST(ProperTest, Construction)
 
 TEST(ProperTest, InconsistentBondsThrow)
 {
-    Bond bij(0, 1, 1.0);
-    Bond bjk(2, 3, 1.0);
-    Bond bkl(3, 4, 1.0);
+    const Bond bij(0, 1, 1.0);
+    const Bond bjk(2, 3, 1.0);
+    const Bond bkl(3, 4, 1.0);
     EXPECT_THROW(Proper prop(bij, bjk, bkl), gmx::InvalidInputError);
 }
 
@@ -505,7 +505,7 @@ TEST(ProperTest, InconsistentBondsThrow)
 
 TEST(FragmentTest, DefaultConstructor)
 {
-    Fragment f;
+    const Fragment f;
     EXPECT_DOUBLE_EQ(0.0, f.mass());
     EXPECT_EQ(0, f.charge());
     EXPECT_EQ(1, f.multiplicity());
@@ -516,7 +516,7 @@ TEST(FragmentTest, DefaultConstructor)
 
 TEST(FragmentTest, ParameterizedConstructor)
 {
-    Fragment f("InChI=1S/H2O/h1H2", 18.015, 0, 1, 1, "H2O", {0, 1, 2});
+    const Fragment f("InChI=1S/H2O/h1H2", 18.015, 0, 1, 1, "H2O", {0, 1, 2});
     EXPECT_EQ("InChI=1S/H2O/h1H2", f.inchi());
     EXPECT_DOUBLE_EQ(18.015, f.mass());
     EXPECT_EQ(0, f.charge());
@@ -546,21 +546,21 @@ TEST(FragmentTest, SettersAndGetters)
 
 TEST(FragmentTest, AtomString)
 {
-    Fragment f("", 1.0, 0, 1, 1, "H", {0, 1, 2});
+    const Fragment f("", 1.0, 0, 1, 1, "H", {0, 1, 2});
     // atomString() adds 1 to each atom index and prepends a space
     EXPECT_EQ(" 1 2 3", f.atomString());
 }
 
 TEST(FragmentTest, TexFormulaContainsSubscript)
 {
-    Fragment f("", 18.0, 0, 1, 1, "H2O", {0, 1, 2});
+    const Fragment f("", 18.0, 0, 1, 1, "H2O", {0, 1, 2});
     // H2O should produce H$_2$O
     EXPECT_NE(std::string::npos, f.texFormula().find("$_2$"));
 }
 
 TEST(FragmentTest, TexFormulaNoSubscriptForNoDigit)
 {
-    Fragment f("", 4.0, 0, 1, 1, "He", {0});
+    const Fragment f("", 4.0, 0, 1, 1, "He", {0});
     EXPECT_EQ("He", f.texFormula());
 }
 
@@ -578,7 +578,7 @@ TEST(FragmentTest, SetAtoms)
 
 TEST(FragmentTest, SymmetryNumberAtLeastOne)
 {
-    Fragment f("", 1.0, 0, 1, 0, "X", {});
+    const Fragment f("", 1.0, 0, 1, 0, "X", {});
     EXPECT_EQ(1, f.symmetryNumber());
 }
 
@@ -588,14 +588,14 @@ TEST(FragmentTest, SymmetryNumberAtLeastOne)
 
 TEST(AtomNumTest, ConstructorCharPtr)
 {
-    AtomNum an("C", 6);
+    const AtomNum an("C", 6);
     EXPECT_EQ("C", an.getAtom());
     EXPECT_EQ(6, an.getNumber());
 }
 
 TEST(AtomNumTest, ConstructorString)
 {
-    AtomNum an(std::string("H"), 2);
+    const AtomNum an(std::string("H"), 2);
     EXPECT_EQ("H", an.getAtom());
     EXPECT_EQ(2, an.getNumber());
 }
@@ -622,13 +622,13 @@ TEST(AtomNumTest, SetAtomCharPtr)
 
 TEST(MolecularCompositionTest, DefaultConstruction)
 {
-    MolecularComposition mc;
+    const MolecularComposition mc;
     EXPECT_EQ(0, mc.CountAtoms());
 }
 
 TEST(MolecularCompositionTest, NamedConstruction)
 {
-    MolecularComposition mc("alexandria");
+    const MolecularComposition mc("alexandria");
     EXPECT_EQ("alexandria", mc.getCompName());
 }
 
@@ -698,7 +698,7 @@ TEST(MolecularCompositionTest, SearchAtomConstFound)
 {
     MolecularComposition mc("test");
     mc.AddAtom(AtomNum("C", 3));
-    auto it = mc.searchAtomConst("C");
+    const auto it = mc.searchAtomConst("C");
     EXPECT_EQ("C", it->getAtom());
     EXPECT_EQ(3, it->getNumber());
 }
@@ -717,13 +717,13 @@ TEST(MolecularCompositionTest, SearchAtomConstNotFound)
 
 TEST(CalcAtomTest, DefaultConstructor)
 {
-    CalcAtom ca;
+    const CalcAtom ca;
     EXPECT_EQ(0, ca.getAtomid());
 }
 
 TEST(CalcAtomTest, ParameterizedConstructor)
 {
-    CalcAtom ca("C1", "CT", 5);
+    const CalcAtom ca("C1", "CT", 5);
     EXPECT_EQ("C1", ca.getName());
     EXPECT_EQ(5, ca.getAtomid());
 }
@@ -774,14 +774,14 @@ TEST(CalcAtomTest, MultipleChargeTypes)
 TEST(CalcAtomTest, EqualSameAtom)
 {
     CalcAtom ca("C", "CT", 1);
-    CalcAtom cb("C", "CT", 1);
+    const CalcAtom cb("C", "CT", 1);
     EXPECT_TRUE(ca.Equal(cb));
 }
 
 TEST(CalcAtomTest, EqualDifferentName)
 {
     CalcAtom ca("C", "CT", 1);
-    CalcAtom cb("O", "CT", 1);
+    const CalcAtom cb("O", "CT", 1);
     EXPECT_FALSE(ca.Equal(cb));
 }
 
@@ -791,7 +791,7 @@ TEST(CalcAtomTest, EqualDifferentName)
 
 TEST(CategoryListElementTest, Construction)
 {
-    CategoryListElement cle("alkane", "methane");
+    const CategoryListElement cle("alkane", "methane");
     EXPECT_EQ("alkane", cle.getName());
     EXPECT_EQ(1, cle.nMolecule());
     EXPECT_TRUE(cle.hasMolecule("methane"));
@@ -823,7 +823,7 @@ TEST(CategoryListElementTest, SortMolecules)
 
 TEST(CategoryListTest, DefaultConstruction)
 {
-    CategoryList cl;
+    const CategoryList cl;
     EXPECT_EQ(0, cl.nCategories());
 }
 
@@ -925,14 +925,14 @@ TEST(MolPropBasicTest, BondAddAndExists)
     EXPECT_EQ(2, mp.NBond());
     EXPECT_TRUE(mp.BondExists(b1));
     EXPECT_TRUE(mp.BondExists(b2));
-    Bond b3(5, 6, 1.0);
+    const Bond b3(5, 6, 1.0);
     EXPECT_FALSE(mp.BondExists(b3));
 }
 
 TEST(MolPropBasicTest, FragmentManagement)
 {
     MolProp mp;
-    Fragment f("", 18.0, 0, 1, 1, "H2O", {0, 1, 2});
+    const Fragment f("", 18.0, 0, 1, 1, "H2O", {0, 1, 2});
     mp.addFragment(f);
     EXPECT_EQ(1u, mp.fragments().size());
     mp.clearFragments();
@@ -942,8 +942,8 @@ TEST(MolPropBasicTest, FragmentManagement)
 TEST(MolPropBasicTest, TotalMass)
 {
     MolProp mp;
-    Fragment f1("", 18.015, 0, 1, 1, "H2O", {0, 1, 2});
-    Fragment f2("", 44.01,  0, 1, 1, "CO2", {3, 4, 5});
+    const Fragment f1("", 18.015, 0, 1, 1, "H2O", {0, 1, 2});
+    const Fragment f2("", 44.01,  0, 1, 1, "CO2", {3, 4, 5});
     mp.addFragment(f1);
     mp.addFragment(f2);
     EXPECT_DOUBLE_EQ(62.025, mp.totalMass());
@@ -952,8 +952,8 @@ TEST(MolPropBasicTest, TotalMass)
 TEST(MolPropBasicTest, TotalCharge)
 {
     MolProp mp;
-    Fragment f1("", 1.0,  1, 1, 1, "A", {0});
-    Fragment f2("", 1.0, -1, 1, 1, "B", {1});
+    const Fragment f1("", 1.0,  1, 1, 1, "A", {0});
+    const Fragment f2("", 1.0, -1, 1, 1, "B", {1});
     mp.addFragment(f1);
     mp.addFragment(f2);
     EXPECT_EQ(0, mp.totalCharge());
@@ -962,8 +962,8 @@ TEST(MolPropBasicTest, TotalCharge)
 TEST(MolPropBasicTest, TotalMultiplicitySinglet)
 {
     MolProp mp;
-    Fragment f1("", 1.0, 0, 1, 1, "A", {0});
-    Fragment f2("", 1.0, 0, 1, 1, "B", {1});
+    const Fragment f1("", 1.0, 0, 1, 1, "A", {0});
+    const Fragment f2("", 1.0, 0, 1, 1, "B", {1});
     mp.addFragment(f1);
     mp.addFragment(f2);
     // Both fragments have odd multiplicity (1): no toggle, result stays 1
@@ -973,8 +973,8 @@ TEST(MolPropBasicTest, TotalMultiplicitySinglet)
 TEST(MolPropBasicTest, TotalMultiplicityDoublet)
 {
     MolProp mp;
-    Fragment f1("", 1.0, 0, 1, 1, "A", {0});
-    Fragment f2("", 1.0, 0, 2, 1, "B", {1});
+    const Fragment f1("", 1.0, 0, 1, 1, "A", {0});
+    const Fragment f2("", 1.0, 0, 2, 1, "B", {1});
     mp.addFragment(f1);
     mp.addFragment(f2);
     // Fragment f2 has even multiplicity: toggles from 1 to 2
@@ -984,7 +984,7 @@ TEST(MolPropBasicTest, TotalMultiplicityDoublet)
 TEST(MolPropBasicTest, SymmetryNumberSingleFragment)
 {
     MolProp mp;
-    Fragment f("", 1.0, 0, 1, 3, "A", {0});
+    const Fragment f("", 1.0, 0, 1, 3, "A", {0});
     mp.addFragment(f);
     EXPECT_EQ(3, mp.symmetryNumber());
 }
@@ -992,8 +992,8 @@ TEST(MolPropBasicTest, SymmetryNumberSingleFragment)
 TEST(MolPropBasicTest, SymmetryNumberMultipleFragmentsReturnsOne)
 {
     MolProp mp;
-    Fragment f1("", 1.0, 0, 1, 2, "A", {0});
-    Fragment f2("", 1.0, 0, 1, 3, "B", {1});
+    const Fragment f1("", 1.0, 0, 1, 2, "A", {0});
+    const Fragment f2("", 1.0, 0, 1, 3, "B", {1});
     mp.addFragment(f1);
     mp.addFragment(f2);
     EXPECT_EQ(1, mp.symmetryNumber());
@@ -1069,7 +1069,7 @@ TEST(ExperimentTest, DataSourceFromName)
 
 TEST(ExperimentTest, ExperimentConstructorSetsDataSource)
 {
-    Experiment exp("reference", "conformation");
+    const Experiment exp("reference", "conformation");
     EXPECT_EQ(dsExperiment, exp.dataSource());
     EXPECT_EQ("reference",    exp.getReference());
     EXPECT_EQ("conformation", exp.getConformation());
@@ -1077,7 +1077,7 @@ TEST(ExperimentTest, ExperimentConstructorSetsDataSource)
 
 TEST(ExperimentTest, CalculationConstructorSetsTheory)
 {
-    Experiment exp("Gaussian", "B3LYP", "6-311G**", "ref", "min", "file.log", JobType::OPT);
+    const Experiment exp("Gaussian", "B3LYP", "6-311G**", "ref", "min", "file.log", JobType::OPT);
     EXPECT_EQ(dsTheory,       exp.dataSource());
     EXPECT_EQ("Gaussian",     exp.getProgram());
     EXPECT_EQ("B3LYP",        exp.getMethod());
@@ -1102,7 +1102,7 @@ TEST(ExperimentTest, SetProgram)
 
 TEST(ExperimentTest, HasPropertyFalseInitially)
 {
-    Experiment exp("ref", "min");
+    const Experiment exp("ref", "min");
     EXPECT_FALSE(exp.hasProperty(MolPropObservable::DIPOLE));
     EXPECT_FALSE(exp.hasMolPropObservable(MolPropObservable::DIPOLE));
 }
@@ -1130,14 +1130,14 @@ TEST(ExperimentTest, ExperimentId)
 
 TEST(ExperimentTest, NAtomEmpty)
 {
-    Experiment exp("ref", "min");
+    const Experiment exp("ref", "min");
     EXPECT_EQ(0, exp.NAtom());
 }
 
 TEST(ExperimentTest, AddAtom)
 {
     Experiment exp("ref", "min");
-    CalcAtom ca("O", "OT", 0);
+    const CalcAtom ca("O", "OT", 0);
     exp.AddAtom(ca);
     EXPECT_EQ(1, exp.NAtom());
     EXPECT_EQ("O", exp.calcAtomConst()[0].getName());
@@ -1149,7 +1149,7 @@ TEST(ExperimentTest, AddAtom)
 
 TEST(MolecularMultipoleTest, DipoleConstruction)
 {
-    MolecularMultipole mm("calc", "D", 298.15, MolPropObservable::DIPOLE);
+    const MolecularMultipole mm("calc", "D", 298.15, MolPropObservable::DIPOLE);
     EXPECT_STREQ("calc", mm.getType());
     EXPECT_DOUBLE_EQ(298.15, mm.getTemperature());
     ASSERT_EQ(3u, mm.getVector().size());
@@ -1196,7 +1196,7 @@ TEST(MolecularMultipoleTest, SetValueUnknownThrows)
 
 TEST(MolecularMultipoleTest, QuadrupoleConstruction)
 {
-    MolecularMultipole mm("calc", "B", 0.0, MolPropObservable::QUADRUPOLE);
+    const MolecularMultipole mm("calc", "B", 0.0, MolPropObservable::QUADRUPOLE);
     ASSERT_EQ(6u, mm.getVector().size());
 }
 
@@ -1226,7 +1226,7 @@ static Experiment makeExperimentWithAtoms(int nAtoms)
     Experiment exp("ref", "min");
     for (int i = 0; i < nAtoms; ++i)
     {
-        CalcAtom ca(gmx::formatString("C%d", i + 1), "C.3", i + 1);
+        const CalcAtom ca(gmx::formatString("C%d", i + 1), "C.3", i + 1);
         exp.AddAtom(ca);
     }
     return exp;
@@ -1470,7 +1470,7 @@ TEST(MolPropValidateTest, ReferenceIsTopologyExperiment)
 {
     MolProp mp;
     mp.SetMolname("bromide#fluoride");
-    auto addExperiment = [&mp](const std::string &datafile, JobType jt, bool swapped)
+    const auto addExperiment = [&mp](const std::string &datafile, JobType jt, bool swapped)
     {
         Experiment exp("ref", "min");
         exp.setJobtype(jt);

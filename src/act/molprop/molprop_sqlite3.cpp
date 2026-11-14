@@ -162,8 +162,8 @@ static void getSynonyms(MsgHandler           *msg_handler,
         rc = sqlite3_step(stmt2);
         if (SQLITE_ROW == rc)
         {
-            syn.push_back(Synonym((char *)sqlite3_column_text(stmt2, 0),
-                                  (char *)sqlite3_column_text(stmt2, 1)));
+            syn.emplace_back((char *)sqlite3_column_text(stmt2, 0),
+                             (char *)sqlite3_column_text(stmt2, 1));
         }
         else if (SQLITE_DONE != rc)
         {
@@ -215,13 +215,13 @@ static void getClasses(MsgHandler           *msg_handler,
         {
             const char *iupac = (char *)sqlite3_column_text(stmt2, 0);
             const char *klass = (char *)sqlite3_column_text(stmt2, 1);
-            auto        s     = std::find_if(classes.begin(), classes.end(),
+            const auto  s     = std::find_if(classes.begin(), classes.end(),
                                              [iupac](Classes const &c)
                                              { return c.iupac().compare(iupac) == 0; });
             if (s == classes.end())
             {
-                std::string i(iupac);
-                classes.push_back(i);
+                const std::string i(iupac);
+                classes.emplace_back(i);
                 classes.back().addClass(klass);
             }
             else
@@ -282,7 +282,7 @@ void ReadSqlite3(gmx_unused MsgHandler           *msg_handler,
 
     /* Now present a query statement */
     nexp_prop = 0;
-    auto sql_str = gmx::formatString("SELECT distinct mol.iupac,mol.cas,mol.csid,pt.prop,pt.unit_text,ref.ref,gp.temperature,gp.value,gp.error, gp.preferred,ds.theory FROM molecules as mol,molproperty as gp,proptypes as pt, datasource as ds,phasetype as ph,reference as ref,link_molprop_ref as lmr WHERE ((gp.phaseid=ph.phaseid) AND (ph.phase='gas') AND (mol.molid = gp.molid) AND (gp.propid = pt.propid) AND (gp.molpropid = lmr.molpropid) AND (lmr.refid = ref.refid) AND (gp.srcid = ds.srcid) AND (upper(?) = upper(mol.iupac)));");
+    const auto sql_str = gmx::formatString("SELECT distinct mol.iupac,mol.cas,mol.csid,pt.prop,pt.unit_text,ref.ref,gp.temperature,gp.value,gp.error, gp.preferred,ds.theory FROM molecules as mol,molproperty as gp,proptypes as pt, datasource as ds,phasetype as ph,reference as ref,link_molprop_ref as lmr WHERE ((gp.phaseid=ph.phaseid) AND (ph.phase='gas') AND (mol.molid = gp.molid) AND (gp.propid = pt.propid) AND (gp.molpropid = lmr.molpropid) AND (lmr.refid = ref.refid) AND (gp.srcid = ds.srcid) AND (upper(?) = upper(mol.iupac)));");
     check_sqlite3(db, "Preparing sqlite3 statement",
                   sqlite3_prepare_v2(db, sql_str.c_str(), 1+sql_str.size(), &stmt, nullptr));
 
@@ -296,7 +296,7 @@ void ReadSqlite3(gmx_unused MsgHandler           *msg_handler,
     for (auto mpi = mp->begin(); (mpi < mp->end()); mpi++)
     {
         const std::string molname = mpi->getMolname();
-        auto              keyptr  = std::find_if(synonyms.begin(), synonyms.end(),
+        const auto        keyptr  = std::find_if(synonyms.begin(), synonyms.end(),
                                                  [molname](Synonym const &s)
                                                  { return molname.compare(s.molname()) == 0; });
         if (synonyms.end() == keyptr)
@@ -362,7 +362,7 @@ void ReadSqlite3(gmx_unused MsgHandler           *msg_handler,
                                 nexp_prop++;
                             }
                             alexandria::Experiment exper(ref, "minimum");
-                            std::string exp_type("experiment");
+                            const std::string exp_type("experiment");
 
                             switch (mpo)
                             {
@@ -405,7 +405,7 @@ void ReadSqlite3(gmx_unused MsgHandler           *msg_handler,
                         }
                     }
                     const char *iupac = keyptr->iupac().c_str();
-                    auto        cptr  = std::find_if(classes.begin(), classes.end(),
+                    const auto  cptr  = std::find_if(classes.begin(), classes.end(),
                                                      [iupac](Classes const &c)
                                                      { return c.iupac().compare(iupac) == 0; });
                     if (cptr != classes.end())
@@ -418,7 +418,7 @@ void ReadSqlite3(gmx_unused MsgHandler           *msg_handler,
                     if (strlen(cas) > 0)
                     {
                         cas2 = mpi->getCas();
-                        if ((cas2.length() > 0) &&
+                        if ((!cas2.empty()) &&
                             (strcmp(cas, cas2.c_str()) != 0))
                         {
                             fprintf(stderr, "cas in molprop %s not the same as database %s for %s\n", cas2.c_str(), cas, iupac);
@@ -428,7 +428,7 @@ void ReadSqlite3(gmx_unused MsgHandler           *msg_handler,
                     if (strlen(csid) > 0)
                     {
                         csid2 = mpi->getCid();
-                        if ((csid2.length() > 0) &&
+                        if ((!csid2.empty()) &&
                             (strcmp(csid, csid2.c_str()) != 0))
                         {
                             fprintf(stderr, "csid in molprop %s not the same as database %s for %s\n", csid2.c_str(), csid, iupac);

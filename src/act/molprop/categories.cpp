@@ -109,7 +109,7 @@ void CategoryList::addCategory(const std::string &catname,
     }
     if (!foundCategory)
     {
-        catli_.push_back(CategoryListElement(catname, molecule));
+        catli_.emplace_back(catname, molecule);
     }
 }
 

@@ -68,7 +68,7 @@ protected:
     //! Constructor that does initialization and reads an input file
     MolpropTest()
     {
-        std::string mpFile = fileManager().getInputFilePath("molprop/molprop.xml");
+        const std::string mpFile = fileManager().getInputFilePath("molprop/molprop.xml");
         MolPropRead(nullptr, mpFile.c_str(), &mp_);
     }
 
@@ -96,7 +96,7 @@ protected:
             {
                 char buf[256];
                 snprintf(buf, sizeof(buf), "atoms %d %d order %g", 1+bi.aI(), 1+bi.aJ(), bi.bondOrder());
-                std::string bond("bond");
+                const std::string bond("bond");
                 char        ibuf[256];
                 snprintf(ibuf, sizeof(ibuf), "molecule %d bond %d", mol, i++);
                 myCheck.checkString(buf, ibuf);
@@ -246,8 +246,8 @@ TEST_F (MolpropTest, Validate){
  */
 TEST(MergeXmlTest, DoubleEntries)
 {
-    gmx::test::TestFileManager fileManager;
-    auto fileName = fileManager.getInputFilePath("molprop/molprop.xml");
+    const gmx::test::TestFileManager fileManager;
+    const auto fileName = fileManager.getInputFilePath("molprop/molprop.xml");
     MsgHandler msghandler;
     msghandler.setPrintLevel(ACTStatus::Warning);
     std::vector<MolProp> once;
@@ -263,8 +263,8 @@ TEST(MergeXmlTest, DoubleEntries)
     }
     for (const auto &mp : merged)
     {
-        auto orig = std::find_if(once.begin(), once.end(),
-                                 [&mp](const MolProp &o) { return o.getMolname() == mp.getMolname(); });
+        const auto orig = std::find_if(once.begin(), once.end(),
+                                       [&mp](const MolProp &o) { return o.getMolname() == mp.getMolname(); });
         ASSERT_TRUE(orig != once.end()) << mp.getMolname();
         EXPECT_EQ(3*orig->experimentConst().size(), mp.experimentConst().size()) << mp.getMolname();
         EXPECT_EQ(orig->formula(), mp.formula()) << mp.getMolname();

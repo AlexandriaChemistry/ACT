@@ -194,7 +194,7 @@ private:
     ePhase            eP_ = ePhase::PLASMA;
 public:
     //! Default constructor
-    GenericProperty() {};
+    GenericProperty() = default;
     
     /*! \brief
      * Creates a new GenericProperty object.
@@ -311,7 +311,7 @@ private:
     std::vector<double> values_;
 public:
     //! Default constructor
-    MolecularMultipole() {}
+    MolecularMultipole() = default;
     
     /*! Constructor initiating all elements of the multipole
      * \param[in] type      The calculation type
@@ -347,22 +347,22 @@ public:
     void setValue(const std::string &id, double value);
 
     //! \copydoc alexandria::GenericProperty::Dump
-    void Dump(gmx::TextWriter *tw) const;
+    void Dump(gmx::TextWriter *tw) const override;
 
     //! \copydoc alexandria::GenericProperty::getValue
-    double getValue() const
+    double getValue() const override
     {
         return average_;
     }
 
     //! \copydoc alexandria::GenericProperty::getError
-    double getError() const
+    double getError() const override
     {
         return error_;
     }
     
     //! \return the values
-    const std::vector<double> &getVector() const { return values_; }
+    const std::vector<double> &getVector() const override { return values_; }
     
     /*! \brief
      * Broadcast this object over an MPI connection
@@ -372,9 +372,9 @@ public:
      * \param[in] comm MPI Communicator
      * \return the CommunicationStatus of the operation
      */
-    virtual CommunicationStatus BroadCast(const CommunicationRecord *cr,
-                                          int                        root,
-                                          MPI_Comm                   comm);
+    CommunicationStatus BroadCast(const CommunicationRecord *cr,
+                                  int                        root,
+                                  MPI_Comm                   comm) override;
 
 };
 
@@ -389,7 +389,7 @@ private:
     std::vector<double> values_;
 public:
     //! Default constructor
-    Harmonics() {}
+    Harmonics() = default;
     
     /*! Constructor with units
      * \param[in] unit The unit of the frequency/intensity
@@ -415,22 +415,22 @@ public:
     void addValue(double value);
     
     //! \copydoc alexandria::GenericProperty::getVector
-    const std::vector<double> &getVector() const { return values_; }
+    const std::vector<double> &getVector() const override { return values_; }
 
     //! \copydoc alexandria::GenericProperty::getValue
-    double getValue() const
+    double getValue() const override
     {
         crash();
     }
 
     //! \copydoc alexandria::GenericProperty::getError
-    double getError() const
+    double getError() const override
     {
         crash();
     }
     
     //! \copydoc alexandria::GenericProperty::Dump
-    void Dump(gmx::TextWriter *tw) const;
+    void Dump(gmx::TextWriter *tw) const override;
     /*! \brief
      * Broadcast this object over an MPI connection
      *
@@ -441,7 +441,7 @@ public:
      */
     CommunicationStatus BroadCast(const CommunicationRecord *cr,
                                   int                        root,
-                                  MPI_Comm                   comm);
+                                  MPI_Comm                   comm) override;
                                 
 };
 
@@ -465,7 +465,7 @@ private:
     tensor alpha_ = {{ 0 }};
 public:
     //! Default constructor
-    MolecularPolarizability() {}
+    MolecularPolarizability() = default;
     
     /*! Constructor initiating all elements of the quadrupole tensor
      * \param[in] type      The calculation type
@@ -498,13 +498,13 @@ public:
     void Set(double xx, double yy, double zz, double xy, double xz, double yz);
 
     //! \copydoc alexandria::GenericProperty::getValue
-    double getValue() const;
+    double getValue() const override;
 
     //! \copydoc alexandria::GenericProperty::getError
-    double getError() const { return error_; }
+    double getError() const override { return error_; }
 
     //! \copydoc alexandria::GenericProperty::getVector
-    const std::vector<double> &getVector() const { crash(); }
+    const std::vector<double> &getVector() const override { crash(); }
 
     //! \return a stored Tensor
     const tensor &getTensor() const
@@ -513,7 +513,7 @@ public:
     }
 
     //! \copydoc alexandria::GenericProperty::Dump
-    void Dump(gmx::TextWriter *tw) const;
+    void Dump(gmx::TextWriter *tw) const override;
     /*! \brief
      * Broadcast this object over an MPI connection
      *
@@ -524,7 +524,7 @@ public:
      */
     CommunicationStatus BroadCast(const CommunicationRecord *cr,
                                   int                        root,
-                                  MPI_Comm                   comm);
+                                  MPI_Comm                   comm) override;
 
 };
 
@@ -546,7 +546,7 @@ private:
     double error_  = 0;
 public:
     //! Default constructor needed for receiving over a network
-    MolecularEnergy() {};
+    MolecularEnergy() = default;
 
     /*! Constructor storing all properties related to this energy term
      * \param[in] mpo       The energy type
@@ -580,16 +580,16 @@ public:
     };
 
     //! \copydoc alexandria::GenericProperty::getValue
-    double getValue() const { return average_; }
+    double getValue() const override { return average_; }
 
     //! \copydoc alexandria::GenericProperty::getError
-    double getError() const { return error_; }
+    double getError() const override { return error_; }
 
     //! \copydoc alexandria::GenericProperty::getVector
-    const std::vector<double> &getVector() const { crash(); }
+    const std::vector<double> &getVector() const override { crash(); }
 
     //! \copydoc alexandria::GenericProperty::Dump
-    void Dump(gmx::TextWriter *tw) const;
+    void Dump(gmx::TextWriter *tw) const override;
     /*! \brief
      * Broadcast this object over an MPI connection
      *
@@ -600,7 +600,7 @@ public:
      */
     CommunicationStatus BroadCast(const CommunicationRecord *cr,
                                   int                        root,
-                                  MPI_Comm                   comm);
+                                  MPI_Comm                   comm) override;
                                 
 };
 
@@ -631,7 +631,7 @@ private:
     std::vector<double>    V_;
 public:
     //! Default constructor
-    ElectrostaticPotential() {}
+    ElectrostaticPotential() = default;
     
     /*! Constructor that set the units of coordinates and potential
      * \param[in] xyzInputUnit Unit of the coordinate
@@ -641,13 +641,13 @@ public:
                            const std::string &vInputUnit);
     
     //! \copydoc alexandria::GenericProperty::getValue
-    double getValue() const { crash(); }
+    double getValue() const override { crash(); }
 
     //! \copydoc alexandria::GenericProperty::getError
-    double getError() const { crash(); }
+    double getError() const override { crash(); }
 
     //! \copydoc alexandria::GenericProperty::getVector
-    const std::vector<double> &getVector() const { crash(); }
+    const std::vector<double> &getVector() const override { crash(); }
 
     /*! Fill the contents of the ESP
      * Set the ESP id, the coordinates and the potential itself.
@@ -679,7 +679,7 @@ public:
     const std::vector<double> V() const { return V_; }
 
     //! \copydoc alexandria::GenericProperty::Dump
-    void Dump(gmx::TextWriter *tw) const;
+    void Dump(gmx::TextWriter *tw) const override;
     /*! \brief
      * Broadcast this object over an MPI connection
      *
@@ -690,7 +690,7 @@ public:
      */
     CommunicationStatus BroadCast(const CommunicationRecord *cr,
                                   int                        root,
-                                  MPI_Comm                   comm);
+                                  MPI_Comm                   comm) override;
 
 };
 

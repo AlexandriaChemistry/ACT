@@ -48,13 +48,13 @@ namespace alexandria
 
 void CalcAtom::setCoordUnit(const std::string &unit)
 {
-    if ((coord_unit_.size() == 0) && (unit.size() > 0))
+    if ((coord_unit_.empty()) && (!unit.empty()))
     {
         coord_unit_ = unit;
     }
     else
     {
-        if (coord_unit_.size() == 0)
+        if (coord_unit_.empty())
         {
             fprintf(stderr, "Trying to replace CalcAtom unit '%s' by '%s'\n", coord_unit_.c_str(), unit.c_str());
         }
@@ -129,7 +129,7 @@ CommunicationStatus CalcAtom::BroadCast(const CommunicationRecord *cr,
 
 void MolecularComposition::AddAtom(const AtomNum &an)
 {
-    AtomNumIterator mci = searchAtom(an.getAtom());
+    const AtomNumIterator mci = searchAtom(an.getAtom());
     if (mci == atomnum_.end())
     {
         atomnum_.push_back(an);

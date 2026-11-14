@@ -65,11 +65,11 @@ std::map<size_t, MolPropObservable> sizeMpo = {
 //! \brief Fill the maps with multipole names
 static void mk_names()
 {
-    if (multipole_names.size() == 0)
+    if (multipole_names.empty())
     {
         for (auto &mpo : mpoMultiPoles)
         {
-            std::vector<std::string> dummy;
+            const std::vector<std::string> dummy;
             multipole_names.insert({mpo, dummy});
             std::map<std::string, int> mymap;
             multipole_map.insert({mpo, mymap});
@@ -91,7 +91,7 @@ static void mk_names()
             multipole_map[dmpo].insert({xyz[m], m});
             for (int n = m; n < DIM; n++)
             {
-                std::string qentry = xyz[m]+xyz[n];
+                const std::string qentry = xyz[m]+xyz[n];
                 auto qmpo = MolPropObservable::QUADRUPOLE;
                 multipole_names[qmpo].push_back(qentry);
                 multipole_index[qmpo].insert({ { m, n }, qindex});
@@ -99,7 +99,7 @@ static void mk_names()
                 multipole_map[qmpo].insert({qentry, qindex++});
                 for (int o = n; o < DIM; o++)
                 {
-                    std::string oentry = xyz[m]+xyz[n]+xyz[o];
+                    const std::string oentry = xyz[m]+xyz[n]+xyz[o];
                     auto ompo = MolPropObservable::OCTUPOLE;
                     multipole_names[ompo].push_back(oentry);
                     multipole_index[ompo].insert({ { m, n, o }, oindex});
@@ -107,7 +107,7 @@ static void mk_names()
                     multipole_map[ompo].insert({oentry, oindex++});
                     for (int p = o; p < DIM; p++)
                     {
-                        std::string hentry(xyz[m]+xyz[n]+xyz[o]+xyz[p]);
+                        const std::string hentry(xyz[m]+xyz[n]+xyz[o]+xyz[p]);
                         auto hmpo = MolPropObservable::HEXADECAPOLE;
                         multipole_names[hmpo].push_back(hentry);
                         multipole_index[hmpo].insert({ { m, n, o, p }, hindex});
@@ -126,7 +126,7 @@ bool multipoleIndex(const std::string &myid, int *index)
     if (sizeMpo.find(myid.size()) != sizeMpo.end())
     {
         auto mpo = sizeMpo[myid.size()];
-        auto dm  = multipole_map[mpo].find(myid);
+        const auto dm  = multipole_map[mpo].find(myid);
         if (multipole_map[mpo].end() != dm)
         {
             *index = dm->second;

@@ -102,7 +102,7 @@ class CategoryList
         std::vector<CategoryListElement> catli_;
     public:
         //! Constructor
-        CategoryList() {};
+        CategoryList() = default;
 
         /*! \brief Add one category and associated molecule
          * \param[in] catname The category name

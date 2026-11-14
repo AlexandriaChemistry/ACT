@@ -109,7 +109,7 @@ private:
 
 public:
     //! Constructor for a MolProp object
-    MolProp() {}
+    MolProp() = default;
     
     /*! \brief
      * Check the internal consistency of this object.
@@ -180,7 +180,7 @@ public:
     //! Return IUPAC name or, if not found, the molname
     const std::string &getIupac() const
     {
-        if (iupac_.size() > 0)
+        if (!iupac_.empty())
         {
             return iupac_;
         }

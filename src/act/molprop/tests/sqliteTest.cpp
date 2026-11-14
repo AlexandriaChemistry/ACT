@@ -134,7 +134,7 @@ std::vector<const GenericProperty *> properties(const MolProp &mp, MolPropObserv
     std::vector<const GenericProperty *> props;
     for (const auto &ei : mp.experimentConst())
     {
-        auto p = ei.propertiesConst().find(mpo);
+        const auto p = ei.propertiesConst().find(mpo);
         if (p != ei.propertiesConst().end())
         {
             for (const auto &gp : p->second)

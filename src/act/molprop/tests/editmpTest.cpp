@@ -69,7 +69,7 @@ protected:
     std::vector<MolProp> run(const std::vector<std::string>                        &inputs,
                              const std::vector<std::pair<std::string, std::string>> &options = {})
     {
-        auto output = fileManager().getTemporaryFilePath("out.xml");
+        const auto output = fileManager().getTemporaryFilePath("out.xml");
         log_        = fileManager().getTemporaryFilePath("edit_mp.log");
         gmx::test::CommandLine cmd;
         cmd.append("edit_mp");
@@ -93,7 +93,7 @@ protected:
         }
         {
             // Some output is written in the working directory
-            auto old = std::filesystem::current_path();
+            const auto old = std::filesystem::current_path();
             std::filesystem::current_path(std::filesystem::path(output).parent_path());
             EXPECT_EQ(0, edit_mp(cmd.argc(), cmd.argv()));
             std::filesystem::current_path(old);
@@ -127,7 +127,7 @@ protected:
 // Test: Writing the molecules of a file gives the same molecules
 TEST_F(EditMPTest, RoundTrip)
 {
-    auto input = fileManager().getInputFilePath("molprop/molprop.xml");
+    const auto input = fileManager().getInputFilePath("molprop/molprop.xml");
     auto ref   = read(input);
     auto mps   = run({ input });
     ASSERT_EQ(ref.size(), mps.size());
@@ -143,15 +143,15 @@ TEST_F(EditMPTest, RoundTrip)
 // Test: Molecules of different files are combined, sorted by name
 TEST_F(EditMPTest, MergeFiles)
 {
-    auto first  = fileManager().getInputFilePath("molprop/molprop.xml");
-    auto second = fileManager().getInputFilePath("molprop/booze-mono.xml");
-    auto mps    = run({ first, second });
+    const auto first  = fileManager().getInputFilePath("molprop/molprop.xml");
+    const auto second = fileManager().getInputFilePath("molprop/booze-mono.xml");
+    const auto mps    = run({ first, second });
     std::vector<std::string> names;
     for (const auto &mp : mps)
     {
         names.push_back(mp.getMolname());
     }
-    std::vector<std::string> expected = { "1-butanol", "acetone", "ethanol", "methanol", "water" };
+    const std::vector<std::string> expected = { "1-butanol", "acetone", "ethanol", "methanol", "water" };
     EXPECT_EQ(expected, names);
 }
 
@@ -159,9 +159,9 @@ TEST_F(EditMPTest, MergeFiles)
 // experiments of both
 TEST_F(EditMPTest, MergeDuplicates)
 {
-    auto input = fileManager().getInputFilePath("molprop/molprop.xml");
-    auto ref   = experiments(read(input));
-    auto mps   = run({ input, input });
+    const auto input = fileManager().getInputFilePath("molprop/molprop.xml");
+    const auto ref   = experiments(read(input));
+    const auto mps   = run({ input, input });
     auto n     = experiments(mps);
     ASSERT_EQ(ref.size(), mps.size());
     for (const auto &r : ref)
@@ -174,12 +174,12 @@ TEST_F(EditMPTest, MergeDuplicates)
 // the log file, and the output has all their data
 TEST_F(EditMPTest, CheckWithForceField)
 {
-    auto input = fileManager().getInputFilePath("molprop/molprop.xml");
-    auto mps   = run({ input }, { { "-ff", fileManager().getInputFilePath("forcefields/ACS-g1.xml") } });
+    const auto input = fileManager().getInputFilePath("molprop/molprop.xml");
+    const auto mps   = run({ input }, { { "-ff", fileManager().getInputFilePath("forcefields/ACS-g1.xml") } });
     // Checking does not change the compounds
     EXPECT_EQ(read(input).size(), mps.size());
     EXPECT_EQ(experiments(read(input)), experiments(mps));
-    std::ifstream     in(log_);
+    const std::ifstream in(log_);
     std::stringstream text;
     text << in.rdbuf();
     EXPECT_NE(std::string::npos, text.str().find("Force field file")) << text.str();
@@ -189,9 +189,9 @@ TEST_F(EditMPTest, CheckWithForceField)
 // compound that has them, the range is reported in the log file
 TEST_F(EditMPTest, EnergyHistogram)
 {
-    auto input = fileManager().getInputFilePath("molprop/hf-hf.xml");
+    const auto input = fileManager().getInputFilePath("molprop/hf-hf.xml");
     run({ input }, { { "-ehisto", "" } });
-    auto histo = std::filesystem::path(fileManager().getTemporaryFilePath("out.xml")).parent_path() /
+    const auto histo = std::filesystem::path(fileManager().getTemporaryFilePath("out.xml")).parent_path() /
         "hydrogen-fluoride#hydrogen-fluoride-InteractionEnergy.xvg";
     std::ifstream in(histo);
     ASSERT_TRUE(in.good()) << histo;
@@ -212,7 +212,7 @@ TEST_F(EditMPTest, EnergyHistogram)
     // Each energy is counted in one bin
     EXPECT_GT(npoints, 0);
     EXPECT_GT(total, 0);
-    std::ifstream     logIn(log_);
+    const std::ifstream logIn(log_);
     std::stringstream text;
     text << logIn.rdbuf();
     EXPECT_NE(std::string::npos, text.str().find("Range of energies for hydrogen-fluoride#hydrogen-fluoride")) << text.str();

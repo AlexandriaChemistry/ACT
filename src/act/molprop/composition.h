@@ -68,7 +68,7 @@ class AtomNum
         int         cnumber_;
     public:
         //! Default constructor
-        AtomNum() {};
+        AtomNum() = default;
 
         /*! \brief
          * Creates a new AtomNum object.
@@ -141,7 +141,7 @@ class MolecularComposition
         std::vector<AtomNum> atomnum_;
     public:
         //! Defult constructor
-        MolecularComposition() {}
+        MolecularComposition() = default;
 
         /*! \brief
          * Creates a new MolecularComposition object.
@@ -281,7 +281,7 @@ private:
 
 public:
     //! Default constructor
-    CalcAtom() {}
+    CalcAtom() = default;
     
     //! Constructor initiating the name, type and atomid
     CalcAtom(const std::string &name,
@@ -321,7 +321,7 @@ public:
      */
     double charge(const std::string &type) const
     {
-        auto qq = q_.find(type);
+        const auto qq = q_.find(type);
         if (q_.end() == qq)
         {
             GMX_THROW(gmx::InvalidInputError(gmx::formatString("No charge of type %s", type.c_str()).c_str()));

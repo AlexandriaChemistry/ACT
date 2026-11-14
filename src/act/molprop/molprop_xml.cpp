@@ -292,7 +292,7 @@ static void fillMaps()
 //! Check whether parameter is empty
 static bool NN(const std::map<MolPropXml, std::string> *xbuf, MolPropXml index)
 {
-    auto ptr = xbuf->find(index);
+    const auto ptr = xbuf->find(index);
     return (xbuf->end() != ptr) && !ptr->second.empty();
 }
 
@@ -303,7 +303,7 @@ static bool xmlFound(const std::map<MolPropXml, std::string> *xbuf,
     bool found = true;
     for(auto &ind : index)
     {
-        auto ptr = xbuf->find(ind);
+        const auto ptr = xbuf->find(ind);
         found = found && (xbuf->end() != ptr) && !ptr->second.empty();
     }
     return found;
@@ -312,10 +312,10 @@ static bool xmlFound(const std::map<MolPropXml, std::string> *xbuf,
 //! \brief Extract double from xml buffer map or crash
 static double xbuf_atof(const std::map<MolPropXml, std::string> *xbuf, MolPropXml index, bool crash)
 {
-    auto ptr = xbuf->find(index);
+    const auto ptr = xbuf->find(index);
     if (ptr != xbuf->end())
     {
-        return my_atof(ptr->second.c_str(), rmap[index].c_str());
+        return my_atof(ptr->second, rmap[index]);
     }
     if (crash)
     {
@@ -328,10 +328,10 @@ static double xbuf_atof(const std::map<MolPropXml, std::string> *xbuf, MolPropXm
 //! \brief Extract int from xml buffer map or crash
 static int xbuf_atoi(const std::map<MolPropXml, std::string> *xbuf, MolPropXml index, bool crash)
 {
-    auto ptr = xbuf->find(index);
+    const auto ptr = xbuf->find(index);
     if (ptr != xbuf->end())
     {
-        return my_atoi(ptr->second.c_str(), rmap[index].c_str());
+        return my_atoi(ptr->second, rmap[index]);
     }
     if (crash)
     {
@@ -348,13 +348,13 @@ static void get_attributes(MsgHandler                        *msg_handler,
 {
     while (attr != nullptr)
     {
-        std::string attrname(reinterpret_cast<const char *>(attr->name));
-        std::string attrval(reinterpret_cast<const char *>(attr->children->content));
+        const std::string attrname(reinterpret_cast<const char *>(attr->name));
+        const std::string attrval(reinterpret_cast<const char *>(attr->children->content));
 
-        auto  iter = xmlxxx.find(attrname);
+        const auto iter = xmlxxx.find(attrname);
         if (iter != xmlxxx.end() && !attrval.empty())
         {
-            auto ptr = xbuf->find(iter->second);
+            const auto ptr = xbuf->find(iter->second);
             if (xbuf->end() == ptr)
             {
                 xbuf->insert({iter->second, attrval});
@@ -377,7 +377,7 @@ static void get_attributes(MsgHandler                        *msg_handler,
 static void get_molecule_attributes(std::map<MolPropXml, std::string> *xbuf,
                                     MolProp                           *mp)
 {
-    auto ff = xbuf->find(MolPropXml::MOLNAME);
+    const auto ff = xbuf->find(MolPropXml::MOLNAME);
     if (xbuf->end() != ff)
     {
         mp->SetMolname(ff->second);
@@ -421,7 +421,7 @@ static void clean_xbuf(std::map<MolPropXml, std::string> *xbuf,
 {
     for (auto &mpx : clean)
     {
-        auto ff = xbuf->find(mpx);
+        const auto ff = xbuf->find(mpx);
         if (xbuf->end() != ff)
         {
             xbuf->erase(ff);
@@ -433,7 +433,7 @@ static void clean_xbuf(std::map<MolPropXml, std::string> *xbuf,
 static void get_harmonics(std::map<MolPropXml, std::string> *xbuf,
                           Experiment                        *last)
 {
-    std::vector<MolPropXml> clean1 = {
+    const std::vector<MolPropXml> clean1 = {
         MolPropXml::FREQUENCY,
         MolPropXml::INTENSITY
     };
@@ -483,9 +483,9 @@ static void mp_process_tree(MsgHandler                        *msg_handler,
                             std::vector<MolProp>              *molprops,
                             std::map<MolPropXml, std::string> *xbuf)
 {
-    auto xmltype = xmltypes();
-    std::string qm_type("electronic");
-    std::string exp_type("experiment");
+    const auto &xmltype = xmltypes();
+    const std::string qm_type("electronic");
+    const std::string exp_type("experiment");
     while (tree != nullptr)
     {
         if (msg_handler)
@@ -504,7 +504,7 @@ static void mp_process_tree(MsgHandler                        *msg_handler,
         }
         if (tree->type == XML_ELEMENT_NODE)
         {
-            auto iter = xmlxxx.find((const char *)tree->name);
+            const auto iter = xmlxxx.find((const char *)tree->name);
             if (iter != xmlxxx.end())
             {
                 MolPropXml elem = iter->second;
@@ -519,7 +519,7 @@ static void mp_process_tree(MsgHandler                        *msg_handler,
                 get_attributes(msg_handler, tree->properties, xbuf);
                 
                 MolProp *mpt = nullptr;
-                if (molprops->size() > 0)
+                if (!molprops->empty())
                 {
                     mpt = &(molprops->back());
                 }
@@ -547,7 +547,7 @@ static void mp_process_tree(MsgHandler                        *msg_handler,
                     break;
                 case MolPropXml::FRAGMENT:
                     {
-                        std::vector<MolPropXml> clean1 = {
+                        const std::vector<MolPropXml> clean1 = {
                             MolPropXml::CHARGE, MolPropXml::MULTIPLICITY,
                             MolPropXml::MASS,   MolPropXml::FRAGMENT,
                             MolPropXml::FORMULA
@@ -558,7 +558,7 @@ static void mp_process_tree(MsgHandler                        *msg_handler,
                             std::vector<int> atoms;
                             for(auto &ss : gmx::splitString(xbuf->find(MolPropXml::FRAGMENT)->second))
                             {
-                                atoms.push_back(my_atoi(ss.c_str(), rmap[MolPropXml::FRAGMENT].c_str())-1);
+                                atoms.push_back(my_atoi(ss, rmap[MolPropXml::FRAGMENT])-1);
                             }
                             mpt->addFragment(Fragment(xbuf->find(MolPropXml::IDENTIFIER)->second,
                                                       xbuf_atof(xbuf, MolPropXml::MASS, true),
@@ -577,7 +577,7 @@ static void mp_process_tree(MsgHandler                        *msg_handler,
                     break;
                 case MolPropXml::HARMONICS:
                     {
-                        std::vector<MolPropXml> clean1 = {
+                        const std::vector<MolPropXml> clean1 = {
                             MolPropXml::FREQUENCY_UNIT,
                             MolPropXml::INTENSITY_UNIT
                         };
@@ -606,7 +606,7 @@ static void mp_process_tree(MsgHandler                        *msg_handler,
                     break;
                 case MolPropXml::CATEGORY:
                     {
-                        auto ff = xbuf->find(MolPropXml::CATNAME);
+                        const auto ff = xbuf->find(MolPropXml::CATNAME);
                         if (xbuf->end() != ff)
                         {
                             mpt->AddCategory(ff->second);
@@ -617,16 +617,16 @@ static void mp_process_tree(MsgHandler                        *msg_handler,
                     break;
                 case MolPropXml::POLARIZABILITY:
                     {
-                        std::vector<MolPropXml> clean1 = {
+                        const std::vector<MolPropXml> clean1 = {
                             MolPropXml::TYPE, MolPropXml::UNIT, MolPropXml::TEMPERATURE
                         };
                         if ((nullptr != last) && xmlFound(xbuf, clean1))
                         {
                             mp_process_tree(msg_handler, tree->children, molprops, xbuf);
-                            std::vector<MolPropXml> clean2 = {
+                            const std::vector<MolPropXml> clean2 = {
                                 MolPropXml::AVERAGE, MolPropXml::ERROR
                             };
-                            std::vector<MolPropXml> clean3 = {
+                            const std::vector<MolPropXml> clean3 = {
                                 MolPropXml::qXX, MolPropXml::qYY, MolPropXml::qZZ
                             };
                             mp_process_tree(msg_handler, tree->children, molprops, xbuf);
@@ -641,13 +641,13 @@ static void mp_process_tree(MsgHandler                        *msg_handler,
                     break;
                 case MolPropXml::POTENTIAL:
                     {
-                        std::vector<MolPropXml> clean1 = {
+                        const std::vector<MolPropXml> clean1 = {
                             MolPropXml::X_UNIT, MolPropXml::V_UNIT, MolPropXml::ESPID
                         };
                         if ((nullptr != last) && xmlFound(xbuf, clean1))
                         {
                             mp_process_tree(msg_handler, tree->children, molprops, xbuf);
-                            std::vector<MolPropXml> clean2 = {
+                            const std::vector<MolPropXml> clean2 = {
                                 MolPropXml::dX, MolPropXml::dY, MolPropXml::dZ, MolPropXml::dV
                             };
                             if (xmlFound(xbuf, clean2))
@@ -709,9 +709,9 @@ static void mp_process_tree(MsgHandler                        *msg_handler,
                         NN(xbuf, MolPropXml::AJ) &&
                         NN(xbuf, MolPropXml::BONDORDER))
                     {
-                        Bond b(xbuf_atoi(xbuf, MolPropXml::AI, true)-1, 
-                               xbuf_atoi(xbuf, MolPropXml::AJ, true)-1,
-                               xbuf_atof(xbuf, MolPropXml::BONDORDER, true));
+                        const Bond b(xbuf_atoi(xbuf, MolPropXml::AI, true)-1, 
+                                     xbuf_atoi(xbuf, MolPropXml::AJ, true)-1,
+                                     xbuf_atof(xbuf, MolPropXml::BONDORDER, true));
                         mpt->AddBond(b);
                         clean_xbuf(xbuf, { MolPropXml::AI, MolPropXml::AJ, MolPropXml::BONDORDER });
                     }
@@ -723,7 +723,7 @@ static void mp_process_tree(MsgHandler                        *msg_handler,
                         {
                             mp_process_tree(msg_handler, tree->children, molprops, xbuf);
                         }
-                        std::vector<MolPropXml> clean1 = {
+                        const std::vector<MolPropXml> clean1 = {
                             MolPropXml::TYPE, MolPropXml::UNIT,
                             /*MolPropXml::ENERGY,*/ MolPropXml::TEMPERATURE,
                             MolPropXml::PHASE, MolPropXml::AVERAGE 
@@ -759,7 +759,7 @@ static void mp_process_tree(MsgHandler                        *msg_handler,
 
                 case MolPropXml::ATOM:
                     {
-                        std::vector<MolPropXml> clean0 = {
+                        const std::vector<MolPropXml> clean0 = {
                             MolPropXml::NAME, MolPropXml::OBTYPE, MolPropXml::ATOMID
                         };
                         if ((nullptr != last) && xmlFound(xbuf, clean0))
@@ -770,7 +770,7 @@ static void mp_process_tree(MsgHandler                        *msg_handler,
                             clean_xbuf(xbuf, clean0);
                             mp_process_tree(msg_handler, tree->children, molprops, xbuf);
                         
-                            std::vector<MolPropXml> clean1 = {
+                            const std::vector<MolPropXml> clean1 = {
                                 MolPropXml::dX, MolPropXml::dY, 
                                 MolPropXml::dZ, MolPropXml::X_UNIT
                             };
@@ -782,7 +782,7 @@ static void mp_process_tree(MsgHandler                        *msg_handler,
                                              xbuf_atof(xbuf, MolPropXml::dZ, true));
                                 clean_xbuf(xbuf, clean1);
                             }
-                            std::vector<MolPropXml> clean3 = {
+                            const std::vector<MolPropXml> clean3 = {
                                 MolPropXml::fX, MolPropXml::fY, 
                                 MolPropXml::fZ, MolPropXml::F_UNIT
                             };
@@ -923,7 +923,7 @@ static void add_properties(xmlNodePtr        exp,
         auto mpo = props.first;
         for (auto &prop : props.second)
         {
-            std::string outUnit(mpo_unit2(mpo));
+            const std::string outUnit(mpo_unit2(mpo));
             double      fac = convertFromGromacs(1, outUnit);
             switch(mpo)
             {
@@ -1033,14 +1033,14 @@ static void add_properties(xmlNodePtr        exp,
             case MolPropObservable::POTENTIAL:
                 {
                     ElectrostaticPotential *eprop  = static_cast<ElectrostaticPotential *>(prop.get());
-                    auto                    x_unit = eprop->getXYZunit();
-                    auto                    v_unit = eprop->getVunit();
+                    const auto              x_unit = eprop->getXYZunit();
+                    const auto              v_unit = eprop->getVunit();
                     auto                    espid  = eprop->espid();
                     auto                    xyz    = eprop->xyz();
                     auto                    V      = eprop->V();
 
-                    std::string x_unitOut("pm");
-                    std::string V_unitOut("Hartree/e");
+                    const std::string x_unitOut("pm");
+                    const std::string V_unitOut("Hartree/e");
                     double xfac = convertFromGromacs(1.0, x_unitOut);
                     double Vfac = convertFromGromacs(1.0, V_unitOut);
                     
@@ -1132,7 +1132,7 @@ static void add_xml_molprop(xmlNodePtr     parent,
             (void) add_xml_child_val(grandchild, rmap[MolPropXml::dY], gmx::formatString("%g", y).c_str());
             (void) add_xml_child_val(grandchild, rmap[MolPropXml::dZ], gmx::formatString("%g", z).c_str());
 
-            auto f_unit = ca.forceUnit();
+            const auto &f_unit = ca.forceUnit();
             if (!f_unit.empty())
             {
                 add_xml_string(grandchild, rmap[MolPropXml::F_UNIT], f_unit);
