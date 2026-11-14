@@ -106,17 +106,7 @@ void testCoulomb(alexandria::ChargeDistributionType           cd,
     std::vector<double> ncoulomb(np);
     std::vector<double> nforce(np);
     double dx = 0.002;
-    if (false)
-    {
-    if (izeta == 0)
-    {
-        irow = 0;
-    }
-    if (jzeta == 0)
-    {
-        jrow = 0;
-    }
-    }
+
     for(int i = 0; i <= np-1; i++)
     {
         double r = dx*i;
@@ -197,7 +187,7 @@ class SlaterTest : public ::testing::TestWithParam<std::tuple<std::tuple<int, in
         SlaterTest () : checker_(refData_.rootChecker())
         {
             double toler     = 2e-2;
-            auto   tolerance = gmx::test::relativeToleranceAsFloatingPoint(1.0, toler);
+            const auto tolerance = gmx::test::relativeToleranceAsFloatingPoint(1.0, toler);
             checker_.setDefaultTolerance(tolerance);
             irow_ = std::get<0>(std::get<0>(GetParam()));
             jrow_ = std::get<1>(std::get<0>(GetParam()));
@@ -221,7 +211,7 @@ class GaussianTest : public ::testing::TestWithParam<std::tuple<double, double> 
         GaussianTest () : checker_(refData_.rootChecker())
         {
             double toler     = 1e-5;
-            auto   tolerance = gmx::test::relativeToleranceAsFloatingPoint(1.0, toler);
+            const auto tolerance = gmx::test::relativeToleranceAsFloatingPoint(1.0, toler);
             checker_.setDefaultTolerance(tolerance);
             xi_   = std::get<0>(GetParam());
             xj_   = std::get<1>(GetParam());
@@ -236,7 +226,7 @@ class GaussianTest : public ::testing::TestWithParam<std::tuple<double, double> 
 TEST (SlaterNN, rzero)
 {
     double toler = 1e-8;
-    std::vector<double> zeta = { 1, 2, 3, 4, 5 };
+    const std::vector<double> zeta = { 1, 2, 3, 4, 5 };
     for (const auto z : zeta)
     {
         for (int i : { 1, 2, 3 } )
@@ -251,7 +241,7 @@ TEST (SlaterNN, rzero)
 TEST (SlaterSS, rzero_xizero)
 {
     double toler = 1e-8;
-    std::vector<double> zeta = { 1, 2, 3, 4, 5 };
+    const std::vector<double> zeta = { 1, 2, 3, 4, 5 };
     for (const auto z : zeta)
     {
         for (int i : { 1, 2, 3 } )
@@ -283,7 +273,7 @@ TEST (SlaterNN, rnonzero)
         double r, z, math;
     } nrzmath;
     // Analytical results from Mathematica
-    std::vector<nrzmath> nrzm = 
+    const std::vector<nrzmath> nrzm = 
         { { 1, 0.1, 5, 4.48181 },
           { 1, 0.2, 5, 3.64665 },
           { 1, 0.1, 3, 2.86545 },
@@ -415,7 +405,7 @@ TEST_P (SlaterPhysicsTest, All)
     // since the error of second order would be up to 3e-5 for the third
     // row with large widths at short distances.
     double h       = 1e-4;
-    auto   numeric = [h](auto f, double r)
+    const auto numeric = [h](auto f, double r)
     {
         return (8*(f(r+h) - f(r-h)) - (f(r+2*h) - f(r-2*h)))/(12*h);
     };
