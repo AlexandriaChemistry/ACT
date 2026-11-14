@@ -263,6 +263,31 @@ def equals_default(text, replacements):
     return [(start, offset + length - start, b" = default;")]
 
 
+def realign(text, fix):
+    """Keep the lines that continue the statement of a fix aligned with it:
+    the arguments of a call or the parameters of a declaration move by what
+    the fix changes before them on the first line, e.g. when push_back(Bond(
+    becomes emplace_back( or virtual is removed."""
+    first = min(offset for offset, _, _ in fix)
+    first_line_end = text.find(b"\n", first)
+    end = statement_end(text, first)
+    if first_line_end < 0 or end is None or end < first_line_end:
+        return fix
+    delta = sum(len(new) - length for offset, length, new in fix if offset < first_line_end)
+    first_column = first - line_start(text, first)
+    if delta != 0:
+        for line in continuation_lines(text, first, end):
+            spaces = len(indentation(text, line))
+            if (text[line:line + 1] in (b"\n", b"") or spaces <= first_column or
+                b"{" in continuation_lines.stack[line]):
+                continue
+            if delta > 0:
+                fix.append((line, 0, b" " * delta))
+            else:
+                fix.append((line, min(-delta, spaces - first_column - 1), b""))
+    return fix
+
+
 def emplace(text, replacements):
     """Remove the spaces inside the braces that modernize-use-emplace removes,
     such that push_back({ a, b }) becomes emplace_back(a, b)."""
@@ -277,25 +302,45 @@ def emplace(text, replacements):
                 offset -= 1
                 length += 1
         fix.append((offset, length, new))
-    # The arguments on the lines that continue the call are aligned with the
-    # first one, which moves by what changes before it on the first line
-    first = min(offset for offset, _, _ in fix)
-    first_line_end = text.find(b"\n", first)
-    end = statement_end(text, first)
-    if first_line_end < 0 or end is None or end < first_line_end:
-        return fix
-    delta = sum(len(new) - length for offset, length, new in fix if offset < first_line_end)
-    call_column = first - line_start(text, first)
-    if delta != 0:
-        for line in continuation_lines(text, first, end):
-            spaces = len(indentation(text, line))
-            if text[line:line + 1] in (b"\n", b"") or spaces <= call_column:
-                continue
-            if delta > 0:
-                fix.append((line, 0, b" " * delta))
-            else:
-                fix.append((line, min(-delta, spaces - call_column - 1), b""))
+    return realign(text, fix)
+
+
+def reference(text, replacements):
+    """Write the & that makes a variable a reference in front of the name, as
+    in const auto &x, taking the place of a space of the padding of aligned
+    declarations."""
+    fix = []
+    for offset, length, new in replacements:
+        if length == 0 and new == b"&":
+            spaces = 0
+            while text[offset + spaces:offset + spaces + 1] == b" ":
+                spaces += 1
+            if spaces == 1:
+                offset += 1
+            elif spaces > 1:
+                offset, length = offset + spaces - 1, 1
+        fix.append((offset, length, new))
     return fix
+
+
+def delete_null_pointer(text, replacements):
+    """Replace the if statement around a delete, with its braces, by the
+    delete statement on a line of its own, indented as the if was. None if
+    the if does not have that form."""
+    first = min(offset for offset, _, _ in replacements)
+    last = max(offset + length for offset, length, _ in replacements)
+    start = line_start(text, first)
+    if not text[start:first].strip() == b"":
+        return None
+    match = re.compile(rb"\s*if\s*\([^;{}]*\)\s*\{?\s*(delete(?:\s*\[\s*\])?\s[^;{}]*;)\s*\}?").match(text, start)
+    if match is None or match.end() < last:
+        return None
+    end = match.end()
+    if text[end:end + 1] == b"\n":
+        end += 1
+    else:
+        return None
+    return [(start, end - start, indentation(text, start) + match.group(1) + b"\n")]
 
 
 def layout(name, text, diag_offset, replacements):
@@ -309,6 +354,12 @@ def layout(name, text, diag_offset, replacements):
         return fix if fix is not None else replacements
     if name == "modernize-use-emplace":
         return emplace(text, replacements)
+    if name == "modernize-use-override":
+        return realign(text, list(replacements))
+    if name in ("performance-unnecessary-copy-initialization", "performance-for-range-copy"):
+        return reference(text, replacements)
+    if name == "readability-delete-null-pointer":
+        return delete_null_pointer(text, replacements)
     return replacements
 
 
