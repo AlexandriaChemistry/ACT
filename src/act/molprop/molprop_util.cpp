@@ -37,7 +37,6 @@
 #include <algorithm>
 #include <cstdio>
 #include <map>
-#include <set>
 #include <string>
 #include <utility>
 
@@ -190,18 +189,18 @@ void merge_xml(MsgHandler                             *msg_handler,
            mpBefore, mpout->size());
 }
 
-/*! \brief The atoms of the first experiment of a molecule that has atoms
- * After MolProp::validate all experiments have their atoms in this order.
+/*! \brief The first experiment of a molecule that has atoms
+ * After MolProp::validate all experiments have their atoms in its order.
  * \param[in] mp The molecule
- * \return The atoms, empty if none
+ * \return The experiment, nullptr if none
  */
-static const std::vector<CalcAtom> *referenceAtoms(const MolProp &mp)
+static const Experiment *referenceExperiment(const MolProp &mp)
 {
     for (const auto &ex : mp.experimentConst())
     {
         if (ex.NAtom() > 0)
         {
-            return &ex.calcAtomConst();
+            return &ex;
         }
     }
     return nullptr;
@@ -237,15 +236,21 @@ size_t validateMolProps(MsgHandler *msghandler, std::vector<MolProp> *mps)
             nproblem += 1;
         }
     }
-    // The order of the atoms of each compound, by InChI, where it occurs first
-    std::map<std::string, std::pair<std::string, std::string>> compounds;
+    // The order of the atoms of each compound, by InChI, and the molecule
+    // and data file where it occurs first
+    struct FirstOccurrence
+    {
+        std::string molecule, datafile, order;
+    };
+    std::map<std::string, FirstOccurrence> compounds;
     for (const auto &mp : *mps)
     {
-        const auto atoms = referenceAtoms(mp);
-        if (!atoms)
+        const auto ref = referenceExperiment(mp);
+        if (!ref)
         {
             continue;
         }
+        const auto *atoms = &ref->calcAtomConst();
         for (const auto &frag : mp.fragments())
         {
             if (frag.inchi().empty())
@@ -260,27 +265,23 @@ size_t validateMolProps(MsgHandler *msghandler, std::vector<MolProp> *mps)
             const auto first = compounds.find(frag.inchi());
             if (first == compounds.end())
             {
-                compounds.insert({ frag.inchi(), { mp.getMolname(), order } });
+                compounds.insert({ frag.inchi(), { mp.getMolname(), ref->getDatafile(), order } });
             }
-            else if (first->second.second != order)
+            else if (first->second.order != order)
             {
                 nproblem += 1;
                 msghandler->msg(ACTStatus::Error, ACTMessage::InconsistentCompoundOrder,
-                                gmx::formatString("Molecule %s: compound %s has its atoms in the order %s, "
-                                                  "but in molecule %s in the order %s.",
-                                                  mp.getMolname().c_str(),
+                                gmx::formatString("Molecule %s (data file %s): compound %s has its atoms in the order %s, "
+                                                  "but in molecule %s (data file %s) in the order %s.",
+                                                  mp.getMolname().c_str(), ref->getDatafile().c_str(),
                                                   frag.iupac().empty() ? frag.inchi().c_str() : frag.iupac().c_str(),
-                                                  order.c_str(), first->second.first.c_str(),
-                                                  first->second.second.c_str()));
+                                                  order.c_str(), first->second.molecule.c_str(),
+                                                  first->second.datafile.c_str(), first->second.order.c_str()));
             }
         }
     }
-    // Dimers A#B that occur as B#A too, and fragments in the order B, A
-    std::set<std::string> names;
-    for (const auto &mp : *mps)
-    {
-        names.insert(mp.getMolname());
-    }
+    // Dimers A#B with their fragments in the order B, A. A file may have
+    // both A#B and B#A, for instance with another hydrogen bond donor.
     for (const auto &mp : *mps)
     {
         const auto &name = mp.getMolname();
@@ -291,20 +292,15 @@ size_t validateMolProps(MsgHandler *msghandler, std::vector<MolProp> *mps)
         }
         const auto a = name.substr(0, hash);
         const auto b = name.substr(hash + 1);
-        if (a != b && a < b && names.count(b + "#" + a) > 0)
-        {
-            nproblem += 1;
-            msghandler->msg(ACTStatus::Error, ACTMessage::SwappedDimer,
-                            gmx::formatString("Dimer %s occurs as %s#%s as well.",
-                                              name.c_str(), b.c_str(), a.c_str()));
-        }
         const auto &frags = mp.fragments();
         if (a != b && frags.size() == 2 && frags[0].iupac() == b && frags[1].iupac() == a)
         {
             nproblem += 1;
+            const auto ref = referenceExperiment(mp);
             msghandler->msg(ACTStatus::Error, ACTMessage::SwappedDimer,
-                            gmx::formatString("Dimer %s has its fragments in the order %s, %s.",
-                                              name.c_str(), b.c_str(), a.c_str()));
+                            gmx::formatString("Dimer %s (data file %s) has its fragments in the order %s, %s.",
+                                              name.c_str(), ref ? ref->getDatafile().c_str() : "none",
+                                              b.c_str(), a.c_str()));
         }
     }
     return nproblem;

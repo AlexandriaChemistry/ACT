@@ -1589,16 +1589,42 @@ TEST(ValidateMolPropsTest, CompoundOrderDiffers)
     EXPECT_EQ(2u, msghandler.warningCount(ACTMessage::InconsistentCompoundOrder));
 }
 
-// Test: A dimer that occurs as A#B and as B#A
-TEST(ValidateMolPropsTest, DimerInBothOrders)
+// Test: A file may have a dimer as A#B and as B#A, for instance with another
+// hydrogen bond donor, as long as each is consistent
+TEST(ValidateMolPropsTest, DimerInBothOrdersIsOk)
 {
     auto mps = makeMolecules({ { "water#methanol", { water, methanol } },
-                                 { "methanol#water", { methanol, water } } });
+                               { "methanol#water", { methanol, water } } });
     MsgHandler msghandler;
     msghandler.setPrintLevel(ACTStatus::Fatal);
-    EXPECT_EQ(1u, validateMolProps(&msghandler, &mps));
-    EXPECT_EQ(1u, msghandler.warningCount(ACTMessage::SwappedDimer));
+    EXPECT_EQ(0u, validateMolProps(&msghandler, &mps));
+    EXPECT_TRUE(msghandler.ok());
+    EXPECT_EQ(0u, msghandler.warningCount(ACTMessage::SwappedDimer));
     EXPECT_EQ(0u, msghandler.warningCount(ACTMessage::InconsistentCompoundOrder));
+}
+
+// Test: An experiment of water#methanol with the atoms in the order of
+// methanol#water is removed with a message that names its data file
+TEST(ValidateMolPropsTest, ExperimentInSwappedOrder)
+{
+    auto mps     = makeMolecules({ { "water#methanol", { water, methanol } } });
+    auto swapped = makeMolecules({ { "methanol#water", { methanol, water } } });
+    // The experiment of the swapped dimer, with another data file
+    Experiment exp("ref", "min");
+    exp.setDatafile("swapped.log");
+    for (const auto &ca : swapped[0].experimentConst()[0].calcAtomConst())
+    {
+        exp.AddAtom(ca);
+    }
+    mps[0].AddExperiment(std::move(exp));
+    ASSERT_EQ(2u, mps[0].experimentConst().size());
+    MsgHandler msghandler;
+    msghandler.setPrintLevel(ACTStatus::Fatal);
+    EXPECT_EQ(0u, validateMolProps(&msghandler, &mps));
+    EXPECT_EQ(1u, msghandler.warningCount(ACTMessage::SwappedDimer));
+    // Only the summary of the experiments removed
+    EXPECT_EQ(1u, msghandler.warningCount(ACTMessage::InconsistentAtomOrder));
+    EXPECT_EQ(1u, mps[0].experimentConst().size());
 }
 
 // Test: A dimer water#methanol with the fragments of methanol#water

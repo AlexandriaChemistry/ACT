@@ -37,5 +37,5 @@
   <String Name="34">Inconsistent atom order across experiments</String>
   <String Name="35">Bond between atoms in different fragments</String>
   <String Name="36">Compound with its atoms in different orders</String>
-  <String Name="37">Dimer with its monomers in both orders</String>
+  <String Name="37">Dimer with its monomers in swapped order</String>
 </ReferenceData>

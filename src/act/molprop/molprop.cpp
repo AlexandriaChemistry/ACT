@@ -151,6 +151,42 @@ static bool formula2comp(const std::string &formula, std::map<std::string, int> 
     return !comp->empty();
 }
 
+std::string MolProp::fragmentName(size_t f) const
+{
+    if (f >= fragment_.size())
+    {
+        return "";
+    }
+    const auto &frag = fragment_[f];
+    return !frag.iupac().empty() ? frag.iupac() : (!frag.formula().empty() ? frag.formula() : frag.inchi());
+}
+
+bool MolProp::swappedFragments(const std::vector<CalcAtom> &atoms,
+                               const std::vector<CalcAtom> &refAtoms) const
+{
+    if (fragment_.size() != 2 || atoms.size() != refAtoms.size())
+    {
+        return false;
+    }
+    // The atoms of the reference with the second fragment first
+    std::vector<int> order(fragment_[1].atoms());
+    order.insert(order.end(), fragment_[0].atoms().begin(), fragment_[0].atoms().end());
+    if (order.size() != atoms.size())
+    {
+        return false;
+    }
+    for (size_t i = 0; i < order.size(); i++)
+    {
+        if (order[i] < 0 || static_cast<size_t>(order[i]) >= refAtoms.size() ||
+            atoms[i].getName()   != refAtoms[order[i]].getName() ||
+            atoms[i].getObtype() != refAtoms[order[i]].getObtype())
+        {
+            return false;
+        }
+    }
+    return true;
+}
+
 bool MolProp::validate(MsgHandler *msghandler)
 {
     if (!msghandler)
@@ -231,6 +267,18 @@ bool MolProp::validate(MsgHandler *msghandler)
             if (diff.empty())
             {
                 kept.push_back(std::move(ex));
+            }
+            else if (swappedFragments(atoms, refAtoms))
+            {
+                // A mix-up of the dimer A#B with B#A
+                msghandler->msg(ACTStatus::Warning,
+                                ACTMessage::SwappedDimer,
+                                gmx::formatString("Molecule %s: removing experiment %s, which has the atoms "
+                                                  "of the two fragments in the order of %s#%s, unlike the "
+                                                  "reference experiment %s.",
+                                                  getMolname().c_str(), ex.getDatafile().c_str(),
+                                                  fragmentName(1).c_str(), fragmentName(0).c_str(),
+                                                  refName.c_str()));
             }
             else
             {

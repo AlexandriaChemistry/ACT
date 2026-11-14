@@ -125,7 +125,7 @@ enum class ACTMessage
         InterFragmentBond,
         //! A compound with its atoms in another order than in other molecules
         InconsistentCompoundOrder,
-        //! A dimer A#B that also occurs as B#A, or with its fragments in the order B, A
+        //! A dimer A#B with its fragments or the atoms of an experiment in the order of B#A
         SwappedDimer
     };
 

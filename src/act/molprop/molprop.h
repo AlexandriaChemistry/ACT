@@ -107,6 +107,21 @@ private:
      */
     Experiment *findExperiment(JobType job);
 
+    /*! \brief The name of a fragment: its IUPAC name, formula or InChI
+     * \param[in] f The fragment
+     * \return The name, empty if there is no such fragment
+     */
+    std::string fragmentName(size_t f) const;
+
+    /*! \brief Whether atoms are those of a dimer with its two fragments swapped
+     * \param[in] atoms    The atoms of an experiment
+     * \param[in] refAtoms The atoms of the reference experiment
+     * \return true if the atoms are those of the second fragment followed by
+     *         those of the first, by name and type
+     */
+    bool swappedFragments(const std::vector<CalcAtom> &atoms,
+                          const std::vector<CalcAtom> &refAtoms) const;
+
 public:
     //! Constructor for a MolProp object
     MolProp() = default;
@@ -117,7 +132,8 @@ public:
      * Reports the number of experiments via msghandler at Info level.
      * Removes the experiments with atoms in a different order (name, obtype
      * or atomid) than the reference experiment, from which the topology is
-     * generated, with a warning.
+     * generated, with a warning that names its data file, and says so if
+     * the atoms are those of a dimer A#B in the order of B#A.
      * Reports errors if the atoms of a fragment do not match its formula,
      * for instance in a dimer A#B with the atoms in the order of B#A.
      * For dimers (molecules with exactly two fragments) reports errors if
