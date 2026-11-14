@@ -90,12 +90,12 @@ private:
         {
             H += x_[i]*x_[perm_[i]].transpose();
         }
-        Eigen::JacobiSVD<Eigen::Matrix3d> svd(H, Eigen::ComputeFullU | Eigen::ComputeFullV);
+        const Eigen::JacobiSVD<Eigen::Matrix3d> svd(H, Eigen::ComputeFullU | Eigen::ComputeFullV);
         Eigen::Matrix3d U = svd.matrixU();
-        Eigen::Matrix3d V = svd.matrixV();
+        const Eigen::Matrix3d V = svd.matrixV();
         Eigen::Matrix3d D = Eigen::Matrix3d::Identity();
         D(2, 2)           = (V*U.transpose()).determinant() < 0 ? -1 : 1;
-        Eigen::Matrix3d R = V*D*U.transpose();
+        const Eigen::Matrix3d R = V*D*U.transpose();
         double msd = 0;
         for(size_t i = 0; i < natom_; i++)
         {
@@ -173,7 +173,7 @@ public:
         xcm /= mtot;
         for(size_t i = 0; i < natom_; i++)
         {
-            x_.push_back(Eigen::Vector3d(coords[i][XX], coords[i][YY], coords[i][ZZ]) - xcm);
+            x_.emplace_back(Eigen::Vector3d(coords[i][XX], coords[i][YY], coords[i][ZZ]) - xcm);
         }
         dist_.resize(natom_, std::vector<double>(natom_, 0.0));
         for(size_t i = 0; i < natom_; i++)

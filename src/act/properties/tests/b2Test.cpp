@@ -66,7 +66,7 @@ protected:
     
     SecondVirialTest () : checker_(this->rootChecker())
     {
-        auto tolerance = gmx::test::relativeToleranceAsFloatingPoint(1.0, GMX_DOUBLE ? 1e-10 : 5e-2);
+        const auto tolerance = gmx::test::relativeToleranceAsFloatingPoint(1.0, GMX_DOUBLE ? 1e-10 : 5e-2);
         checker_.setDefaultTolerance(tolerance);
     }
     
@@ -81,7 +81,7 @@ protected:
                 const std::vector<double> &Temperature)
     {
         gmx_output_env_t       *oenv    = nullptr;
-        std::vector<gmx::RVec>  inertia = { { 0, 0, 0 }, { 0, 0, 0 } };
+        const std::vector<gmx::RVec> inertia = { { 0, 0, 0 }, { 0, 0, 0 } };
         
         output_env_init_default(&oenv);
  
@@ -102,7 +102,7 @@ protected:
                 double x = bw*i;
                 double y = 4*eps*(std::pow(sig/x, 12) - std::pow(sig/x, 6));
                 double f = 4*(eps/sig)*(12*std::pow(sig/x, 13) - 6*std::pow(sig/x, 7));
-                gmx::RVec ttt = { 0,0,0 };
+                const gmx::RVec ttt = { 0,0,0 };
                 for(size_t iTemp = 0; iTemp < Temperature.size(); iTemp++)
                 {
                     double beta  = 1.0/(BOLTZ*Temperature[iTemp]);
@@ -115,7 +115,7 @@ protected:
         MsgHandler msghandler;
         if (LJ)
         {
-            std::vector<double> m2 = { mass, mass };
+            const std::vector<double> m2 = { mass, mass };
             std::map<b2Type, std::vector<double>> b2t = {
                 { b2Type::Classical, {} },
                 { b2Type::Force, {} },
@@ -249,8 +249,8 @@ TEST(B2DataTest, HardSpheres)
     double    F2[2]      = { 0, 0 };
     gmx::RVec tau2[2]    = { { 0, 0, 0 }, { 0, 0, 0 } };
     double    sigma      = 0.3;
-    auto      res        = integrateSynthetic(-1, sigma, F2, tau2, { 18, 18 },
-                                              { { 1, 1, 1 }, { 1, 1, 1 } }, 1.0/(BOLTZ*300));
+    const auto res        = integrateSynthetic(-1, sigma, F2, tau2, { 18, 18 },
+                                               { { 1, 1, 1 }, { 1, 1, 1 } }, 1.0/(BOLTZ*300));
     EXPECT_NEAR(2*M_PI*std::pow(sigma, 3)/3, res.classical, 1e-2*2*M_PI*std::pow(sigma, 3)/3);
     EXPECT_EQ(0, res.force);
     EXPECT_EQ(0, res.torque1);
@@ -264,8 +264,8 @@ TEST(B2DataTest, ForceCorrection)
     double    F2[2]   = { 100, 300 };
     gmx::RVec tau2[2] = { { 0, 0, 0 }, { 0, 0, 0 } };
     std::vector<double> mass = { 18, 36 };
-    auto res      = integrateSynthetic(0, 0, F2, tau2, mass,
-                                       { { 1, 1, 1 }, { 1, 1, 1 } }, beta);
+    const auto res      = integrateSynthetic(0, 0, F2, tau2, mass,
+                                             { { 1, 1, 1 }, { 1, 1, 1 } }, beta);
     double expect = 0.5*hbarFactor(beta)*sphereVolume()*(F2[0]/mass[0] + F2[1]/mass[1]);
     EXPECT_NEAR(expect, res.force, integrationTolerance*expect);
 }
@@ -279,13 +279,13 @@ TEST(B2DataTest, TorqueCorrection)
     gmx::RVec tau[2]  = { tau2, tau2 };
     gmx::RVec I       = { 0.006, 0.012, 0.018 };
     // Identical molecules give identical torque corrections
-    auto res     = integrateSynthetic(0, 0, F2, tau, { 18, 18 }, { I, I }, beta);
+    const auto res     = integrateSynthetic(0, 0, F2, tau, { 18, 18 }, { I, I }, beta);
     double expect = hbarFactor(beta)*sphereVolume()*(tau2[XX]/I[XX] + tau2[YY]/I[YY] + tau2[ZZ]/I[ZZ]);
     EXPECT_NEAR(expect, res.torque1, integrationTolerance*expect);
     EXPECT_DOUBLE_EQ(res.torque1, res.torque2);
     // Doubling the moments of inertia of molecule 2 halves its correction
-    gmx::RVec I2  = { 2*I[XX], 2*I[YY], 2*I[ZZ] };
-    auto res2     = integrateSynthetic(0, 0, F2, tau, { 18, 18 }, { I, I2 }, beta);
+    const gmx::RVec I2  = { 2*I[XX], 2*I[YY], 2*I[ZZ] };
+    const auto res2     = integrateSynthetic(0, 0, F2, tau, { 18, 18 }, { I, I2 }, beta);
     EXPECT_DOUBLE_EQ(res.torque1, res2.torque1);
     EXPECT_NEAR(0.5*res.torque2, res2.torque2, 1e-12*res.torque2);
 }
@@ -298,7 +298,7 @@ TEST(B2DataTest, LinearMolecule)
     gmx::RVec tau2    = { 50, 70, 90 };
     gmx::RVec tau[2]  = { tau2, tau2 };
     gmx::RVec I       = { 0, 0.012, 0.012 };
-    auto res      = integrateSynthetic(0, 0, F2, tau, { 44, 44 }, { I, I }, beta);
+    const auto res      = integrateSynthetic(0, 0, F2, tau, { 44, 44 }, { I, I }, beta);
     double expect = hbarFactor(beta)*sphereVolume()*(tau2[YY] + tau2[ZZ])/I[YY];
     EXPECT_TRUE(std::isfinite(res.torque1));
     EXPECT_NEAR(expect, res.torque1, integrationTolerance*expect);
@@ -309,16 +309,16 @@ TEST(B2DataTest, LinearMolecule)
 TEST(B2DataTest, WeightedAverage)
 {
     double    beta    = 1.0/(BOLTZ*300);
-    gmx::RVec tau2    = { 50, 70, 90 };
-    gmx::RVec I       = { 0.006, 0.012, 0.018 };
-    std::vector<double>    mass    = { 18, 18 };
-    std::vector<gmx::RVec> inertia = { I, I };
+    const gmx::RVec tau2    = { 50, 70, 90 };
+    const gmx::RVec I       = { 0.006, 0.012, 0.018 };
+    const std::vector<double> mass    = { 18, 18 };
+    const std::vector<gmx::RVec> inertia = { I, I };
     // A Mayer function of -1 with weight 3 and of 0 with weight 1 below
     // 0.3 nm, the same as -0.75 with weight one.
     int    nbins = 1001;
     double bw    = 0.001;
     B2Data weighted(nbins, { 300 }), single(nbins, { 300 });
-    gmx::RVec zero = { 0, 0, 0 };
+    const gmx::RVec zero = { 0, 0, 0 };
     for(int i = 0; i < nbins; i++)
     {
         double r = i*bw;
@@ -343,9 +343,9 @@ TEST(B2DataTest, WeightedAverage)
 static void testAddOrientation(bool inOrder)
 {
     std::vector<double>    temperatures = { 250, 400, 600 };
-    std::vector<double>    mass         = { 18, 18 };
-    gmx::RVec              I            = { 0.006, 0.012, 0.018 };
-    std::vector<gmx::RVec> inertia      = { I, I };
+    const std::vector<double> mass         = { 18, 18 };
+    const gmx::RVec        I            = { 0.006, 0.012, 0.018 };
+    const std::vector<gmx::RVec> inertia      = { I, I };
     int    nbins = 501;
     double bw    = 0.002;
     B2Data byDimer(nbins, temperatures), byOrientation(nbins, temperatures);
@@ -370,7 +370,7 @@ static void testAddOrientation(bool inOrder)
             for(int kk = 0; kk < 2; kk++)
             {
                 force2[kk].push_back((1 + kk + orient)*std::pow(sr, 14));
-                torque[kk].push_back({ static_cast<real>((1.0+kk)*sr), static_cast<real>(-0.5*sr*sr), static_cast<real>(orient*sr) });
+                torque[kk].emplace_back(static_cast<real>((1.0+kk)*sr), static_cast<real>(-0.5*sr*sr), static_cast<real>(orient*sr));
             }
         }
         byOrientation.addOrientation(index, dist, energy, force2, torque, weight);
@@ -428,9 +428,9 @@ TEST(B2DataTest, AddOrientationPermuted)
 TEST(B2DataTest, MayerAtShortestDistance)
 {
     double    beta = 1.0/(BOLTZ*300);
-    gmx::RVec zero = { 0, 0, 0 };
-    std::vector<double>    mass    = { 18, 18 };
-    std::vector<gmx::RVec> inertia = { { 1, 1, 1 }, { 1, 1, 1 } };
+    const gmx::RVec zero = { 0, 0, 0 };
+    const std::vector<double> mass    = { 18, 18 };
+    const std::vector<gmx::RVec> inertia = { { 1, 1, 1 }, { 1, 1, 1 } };
     int    nbins = 11;
     B2Data hard(nbins, { 300 }), soft(nbins, { 300 });
     EXPECT_EQ(-1, hard.mayerAtShortestDistance(0));
@@ -459,9 +459,9 @@ TEST(B2DataTest, MayerAtShortestDistance)
 TEST(B2DataTest, ManyOrientations)
 {
     std::vector<double>    temperatures = { 250, 400, 600 };
-    std::vector<double>    mass         = { 18, 18 };
-    gmx::RVec              I            = { 0.006, 0.012, 0.018 };
-    std::vector<gmx::RVec> inertia      = { I, I };
+    const std::vector<double> mass         = { 18, 18 };
+    const gmx::RVec        I            = { 0.006, 0.012, 0.018 };
+    const std::vector<gmx::RVec> inertia      = { I, I };
     int    nbins = 101;
     double bw    = 0.01;
     double eMin  = -40;
@@ -469,7 +469,7 @@ TEST(B2DataTest, ManyOrientations)
     B2Data byDimer(nbins, temperatures, eMin);
     B2Data copy(1, temperatures, eMin), copyEach(1, temperatures, eMin);
     unsigned int seed = 1993;
-    auto random = [&seed]()
+    const auto random = [&seed]()
     {
         seed = 1103515245*seed + 12345;
         return ((seed >> 8) % 2001)/1000.0 - 1.0;
@@ -505,7 +505,7 @@ TEST(B2DataTest, ManyOrientations)
             for(int kk = 0; kk < 2; kk++)
             {
                 force2[kk].push_back((1 + kk + random())*std::pow(sr, 14));
-                torque[kk].push_back({ static_cast<real>((1.0+kk)*sr*random()), static_cast<real>(-0.5*sr*sr), static_cast<real>(sr*random()) });
+                torque[kk].emplace_back(static_cast<real>((1.0+kk)*sr*random()), static_cast<real>(-0.5*sr*sr), static_cast<real>(sr*random()));
             }
         }
         blocks.addOrientation(index, dist, energy, force2, torque, weight);
@@ -588,14 +588,14 @@ TEST(B2DataTest, ManyOrientations)
 TEST(B2DataTest, ExplicitSimdSameAsScalar)
 {
     std::vector<double>    temperatures = { 250, 0, 300, 400, 500, 600, 700 };
-    std::vector<double>    mass         = { 18, 18 };
-    gmx::RVec              I            = { 0.006, 0.012, 0.018 };
-    std::vector<gmx::RVec> inertia      = { I, I };
+    const std::vector<double> mass         = { 18, 18 };
+    const gmx::RVec        I            = { 0.006, 0.012, 0.018 };
+    const std::vector<gmx::RVec> inertia      = { I, I };
     int    nbins = 53;
     double eMin  = -40;
     B2Data scalar(nbins, temperatures, eMin), simd(nbins, temperatures, eMin);
     unsigned int seed = 2026;
-    auto random = [&seed]()
+    const auto random = [&seed]()
     {
         seed = 1103515245*seed + 12345;
         return ((seed >> 8) % 2001)/1000.0 - 1.0;
@@ -619,7 +619,7 @@ TEST(B2DataTest, ExplicitSimdSameAsScalar)
             for(int kk = 0; kk < 2; kk++)
             {
                 force2[kk].push_back((1 + kk + random())*std::pow(sr, 14));
-                torque[kk].push_back({ static_cast<real>((1.0+kk)*sr*random()), static_cast<real>(-0.5*sr*sr), static_cast<real>(sr*random()) });
+                torque[kk].emplace_back(static_cast<real>((1.0+kk)*sr*random()), static_cast<real>(-0.5*sr*sr), static_cast<real>(sr*random()));
             }
         }
         // Overlapping atoms with an infinite force add no force term
@@ -662,8 +662,8 @@ TEST(B2DataTest, EnergyBelowEMin)
 {
     double    T    = 300;
     double    beta = 1.0/(BOLTZ*T);
-    std::vector<double>    mass    = { 18, 18 };
-    std::vector<gmx::RVec> inertia = { { 1, 1, 1 }, { 1, 1, 1 } };
+    const std::vector<double> mass    = { 18, 18 };
+    const std::vector<gmx::RVec> inertia = { { 1, 1, 1 }, { 1, 1, 1 } };
     size_t nbins = 11;
     std::vector<size_t>    index(nbins);
     std::vector<double>    dist(nbins), weight(nbins, 1);
@@ -677,7 +677,7 @@ TEST(B2DataTest, EnergyBelowEMin)
     }
     // Two orientations, the first one has an extreme energy at the
     // shortest distance
-    auto add = [&](B2Data *b2data, double e0)
+    const auto add = [&](B2Data *b2data, double e0)
     {
         std::vector<double> energy(nbins, -1);
         b2data->addOrientation(index, dist, energy, force2, torque, weight);

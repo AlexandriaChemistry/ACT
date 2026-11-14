@@ -53,8 +53,8 @@ std::vector<ActAtom> makeAtoms(const std::vector<double> &mass)
     std::vector<ActAtom> atoms;
     for (auto m : mass)
     {
-        atoms.push_back(ActAtom("A", "C", "c", m > 0 ? ActParticle::Atom : ActParticle::Shell,
-                                6, m, 0, 2));
+        atoms.emplace_back("A", "C", "c", m > 0 ? ActParticle::Atom : ActParticle::Shell,
+                           6, m, 0, 2);
     }
     return atoms;
 }
@@ -65,8 +65,8 @@ std::vector<gmx::RVec> makeVelocities(size_t n)
     std::vector<gmx::RVec> v;
     for (size_t i = 0; i < n; i++)
     {
-        v.push_back({ static_cast<real>(0.3 + 0.7*i), static_cast<real>(-0.5 + 0.2*i*i),
-                      static_cast<real>(1.1 - 0.4*i) });
+        v.emplace_back(static_cast<real>(0.3 + 0.7*i), static_cast<real>(-0.5 + 0.2*i*i),
+                       static_cast<real>(1.1 - 0.4*i));
     }
     return v;
 }
@@ -149,7 +149,7 @@ TEST_F(COMMRemoverTest, Angular)
 {
     auto v = makeVelocities(x_.size());
     auto v0 = v;
-    COMMRemover remover(COMMRemoval::Angular, atoms_, x_);
+    const COMMRemover remover(COMMRemoval::Angular, atoms_, x_);
     EXPECT_EQ(6, remover.nDOF());
     remover.remove(x_, &v);
     dvec p, L;
@@ -176,11 +176,11 @@ TEST_F(COMMRemoverTest, Angular)
 // momentum, and no removal changes nothing
 TEST_F(COMMRemoverTest, LinearAndNone)
 {
-    auto v0 = makeVelocities(x_.size());
+    const auto v0 = makeVelocities(x_.size());
     dvec p0, L0;
     momentum(atoms_, x_, v0, p0, L0);
     auto v  = v0;
-    COMMRemover linear(COMMRemoval::Linear, atoms_, x_);
+    const COMMRemover linear(COMMRemoval::Linear, atoms_, x_);
     EXPECT_EQ(3, linear.nDOF());
     linear.remove(x_, &v);
     dvec p, L;
@@ -190,7 +190,7 @@ TEST_F(COMMRemoverTest, LinearAndNone)
         EXPECT_NEAR(0, p[d], 1e-5) << d;
         EXPECT_NEAR(L0[d], L[d], 1e-5) << d;
     }
-    COMMRemover none(COMMRemoval::None, atoms_, x_);
+    const COMMRemover none(COMMRemoval::None, atoms_, x_);
     EXPECT_EQ(0, none.nDOF());
     auto vn = v0;
     none.remove(x_, &vn);
@@ -201,9 +201,9 @@ TEST_F(COMMRemoverTest, LinearAndNone)
 // velocities, so the kinetic energy decreases by that of the rotation
 TEST_F(COMMRemoverTest, KineticEnergy)
 {
-    auto v = makeVelocities(x_.size());
-    COMMRemover linear(COMMRemoval::Linear, atoms_, x_);
-    COMMRemover angular(COMMRemoval::Angular, atoms_, x_);
+    const auto v = makeVelocities(x_.size());
+    const COMMRemover linear(COMMRemoval::Linear, atoms_, x_);
+    const COMMRemover angular(COMMRemoval::Angular, atoms_, x_);
     auto vl = v, va = v;
     linear.remove(x_, &vl);
     angular.remove(x_, &va);
@@ -221,9 +221,9 @@ TEST_F(COMMRemoverTest, KineticEnergy)
 // Test: For a linear molecule the rotation around its axis is not removed
 TEST(COMMRemoverLinearTest, LinearMolecule)
 {
-    auto atoms = makeAtoms({ 16, 12, 16 });
+    const auto atoms = makeAtoms({ 16, 12, 16 });
     std::vector<gmx::RVec> x = { { -0.116, 0, 0 }, { 0, 0, 0 }, { 0.116, 0, 0 } };
-    COMMRemover remover(COMMRemoval::Angular, atoms, x);
+    const COMMRemover remover(COMMRemoval::Angular, atoms, x);
     EXPECT_EQ(5, remover.nDOF());
     auto v = makeVelocities(x.size());
     remover.remove(x, &v);

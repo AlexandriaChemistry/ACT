@@ -200,7 +200,7 @@ TEST_F(PrincTest, PrincipalCompInertia)
 TEST_F(PrincTest, CalcXcmEmptyIndex)
 {
     // With empty index, all atoms are used
-    std::vector<int> emptyIndex;
+    const std::vector<int> emptyIndex;
     gmx::RVec xcm1, xcm2;
 
     real tm1 = calc_xcm(coords_, emptyIndex, atoms_, &xcm1, false);

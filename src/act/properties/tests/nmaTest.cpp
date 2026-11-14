@@ -325,7 +325,7 @@ protected:
         int status;
         {
             // The tool writes nma.json to the working directory
-            ScopedWorkingDirectory cwd(fileManager().getOutputTempDirectory());
+            const ScopedWorkingDirectory cwd(fileManager().getOutputTempDirectory());
             std::filesystem::remove("nma.json");
             status = nma(cmd.argc(), cmd.argv());
             std::ifstream in("nma.json");
@@ -347,7 +347,7 @@ protected:
     {
         // The JSON has three decimals for values between 1 and 100, otherwise
         // six significant digits (see gmx_ftoa).
-        auto   relTol = [](double ref, double tol) { return std::abs(ref)*tol + 6e-4; };
+        const auto relTol = [](double ref, double tol) { return std::abs(ref)*tol + 6e-4; };
         double mass   = 0;
         for(const auto &a : atoms)
         {
@@ -365,7 +365,7 @@ protected:
         EXPECT_NEAR(zpe, jsonValue(t0.at("Zero point energy")), relTol(zpe, 1e-5));
 
         // Room temperature
-        auto   vib    = harmonic(freq, cRoomT);
+        const auto vib    = harmonic(freq, cRoomT);
         double cvRot  = mol.linear ? cR : 1.5*cR;
         double ERot   = cvRot*cRoomT/1000;
         double STrans = sackurTetrode(mass, cRoomT);
@@ -424,7 +424,7 @@ protected:
                 EXPECT_GE(freq[i], freq[i-1]) << "modes should be sorted";
             }
         }
-        auto atoms = readPdb(out.confout);
+        const auto atoms = readPdb(out.confout);
         ASSERT_FALSE(atoms.empty());
         const auto thermo = sim.at("Thermochemistry").at("Alexandria");
         EXPECT_EQ(mol.sigma, std::stoi(thermo.at("Symmetry number").get<std::string>()));
@@ -486,7 +486,7 @@ protected:
         // times the relative change of each frequency, the energies by at
         // most N_A h c times the change of each frequency
         const double hc = PLANCK*SPEED_OF_LIGHT*1e-7; // kJ/mol cm
-        auto         thermoTolerance = [&](const char *prop)
+        const auto   thermoTolerance = [&](const char *prop)
         {
             if (std::string("Internal energy") == prop || std::string("Zero point energy") == prop ||
                 std::string("Delta H formation") == prop)
@@ -533,7 +533,7 @@ protected:
             double f, a;
             if (iss >> f >> a)
             {
-                spec.push_back({ f, a });
+                spec.emplace_back(f, a);
             }
         }
         return spec;
@@ -589,7 +589,7 @@ TEST_F(NmaTest, SymmetryNumber)
         SCOPED_TRACE(mol.file);
         NmaOutput out;
         ASSERT_EQ(0, runNma(mol.file, "sigma", {}, &out));
-        auto atoms = readPdb(out.confout);
+        const auto atoms = readPdb(out.confout);
         double SRot = rigidRotor(atoms, mol.linear, mol.sigma, cRoomT);
         const auto thermo = out.json.at("simulate").at("Thermochemistry").at("Alexandria");
         EXPECT_EQ(mol.sigma, std::stoi(thermo.at("Symmetry number").get<std::string>()));
@@ -619,8 +619,8 @@ TEST_F(NmaTest, InfraredSpectrum)
             EXPECT_LE(spec.front().first, freq.front());
             EXPECT_GE(spec.back().first, freq.back());
             // The peak is close to a mode with a significant intensity
-            auto   peak    = std::max_element(spec.begin(), spec.end(),
-                                              [](const auto &a, const auto &b) { return a.second < b.second; });
+            const auto peak    = std::max_element(spec.begin(), spec.end(),
+                                                  [](const auto &a, const auto &b) { return a.second < b.second; });
             double imax    = *std::max_element(inte.begin(), inte.end());
             bool   nearby  = false;
             for(size_t i = 0; i < freq.size(); i++)
@@ -641,7 +641,7 @@ TEST_F(NmaTest, InfraredSpectrum)
 // Test: The minimized structure is written and differs from the input
 TEST_F(NmaTest, ConfOut)
 {
-    std::string molFile("water-3-oep.log.pdb");
+    const std::string molFile("water-3-oep.log.pdb");
     NmaOutput   out;
     ASSERT_EQ(0, runNma(molFile, "confout", {}, &out));
     auto xin  = readPdb(alexandriaFile("molecules/" + molFile));
@@ -664,7 +664,7 @@ TEST_F(NmaTest, NoMinimize)
     NmaOutput out;
     EXPECT_EQ(0, runNma("water-3-oep.log.pdb", "nomin", { "-nominimize" }, &out));
     ASSERT_FALSE(out.json.empty());
-    auto freq = jsonSeries(out.json.at("simulate").at("Frequencies").at("Alexandria"));
+    const auto freq = jsonSeries(out.json.at("simulate").at("Frequencies").at("Alexandria"));
     EXPECT_EQ(3u, freq.size());
 }
 
@@ -720,13 +720,13 @@ protected:
 // Test: The zero point energy scales with the frequency scale factor
 TEST_F(ThermoChemistryTest, ScaleFactor)
 {
-    std::vector<double> freq = { 1600, 3700, 3800 };
-    auto tc1 = thermo(freq, cRoomT);
-    auto tc2 = thermo(freq, cRoomT, 1, 0.95);
+    const std::vector<double> freq = { 1600, 3700, 3800 };
+    const auto tc1 = thermo(freq, cRoomT);
+    const auto tc2 = thermo(freq, cRoomT, 1, 0.95);
     EXPECT_NEAR(0.5*cWaveKJ*(1600+3700+3800), tc1.ZPE(), 1e-3);
     EXPECT_NEAR(0.95*tc1.ZPE(), tc2.ZPE(), 1e-6*tc1.ZPE());
     // Scaled frequencies give the vibrational properties of the scaled frequencies
-    auto tc3 = thermo({ 0.95*1600, 0.95*3700, 0.95*3800 }, cRoomT);
+    const auto tc3 = thermo({ 0.95*1600, 0.95*3700, 0.95*3800 }, cRoomT);
     EXPECT_NEAR(tc3.S0(TCComponent::Vibration), tc2.S0(TCComponent::Vibration), 1e-6);
     EXPECT_NEAR(tc3.cv(TCComponent::Vibration), tc2.cv(TCComponent::Vibration), 1e-6);
 }
@@ -734,8 +734,8 @@ TEST_F(ThermoChemistryTest, ScaleFactor)
 // Test: Modes with zero or imaginary (negative) frequencies do not contribute
 TEST_F(ThermoChemistryTest, NonPositiveFrequencies)
 {
-    auto tc1 = thermo({ 1600, 3700, 3800 }, cRoomT);
-    auto tc2 = thermo({ -200, 0, 1600, 3700, 3800 }, cRoomT);
+    const auto tc1 = thermo({ 1600, 3700, 3800 }, cRoomT);
+    const auto tc2 = thermo({ -200, 0, 1600, 3700, 3800 }, cRoomT);
     for(const auto tcc : { TCComponent::Vibration, TCComponent::Total })
     {
         EXPECT_DOUBLE_EQ(tc1.S0(tcc), tc2.S0(tcc));
@@ -747,24 +747,24 @@ TEST_F(ThermoChemistryTest, NonPositiveFrequencies)
 // Test: Imaginary (negative) frequencies do not contribute to the zero point energy
 TEST_F(ThermoChemistryTest, ZeroPointEnergyNonPositiveFrequencies)
 {
-    auto tc1 = thermo({ 1600, 3700, 3800 }, cRoomT);
-    auto tc2 = thermo({ -200, 0, 1600, 3700, 3800 }, cRoomT);
+    const auto tc1 = thermo({ 1600, 3700, 3800 }, cRoomT);
+    const auto tc2 = thermo({ -200, 0, 1600, 3700, 3800 }, cRoomT);
     EXPECT_DOUBLE_EQ(tc1.ZPE(), tc2.ZPE());
 }
 
 // Test: At high temperature each mode contributes R to the heat capacity
 TEST_F(ThermoChemistryTest, ClassicalLimit)
 {
-    auto tc = thermo({ 100, 200, 300 }, 1e5);
+    const auto tc = thermo({ 100, 200, 300 }, 1e5);
     EXPECT_NEAR(3*cR, tc.cv(TCComponent::Vibration), 1e-3*cR);
 }
 
 // Test: The translational entropy decreases with R ln(P)
 TEST_F(ThermoChemistryTest, Pressure)
 {
-    std::vector<double> freq = { 1600, 3700, 3800 };
-    auto tc1  = thermo(freq, cRoomT, 1);
-    auto tc10 = thermo(freq, cRoomT, 10);
+    const std::vector<double> freq = { 1600, 3700, 3800 };
+    const auto tc1  = thermo(freq, cRoomT, 1);
+    const auto tc10 = thermo(freq, cRoomT, 10);
     EXPECT_NEAR(tc1.S0(TCComponent::Translation) - cR*std::log(10.0),
                 tc10.S0(TCComponent::Translation), 1e-6);
     // Other components do not depend on pressure
@@ -775,7 +775,7 @@ TEST_F(ThermoChemistryTest, Pressure)
 // Test: Without frequencies there are no vibrational contributions
 TEST_F(ThermoChemistryTest, NoFrequencies)
 {
-    auto tc = thermo({}, cRoomT);
+    const auto tc = thermo({}, cRoomT);
     EXPECT_EQ(0, tc.ZPE());
     EXPECT_EQ(0, tc.S0(TCComponent::Vibration));
     EXPECT_EQ(0, tc.cv(TCComponent::Vibration));

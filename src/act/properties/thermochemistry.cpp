@@ -210,7 +210,7 @@ static void calcTheta(MsgHandler                   *msghandler,
         {
             zzz[m] = coords[i][m];
         }
-        xx.push_back(zzz);
+        xx.emplace_back(zzz);
     }
     
     (void) calc_xcm(xx, index, atoms, &xcm, false);
