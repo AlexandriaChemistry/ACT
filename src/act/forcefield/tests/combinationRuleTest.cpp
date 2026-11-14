@@ -296,6 +296,37 @@ TEST_F (CombinationRuleTest, GeneralizedMean_1_4_QuiteSmall)
 
 // Test: The number of combination rules from the command line that change
 // those of the force field
+// Test: No combination rule gives a value that is not finite when the values
+// are zero, as HogervorstEpsilon (0/0) did for two zero epsilons, which made
+// the sigma of HogervorstSigma not a number as well (issue #1521). Two zero
+// values give zero, also for the rules that need sigma, epsilon or gamma.
+TEST(CombinationRuleZeroTest, FiniteForZero)
+{
+    for (auto rule : { CombRule::Geometric, CombRule::Arithmetic, CombRule::Volumetric,
+                       CombRule::InverseSquare, CombRule::HogervorstEpsilon, CombRule::Yang,
+                       CombRule::WaldmanSigma, CombRule::HalgrenEpsilon, CombRule::QiSigma })
+    {
+        for (const auto &x : std::vector<std::pair<double, double>>{ { 0, 0 }, { 0, 2 }, { 2, 0 } })
+        {
+            const double value = combineTwo(rule, x.first, x.second);
+            EXPECT_TRUE(std::isfinite(value)) << combinationRuleName(rule) << " " << x.first << " " << x.second;
+            if (x.first == 0 && x.second == 0)
+            {
+                EXPECT_EQ(0, value) << combinationRuleName(rule);
+            }
+        }
+    }
+    // Zero epsilons
+    EXPECT_EQ(0, combineHogervorstSigma(0, 0, 15, 16, 3, 4));
+    EXPECT_EQ(0, combineWaldmanEpsilon(0, 0, 3, 4));
+    EXPECT_EQ(0, combineWaldmanEpsilon(1, 2, 0, 0));
+    EXPECT_EQ(0, combineGeneralizedMean(0, 0, 2));
+    // Zero sigmas
+    EXPECT_EQ(0, (combination::masonGamma<combination::StdMath, double>(15, 16, 0, 4)));
+    EXPECT_EQ(0, (combination::masonGamma<combination::StdMath, double>(15, 16, 0, 0)));
+    EXPECT_TRUE(std::isfinite(combination::masonGamma<combination::StdMath, double>(15, 16, 3, 4)));
+}
+
 // Test: HalgrenEpsilon is Eqn. cr_harmonic_mean of the manual,
 // 4 x1 x2/(sqrt(x1) + sqrt(x2))^2, which lies between the geometric mean and
 // HogervorstEpsilon, and gives x for two values x. A macro without
