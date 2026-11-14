@@ -376,7 +376,7 @@ private:
     double number()
     {
         size_t start = pos_;
-        auto digits = [this]()
+        const auto digits = [this]()
         {
             size_t n = 0;
             while (pos_ < text_.size() && text_[pos_] >= '0' && text_[pos_] <= '9')
@@ -419,7 +419,7 @@ private:
             }
         }
         // strtod on the exact characters, independent of the locale for these
-        std::string num = text_.substr(start, pos_ - start);
+        const std::string num = text_.substr(start, pos_ - start);
         std::istringstream iss(num);
         iss.imbue(std::locale::classic());
         double d = 0;
@@ -530,7 +530,7 @@ JsonValue parseJson(const std::string &text)
 
 JsonValue readJsonFile(const std::string &fileName)
 {
-    std::ifstream in(fileName, std::ios::binary);
+    const std::ifstream in(fileName, std::ios::binary);
     if (!in)
     {
         GMX_THROW(gmx::FileIOError(gmx::formatString("Cannot read JSON file %s", fileName.c_str())));

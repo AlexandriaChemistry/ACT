@@ -67,7 +67,7 @@ TEST(JsonReaderTest, Escapes)
 
 TEST(JsonReaderTest, Structures)
 {
-    auto doc = parseJson("{ \"name\": \"water\", \"atoms\": [ 8, 1, 1 ], \"empty\": {}, \"none\": [] }");
+    const auto doc = parseJson("{ \"name\": \"water\", \"atoms\": [ 8, 1, 1 ], \"empty\": {}, \"none\": [] }");
     ASSERT_EQ(JsonValue::Type::Object, doc.type());
     EXPECT_EQ(4u, doc.asObject().size());
     EXPECT_EQ("water", doc.find("name")->asString());
