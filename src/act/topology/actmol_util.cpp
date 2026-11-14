@@ -60,9 +60,9 @@ void initACTMol(MsgHandler          *msghandler,
     double        qtot     = 0;
     // Charge gen params
     auto alg = pd->chargeGenerationAlgorithm();
-    std::vector<double> qcustom;
+    const std::vector<double> qcustom;
     bool userqtot = false;
-    importFile(msghandler, pd, dataName.c_str(), &molprops,
+    importFile(msghandler, pd, dataName, &molprops,
                conf, JobType::OPT, userqtot,
                &qtot, true);
     if (!msghandler->ok())

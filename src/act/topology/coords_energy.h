@@ -83,7 +83,7 @@ public:
     };
 
     //! Constructor for no particles
-    ParticleVectors() {}
+    ParticleVectors() = default;
 
     /*! \brief Constructor
      * \param[in] data   The first component of the first particle
@@ -253,7 +253,7 @@ public:
     };
 
     //! Constructor for no particles
-    CoordinateVectors() {}
+    CoordinateVectors() = default;
 
     /*! \brief Constructor
      * \param[in] data   The first component of the first particle
@@ -328,7 +328,7 @@ class Coordinates
 {
 public:
     //! Constructor for no particles
-    Coordinates() {}
+    Coordinates() = default;
 
     /*! \brief Constructor for particles at the origin
      * \param[in] natom The number of particles
@@ -413,7 +413,7 @@ private:
     bool haveACT_      = false;
 public:
     //! Empty constructor
-    ACTEnergy() {}
+    ACTEnergy() = default;
     /*! \brief Constructor
      * \param[in] experiment The id
      * \param[in] datafile   The data file name

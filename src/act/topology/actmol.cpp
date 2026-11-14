@@ -119,11 +119,11 @@ void ACTMol::checkAtoms(MsgHandler       *msghandler,
     auto myatoms = topology_.atoms();
     for (size_t i = 0; i < myatoms.size(); i++)
     {
-        auto atype = myatoms[i].ffType();
+        const auto atype = myatoms[i].ffType();
         if (!pd->hasParticleType(atype))
         {
             msghandler->msg(ACTStatus::Error, ACTMessage::MissingFFParameter,
-                            gmx::formatString("Could not find a force field entry for atomtype %s atom %zu in compound '%s'", atype.c_str(), i+1, getMolname().c_str()).c_str());
+                            gmx::formatString("Could not find a force field entry for atomtype %s atom %zu in compound '%s'", atype.c_str(), i+1, getMolname().c_str()));
         }
         else
         {
@@ -160,7 +160,7 @@ std::vector<gmx::RVec> ACTMol::experCoords(const std::vector<gmx::RVec> &xxx,
     {
         GMX_THROW(gmx::InternalError("Empty coordinate array passed."));
     }
-    gmx::RVec fzero = { 0, 0, 0 };
+    const gmx::RVec fzero = { 0, 0, 0 };
     std::vector<gmx::RVec> coords(myatoms.size(), fzero);
     int j = 0;
     for(size_t i = 0; i < myatoms.size(); i++)
@@ -274,7 +274,7 @@ void ACTMol::collectCoordsEnergy(MsgHandler *msghandler)
             if (doInter && !exper.getCoordinates().empty())
             {
                 // Copy coordinates
-                auto exp_x = exper.getCoordinates();
+                const auto &exp_x = exper.getCoordinates();
                 if (exp_x.empty())
                 {
                     continue;
@@ -303,7 +303,7 @@ void ACTMol::collectCoordsEnergy(MsgHandler *msghandler)
                         auto &propvec = exper.propertyConst(ie.first);
                         if (propvec.size() != 1)
                         {
-                            msghandler->fatal(gmx::formatString("Expected just one QM value per experiment for %s iso %zu", mpo_name(ie.first), propvec.size()).c_str());
+                            msghandler->fatal(gmx::formatString("Expected just one QM value per experiment for %s iso %zu", mpo_name(ie.first), propvec.size()));
                         }
                         double eqm = propvec[0]->getValue();
                         conformationData_[2].confs.back().eMap[ie.second].setQM(eqm);
@@ -319,12 +319,12 @@ void ACTMol::collectCoordsEnergy(MsgHandler *msghandler)
         else
         {
             // Copy coordinates
-            auto exp_x = exper.getCoordinates();
+            const auto &exp_x = exper.getCoordinates();
             if (exp_x.empty())
             {
                 continue;
             }
-            auto x = experCoords(exp_x);
+            const auto x = experCoords(exp_x);
             ++nMonomer;
             conformationData_[0].confs.resize(nMonomer);
             conformationData_[0].setX(nMonomer-1, x);
@@ -338,7 +338,7 @@ void ACTMol::collectCoordsEnergy(MsgHandler *msghandler)
                     auto &propvec = exper.propertyConst(ie.first);
                     if (propvec.size() != 1)
                     {
-                        msghandler->fatal(gmx::formatString("Expected just one QM value per experiment for %s iso %zu", mpo_name(ie.first), propvec.size()).c_str());
+                        msghandler->fatal(gmx::formatString("Expected just one QM value per experiment for %s iso %zu", mpo_name(ie.first), propvec.size()));
                     }
                     double eqm = propvec[0]->getValue();
                     conformationData_[0].confs.back().eMap[ie.second].setQM(propvec[0]->getValue());
@@ -365,7 +365,7 @@ void ACTMol::collectCoordsEnergy(MsgHandler *msghandler)
         double                    globalMin = 1e8;
         for (auto &ce : *allConf)
         {
-            auto it = ce.eMap.find(InteractionType::EPOT);
+            const auto it = ce.eMap.find(InteractionType::EPOT);
             if (it != ce.eMap.end() && it->second.haveQM())
             {
                 globalMin = std::min(globalMin, it->second.eqm());
@@ -490,7 +490,7 @@ void ACTMol::forceEnergyMaps(MsgHandler                                         
             {
                 std::set<MolPropObservable> mpos;
                 // Check whether one is enough or we have to look up multiple
-                auto combine = combined.find(ener.first);
+                const auto combine = combined.find(ener.first);
                 if (combine != combined.end())
                 {
                     // Combine multiple QM observable
@@ -521,7 +521,7 @@ void ACTMol::forceEnergyMaps(MsgHandler                                         
                         auto &propvec = exper.propertyConst(mpo);
                         if (propvec.size() != 1)
                         {
-                            msghandler->fatal(gmx::formatString("Expected just one QM value per experiment for %s iso %zu", mpo_name(mpo), propvec.size()).c_str());
+                            msghandler->fatal(gmx::formatString("Expected just one QM value per experiment for %s iso %zu", mpo_name(mpo), propvec.size()));
                         }
                         my_qm += propvec[0]->getValue();
                         foundQM    += 1;
@@ -537,7 +537,7 @@ void ACTMol::forceEnergyMaps(MsgHandler                                         
                 }
                 aemap.insert({ener.first, my_all});
             }
-            if (aemap.size() > 0)
+            if (!aemap.empty())
             {
                 interactionEnergyMap->push_back(aemap);
             }
@@ -554,7 +554,7 @@ void ACTMol::forceEnergyMaps(MsgHandler                                         
         {
             const auto &exper    = *energyExper[k];
             auto       &energies = allEnergies[k];
-            auto        forces   = set.data.f(k);
+            const auto  forces   = set.data.f(k);
             auto &eprops = exper.propertyConst(MolPropObservable::DELTAE0);
             if (eprops.size() > 1)
             {
@@ -562,10 +562,10 @@ void ACTMol::forceEnergyMaps(MsgHandler                                         
             }
             else if (eprops.size() == 1)
             {
-                energyMap->push_back(ACTEnergy(exper.id(), exper.datafile(),
-                                               eprops[0]->getValue(),
-                                               energies[InteractionType::EPOT]));
-                energyComponentMap->push_back({ eprops[0]->getValue(), std::move(energies) });
+                energyMap->emplace_back(exper.id(), exper.datafile(),
+                                        eprops[0]->getValue(),
+                                        energies[InteractionType::EPOT]);
+                energyComponentMap->emplace_back(eprops[0]->getValue(), std::move(energies));
             }
         
             const std::vector<gmx::RVec> &fff = exper.getForces();
@@ -583,7 +583,7 @@ void ACTMol::forceEnergyMaps(MsgHandler                                         
                         }
                         for(int m = 0; m < DIM; m++)
                         {
-                            thisForce.push_back({ fff[ifff][m], forces[i][m] });
+                            thisForce.emplace_back(fff[ifff][m], forces[i][m]);
                         }
                         ifff += 1;
                     }
@@ -638,7 +638,7 @@ void ACTMol::GenerateTopology(MsgHandler        *msghandler,
 {
     std::string btype1, btype2;
 
-    if (atomsConst().size() > 0)
+    if (!atomsConst().empty())
     {
         msghandler->msg(ACTStatus::Warning,
                         "There is a topology already");
@@ -682,7 +682,7 @@ void ACTMol::GenerateTopology(MsgHandler        *msghandler,
     if (msghandler->ok())
     {
         auto fptr = fragmentPtr();
-        if (fptr->size() > 0)
+        if (!fptr->empty())
         {
             fraghandler_.setLeaveOutUnchargedPairs(chargesFromForceField_);
             fraghandler_.init(msghandler,
@@ -1028,7 +1028,7 @@ void ACTMol::setCharges(MsgHandler       *msghandler,
                     gmx::formatString("Using charges from force field for %s", getMolname().c_str()));
     for (size_t i = 0; i < myatoms->size(); i++)
     {
-        auto atype = (*myatoms)[i].ffType();
+        const auto atype = (*myatoms)[i].ffType();
         auto ptype = pd->findParticleType(atype);
         auto qval  = ptype->parameterConst("charge").value();
         (*myatoms)[i].setCharge(qval);
@@ -1190,7 +1190,7 @@ void ACTMol::PrintConformation(const char                   *fn,
                                bool                          writeShells,
                                const matrix                  box)
 {
-    auto title = gmx::formatString("%s processed by ACT - The Alexandria Chemistry Toolkit", getMolname().c_str());
+    const auto title = gmx::formatString("%s processed by ACT - The Alexandria Chemistry Toolkit", getMolname().c_str());
 
     int        model_nr      = 1;
     char       chain         = ' ';
@@ -1236,7 +1236,7 @@ static void add_tensor(std::vector<std::string> *commercials,
                        const std::vector<double> &Q)
 {
     double fac = convertFromGromacs(1.0, unit);
-    commercials->push_back("");
+    commercials->emplace_back("");
     commercials->push_back(title);
     commercials->push_back(gmx::formatString("  ( %6.2f %6.2f %6.2f )", fac*Q[0], fac*Q[1], fac*Q[2]));
     commercials->push_back(gmx::formatString("  (        %6.2f %6.2f )", fac*Q[3], fac*Q[4]));
@@ -1259,13 +1259,13 @@ std::vector<std::string> ACTMol::generateCommercials(MsgHandler                 
                                                      const std::vector<gmx::RVec> &coords)
 {
     double                   T = -1;
-    std::string              myref;
-    std::string              mylot       = levelOfTheory();
+    const std::string        myref;
+    const std::string        mylot       = levelOfTheory();
     std::vector<std::string> commercials;
 
-    commercials.push_back("");
+    commercials.emplace_back("");
     commercials.push_back(gmx::formatString("Molecule information for %s", getMolname().c_str()));
-    commercials.push_back("-----------------------------------------------");
+    commercials.emplace_back("-----------------------------------------------");
     commercials.push_back(gmx::formatString("Formula      = %s", formula().c_str()));
     commercials.push_back(gmx::formatString("Total Mass   = %.3f (Da)", totalMass()));
     commercials.push_back(gmx::formatString("Total Charge = %d (e)", totalCharge()));
@@ -1274,7 +1274,7 @@ std::vector<std::string> ACTMol::generateCommercials(MsgHandler                 
     for(auto qp = qProps_.begin(); qp < qProps_.end(); ++qp)
     {    
         auto qcalc = qp->qPact();
-        auto qelec = qp->qPqmConst();
+        const auto qelec = qp->qPqmConst();
         qcalc->setQ(atomsConst());
         qcalc->setX(coords);
         qcalc->initializeMoments();
@@ -1296,8 +1296,8 @@ std::vector<std::string> ACTMol::generateCommercials(MsgHandler                 
             {
                 if (qelec.hasMultipole(mpo))
                 {
-                    auto mymu = qelec.getMultipole(msghandler, mpo);
-                    commercials.push_back("");
+                    const auto mymu = qelec.getMultipole(msghandler, mpo);
+                    commercials.emplace_back("");
                     commercials.push_back(gmx::formatString("%s %s (%s)\n",
                                                             mylot.c_str(), mpo_name(mpo), gp->getUnit()));
                     for(auto &fmp : formatMultipole(mpo, mymu))
@@ -1307,8 +1307,8 @@ std::vector<std::string> ACTMol::generateCommercials(MsgHandler                 
                 }
                 if (qcalc->hasMultipole(mpo))
                 {
-                    auto mymu = qcalc->getMultipole(msghandler, mpo);
-                    commercials.push_back("");
+                    const auto mymu = qcalc->getMultipole(msghandler, mpo);
+                    commercials.emplace_back("");
                     commercials.push_back(gmx::formatString("Alexandria %s (%s)\n", mpo_name(mpo), gp->getUnit()));
                     for(auto &fmp : formatMultipole(mpo, mymu))
                     {
@@ -1322,7 +1322,7 @@ std::vector<std::string> ACTMol::generateCommercials(MsgHandler                 
         {
             qcalc->calcPolarizability(msghandler, pd, topology(), forceComp);
             auto acalc = qcalc->polarizabilityTensor();
-            std::vector<double> ac = { acalc[XX][XX], acalc[XX][YY], acalc[XX][ZZ],
+            const std::vector<double> ac = { acalc[XX][XX], acalc[XX][YY], acalc[XX][ZZ],
                                        acalc[YY][YY], acalc[YY][ZZ], acalc[ZZ][ZZ] };
             auto unit = mpo_unit2(MolPropObservable::POLARIZABILITY);
             add_tensor(&commercials, "Alexandria Polarizability components (A^3)", unit, ac);
@@ -1337,7 +1337,7 @@ std::vector<std::string> ACTMol::generateCommercials(MsgHandler                 
             if (qelec.hasPolarizability())
             {
                 auto aelec = qelec.polarizabilityTensor();
-                std::vector<double> ae = { aelec[XX][XX], aelec[XX][YY], aelec[XX][ZZ],
+                const std::vector<double> ae = { aelec[XX][XX], aelec[XX][YY], aelec[XX][ZZ],
                                            aelec[YY][YY], aelec[YY][ZZ], aelec[ZZ][ZZ] };
 
                 add_tensor(&commercials, gmx::formatString("%s + Polarizability components (A^3)", mylot.c_str()),
@@ -1349,7 +1349,7 @@ std::vector<std::string> ACTMol::generateCommercials(MsgHandler                 
             }
         }
     }
-    commercials.push_back("-----------------------------------------------");
+    commercials.emplace_back("-----------------------------------------------");
     return commercials;
 }
 
@@ -1363,11 +1363,11 @@ void ACTMol::PrintTopology(MsgHandler                   *msg_handler,
     t_mols  printmol;
     FILE   *fp = gmx_ffopen(fn, "w");
 
-    if (getMolname().size() > 0)
+    if (!getMolname().empty())
     {
         printmol.name = strdup(getMolname().c_str());
     }
-    else if (formula().size() > 0)
+    else if (!formula().empty())
     {
         printmol.name = strdup(formula().c_str());
     }
@@ -1437,7 +1437,7 @@ void ACTMol::GenerateCube(MsgHandler                   *msghandler,
         int index = 0;
         for(auto qc = qProps_.begin(); qc < qProps_.end(); ++qc)
         {
-            auto qref  = qc->qPqmConst();
+            const auto qref  = qc->qPqmConst();
             auto qresp = qc->qgenResp();
             if (0 < qresp->nEsp())
             {
@@ -1486,31 +1486,31 @@ void ACTMol::GenerateCube(MsgHandler                   *msghandler,
                 qCalc.calcPot(msghandler, epsilonr);
                 if (rhofn)
                 {
-                    std::string buf = gmx::formatString("Electron density generated by %s based on %s charges",
-                                                        act_version, 
-                                                        chargeDistributionTypeName(iChargeDistributionType).c_str());
+                    const std::string buf = gmx::formatString("Electron density generated by %s based on %s charges",
+                                                              act_version, 
+                                                              chargeDistributionTypeName(iChargeDistributionType).c_str());
                     qCalc.calcRho();
                     qCalc.writeRho(rhofn, buf, oenv);
                 }
                 if (potfn)
                 {
-                    std::string buf = gmx::formatString("Potential generated by %s based on %s charges",
-                                                        act_version,
-                                                        chargeDistributionTypeName(iChargeDistributionType).c_str());
+                    const std::string buf = gmx::formatString("Potential generated by %s based on %s charges",
+                                                              act_version,
+                                                              chargeDistributionTypeName(iChargeDistributionType).c_str());
                     qCalc.writeCube(potfn, buf, oenv);
                 }
                 if (hisfn)
                 {
-                    std::string buf = gmx::formatString("Potential generated by %s based on %s charges",
-                                                        act_version,
-                                                        chargeDistributionTypeName(iChargeDistributionType).c_str());
+                    const std::string buf = gmx::formatString("Potential generated by %s based on %s charges",
+                                                              act_version,
+                                                              chargeDistributionTypeName(iChargeDistributionType).c_str());
                     qCalc.writeHisto(hisfn, buf, oenv);
                 }
                 if (difffn || diffhistfn)
                 {
-                    std::string buf = gmx::formatString("Potential difference generated by %s based on %s charges",
-                                                        act_version,
-                                                        chargeDistributionTypeName(iChargeDistributionType).c_str());
+                    const std::string buf = gmx::formatString("Potential difference generated by %s based on %s charges",
+                                                              act_version,
+                                                              chargeDistributionTypeName(iChargeDistributionType).c_str());
                     
                     qCalc.writeDiffCube(&grref, difffn, diffhistfn, buf, oenv, 0);
                 }
@@ -1552,12 +1552,12 @@ void ACTMol::getExpProps(MsgHandler                                 *msghandler,
                          real                                        watoms,
                          int                                         maxESP)
 {
-    std::vector<double> vec;
-    std::string         myref;
-    std::string         mylot;
+    const std::vector<double> vec;
+    const std::string   myref;
+    const std::string   mylot;
     
     auto &myatoms = atomsConst();
-    if (myatoms.size() == 0)
+    if (myatoms.empty())
     {
         msghandler->msg(ACTStatus::Error,
                         gmx::formatString("No atoms to fetch experimental properties for %s.",
@@ -1572,7 +1572,7 @@ void ACTMol::getExpProps(MsgHandler                                 *msghandler,
     for (const auto &myexp : experimentConst())
     {
         bool     qprop = false;
-        auto     xcoords = myexp.getCoordinates();
+        const auto&     xcoords = myexp.getCoordinates();
         if (xcoords.empty())
         {
             msghandler->msg(ACTStatus::Warning,
@@ -1582,7 +1582,7 @@ void ACTMol::getExpProps(MsgHandler                                 *msghandler,
                                               myexp.getDatafile().c_str()));
             continue;
         }
-        auto     xatom = experCoords(xcoords);
+        const auto xatom = experCoords(xcoords);
         ACTQprop actq(myatoms, xatom);
         auto     qelec = actq.qPqm();
         auto     qcalc = actq.qPact();
@@ -1594,7 +1594,7 @@ void ACTMol::getExpProps(MsgHandler                                 *msghandler,
             // Check whether this property is in the "Wanted" list
             if (!iqm.empty())
             {
-                auto iter = iqm.find(prop.first);
+                const auto iter = iqm.find(prop.first);
                 if (iqm.end() == iter)
                 {
                     continue;

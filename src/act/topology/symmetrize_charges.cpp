@@ -101,7 +101,7 @@ void get_symmetrized_charges(const Topology   *topology,
                             {
                                 hs.push_back(ai);
                             }
-                            if ((hs.size() > 0) && (hsmin == -1 || hs.back() < hsmin))
+                            if ((!hs.empty()) && (hsmin == -1 || hs.back() < hsmin))
                             {
                                 hsmin = hs.back();
                             }

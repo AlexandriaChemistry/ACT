@@ -97,13 +97,13 @@ real calc_relposition(const ForceField               *pd,
     }
     double b0 = 0, b1 = 0, relative_position = 0;
 
-    Identifier aij({atoms[0], atoms[1]}, { bondOrders[0] }, CanSwap::Yes);
-    Identifier ajk({atoms[1], atoms[2]}, { bondOrders[1] }, CanSwap::Yes);
+    const Identifier aij({atoms[0], atoms[1]}, { bondOrders[0] }, CanSwap::Yes);
+    const Identifier ajk({atoms[1], atoms[2]}, { bondOrders[1] }, CanSwap::Yes);
 
-    std::string type("bondlength");
+    const std::string type("bondlength");
     auto &fs = pd->findForcesConst(InteractionType::BONDS);
-    auto bij = fs.findParameterTypeConst(aij, type);
-    auto bjk = fs.findParameterTypeConst(ajk, type);
+    const auto &bij = fs.findParameterTypeConst(aij, type);
+    const auto &bjk = fs.findParameterTypeConst(ajk, type);
 
     b0 = convertToGromacs(bij.value(), bij.unit());
     b1 = convertToGromacs(bjk.value(), bjk.unit());
@@ -179,8 +179,8 @@ double computeAtomizationEnergy(MsgHandler                 *msghandler,
                                 double                      temperature)
 {
     double atomizationEnergy = 0;
-    std::string H0("H(0)-H(T)");
-    std::string DHf("DHf(T)");
+    const std::string H0("H(0)-H(T)");
+    const std::string DHf("DHf(T)");
     for (auto &a : atoms)
     {
         if (a.pType() == ActParticle::Atom)
@@ -225,7 +225,7 @@ void analyse_multipoles(MsgHandler                                *msg_handler,
     auto qprops = mol->qPropsConst();
     for(auto qp = qprops.begin(); qp < qprops.end(); ++qp)
     {
-        auto qelec = qp->qPqmConst();
+        const auto qelec = qp->qPqmConst();
         auto qcalc = qp->qPact();
         qcalc->initializeMoments();
         if (doForce)
@@ -277,7 +277,7 @@ void analyse_multipoles(MsgHandler                                *msg_handler,
                     }
                 }
                 double rms = std::sqrt(delta/Tcalc.size());
-                std::string flag("");
+                std::string flag;
                 if (!toler.empty() && rms > toler.at(mpo))
                 {
                     flag = " MULTI";

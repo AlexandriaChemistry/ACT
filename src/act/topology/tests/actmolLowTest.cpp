@@ -105,7 +105,7 @@ TEST_F(ActmolLowTest, IsLinearFalse)
 
 TEST_F(ActmolLowTest, GetDoublesSimple)
 {
-    std::string s = "1.5 2.3 3.7";
+    const std::string s = "1.5 2.3 3.7";
     auto result = getDoubles(s);
     ASSERT_EQ(result.size(), 3u);
     EXPECT_NEAR(result[0], 1.5, 1e-10);
@@ -115,7 +115,7 @@ TEST_F(ActmolLowTest, GetDoublesSimple)
 
 TEST_F(ActmolLowTest, GetDoublesSingle)
 {
-    std::string s = "42.0";
+    const std::string s = "42.0";
     auto result = getDoubles(s);
     ASSERT_EQ(result.size(), 1u);
     EXPECT_NEAR(result[0], 42.0, 1e-10);
@@ -123,7 +123,7 @@ TEST_F(ActmolLowTest, GetDoublesSingle)
 
 TEST_F(ActmolLowTest, GetDoublesNegative)
 {
-    std::string s = "-1.5 -2.3";
+    const std::string s = "-1.5 -2.3";
     auto result = getDoubles(s);
     ASSERT_EQ(result.size(), 2u);
     EXPECT_NEAR(result[0], -1.5, 1e-10);
@@ -132,8 +132,8 @@ TEST_F(ActmolLowTest, GetDoublesNegative)
 
 TEST_F(ActmolLowTest, GetDoublesEmpty)
 {
-    std::string s = "";
-    auto result = getDoubles(s);
+    const std::string s;
+    const auto result = getDoubles(s);
     EXPECT_TRUE(result.empty());
 }
 

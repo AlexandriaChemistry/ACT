@@ -52,7 +52,7 @@ TEST(SymmetrizeChargesTest, ApplySymmetrizedChargesNoSymmetry)
 {
     // Each atom in its own group (no symmetry)
     std::vector<double> q = { 0.1, 0.2, 0.3 };
-    std::vector<int> sym  = { 0, 1, 2 };
+    const std::vector<int> sym  = { 0, 1, 2 };
     apply_symmetrized_charges(&q, sym);
     EXPECT_NEAR(q[0], 0.1, 1e-10);
     EXPECT_NEAR(q[1], 0.2, 1e-10);
@@ -63,7 +63,7 @@ TEST(SymmetrizeChargesTest, ApplySymmetrizedChargesAllSame)
 {
     // All atoms in same group
     std::vector<double> q = { 0.1, 0.2, 0.3 };
-    std::vector<int> sym  = { 0, 0, 0 };
+    const std::vector<int> sym  = { 0, 0, 0 };
     apply_symmetrized_charges(&q, sym);
     double expected = (0.1 + 0.2 + 0.3) / 3.0;
     EXPECT_NEAR(q[0], expected, 1e-10);
@@ -75,7 +75,7 @@ TEST(SymmetrizeChargesTest, ApplySymmetrizedChargesPartialGroups)
 {
     // Water-like: O by itself, two H's symmetrized
     std::vector<double> q = { -0.8, 0.35, 0.45 };
-    std::vector<int> sym  = { 0, 1, 1 };
+    const std::vector<int> sym  = { 0, 1, 1 };
     apply_symmetrized_charges(&q, sym);
     EXPECT_NEAR(q[0], -0.8, 1e-10);
     double hAvg = (0.35 + 0.45) / 2.0;
@@ -87,7 +87,7 @@ TEST(SymmetrizeChargesTest, ApplySymmetrizedChargesMethane)
 {
     // Methane-like: C and 4 H's
     std::vector<double> q = { -0.4, 0.08, 0.12, 0.10, 0.10 };
-    std::vector<int> sym  = { 0, 1, 1, 1, 1 };
+    const std::vector<int> sym  = { 0, 1, 1, 1, 1 };
     apply_symmetrized_charges(&q, sym);
     EXPECT_NEAR(q[0], -0.4, 1e-10);
     double hAvg = (0.08 + 0.12 + 0.10 + 0.10) / 4.0;
@@ -101,7 +101,7 @@ TEST(SymmetrizeChargesTest, ApplySymmetrizedChargesMultipleGroups)
 {
     // Two separate symmetric groups
     std::vector<double> q = { 0.1, 0.2, 0.5, 0.3, 0.4 };
-    std::vector<int> sym  = { 0, 0, 2, 3, 3 };
+    const std::vector<int> sym  = { 0, 0, 2, 3, 3 };
     apply_symmetrized_charges(&q, sym);
     double avg01 = (0.1 + 0.2) / 2.0;
     EXPECT_NEAR(q[0], avg01, 1e-10);
@@ -116,7 +116,7 @@ TEST(SymmetrizeChargesTest, ApplySymmetrizedChargesSizeMismatch)
 {
     // Size mismatch should throw
     std::vector<double> q = { 0.1, 0.2, 0.3 };
-    std::vector<int> sym  = { 0, 1 };
+    const std::vector<int> sym  = { 0, 1 };
     EXPECT_THROW(apply_symmetrized_charges(&q, sym), gmx::InternalError);
 }
 
@@ -124,7 +124,7 @@ TEST(SymmetrizeChargesTest, ApplySymmetrizedChargesPreservesTotal)
 {
     // Total charge should be preserved after symmetrization
     std::vector<double> q = { -0.82, 0.39, 0.43 };
-    std::vector<int> sym  = { 0, 1, 1 };
+    const std::vector<int> sym  = { 0, 1, 1 };
     double totalBefore = q[0] + q[1] + q[2];
     apply_symmetrized_charges(&q, sym);
     double totalAfter = q[0] + q[1] + q[2];

@@ -49,7 +49,7 @@ void FragmentHandler::init(MsgHandler                   *msghandler,
 {
     GMX_RELEASE_ASSERT(fragments != nullptr,
                        "Empty fragments passed. Wazzuppwitdat?");
-    GMX_RELEASE_ASSERT(fragments->size() > 0, "No fragments. Huh?");
+    GMX_RELEASE_ASSERT(!fragments->empty(), "No fragments. Huh?");
     if (atoms.size() != coordinates.size())
     {
         msghandler->msg(ACTStatus::Error,
@@ -68,7 +68,7 @@ void FragmentHandler::init(MsgHandler                   *msghandler,
     for(auto f = fragments->begin(); allWell && f < fragments->end(); ++f)
     {
         // First reality check
-        if (f->atoms().size() == 0)
+        if (f->atoms().empty())
         {
             fprintf(stderr, "No atoms in fragment %zu with formula %s", ff, f->formula().c_str());
             allWell = false;
@@ -104,7 +104,7 @@ void FragmentHandler::init(MsgHandler                   *msghandler,
                 // Bonds should be numbered from the start of the atom.
                 // Now the shells should not be taken into account, since
                 // the ACM code will do it.
-                Bond bb(ai - offset, aj - offset, b.bondOrder());
+                const Bond bb(ai - offset, aj - offset, b.bondOrder());
                 bonds_[ff].push_back(bb);
             }
         }
@@ -133,7 +133,7 @@ void FragmentHandler::init(MsgHandler                   *msghandler,
             // ID copied from Fragment ID.
             ids_.push_back(f->inchi());
             // Structure for charge generation
-            QgenAcm_.push_back(QgenAcm(msghandler, pd, top.atoms(), bonds_[ff], f->charge()));
+            QgenAcm_.emplace_back(msghandler, pd, top.atoms(), bonds_[ff], f->charge());
             // Total number of atoms
             natoms_ += top.atoms().size();
             // Extend topologies_ array
@@ -394,7 +394,7 @@ void FragmentHandler::setCharges(MsgHandler      *msghandler,
 {
     for(size_t i = 0; i < ids_.size() && msghandler->ok(); i++)
     {
-        auto qptr = qmap.find(ids_[i]);
+        const auto qptr = qmap.find(ids_[i]);
         if (qmap.end() != qptr)
         {
             auto aptr = topologies_[i].atomsPtr();
