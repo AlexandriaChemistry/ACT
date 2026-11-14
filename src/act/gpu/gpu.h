@@ -1546,6 +1546,22 @@ void chainSkip(System *system, bool canSkip);
  */
 const char *chainMask(System *system, int what);
 
+/*! \brief Count the blocks of a mask of the chain, on the GPU
+ * For the floating point operations, see chainBlockCounts: each block
+ * of the mask counts once more with or without forces.
+ * \param[in] system The system
+ * \param[in] what   As chainMask
+ * \param[in] forces Whether with forces
+ */
+void chainCountBlocks(System *system, int what, bool forces);
+
+/*! \brief How often each block was computed in the chain, waits for the GPU
+ * The counts start again from zero.
+ * \param[in]  system The system
+ * \param[out] counts For each block with forces, then for each block without
+ */
+void chainBlockCounts(System *system, std::vector<uint64_t> *counts);
+
 /*! \brief Which molecules are computed and which set kept each has, see chainSkip
  * \param[in]  system The system
  * \param[out] active For each molecule whether it is computed
