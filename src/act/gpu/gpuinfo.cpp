@@ -55,9 +55,9 @@ namespace gpu
  */
 static int lanesPerComputeUnit(const std::string &vendor, const std::string &name)
 {
-    auto has = [](const std::string &s, const char *part) { return s.find(part) != std::string::npos; };
+    const auto has = [](const std::string &s, const char *part) { return s.find(part) != std::string::npos; };
     // A model name by itself, such that the RTX A3000 is not an A30
-    auto model = [](const std::string &s, const std::string &part)
+    const auto model = [](const std::string &s, const std::string &part)
     {
         for (auto pos = s.find(part); pos != std::string::npos; pos = s.find(part, pos + 1))
         {
@@ -134,7 +134,7 @@ OutOfMemoryFacts outOfMemoryFacts(const std::string &device)
         }
     }
     // selectGpuOfProcess tells "1 of 0,1,2,3" or "1 of 4" if the node has several
-    auto chosen = gpuOfProcess();
+    const auto chosen = gpuOfProcess();
     auto of     = chosen.find(" of ");
     if (of != std::string::npos)
     {
@@ -237,11 +237,11 @@ std::vector<std::string> explainNoGpu(const NoGpuFacts &facts)
         if (vd.second.empty() || vd.second == "NoDevFiles" || vd.second == "-1")
         {
             reasons.push_back(vd.first + " is \"" + vd.second + "\", the queue system gave this job no GPU,");
-            reasons.push_back("request one, for instance with sbatch --gres=gpu:1");
+            reasons.emplace_back("request one, for instance with sbatch --gres=gpu:1");
         }
     }
     const auto &backends = facts.backends;
-    auto        has      = [&backends](const char *name)
+    const auto  has      = [&backends](const char *name)
     {
         return std::find(backends.begin(), backends.end(), name) != backends.end();
     };
@@ -254,28 +254,28 @@ std::vector<std::string> explainNoGpu(const NoGpuFacts &facts)
     {
         if (facts.nvidiaDevices && !has("cuda"))
         {
-            reasons.push_back("this node has NVIDIA GPUs, but AdaptiveCpp has no CUDA backend, build");
-            reasons.push_back("ACT with an AdaptiveCpp that has one, for instance from conda-forge");
-            reasons.push_back("\"adaptivecpp=*=cuda*\", given with -DAdaptiveCpp_DIR");
+            reasons.emplace_back("this node has NVIDIA GPUs, but AdaptiveCpp has no CUDA backend, build");
+            reasons.emplace_back("ACT with an AdaptiveCpp that has one, for instance from conda-forge");
+            reasons.emplace_back("\"adaptivecpp=*=cuda*\", given with -DAdaptiveCpp_DIR");
         }
         if (facts.amdDevices && !has("hip"))
         {
-            reasons.push_back("this node has AMD GPUs, but AdaptiveCpp has no HIP backend, build ACT");
-            reasons.push_back("with an AdaptiveCpp that has one, given with -DAdaptiveCpp_DIR");
+            reasons.emplace_back("this node has AMD GPUs, but AdaptiveCpp has no HIP backend, build ACT");
+            reasons.emplace_back("with an AdaptiveCpp that has one, given with -DAdaptiveCpp_DIR");
         }
     }
     if (!facts.nvidiaDevices && !facts.amdDevices)
     {
-        reasons.push_back("this node has no NVIDIA or AMD GPU device files (/dev/nvidiactl, /dev/kfd),");
-        reasons.push_back("run on a node with GPUs");
+        reasons.emplace_back("this node has no NVIDIA or AMD GPU device files (/dev/nvidiactl, /dev/kfd),");
+        reasons.emplace_back("run on a node with GPUs");
     }
     if (!facts.runtimeDirectory.empty())
     {
         reasons.push_back("AdaptiveCpp in " + facts.runtimeDirectory + " has the backends: " +
                           (list.empty() ? "none" : list));
     }
-    reasons.push_back("acpp-info -l lists the devices that AdaptiveCpp finds, and the environment");
-    reasons.push_back("variable ACPP_DEBUG_LEVEL=2 shows its messages");
+    reasons.emplace_back("acpp-info -l lists the devices that AdaptiveCpp finds, and the environment");
+    reasons.emplace_back("variable ACPP_DEBUG_LEVEL=2 shows its messages");
     return reasons;
 }
 
