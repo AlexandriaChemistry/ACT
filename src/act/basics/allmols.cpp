@@ -96,7 +96,7 @@ AlexandriaMol::AlexandriaMol(const JsonValue &mol)
     inchikey       = jsonText(mol, "inchikey");
     pointGroup     = jsonText(mol, "point_group");
     symmetryNumber = static_cast<int>(jsonNumber(mol, "symmetry_number"));
-    auto list = [&mol](const std::string &name)
+    const auto list = [&mol](const std::string &name)
     {
         std::vector<std::string> items;
         const JsonValue *v = mol.find(name);
