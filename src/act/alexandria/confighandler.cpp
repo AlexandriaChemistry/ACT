@@ -159,7 +159,7 @@ void BayesConfigHandler::check_pargs(MsgHandler *)
     GMX_RELEASE_ASSERT(seed_ >= 0, "-seed must be nonnegative.");
     if (seed_ == 0)  // Randomize seed if 0 is provided
     {
-      seed_ = ::time(NULL);
+      seed_ = ::time(nullptr);
     }
     // maxiter_
     GMX_RELEASE_ASSERT(maxiter_ >= 0, "-maxiter must be nonnegative.");
@@ -446,7 +446,7 @@ eMinimizeAlgorithm stringToEMinimizeAlgorithm(const std::string &str)
 void SimulationConfigHandler::add_options(std::vector<t_pargs>             *pargs,
                                           gmx_unused std::vector<t_filenm> *fnms)
 {
-    std::vector<t_pargs> extra = {
+    const std::vector<t_pargs> extra = {
         { "-sp", FALSE, etBOOL, {&singlePoint_},
           "Do a single point energy calculation and call it a day." },
         { "-minimize", FALSE, etBOOL, {&minimize_},
@@ -508,7 +508,7 @@ void SimulationConfigHandler::add_minimize_options(std::vector<t_pargs> *pargs,
 void SimulationConfigHandler::add_MD_options(std::vector<t_pargs> *pargs)
 {
     commStr[0] = nullptr;
-    std::vector<t_pargs> MDextra = {
+    const std::vector<t_pargs> MDextra = {
         { "-nsteps", FALSE, etINT, {&nsteps_},
           "Number of integration steps." },
         { "-deltat", FALSE, etREAL, {&deltat_},

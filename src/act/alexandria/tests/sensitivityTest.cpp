@@ -186,7 +186,7 @@ TEST(SensitivityTest, FlatParameter)
 TEST(SensitivityTest, FlatParameterMakesDegeneratePair)
 {
     // chi2 = 5 + y^2 does not depend on x, which is at its lower bound
-    auto        g = [](double y) { return 5 + y*y; };
+    const auto  g = [](double y) { return 5 + y*y; };
     Sensitivity si, sj;
     for (double x : { 0.0, 0.01, 0.02 })
     {
@@ -426,8 +426,8 @@ static Sensitivity2D pairOnSurface(const Surface &f, double pi, double pj,
                                    double deltai, double deltaj,
                                    int sidei = 0, int sidej = 0)
 {
-    auto        xs = gridValues(pi, deltai, sidei);
-    auto        ys = gridValues(pj, deltaj, sidej);
+    const auto  xs = gridValues(pi, deltai, sidei);
+    const auto  ys = gridValues(pj, deltaj, sidej);
     Sensitivity si, sj;
     for (double x : xs)
     {
@@ -463,7 +463,7 @@ static double quadratic(double x, double y)
 // Test: The coupling of a quadratic surface is exact and the corners are on it
 TEST(Sensitivity2DTest, CrossTermExactForQuadratic)
 {
-    auto s2 = pairOnSurface(quadratic, 0.3, -0.4, 0.05, 0.02);
+    const auto s2 = pairOnSurface(quadratic, 0.3, -0.4, 0.05, 0.02);
     EXPECT_NEAR(-1.5, s2.aij(), 1e-8);
     EXPECT_NEAR(0, s2.cornerRms(), 1e-12);
     auto H = s2.hessian();
@@ -485,7 +485,7 @@ TEST(Sensitivity2DTest, CrossTermOneSidedGrid)
     for (auto sides : { std::array<int, 2>{ 1, -1 }, std::array<int, 2>{ -1, 1 },
                         std::array<int, 2>{ 1, 0 }, std::array<int, 2>{ 0, -1 } })
     {
-        auto s2 = pairOnSurface(quadratic, 0.3, -0.4, 0.05, 0.02, sides[0], sides[1]);
+        const auto s2 = pairOnSurface(quadratic, 0.3, -0.4, 0.05, 0.02, sides[0], sides[1]);
         EXPECT_NEAR(-1.5, s2.aij(), 1e-8) << sides[0] << " " << sides[1];
         EXPECT_NEAR(0, s2.cornerRms(), 1e-12);
     }
@@ -495,9 +495,9 @@ TEST(Sensitivity2DTest, CrossTermOneSidedGrid)
 // also for a surface that is not quadratic, which shows in the corners
 TEST(Sensitivity2DTest, CrossTermIsCentralDifference)
 {
-    Surface f = [](double x, double y) { return std::exp(x + 2*y) + x*x*y; };
+    const Surface f = [](double x, double y) { return std::exp(x + 2*y) + x*x*y; };
     double  pi = 0.1, pj = 0.2, di = 0.05, dj = 0.03;
-    auto    s2 = pairOnSurface(f, pi, pj, di, dj);
+    const auto s2 = pairOnSurface(f, pi, pj, di, dj);
     double  cd = (f(pi + di, pj + dj) - f(pi + di, pj - dj) -
                   f(pi - di, pj + dj) + f(pi - di, pj - dj))/(4*di*dj);
     EXPECT_NEAR(cd, s2.aij(), 1e-9*std::abs(cd));
@@ -508,7 +508,7 @@ TEST(Sensitivity2DTest, CrossTermIsCentralDifference)
 // parameters, but the pair is at a saddle point
 TEST(Sensitivity2DTest, SaddleNotConverged)
 {
-    Surface f  = [](double x, double y) { return x*x + y*y + 3*x*y + 1; };
+    const Surface f  = [](double x, double y) { return x*x + y*y + 3*x*y + 1; };
     auto    s2 = pairOnSurface(f, 0, 0, 0.05, 0.05);
     EXPECT_EQ(PairShape::Saddle, s2.shape());
     EXPECT_FALSE(s2.checkConvergence({ -5, 5, -5, 5 }, { 0.5, 0.5 }));
@@ -576,7 +576,7 @@ TEST(Sensitivity2DTest, BoxMinimumOnEdge)
 {
     // Minimum at (3, 0.5), the upper bound of x is 2. Along x = 2 the
     // minimum is at y = 0.5 + 0.25.
-    Surface f = [](double x, double y)
+    const Surface f = [](double x, double y)
     { return (x - 3)*(x - 3) + (y - 0.5)*(y - 0.5) + 0.5*(x - 3)*(y - 0.5) + 1; };
     std::array<double, 4> bounds = { 0, 2, 0, 1 };
     // The parameter x is at its upper bound, the grid is below it
@@ -596,7 +596,7 @@ TEST(Sensitivity2DTest, BoxMinimumOnEdge)
 // Test: With the minimum beyond two bounds it is in the corner
 TEST(Sensitivity2DTest, BoxMinimumAtCorner)
 {
-    Surface f = [](double x, double y)
+    const Surface f = [](double x, double y)
     { return (x - 3)*(x - 3) + (y - 2)*(y - 2) + 0.3*(x - 3)*(y - 2) + 1; };
     std::array<double, 4> bounds = { 0, 2, 0, 1 };
     auto s2 = pairOnSurface(f, 2, 1, 0.01, 0.005, -1, -1);
@@ -740,7 +740,7 @@ TEST(HessianDiagnosticTest, NewtonStepWithCoupling)
 // Test: An indefinite Hessian has no Newton step
 TEST(HessianDiagnosticTest, Indefinite)
 {
-    auto hd = diagnoseHessian({ { 2, 3 }, { 3, 2 } }, { 0, 0 }, { 1, 1 });
+    const auto hd = diagnoseHessian({ { 2, 3 }, { 3, 2 } }, { 0, 0 }, { 1, 1 });
     EXPECT_FALSE(hd.positiveDefinite);
     EXPECT_NEAR(-1, hd.eigenvalueMin, 1e-12);
     EXPECT_NEAR(5, hd.eigenvalueMax, 1e-12);
@@ -751,9 +751,9 @@ TEST(HessianDiagnosticTest, Indefinite)
 // Test: Each pair of three parameters is positive definite, all three are not
 TEST(HessianDiagnosticTest, PairsPositiveDefiniteButNotAll)
 {
-    std::vector<std::vector<double>> H = { { 1, -0.6, -0.6 }, { -0.6, 1, -0.6 }, { -0.6, -0.6, 1 } };
+    const std::vector<std::vector<double>> H = { { 1, -0.6, -0.6 }, { -0.6, 1, -0.6 }, { -0.6, -0.6, 1 } };
     // Each 2x2 block has determinant 1 - 0.36 > 0
-    auto hd = diagnoseHessian(H, { 0, 0, 0 }, { 1, 1, 1 });
+    const auto hd = diagnoseHessian(H, { 0, 0, 0 }, { 1, 1, 1 });
     EXPECT_FALSE(hd.positiveDefinite);
     EXPECT_NEAR(1 - 2*0.6, hd.eigenvalueMin, 1e-12);
     EXPECT_NEAR(1 + 0.6, hd.eigenvalueMax, 1e-12);
@@ -762,7 +762,7 @@ TEST(HessianDiagnosticTest, PairsPositiveDefiniteButNotAll)
 // Test: A singular Hessian is not positive definite
 TEST(HessianDiagnosticTest, Singular)
 {
-    auto hd = diagnoseHessian({ { 2, -2 }, { -2, 2 } }, { 0, 0 }, { 1, 1 });
+    const auto hd = diagnoseHessian({ { 2, -2 }, { -2, 2 } }, { 0, 0 }, { 1, 1 });
     EXPECT_FALSE(hd.positiveDefinite);
 }
 

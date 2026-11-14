@@ -120,10 +120,10 @@ protected:
         msghandler_.setPrintLevel(ACTStatus::Warning);
         cr_.init(cr_.size());
         sii_ = new StaticIndividualInfo(&cr_);
-        auto ffName = fileManager().getInputFilePath("forcefields/ACS-g1.xml");
+        const auto ffName = fileManager().getInputFilePath("forcefields/ACS-g1.xml");
         sii_->fillForceField(&msghandler_, ffName.c_str());
         // All molecules are in the training set
-        auto  selName = fileManager().getTemporaryFilePath("selection.dat");
+        const auto selName = fileManager().getTemporaryFilePath("selection.dat");
         FILE *fp      = fopen(selName.c_str(), "w");
         for(const char *mol : { "1-butanol", "acetone", "water" })
         {
@@ -138,7 +138,7 @@ protected:
         molgen_ = new MolGen(&cr_);
         molgen_->addFitOption("chi");
         auto mpName = fileManager().getInputFilePath("molprop/molprop.xml");
-        std::vector<t_filenm> fnms = { { efXML, "-mp", nullptr, ffREAD, { mpName } } };
+        const std::vector<t_filenm> fnms = { { efXML, "-mp", nullptr, ffREAD, { mpName } } };
         CompoundReader        compR;
         EXPECT_EQ(3u, molgen_->Read(&msghandler_, fnms, sii_->forcefield(), gms,
                                     sii_->fittingTargetsConst(iMolSelect::Train),
@@ -157,7 +157,7 @@ protected:
     }
 
     //! Clean up
-    ~SensitivityAnalysisTrainTest()
+    ~SensitivityAnalysisTrainTest() override
     {
         delete molgen_;
         delete sii_;
@@ -420,7 +420,7 @@ protected:
             for (size_t j = i + 1; j < np; j++)
             {
                 const auto &pair  = sj["pairs"][k++];
-                std::string label = sii_->paramNames()[i] + " / " + sii_->paramNames()[j];
+                const std::string label = sii_->paramNames()[i] + " / " + sii_->paramNames()[j];
                 EXPECT_EQ(i, pair["i"].get<size_t>());
                 EXPECT_EQ(j, pair["j"].get<size_t>());
                 EXPECT_EQ(sii_->paramNames()[i], pair["names"][0].get<std::string>());
@@ -469,10 +469,10 @@ protected:
                 double hi    = 2*curvature(xs[i], ys[i]);
                 double hj    = 2*curvature(xs[j], ys[j]);
                 double det   = hi*hj - aij*aij;
-                auto   shape = pair["shape"].get<std::string>();
+                const auto shape = pair["shape"].get<std::string>();
                 if (std::abs(det) > 1e-4*(std::abs(hi*hj) + aij*aij))
                 {
-                    std::string expected = det < 0 ? "saddle" : (hi > 0 ? "minimum" : "maximum");
+                    const std::string expected = det < 0 ? "saddle" : (hi > 0 ? "minimum" : "maximum");
                     EXPECT_EQ(expected, shape) << label;
                 }
                 bool conv = pair["converged"].get<bool>();
@@ -540,7 +540,7 @@ protected:
             Eigen::VectorXd step = Eigen::VectorXd::Zero(nf);
             if (nf > 0)
             {
-                Eigen::SelfAdjointEigenSolver<Eigen::MatrixXd> solver(Hf);
+                const Eigen::SelfAdjointEigenSolver<Eigen::MatrixXd> solver(Hf);
                 const auto &eval = solver.eigenvalues();
                 const auto &evec = solver.eigenvectors();
                 double      emax = eval.cwiseAbs().maxCoeff();
@@ -635,7 +635,7 @@ TEST_F(SensitivityAnalysisTrainTest, ParametersAtBounds)
 {
     ASSERT_EQ(5u, sii_->nParam());
     auto param  = genome_.bases();
-    auto delta  = [this](size_t i) { return (sii_->upperBound()[i] - sii_->lowerBound()[i])/200; };
+    const auto delta  = [this](size_t i) { return (sii_->upperBound()[i] - sii_->lowerBound()[i])/200; };
     param[0]    = sii_->lowerBound()[0];
     param[1]    = sii_->upperBound()[1];
     param[2]    = sii_->lowerBound()[2] + 0.5*delta(2);
@@ -664,7 +664,7 @@ TEST_F(SensitivityAnalysisTrainTest, ConvergedAtMinimum)
 // Test: After the analysis the genome and the force field are as before
 TEST_F(SensitivityAnalysisTrainTest, RestoresParameters)
 {
-    auto   param  = genome_.bases();
+    const auto param  = genome_.bases();
     double chi2_0 = chi2(param);
     SensitivityAnalysis sens;
     (void) sens.run(&msghandler_, sii_, &fitComp_, &genome_, iMolSelect::Train, SensitivityMode::OneD, true);
@@ -694,7 +694,7 @@ TEST_F(SensitivityAnalysisTrainTest, SecondRunReplacesOutput)
     SensitivityAnalysis sens;
     (void) sens.run(&msghandler_, sii_, &fitComp_, &genome_, iMolSelect::Train,
                     SensitivityMode::OneD, true);
-    auto first = sens.json();
+    const auto first = sens.json();
     (void) sens.run(&msghandler_, sii_, &fitComp_, &genome_, iMolSelect::Train,
                     SensitivityMode::OneD, true);
     EXPECT_EQ(first, sens.json());
@@ -710,11 +710,11 @@ TEST_F(SensitivityAnalysisTrainTest, WritesJsonFile)
     SensitivityAnalysis sens;
     (void) sens.run(&msghandler_, sii_, &fitComp_, &genome_, iMolSelect::Train,
                     SensitivityMode::OneD, true);
-    auto fileName = fileManager().getTemporaryFilePath("sensitivity.json");
+    const auto fileName = fileManager().getTemporaryFilePath("sensitivity.json");
     sens.write(fileName);
     std::ifstream in(fileName);
     ASSERT_TRUE(in.good());
-    auto fromFile = nlohmann::ordered_json::parse(in);
+    const auto fromFile = nlohmann::ordered_json::parse(in);
     EXPECT_EQ(sens.json(), fromFile);
 }
 
@@ -732,7 +732,7 @@ TEST_F(SensitivityAnalysisTrainTest, TwoDParametersAtBounds)
 {
     ASSERT_EQ(5u, sii_->nParam());
     auto param  = genome_.bases();
-    auto delta  = [this](size_t i) { return (sii_->upperBound()[i] - sii_->lowerBound()[i])/200; };
+    const auto delta  = [this](size_t i) { return (sii_->upperBound()[i] - sii_->lowerBound()[i])/200; };
     param[0]    = sii_->lowerBound()[0];
     param[1]    = sii_->upperBound()[1];
     param[2]    = sii_->lowerBound()[2] + 0.5*delta(2);
@@ -784,7 +784,7 @@ TEST_F(SensitivityAnalysisTrainTest, TwoDConvergedAfterNewtonSteps)
 // are as before
 TEST_F(SensitivityAnalysisTrainTest, TwoDRestoresParameters)
 {
-    auto   param  = genome_.bases();
+    const auto param  = genome_.bases();
     double chi2_0 = chi2(param);
     SensitivityAnalysis sens;
     (void) sens.run(&msghandler_, sii_, &fitComp_, &genome_, iMolSelect::Train,

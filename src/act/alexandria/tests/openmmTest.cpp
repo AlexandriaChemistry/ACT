@@ -86,10 +86,10 @@ class OpenMMXmlTest : public gmx::test::CommandLineTestBase
         std::vector<ACTMol> mps;
         std::string molfn("molecules/");
         molfn += fileName;
-        auto dataName = gmx::test::TestFileManager::getInputFilePath(molfn);
+        const auto dataName = gmx::test::TestFileManager::getInputFilePath(molfn);
         initACTMol(&msghandler, dataName, ff, &fcomp, &mps);
 
-        auto tmpFile  = tfm.getTemporaryFilePath("xml");
+        const auto tmpFile  = tfm.getTemporaryFilePath("xml");
         int  ntrain   = 1;
         writeOpenMM(&msghandler, tmpFile, ff, mps, mDrude, ntrain, numberAtypes);
         EXPECT_TRUE(msghandler.ok());
@@ -106,7 +106,7 @@ class OpenMMXmlTest : public gmx::test::CommandLineTestBase
             if (pos != std::string::npos)
             {
                 auto begin = pos + std::strlen("<Particle type1=\"");
-                auto type1 = line.substr(begin, line.find('"', begin) - begin);
+                const auto type1 = line.substr(begin, line.find('"', begin) - begin);
                 EXPECT_TRUE(shellTypes.insert(type1).second) << "Shell type " << type1 << " has more than one parent type";
             }
         }
@@ -173,7 +173,7 @@ TEST(OpenMMXmlNoNumberTest, MethanolWaterPol)
     auto          ff = getForceField("ACS-pg1");
     ForceComputer fcomp(1e-7, 25, 1.0);
     std::vector<ACTMol> mps;
-    auto dataName = gmx::test::TestFileManager::getInputFilePath("molecules/methanol#water.pdb");
+    const auto dataName = gmx::test::TestFileManager::getInputFilePath("molecules/methanol#water.pdb");
     initACTMol(&msghandler, dataName, ff, &fcomp, &mps);
     ASSERT_TRUE(msghandler.ok());
     gmx::test::TestFileManager tfm;
@@ -255,7 +255,7 @@ TEST(OpenMMXmlVsite4Test, Methylamine)
     auto          ff = getForceField("ACS-pg-vs3");
     ForceComputer fcomp(1e-7, 25, 1.0);
     std::vector<ACTMol> mps;
-    auto dataName = gmx::test::TestFileManager::getInputFilePath("molecules/methylamine.sdf");
+    const auto dataName = gmx::test::TestFileManager::getInputFilePath("molecules/methylamine.sdf");
     initACTMol(&msghandler, dataName, ff, &fcomp, &mps);
     ASSERT_TRUE(msghandler.ok());
     gmx::test::TestFileManager tfm;
@@ -270,7 +270,7 @@ static std::map<std::string, std::string> methanolWaterNames(MsgHandler        *
     auto          ff = getForceField("ACS-g1");
     ForceComputer fcomp(1e-7, 25, 1.0);
     std::vector<ACTMol> mps;
-    auto dataName = gmx::test::TestFileManager::getInputFilePath("molecules/methanol#water.pdb");
+    const auto dataName = gmx::test::TestFileManager::getInputFilePath("molecules/methanol#water.pdb");
     initACTMol(msghandler, dataName, ff, &fcomp, &mps);
     EXPECT_TRUE(msghandler->ok());
     auto names = openMMResidueNames(msghandler, mps, userNames);
@@ -289,7 +289,7 @@ TEST(OpenMMResidueNamesTest, Generated)
 {
     MsgHandler msghandler;
     msghandler.setPrintLevel(ACTStatus::Fatal);
-    auto names = methanolWaterNames(&msghandler, "");
+    const auto names = methanolWaterNames(&msghandler, "");
     EXPECT_TRUE(msghandler.ok());
     // MET is methionine in OpenMM
     std::map<std::string, std::string> expected = { { "methanol", "ME1" }, { "water", "OXI" } };
@@ -302,14 +302,14 @@ TEST(OpenMMResidueNamesTest, User)
     {
         MsgHandler msghandler;
         msghandler.setPrintLevel(ACTStatus::Fatal);
-        auto names = methanolWaterNames(&msghandler, userNames);
+        const auto names = methanolWaterNames(&msghandler, userNames);
         EXPECT_TRUE(msghandler.ok()) << userNames;
         std::map<std::string, std::string> expected = { { "methanol", "MOH" }, { "water", "WTR" } };
         EXPECT_EQ(expected, names) << userNames;
     }
     MsgHandler msghandler;
     msghandler.setPrintLevel(ACTStatus::Fatal);
-    auto names = methanolWaterNames(&msghandler, "MOH");
+    const auto names = methanolWaterNames(&msghandler, "MOH");
     std::map<std::string, std::string> expected = { { "methanol", "MOH" }, { "water", "OXI" } };
     EXPECT_EQ(expected, names);
 }
@@ -334,11 +334,11 @@ TEST(ParticleNamesTest, NumberedInResidue)
     auto          ff = getForceField("ACS-pg1");
     ForceComputer fcomp(1e-7, 25, 1.0);
     std::vector<ACTMol> mps;
-    auto dataName = gmx::test::TestFileManager::getInputFilePath("molecules/methanol#water.pdb");
+    const auto dataName = gmx::test::TestFileManager::getInputFilePath("molecules/methanol#water.pdb");
     initACTMol(&msghandler, dataName, ff, &fcomp, &mps);
     ASSERT_TRUE(msghandler.ok());
     // The shells get the number of their atom, the water starts at one again
-    std::vector<std::string> expected = { "O1", "Os1", "H2", "Hs2", "C3", "Cs3", "H4", "Hs4",
+    const std::vector<std::string> expected = { "O1", "Os1", "H2", "Hs2", "C3", "Cs3", "H4", "Hs4",
                                           "H5", "Hs5", "H6", "Hs6",
                                           "O1", "Os1", "H2", "Hs2", "H3", "Hs3" };
     EXPECT_EQ(expected, particleNames(mps[0].atomsConst()));
@@ -355,7 +355,7 @@ TEST(IonChargesTest, SodiumWater)
         auto          ff = getForceField(ffName);
         ForceComputer fcomp(1e-7, 25, 1.0);
         std::vector<ACTMol> mps;
-        auto dataName = gmx::test::TestFileManager::getInputFilePath("molecules/sodium#water.pdb");
+        const auto dataName = gmx::test::TestFileManager::getInputFilePath("molecules/sodium#water.pdb");
         initACTMol(&msghandler, dataName, ff, &fcomp, &mps);
         ASSERT_TRUE(msghandler.ok()) << ffName;
         const auto &atoms   = mps[0].atomsConst();

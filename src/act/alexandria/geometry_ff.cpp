@@ -70,15 +70,15 @@ static void generate_bcc(ForceField *pd,
     if (!pd->interactionPresent(itype))
     {
         auto canSwap = CanSwap::No;
-        ForceFieldParameterList newparam("", canSwap);
+        const ForceFieldParameterList newparam("", canSwap);
         pd->addForces(itype, newparam);
     }
     auto bcc   = pd->findForces(itype);
     bcc->clearParameters();
 
-    auto delta_etaParam = ForceFieldParameter("eV/e", delta_eta, 0, 0, -8, 20, Mutability::Bounded, true, false);
-    auto enpBounded     = ForceFieldParameter("eV", 0, 0, 0, -8, 8, Mutability::Bounded, true, false);
-    auto enpFixed       = ForceFieldParameter("eV", 0, 0, 0, 0, 0, Mutability::Fixed, true, true);
+    const auto delta_etaParam = ForceFieldParameter("eV/e", delta_eta, 0, 0, -8, 20, Mutability::Bounded, true, false);
+    const auto enpBounded     = ForceFieldParameter("eV", 0, 0, 0, -8, 8, Mutability::Bounded, true, false);
+    const auto enpFixed       = ForceFieldParameter("eV", 0, 0, 0, 0, 0, Mutability::Fixed, true, true);
 
     // Build a reverse map from bond-type ID to particle type for EEN lookup
     const auto &ptypes  = pd->particleTypesConst();
@@ -89,7 +89,7 @@ static void generate_bcc(ForceField *pd,
     {
         if (ai.second.hasInteractionType(itpbond))
         {
-            auto bi = ai.second.interactionTypeToIdentifier(itpbond).id();
+            const auto bi = ai.second.interactionTypeToIdentifier(itpbond).id();
             bondTypeToParticle[bi] = &ai.second;
         }
     }
@@ -108,8 +108,8 @@ static void generate_bcc(ForceField *pd,
         // Bond order is encoded in the Identifier; fall back to single bond (1.0) if missing
         double      bondorder = bondId.bondOrders().empty() ? 1.0 : bondId.bondOrders()[0];
 
-        auto it_i = bondTypeToParticle.find(bi);
-        auto it_j = bondTypeToParticle.find(bj);
+        const auto it_i = bondTypeToParticle.find(bi);
+        const auto it_j = bondTypeToParticle.find(bj);
         if (it_i == bondTypeToParticle.end() || it_j == bondTypeToParticle.end())
         {
             continue;
@@ -120,12 +120,12 @@ static void generate_bcc(ForceField *pd,
         {
             continue;
         }
-        auto zi = it_i->second->interactionTypeToIdentifier(entype).id();
-        auto zj = it_j->second->interactionTypeToIdentifier(entype).id();
+        const auto zi = it_i->second->interactionTypeToIdentifier(entype).id();
+        const auto zj = it_j->second->interactionTypeToIdentifier(entype).id();
         if (!zi.empty() && !zj.empty())
         {
-            Identifier bccId1({ zi, zj }, { bondorder }, bcc->canSwap());
-            Identifier bccId2({ zj, zi }, { bondorder }, bcc->canSwap());
+            const Identifier bccId1({ zi, zj }, { bondorder }, bcc->canSwap());
+            const Identifier bccId2({ zj, zi }, { bondorder }, bcc->canSwap());
             if (!bcc->parameterExists(bccId1) &&
                 !bcc->parameterExists(bccId2))
             {

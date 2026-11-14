@@ -284,7 +284,7 @@ std::vector<std::string> MolGen::particleParametersToFit() const
     {
         if (fit(name))
         {
-            names.push_back(name);
+            names.emplace_back(name);
         }
     }
     return names;
@@ -298,7 +298,7 @@ void MolGen::checkDataSufficiency(MsgHandler *msghandler,
     {
         return;
     }
-    auto nTrain = [this]()
+    const auto nTrain = [this]()
     {
         return std::count_if(actmol_.begin(), actmol_.end(),
                              [](const ACTMol &m) { return m.datasetType() == iMolSelect::Train; });
@@ -338,7 +338,7 @@ void MolGen::checkDataSufficiency(MsgHandler *msghandler,
                         }
                     }
                     // Loop over combination rules
-                    for(auto crule : fplist->combinationRules())
+                    for(const auto &crule : fplist->combinationRules())
                     {
                         if (fplist->combinationRule(crule.first)->ffplConst().mutability() == Mutability::Bounded)
                         {
@@ -388,7 +388,7 @@ void MolGen::checkDataSufficiency(MsgHandler *msghandler,
                 continue;
             }
             auto forces    = pd->findForces(itype);
-            auto comb_rule = forces->combinationRules();
+            const auto comb_rule = forces->combinationRules();
             if (!comb_rule.empty())
             {
                 atomicItypes.push_back(itype);
@@ -418,7 +418,7 @@ void MolGen::checkDataSufficiency(MsgHandler *msghandler,
                         if (atype->hasInteractionType(itype))
                         {
                             auto fplist = pd->findForces(itype);
-                            auto subId  = atype->interactionTypeToIdentifier(itype);
+                            const auto subId  = atype->interactionTypeToIdentifier(itype);
                             if (!subId.id().empty())
                             {
                                 for(auto &ff : *(fplist->findParameters(subId)))
@@ -454,15 +454,15 @@ void MolGen::checkDataSufficiency(MsgHandler *msghandler,
                         continue;
                     }
                     auto forces    = pd->findForces(itype);
-                    auto comb_rule = forces->combinationRules();
+                    const auto comb_rule = forces->combinationRules();
                     if (!comb_rule.empty() && optimize(itype))
                     {
                         // This is a hack to allow fitting of a whole matrix of Van der Waals parameters.
                         for(size_t j = i+1; j < myatoms.size(); j++)
                         {
-                            auto iPType = pd->findParticleType(myatoms[i].ffType())->interactionTypeToIdentifier(itype).id();
-                            auto jPType = pd->findParticleType(myatoms[j].ffType())->interactionTypeToIdentifier(itype).id();
-                            auto vdwId  = Identifier({iPType, jPType}, { 1 }, forces->canSwap());
+                            const auto iPType = pd->findParticleType(myatoms[i].ffType())->interactionTypeToIdentifier(itype).id();
+                            const auto jPType = pd->findParticleType(myatoms[j].ffType())->interactionTypeToIdentifier(itype).id();
+                            const auto vdwId  = Identifier({iPType, jPType}, { 1 }, forces->canSwap());
                             if (!forces->parameterExists(vdwId))
                             {
                                 GMX_THROW(gmx::InternalError(gmx::formatString("Unknown pair %s-%s for %s",
@@ -509,8 +509,8 @@ void MolGen::checkDataSufficiency(MsgHandler *msghandler,
                             int ai = topentry->atomIndex(0);
                             int aj = topentry->atomIndex(1);
                             auto ztype  = InteractionType::ELECTRONEGATIVITYEQUALIZATION;
-                            auto iPType = pd->findParticleType(myatoms[ai].ffType())->interactionTypeToIdentifier(ztype).id();
-                            auto jPType = pd->findParticleType(myatoms[aj].ffType())->interactionTypeToIdentifier(ztype).id();
+                            const auto iPType = pd->findParticleType(myatoms[ai].ffType())->interactionTypeToIdentifier(ztype).id();
+                            const auto jPType = pd->findParticleType(myatoms[aj].ffType())->interactionTypeToIdentifier(ztype).id();
                             auto bcc   = pd->findForces(bcctype);
                             auto bccId = Identifier({iPType, jPType}, topentry->bondOrders(), bcc->canSwap());
                             if (!bcc->parameterExists(bccId))
@@ -533,7 +533,7 @@ void MolGen::checkDataSufficiency(MsgHandler *msghandler,
                 }
             }
             // Now angles and dihedrals
-            std::vector<InteractionType> atypes = {
+            const std::vector<InteractionType> atypes = {
                 InteractionType::ANGLES, InteractionType::LINEAR_ANGLES,
                 InteractionType::PROPER_DIHEDRALS,
                 InteractionType::IMPROPER_DIHEDRALS,
@@ -615,7 +615,7 @@ void MolGen::checkDataSufficiency(MsgHandler *msghandler,
                             if (atype->hasInteractionType(itype))
                             {
                                 auto fplist = pd->findForces(itype);
-                                auto ztype  = atype->interactionTypeToIdentifier(itype);
+                                const auto ztype  = atype->interactionTypeToIdentifier(itype);
                                 if (!ztype.id().empty())
                                 {
                                     for(auto &force : fplist->findParameterMapConst(ztype))
@@ -686,7 +686,7 @@ void MolGen::checkDataSufficiency(MsgHandler *msghandler,
                 removeMol.push_back(mol.getIupac());
             }
         }
-        if (msghandler->info() && removeMol.size() > 0)
+        if (msghandler->info() && !removeMol.empty())
         {
             msghandler->msg(ACTStatus::Warning,
                             gmx::formatString("Found %zu molecules without sufficient support, will remove them.\n",
@@ -694,9 +694,9 @@ void MolGen::checkDataSufficiency(MsgHandler *msghandler,
         }
         for(auto &rmol : removeMol)
         {
-            auto moliter = std::find_if(actmol_.begin(), actmol_.end(),
-                                        [rmol](ACTMol const &f)
-                                        { return (rmol == f.getIupac()); });
+            const auto moliter = std::find_if(actmol_.begin(), actmol_.end(),
+                                              [rmol](ACTMol const &f)
+                                              { return (rmol == f.getIupac()); });
             if (moliter == actmol_.end())
             {
                 GMX_THROW(gmx::InternalError(gmx::formatString("Cannot find %s in actmol", rmol.c_str()).c_str()));
@@ -734,7 +734,7 @@ void MolGen::countTargetSize() // Called in read method
     for(auto &m : actmol_)
     {
         auto ims = m.datasetType();
-        auto ts  = targetSize_.find(ims);
+        const auto ts  = targetSize_.find(ims);
         if (ts == targetSize_.end())
         {
             targetSize_.insert(std::pair<iMolSelect, size_t>(ims, 1));
@@ -902,7 +902,7 @@ size_t MolGen::Read(MsgHandler                          *msghandler,
             { MolPropObservable::CHARGE,            iqmType::QM }
         };
     int  root  = 0;
-    auto qmap  = compR->chargeMapConst();
+    const auto qmap  = compR->chargeMapConst();
     auto alg   = compR->algorithm();
     if (cr_->isMaster())
     {
@@ -1045,7 +1045,7 @@ size_t MolGen::Read(MsgHandler                          *msghandler,
             // Local compounds are computed locally
             actmol->setSupport(eSupport::Local);
             // See if we need to send stuff around
-            if (mycomms.size() > 0)
+            if (!mycomms.empty())
             {
                 int comm_index;
                 if (loadBalance_)
@@ -1203,37 +1203,7 @@ size_t MolGen::Read(MsgHandler                          *msghandler,
             if (ACTMessage::OK == imm)
             {
                 //! \todo Checks for energy should be done only when energy is a target for fitting.
-                if (false)
-                {
-                    double deltaE0;
-                    if (!actmol.energy(MolPropObservable::DELTAE0, &deltaE0))
-                    {
-                        if (msghandler->debug())
-                        {
-                            msghandler->writeDebug(gmx::formatString("No DeltaE0 for %s",
-                                                                     actmol.getMolname().c_str()));
-                        }
-                        imm = ACTMessage::NoData;
-                    }
-                    if (ACTMessage::OK == imm)
-                    {
-                        double hform;
-                        if (!actmol.energy(MolPropObservable::DHFORM, &hform))
-                        {
-                            if (msghandler->debug())
-                            {
-                                msghandler->writeDebug(gmx::formatString("No DeltaHform for %s",
-                                                                         actmol.getMolname().c_str()));
-                            }
-                            imm = ACTMessage::NoData;
-                        }
-                        else if (msghandler->debug())
-                        {
-                            msghandler->writeDebug(gmx::formatString("Added molecule %s. Hform = %g DeltaE0 = %g\n",
-                                                                     actmol.getMolname().c_str(), hform, deltaE0));
-                        }
-                    }
-                }
+
                 actmol_.push_back(std::move(actmol));
                 if (cr_->isMiddleMan() && msghandler->debug())
                 {

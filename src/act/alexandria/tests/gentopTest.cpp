@@ -81,8 +81,8 @@ Topology readTopology(const std::string &fileName)
     while (std::getline(in, line))
     {
         auto        semicolon = line.find(';');
-        std::string content   = line.substr(0, semicolon);
-        std::string comment   = semicolon == std::string::npos ? "" : line.substr(semicolon + 1);
+        const std::string content   = line.substr(0, semicolon);
+        const std::string comment   = semicolon == std::string::npos ? "" : line.substr(semicolon + 1);
         auto        open      = content.find('[');
         if (open != std::string::npos)
         {
@@ -338,7 +338,7 @@ protected:
             {
                 ASSERT_GT(l.fields.size(), na) << s.first;
                 int  type = std::stoi(l.fields[na]);
-                auto np   = nparams.find({ s.first, type });
+                const auto np   = nparams.find({ s.first, type });
                 ASSERT_TRUE(np != nparams.end()) << s.first << " function type " << type;
                 EXPECT_EQ(na + 1 + np->second, l.fields.size()) << s.first << " " << l.comment;
             }
@@ -355,7 +355,7 @@ TEST_F(GentopTest, GromacsTopology)
 {
     std::map<std::string, std::string> files = { { "-p", "acetone.top" }, { "-c", "acetone.pdb" } };
     run("forcefields/ACS-g1.xml", "acetone.sdf", &files);
-    auto top = readTopology(files["-p"]);
+    const auto top = readTopology(files["-p"]);
     checkBondeds(top);
     for (const char *s : { "defaults", "atomtypes", "moleculetype", "atoms", "bonds", "angles", "dihedrals" })
     {
@@ -376,7 +376,7 @@ TEST_F(GentopTest, GromacsTopology)
     EXPECT_EQ(expectedExclusionPairs(top), exclusionPairs(top));
     ForceField pd;
     readForceField(fileManager().getInputFilePath("forcefields/ACS-g1.xml"), &pd);
-    auto angles = section(top, "angles");
+    const auto angles = section(top, "angles");
     EXPECT_EQ(15u, angles.size());
     for (const auto &a : angles)
     {
@@ -399,7 +399,7 @@ TEST_F(GentopTest, GromacsTopology)
     // the pairs as computed by ACT
     auto defaults = section(top, "defaults");
     ASSERT_EQ(1u, defaults.size());
-    std::vector<std::string> expected = { "1", "3", "no", "1", "1" };
+    const std::vector<std::string> expected = { "1", "3", "no", "1", "1" };
     EXPECT_EQ(expected, defaults[0].fields);
     for (const auto &a : section(top, "atomtypes"))
     {
@@ -407,13 +407,13 @@ TEST_F(GentopTest, GromacsTopology)
         EXPECT_TRUE(a.fields[4] == "A" || a.fields[4] == "S" || a.fields[4] == "V") << a.fields[0];
     }
     auto &vdw   = pd.findForcesConst(InteractionType::VDW);
-    auto  pairs = section(top, "nonbond_params");
+    const auto pairs = section(top, "nonbond_params");
     EXPECT_FALSE(pairs.empty());
     for (const auto &np : pairs)
     {
         ASSERT_EQ(5u, np.fields.size());
-        auto vi = pd.findParticleType(np.fields[0])->interactionTypeToIdentifier(InteractionType::VDW);
-        auto vj = pd.findParticleType(np.fields[1])->interactionTypeToIdentifier(InteractionType::VDW);
+        const auto vi = pd.findParticleType(np.fields[0])->interactionTypeToIdentifier(InteractionType::VDW);
+        const auto vj = pd.findParticleType(np.fields[1])->interactionTypeToIdentifier(InteractionType::VDW);
         auto &p = vdw.findParameterMapConst(Identifier({ vi.id(), vj.id() }, { 1 }, CanSwap::Yes));
         EXPECT_NEAR(p.find("sigma")->second.internalValue(), std::stod(np.fields[3]), 1e-5) << np.fields[0] << " " << np.fields[1];
         EXPECT_NEAR(p.find("epsilon")->second.internalValue(), std::stod(np.fields[4]), 1e-5) << np.fields[0] << " " << np.fields[1];
@@ -426,7 +426,7 @@ TEST_F(GentopTest, GromacsTopology)
         if (line.rfind("ATOM", 0) == 0 || line.rfind("HETATM", 0) == 0)
         {
             std::istringstream name(line.substr(12, 4));
-            names.push_back("");
+            names.emplace_back("");
             name >> names.back();
         }
     }
@@ -443,7 +443,7 @@ TEST_F(GentopTest, GromacsTopologyShells)
 {
     std::map<std::string, std::string> files = { { "-p", "acetone.top" } };
     run("forcefields/ACS-pg1.xml", "acetone.sdf", &files);
-    auto top = readTopology(files["-p"]);
+    const auto top = readTopology(files["-p"]);
     ASSERT_EQ(20u, section(top, "atoms").size());
     ASSERT_EQ(10u, section(top, "polarization").size());
     EXPECT_EQ(expectedExclusionPairs(top), exclusionPairs(top));
@@ -452,7 +452,7 @@ TEST_F(GentopTest, GromacsTopologyShells)
 //! \return the total charge of each atom with its shells, in the order of the atoms
 static std::vector<double> atomCharges(const Topology &top)
 {
-    auto atoms = section(top, "atoms");
+    const auto atoms = section(top, "atoms");
     std::vector<int> core(atoms.size() + 1);
     for (size_t i = 0; i <= atoms.size(); i++)
     {
@@ -548,7 +548,7 @@ TEST_F(GentopTest, OtherFunctions)
 {
     std::map<std::string, std::string> files = { { "-p", "acetone.top" } };
     run("forcefields/ACS-g-dih.xml", "acetone.sdf", &files);
-    auto top = readTopology(files["-p"]);
+    const auto top = readTopology(files["-p"]);
     checkBondeds(top);
     for (const auto &b : section(top, "bonds"))
     {
@@ -571,7 +571,7 @@ TEST_F(GentopTest, OtherFunctions)
         auto &p = parameters(pd, InteractionType::PROPER_DIHEDRALS, d.comment);
         for (int k = 0; k < 6; k++)
         {
-            auto c = p.find(gmx::formatString("c%d", k));
+            const auto c = p.find(gmx::formatString("c%d", k));
             ASSERT_TRUE(c != p.end());
             EXPECT_NEAR(c->second.value(), std::stod(d.fields[5+k]), 1e-4) << d.comment << " c" << k;
         }
@@ -584,7 +584,7 @@ TEST_F(GentopTest, IncludeTopology)
 {
     std::map<std::string, std::string> files = { { "-oi", "acetone.itp" } };
     run("forcefields/ACS-g1.xml", "acetone.sdf", &files);
-    auto top = readTopology(files["-oi"]);
+    const auto top = readTopology(files["-oi"]);
     EXPECT_TRUE(section(top, "defaults").empty());
     EXPECT_TRUE(section(top, "atomtypes").empty());
     EXPECT_EQ(10u, section(top, "atoms").size());
@@ -624,7 +624,7 @@ TEST_F(GentopTest, Cubes)
     }
     EXPECT_NEAR(V, pot.values[0], 0.01*std::abs(V));
 
-    auto rho = readCube(files["-rho"]);
+    const auto rho = readCube(files["-rho"]);
     ASSERT_EQ(pot.values.size(), rho.values.size());
     double sum = 0, sumAbs = 0;
     for (auto r : rho.values)
@@ -645,7 +645,7 @@ TEST_F(GentopTest, Cubes)
     EXPECT_GT(std::filesystem::file_size(pdbdiff), 0u);
     std::filesystem::remove(pdbdiff);
 
-    water.push_back({ "-ref", files["-pot"] });
+    water.emplace_back("-ref", files["-pot"]);
     std::map<std::string, std::string> diffFiles = {
         { "-c", "water2.pdb" }, { "-diff", "diff.cub" }, { "-diffhist", "diffhist.xvg" }
     };
@@ -661,7 +661,7 @@ TEST_F(GentopTest, Cubes)
         maxDiff = std::max(maxDiff, std::abs(diff.values[i]));
     }
     EXPECT_LT(maxDiff, 1e-5*maxPot);
-    auto corr = std::filesystem::path(diffFiles["-diffhist"]).replace_extension().string() + "-corr.xvg";
+    const auto corr = std::filesystem::path(diffFiles["-diffhist"]).replace_extension().string() + "-corr.xvg";
     EXPECT_GT(std::filesystem::file_size(corr), 0u);
     std::filesystem::remove(corr);
 }
@@ -699,10 +699,10 @@ protected:
                 break;
             }
         }
-        auto ffName = fileManager().getTemporaryFilePath("missing.xml");
+        const auto ffName = fileManager().getTemporaryFilePath("missing.xml");
         writeForceField(ffName, &pd, false);
 
-        auto logName = fileManager().getTemporaryFilePath("missing.log");
+        const auto logName = fileManager().getTemporaryFilePath("missing.log");
         gmx::test::CommandLine cmd;
         cmd.append("gentop");
         cmd.addOption("-ff", ffName);
@@ -714,7 +714,7 @@ protected:
         std::map<std::string, int> torsions;
         for (std::string line; std::getline(in, line); )
         {
-            std::string key("Missing parameter in force field: FOURIER_DIHEDRALS ");
+            const std::string key("Missing parameter in force field: FOURIER_DIHEDRALS ");
             auto        pos = line.find(key);
             if (pos != std::string::npos)
             {
@@ -777,7 +777,7 @@ TEST_F(GentopMissingTest, BondCorrection)
         }
     }
     ASSERT_GT(nerased, 0u);
-    auto ffName = fileManager().getTemporaryFilePath("nobcc.xml");
+    const auto ffName = fileManager().getTemporaryFilePath("nobcc.xml");
     writeForceField(ffName, &pd, false);
 
     std::vector<std::pair<std::string, int (*)(int, char *[])>> programs = {
@@ -785,7 +785,7 @@ TEST_F(GentopMissingTest, BondCorrection)
     };
     for (const auto &program : programs)
     {
-        auto logName = fileManager().getTemporaryFilePath(program.first + ".log");
+        const auto logName = fileManager().getTemporaryFilePath(program.first + ".log");
         gmx::test::CommandLine cmd;
         cmd.append(program.first.c_str());
         cmd.addOption("-ff", ffName);
@@ -802,7 +802,7 @@ TEST_F(GentopMissingTest, BondCorrection)
             cmd.addOption("-c", fileManager().getTemporaryFilePath("water.pdb"));
         }
         EXPECT_NE(0, program.second(cmd.argc(), cmd.argv())) << program.first;
-        std::ifstream     in(logName);
+        const std::ifstream in(logName);
         std::stringstream log;
         log << in.rdbuf();
         EXPECT_NE(std::string::npos, log.str().find("Parameters for charge generation missing: water")) << program.first;

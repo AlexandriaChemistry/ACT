@@ -143,8 +143,8 @@ public:
     {}
 
     //! \copydoc ga::GeneticAlgorithm::evolve
-    virtual bool evolve(alexandria::MsgHandler       *msghandler,
-                        std::map<iMolSelect, Genome> *bestGenome);
+    bool evolve(alexandria::MsgHandler       *msghandler,
+                std::map<iMolSelect, Genome> *bestGenome) override;
 
 };
 

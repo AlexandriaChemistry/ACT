@@ -67,7 +67,7 @@ protected:
      */
     int run(const std::string &ffName, const std::string &molprops, std::string *log)
     {
-        auto logName = fileManager().getTemporaryFilePath("min_complex.log");
+        const auto logName = fileManager().getTemporaryFilePath("min_complex.log");
         gmx::test::CommandLine cmd;
         cmd.append("min_complex");
         cmd.addOption("-ff", fileManager().getInputFilePath(ffName));
@@ -76,10 +76,10 @@ protected:
         int status;
         {
             // The structures are written to the working directory
-            trainfftest::ScopedWorkingDirectory cwd(std::filesystem::path(logName).parent_path());
+            const trainfftest::ScopedWorkingDirectory cwd(std::filesystem::path(logName).parent_path());
             status = min_complex(cmd.argc(), cmd.argv());
         }
-        std::ifstream     in(logName);
+        const std::ifstream in(logName);
         std::stringstream text;
         text << in.rdbuf();
         *log = text.str();
@@ -110,7 +110,7 @@ protected:
 TEST_F(MinComplexTest, WaterDimer)
 {
     std::string log;
-    auto input = select("molprop/booze-inter.xml", "water#water");
+    const auto input = select("molprop/booze-inter.xml", "water#water");
     ASSERT_EQ(0, run("forcefields/halgren-PG.xml", input, &log));
     auto pos = log.find("water#water final energy:");
     ASSERT_NE(std::string::npos, pos) << log;
@@ -120,7 +120,7 @@ TEST_F(MinComplexTest, WaterDimer)
                              &epot, &einter, &rmsd));
     EXPECT_LT(einter, 0);
     EXPECT_LT(rmsd, 0.1);
-    auto pdb = std::filesystem::path(fileManager().getTemporaryFilePath("x")).parent_path() / "water#water.pdb";
+    const auto pdb = std::filesystem::path(fileManager().getTemporaryFilePath("x")).parent_path() / "water#water.pdb";
     EXPECT_TRUE(std::filesystem::exists(pdb));
     std::filesystem::remove(pdb);
 }
@@ -158,13 +158,13 @@ TEST_F(MinComplexTest, TrainedForceField)
     std::string log;
     ASSERT_EQ(0, run("forcefields/lj-pc-trained.xml",
                      fileManager().getInputFilePath("molprop/booze-inter.xml"), &log));
-    auto res = results(log);
+    const auto res = results(log);
     ASSERT_EQ(3u, res.size()) << log;
     for (const auto &r : res)
     {
         EXPECT_LT(r.second.first, 0) << r.first;
         EXPECT_LT(r.second.second, 0.2) << r.first;
-        auto pdb = std::filesystem::path(fileManager().getTemporaryFilePath("x")).parent_path() / (r.first + ".pdb");
+        const auto pdb = std::filesystem::path(fileManager().getTemporaryFilePath("x")).parent_path() / (r.first + ".pdb");
         EXPECT_TRUE(std::filesystem::exists(pdb)) << pdb;
         std::filesystem::remove(pdb);
     }
@@ -186,7 +186,7 @@ TEST_F(MinComplexTest, NewtonAndSteepestDescent)
     for (const char *alg : algorithms)
     {
         SCOPED_TRACE(alg);
-        auto logName = fileManager().getTemporaryFilePath(std::string(alg) + ".log");
+        const auto logName = fileManager().getTemporaryFilePath(std::string(alg) + ".log");
         gmx::test::CommandLine cmd;
         cmd.append("min_complex");
         cmd.addOption("-ff", fileManager().getInputFilePath("forcefields/lj-pc-trained.xml"));
@@ -196,11 +196,11 @@ TEST_F(MinComplexTest, NewtonAndSteepestDescent)
         cmd.addOption("-maxiter", "10000");
         int status;
         {
-            trainfftest::ScopedWorkingDirectory cwd(std::filesystem::path(logName).parent_path());
+            const trainfftest::ScopedWorkingDirectory cwd(std::filesystem::path(logName).parent_path());
             status = min_complex(cmd.argc(), cmd.argv());
         }
         EXPECT_EQ(0, status);
-        std::ifstream     in(logName);
+        const std::ifstream in(logName);
         std::stringstream text;
         text << in.rdbuf();
         all[alg] = results(text.str());
@@ -226,7 +226,7 @@ TEST_F(MinComplexTest, NewtonAndSteepestDescent)
 // moved atoms there before.
 TEST_F(MinComplexTest, NewtonDoesNotDiverge)
 {
-    auto logName = fileManager().getTemporaryFilePath("min_complex.log");
+    const auto logName = fileManager().getTemporaryFilePath("min_complex.log");
     gmx::test::CommandLine cmd;
     cmd.append("min_complex");
     cmd.addOption("-ff", fileManager().getInputFilePath("forcefields/halgren-PG.xml"));
@@ -237,16 +237,16 @@ TEST_F(MinComplexTest, NewtonDoesNotDiverge)
     // until convergence that takes thousands of steps
     cmd.addOption("-maxiter", "100");
     {
-        trainfftest::ScopedWorkingDirectory cwd(std::filesystem::path(logName).parent_path());
+        const trainfftest::ScopedWorkingDirectory cwd(std::filesystem::path(logName).parent_path());
         (void) min_complex(cmd.argc(), cmd.argv());
     }
-    std::ifstream     in(logName);
+    const std::ifstream in(logName);
     std::stringstream text;
     text << in.rdbuf();
     for (const auto &r : results(text.str()))
     {
         EXPECT_LT(r.second.second, 1.0) << r.first;
-        auto pdb = std::filesystem::path(logName).parent_path() / (r.first + ".pdb");
+        const auto pdb = std::filesystem::path(logName).parent_path() / (r.first + ".pdb");
         std::filesystem::remove(pdb);
     }
 }
@@ -257,7 +257,7 @@ TEST_F(MinComplexTest, MissingAtomTypes)
 {
     std::string log;
     // ACS-g has no atom type for the hydrogens of water
-    auto input = select("molprop/booze-inter.xml", "water#water");
+    const auto input = select("molprop/booze-inter.xml", "water#water");
     EXPECT_EQ(1, run("forcefields/ACS-g1.xml", input, &log));
     EXPECT_NE(std::string::npos, log.find("Skipping 'water#water'"));
 }

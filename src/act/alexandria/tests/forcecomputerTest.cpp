@@ -71,7 +71,7 @@ protected:
     ForceComputerTest( ) :
         checker_(refData_.rootChecker())
     {
-        gmx::test::FloatingPointTolerance tolerance(gmx::test::relativeToleranceAsFloatingPoint(1.0, 1e-6));
+        const gmx::test::FloatingPointTolerance tolerance(gmx::test::relativeToleranceAsFloatingPoint(1.0, 1e-6));
         checker_.setDefaultTolerance(tolerance);
     }
 
@@ -155,7 +155,7 @@ protected:
         {
             return;
         }
-        auto atoms = mp.atomsConst();
+        const auto &atoms = mp.atomsConst();
         // The differences of the coordinates, from the integer coordinates,
         // are rounded to float, see coordinate.h, by up to the rounding of
         // the largest difference. The change of the energies and forces
@@ -233,7 +233,7 @@ protected:
         std::vector<ACTMol> mps;
         std::string moldir("molecules/");
         moldir += molname;
-        auto dataName = gmx::test::TestFileManager::getInputFilePath(moldir);
+        const auto dataName = gmx::test::TestFileManager::getInputFilePath(moldir);
         initACTMol(&msghandler, dataName, pd, fcomp, &mps);
    
         for(auto &mp : mps)
@@ -247,8 +247,8 @@ protected:
                 {
                     xxx[m] = xo[i][m]*stretch;
                 }
-                coordinates.push_back(xxx);
-                forces.push_back({ 0, 0, 0 });
+                coordinates.emplace_back(xxx);
+                forces.emplace_back(0, 0, 0);
             }
             if (testPolarizability)
             {
@@ -277,7 +277,7 @@ protected:
                     {
                         for(int n = 0; n < DIM; n++)
                         {
-                            std::string label = gmx::formatString("alpha[%s][%s]", xyz[m], xyz[n]);
+                            const std::string label = gmx::formatString("alpha[%s][%s]", xyz[m], xyz[n]);
                             checker_.checkReal(convertFromGromacs(alpha[m][n], "A^3"),
                                                label.c_str());
                         }
@@ -298,12 +298,12 @@ protected:
                     {
                         label += gmx::formatString("%g", stretch);
                     }
-                    auto actlabel = label+"_act";
+                    const auto actlabel = label+"_act";
                     double actEner  = actEnergies[ifm.first];
                     setSingleTolerance(eerror[ifm.first]);
                     checker_.checkReal(actEner, actlabel.c_str());
                 }
-                auto atoms = mp.atomsConst();
+                const auto &atoms = mp.atomsConst();
                 const char *xyz[DIM] = { "X", "Y", "Z" };
                 for(size_t i = 0; i < forces.size(); i++)
                 {
@@ -344,7 +344,7 @@ protected:
         std::vector<ACTMol> mps;
         std::string moldir("molecules/");
         moldir += molname;
-        auto dataName = gmx::test::TestFileManager::getInputFilePath(moldir);
+        const auto dataName = gmx::test::TestFileManager::getInputFilePath(moldir);
         initACTMol(&msghandler, dataName, pd, fcomp, &mps);
    
         for(auto &mp : mps)
@@ -354,10 +354,10 @@ protected:
             for(size_t i = 0; i < xo.size(); i++)
             {
                 coordinates.push_back(xo[i]);
-                forces.push_back({ 0, 0, 0 });
+                forces.emplace_back(0, 0, 0);
             }
             std::map<InteractionType, double> actEnergies;
-            auto fsc = pd->forcesConst();
+            const auto fsc = pd->forcesConst();
             fcomp->compute(&msghandler, pd, mp.topology(), &coordinates, &forces, &actEnergies);
             std::map<InteractionType, double> eerror;
             std::vector<gmx::DVec>            ferror;
@@ -367,7 +367,7 @@ protected:
                 auto actEner  = actEnergies[ifm.first];
                 setSingleTolerance(eerror[ifm.first]);
                 checker_.checkReal(actEner, interactionTypeToString(ifm.first).c_str());
-                auto atoms = mp.atomsConst();
+                const auto &atoms = mp.atomsConst();
                 const char *xyz[DIM] = { "X", "Y", "Z" };
                 for(size_t i = 0; i < forces.size(); i++)
                 {

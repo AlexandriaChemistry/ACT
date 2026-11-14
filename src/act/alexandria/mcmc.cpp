@@ -50,7 +50,7 @@ bool MCMC::evolve(alexandria::MsgHandler       *msghandler,
                   std::map<iMolSelect, Genome> *bestGenome)
 {
     static const size_t timer = alexandria::Timings::instance().index("MCMC driver");
-    alexandria::ScopedTimer scoped(timer);
+    const alexandria::ScopedTimer scoped(timer);
     if (sii_->nParam() < 1)
     {
         msghandler->msg(alexandria::ACTStatus::Error,
@@ -111,7 +111,7 @@ bool MCMC::evolve(alexandria::MsgHandler       *msghandler,
     (*bestGenome)[imstr] = pool.getBest(imstr);
 
     // When random initialization, assume a better minimum has been found no matter what
-    bool bMinimum = gach_->randomInit() ? true : false;
+    bool bMinimum = gach_->randomInit();
 
     // Resend the genomes back to the middlemen (they expect them anyway...)
     int i = 1;
@@ -171,10 +171,10 @@ bool MCMC::evolve(alexandria::MsgHandler       *msghandler,
     alexandria::ForceComputerStatistics fcStats;
     if (msghandler->info())
     {
-        std::string stats = fcStats.statistics(cr,
-                                               static_cast<const alexandria::ACMFitnessComputer *>(fitnessComputer())->forceComputer(),
-                                               0,
-                                               true);
+        const std::string stats = fcStats.statistics(cr,
+                                                     static_cast<const alexandria::ACMFitnessComputer *>(fitnessComputer())->forceComputer(),
+                                                     0,
+                                                     true);
         msghandler->msg(alexandria::ACTStatus::Info, stats);
     }
 

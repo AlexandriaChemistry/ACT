@@ -183,11 +183,11 @@ void MolHandler::computeHessian(const ForceField                  *pd,
     }
     if (dpdq)
     {
-        gmx::RVec zero = { 0, 0, 0 };
+        const gmx::RVec zero = { 0, 0, 0 };
         dpdq->resize(DIM*atomIndex.size(), zero);
     }
     // The derivative from the values at the shifted coordinates xd
-    auto derivative = [noffset](const std::vector<double> &xd, auto value)
+    const auto derivative = [noffset](const std::vector<double> &xd, auto value)
     {
         if (noffset == 2)
         {
@@ -220,7 +220,7 @@ void MolHandler::computeHessian(const ForceField                  *pd,
                 std::vector<gmx::DVec> mu(noffset, { 0, 0, 0 });
                 for(size_t k = 0; k < noffset; k++)
                 {
-                    auto x = cdata.x(conf(k));
+                    const auto x = cdata.x(conf(k));
                     for(size_t ii = 0; ii < atoms.size(); ii++)
                     {
                         for(int m = 0; m < DIM; m++)
@@ -259,7 +259,7 @@ static std::vector<std::vector<double>> fixedDirections(const std::vector<int>  
 {
     size_t                           n = DIM*theAtoms.size();
     std::vector<std::vector<double>> raw;
-    auto weight = [&weights](size_t i) { return weights.empty() ? 1.0 : weights[i]; };
+    const auto weight = [&weights](size_t i) { return weights.empty() ? 1.0 : weights[i]; };
     if (rigidBody && !theAtoms.empty())
     {
         rvec   center = { 0, 0, 0 };
@@ -309,7 +309,7 @@ static std::vector<std::vector<double>> fixedDirections(const std::vector<int>  
             rvec_sub(x[pair[0]], x[pair[1]], dx);
             for (int k = 0; k < 2; k++)
             {
-                auto ai = index.find(pair[k]);
+                const auto ai = index.find(pair[k]);
                 if (ai == index.end())
                 {
                     // A frozen particle
@@ -468,7 +468,7 @@ static void solveEigen(const MatrixWrapper          &hessian,
 {
     if (output)
     {
-        output->push_back("Using Eigen to solve eigenvalue problem.");
+        output->emplace_back("Using Eigen to solve eigenvalue problem.");
     }
     int matrixSide = hessian.nColumn();
     Eigen::MatrixXd mat(matrixSide, matrixSide);
@@ -491,7 +491,7 @@ static void solveEigen(const MatrixWrapper          &hessian,
     mat = projection*mat*projection;
     // We need this special solver for hermitian matrices.
     // It will automatically sort the eigenvalues.
-    Eigen::SelfAdjointEigenSolver<Eigen::MatrixXd> solver(mat);
+    const Eigen::SelfAdjointEigenSolver<Eigen::MatrixXd> solver(mat);
     auto evecs = solver.eigenvectors();
     if (output)
     {
@@ -533,7 +533,7 @@ static void solveEigen(const MatrixWrapper          &hessian,
         double overlap = 0;
         for (const auto &d : rigidBody)
         {
-            Eigen::Map<const Eigen::VectorXd> dv(d.data(), matrixSide);
+            const Eigen::Map<const Eigen::VectorXd> dv(d.data(), matrixSide);
             overlap += std::pow(dv.dot(evecs.col(i)), 2);
         }
         vibration[i] = overlap < 0.5;
@@ -667,7 +667,7 @@ void MolHandler::nma(const ForceField         *pd,
 
     if (output && debugNMA)
     {
-        output->push_back("Symmetrized Hessian:");
+        output->emplace_back("Symmetrized Hessian:");
         output->push_back(hessian.toString());
         for(size_t i = 0; i < dpdq.size(); i++)
         {
@@ -701,7 +701,7 @@ void MolHandler::nma(const ForceField         *pd,
     {
         sqrtMass.push_back(std::sqrt(atoms[ai].mass()));
     }
-    auto rigidBody = fixedDirections(atomIndex, *coords, true, nullptr, sqrtMass);
+    const auto rigidBody = fixedDirections(atomIndex, *coords, true, nullptr, sqrtMass);
     if (output && rigidBody.size() != (mol->linearMolecule() ? 5u : 6u))
     {
         output->push_back(gmx::formatString("Warning: %zu translations and rotations for a %slinear molecule",
@@ -710,7 +710,7 @@ void MolHandler::nma(const ForceField         *pd,
     // Call diagonalization routine
     if (output)
     {
-        output->push_back("Diagonalizing Hessian to find eigenvectors.");
+        output->emplace_back("Diagonalizing Hessian to find eigenvectors.");
     }
     solveEigen(hessian, atomIndex, atoms, dpdq, rigidBody,
                frequencies, intensities, output, debugNMA);
@@ -763,7 +763,7 @@ static double msForce(const std::vector<int>       &theAtoms,
     {
         msAtomForce += iprod(forces[kk], forces[kk]);
     }
-    if (theAtoms.size() > 0)
+    if (!theAtoms.empty())
     {
         return msAtomForce /= theAtoms.size();
     }
@@ -932,7 +932,7 @@ public:
         pd_(pd), mh_(mh), topology_(topology), forceComp_(forceComp), coords_(coords), theAtoms_(theAtoms),
         constrainer_(constrainer)
     {
-        gmx::RVec vzero = { 0, 0, 0 };
+        const gmx::RVec vzero = { 0, 0, 0 };
         forces_.resize(topology->atoms().size(), vzero);
     }
 
@@ -1079,7 +1079,7 @@ static StlbfgsHandler *lbfgs = nullptr;
 //! \brief callback function for lbfgs minimizer
 static void func(const std::vector<double> &x, double &f, std::vector<double> &g)
 {
-    auto theAtoms = lbfgs->theAtoms();
+    const auto theAtoms = lbfgs->theAtoms();
     if (x.size() != DIM*theAtoms.size())
     {
         GMX_THROW(gmx::InternalError(gmx::formatString("Number of coordinates %lu does not match number of real atoms %lu",
@@ -1089,7 +1089,7 @@ static void func(const std::vector<double> &x, double &f, std::vector<double> &g
     auto forces = lbfgs->forces();
     // The previous coordinates, that satisfy the constraints and are
     // within the range of the integer coordinates, see coordinate.h
-    Coordinates            reference = *coords;
+    const Coordinates      reference = *coords;
     bool                   inRange   = std::all_of(x.begin(), x.end(),
                                                    [](double xi) { return std::abs(xi) < 0.5*coordinateMax; });
     size_t jj   = 0;
@@ -1131,7 +1131,7 @@ static void func(const std::vector<double> &x, double &f, std::vector<double> &g
             coords->assign(xc);
         }
     }
-    gmx::RVec field = { 0, 0, 0 };
+    const gmx::RVec field = { 0, 0, 0 };
     lbfgs->forceComp()->constructVsiteCoordinates(lbfgs->topology(), coords);
     lbfgs->forceComp()->computeOnce(lbfgs->mh(),
                                     lbfgs->pd(), lbfgs->topology(), coords,
@@ -1238,10 +1238,10 @@ public:
             projection -= dv*dv.transpose();
         }
         h = projection*h*projection;
-        Eigen::SelfAdjointEigenSolver<Eigen::MatrixXd> solver(h);
+        const Eigen::SelfAdjointEigenSolver<Eigen::MatrixXd> solver(h);
         values_  = solver.eigenvalues();
         vectors_ = solver.eigenvectors();
-        Eigen::Map<const Eigen::VectorXd> fv(force.data(), n);
+        const Eigen::Map<const Eigen::VectorXd> fv(force.data(), n);
         force_   = vectors_.transpose()*(projection*fv);
         largest_ = values_.cwiseAbs().maxCoeff();
         use_.assign(n, true);
@@ -1251,7 +1251,7 @@ public:
             double fixed = 0;
             for (const auto &d : directions)
             {
-                Eigen::Map<const Eigen::VectorXd> dv(d.data(), n);
+                const Eigen::Map<const Eigen::VectorXd> dv(d.data(), n);
                 fixed += std::pow(dv.dot(vectors_.col(k)), 2);
             }
             use_[k] = fixed < 0.5 && std::abs(values_(k)) > 1e-10*largest_;
@@ -1306,7 +1306,7 @@ eMinimizeStatus MolHandler::minimizeCoordinates(MsgHandler                      
         msForceToler = 100*shellToler;
     }
     // List of atoms (not shells) and weighting factors
-    auto              myatoms = topology->atoms();
+    const auto             &myatoms = topology->atoms();
     // Copy and sort the freeze array
     std::vector<int>  myFreeze = freeze;
     std::sort(myFreeze.begin(), myFreeze.end());
@@ -1445,7 +1445,7 @@ eMinimizeStatus MolHandler::minimizeCoordinates(MsgHandler                      
                                           [&](std::vector<gmx::RVec> *xx, std::vector<gmx::RVec> *ff)
                                           {
                                               std::map<InteractionType, double> ee;
-                                              gmx::RVec field = { 0, 0, 0 };
+                                              const gmx::RVec field = { 0, 0, 0 };
                                               forceComp->constructVsiteCoordinates(topology, xx);
                                               forceComp->computeOnce(msghandler, pd, topology, xx, ff, &ee, field);
                                               forceComp->spreadVsiteForces(topology, xx, ff);
@@ -1633,7 +1633,7 @@ eMinimizeStatus MolHandler::minimizeCoordinates(MsgHandler                      
             return (*ee)[InteractionType::EPOT];
         };
         // The energy at x plus scale times the step, in xt, ft and et
-        auto tryStep = [&](const std::vector<double> &dx, double scale)
+        const auto tryStep = [&](const std::vector<double> &dx, double scale)
         {
             xt = x;
             size_t k = 0;
@@ -1661,14 +1661,14 @@ eMinimizeStatus MolHandler::minimizeCoordinates(MsgHandler                      
                                        constrainForces(*xx, ff);
                                        return ee[InteractionType::EPOT];
                                    });
-        auto accept = [&]()
+        const auto accept = [&]()
         {
             std::swap(x, xt);
             std::swap(f, ft);
             std::swap(e, et);
         };
         // The energy change from x to xt
-        auto energyChange = [&](double enew)
+        const auto energyChange = [&](double enew)
         {
             return alexandria::energyChange(theAtoms, e, x, f, enew, xt, ft, noise);
         };
@@ -1684,7 +1684,7 @@ eMinimizeStatus MolHandler::minimizeCoordinates(MsgHandler                      
         // Steps since the lowest energy decreased more than the precision
         // of the energy, a sum of many terms, as with L-BFGS
         int  noProgress = 0;
-        auto keepBest = [&]()
+        const auto keepBest = [&]()
         {
             if (bestEpot - epot > 1e-12*std::max({ std::abs(bestEpot), std::abs(epot), 1.0 }))
             {
@@ -1715,7 +1715,7 @@ eMinimizeStatus MolHandler::minimizeCoordinates(MsgHandler                      
         // is larger than the tolerance. It is estimated at the start and
         // computed again when the forces are that small.
         double floorMsf    = roundingMsForce(x.toRVec(), f);
-        auto   isConverged = [&]()
+        const auto isConverged = [&]()
         {
             if (msf <= msForceToler)
             {
@@ -1735,7 +1735,7 @@ eMinimizeStatus MolHandler::minimizeCoordinates(MsgHandler                      
         const double maxRadius = 0.1;
         double       radius    = 0.01;
         size_t       n         = DIM*theAtoms.size();
-        auto moreIterations = [&]()
+        const auto moreIterations = [&]()
         {
             return myIter < simConfig.maxIter() || 0 == simConfig.maxIter();
         };
@@ -1759,7 +1759,7 @@ eMinimizeStatus MolHandler::minimizeCoordinates(MsgHandler                      
                                                      constrain ? &constrainer : nullptr));
                     haveHessian = true;
                 }
-                auto   dx    = newton.step(mu, simConfig.overRelax());
+                const auto dx    = newton.step(mu, simConfig.overRelax());
                 double dmax  = maxDisplacement(dx);
                 double scale = (dmax > radius) ? radius/dmax : 1.0;
                 double enew  = tryStep(dx, scale);
@@ -1810,7 +1810,7 @@ eMinimizeStatus MolHandler::minimizeCoordinates(MsgHandler                      
             std::deque<double>     last  = { epot };
             std::vector<double>    d(n), dprev(n), xprev(n), xcur(n);
             double                 gamma = 0;
-            auto flatten = [&](const auto &v, std::vector<double> *flat)
+            const auto flatten = [&](const auto &v, std::vector<double> *flat)
             {
                 size_t k = 0;
                 for (auto atom : theAtoms)
@@ -2035,7 +2035,7 @@ public:
         {
             anchor_[i] = i;
         }
-        auto root = [this](size_t i)
+        const auto root = [this](size_t i)
         {
             while (anchor_[i] != i)
             {
@@ -2207,7 +2207,7 @@ void MolHandler::simulate(MsgHandler                    *msghandler,
         }
         nDOF -= constrainer.numConstraints();
     }
-    ConstraintFrame frame(constrainer.pairs(), coordinates.size());
+    const ConstraintFrame frame(constrainer.pairs(), coordinates.size());
     if (simConfig.constrain())
     {
         // Start from coordinates that satisfy the constraints
@@ -2228,7 +2228,7 @@ void MolHandler::simulate(MsgHandler                    *msghandler,
                                                 simConfig.constraintTolerance(), reason.c_str()));
         }
     }
-    COMMRemover commRemover(simConfig.commRemoval(), mol->atomsConst(), coordinates.toRVec());
+    const COMMRemover commRemover(simConfig.commRemoval(), mol->atomsConst(), coordinates.toRVec());
     nDOF -= commRemover.nDOF();
     if (COMMRemoval::None != commRemover.mode())
     {
@@ -2270,7 +2270,7 @@ void MolHandler::simulate(MsgHandler                    *msghandler,
     const char *title = "ACT trajectory";
     std::vector<int> trajIndex;
     {
-        auto atoms = mol->atomsConst();
+        const auto &atoms = mol->atomsConst();
         for(size_t ii = 0; ii < atoms.size(); ii++)
         {
             if (simConfig.writeShells() || ActParticle::Atom == atoms[ii].pType())
@@ -2302,7 +2302,7 @@ void MolHandler::simulate(MsgHandler                    *msghandler,
         {
             if (ActParticle::Shell == atoms[i].pType() && atoms[i].parents().size() == 1)
             {
-                shellParent.push_back({ i, static_cast<size_t>(atoms[i].parents()[0]) });
+                shellParent.emplace_back(i, static_cast<size_t>(atoms[i].parents()[0]));
             }
         }
     }
@@ -2319,7 +2319,7 @@ void MolHandler::simulate(MsgHandler                    *msghandler,
         // Print the energies at the current time, i.e. before integrating
         if (simConfig.nstener() > 0 && step % simConfig.nstener() == 0)
         {
-            ScopedTimer timer(energyTimer);
+            const ScopedTimer timer(energyTimer);
             double ekin = 0;
             for(size_t i = 0; i < xmol.size(); i++)
             {
@@ -2330,7 +2330,7 @@ void MolHandler::simulate(MsgHandler                    *msghandler,
         // Write the coordinates of the same time, numbering the frames from 1
         if (simConfig.nstxout() > 0 && step % simConfig.nstxout() == 0)
         {
-            ScopedTimer timer(trajectoryTimer);
+            const ScopedTimer timer(trajectoryTimer);
             //! \todo rewrite without gromacs fluff.
             pdbWriter(traj, title, mol->atomsConst(),
                       coordinates.toRVec(), mol->topology()->residueNames(),
@@ -2360,7 +2360,7 @@ void MolHandler::simulate(MsgHandler                    *msghandler,
         timings.stop(integrationTimer);
         if (simConfig.constrain())
         {
-            ScopedTimer timer(constraintTimer);
+            const ScopedTimer timer(constraintTimer);
             // First part of rattle, constrain the positions along the
             // previous bonds and correct the velocities accordingly.
             // The velocities change by the displacements of the integer
@@ -2414,7 +2414,7 @@ void MolHandler::simulate(MsgHandler                    *msghandler,
         timings.stop(integrationTimer);
         if (simConfig.constrain())
         {
-            ScopedTimer timer(constraintTimer);
+            const ScopedTimer timer(constraintTimer);
             if (constrainer.rattleDouble(msghandler, frame.relative(coordinates), &velocities) != 0)
             {
                 msghandler->msg(ACTStatus::Warning,
@@ -2425,7 +2425,7 @@ void MolHandler::simulate(MsgHandler                    *msghandler,
         // constraints satisfied, since it is a rigid body motion.
         if (simConfig.nstcomm() > 0 && (step + 1) % simConfig.nstcomm() == 0)
         {
-            ScopedTimer timer(integrationTimer);
+            const ScopedTimer timer(integrationTimer);
             commRemover.remove(coordinates.toRVec(), &velocities);
             timings.addFlops(60*nmoving);
         }

@@ -178,15 +178,15 @@ public:
      * @param pargs     pointer to arguments vector
      * @param fnms      pointer to filenames
      */
-    virtual void add_options(std::vector<t_pargs>  *pargs,
-                             std::vector<t_filenm> *fnms);
+    void add_options(std::vector<t_pargs>  *pargs,
+                     std::vector<t_filenm> *fnms) override;
 
     /*!
      * \brief Check the validity of the provided arguments
      * \param[in] msghandler Message Handler
      * Throw an exception if an invalid combination of arguments is encountered
      */
-    virtual void check_pargs(MsgHandler *msghandler);
+    void check_pargs(MsgHandler *msghandler) override;
 
     /* * * * * * * * * * * * * * * * * * * * * *
     * BEGIN: Getters and setters               *
@@ -366,8 +366,8 @@ public:
      * @param pargs     pointer to arguments vector
      * @param fnms      pointer to filenames
      */
-    virtual void add_options(std::vector<t_pargs>  *pargs,
-                             std::vector<t_filenm> *fnms);
+    void add_options(std::vector<t_pargs>  *pargs,
+                     std::vector<t_filenm> *fnms) override;
 
 
     /*!
@@ -375,7 +375,7 @@ public:
      * Throw an exception if an invalid combination of arguments is encountered
      * \param[in] msghandler Message handler
      */
-    virtual void check_pargs(MsgHandler *msghandler);
+    void check_pargs(MsgHandler *msghandler) override;
 
     //! \return Max # iterations
     int maxIter() const { return maxiter_; }
@@ -579,8 +579,8 @@ public:
      * @param pargs     pointer to arguments vector
      * @param fnms      pointer to filenames
      */
-    virtual void add_options(std::vector<t_pargs>  *pargs,
-                             std::vector<t_filenm> *fnms);
+    void add_options(std::vector<t_pargs>  *pargs,
+                     std::vector<t_filenm> *fnms) override;
 
 
     /*!
@@ -588,7 +588,7 @@ public:
      * Throw an exception if an invalid combination of arguments is encountered
      * \param[in] msghandler Message handler
      */
-    virtual void check_pargs(MsgHandler *msghandler);
+    void check_pargs(MsgHandler *msghandler) override;
 
     //! \return number of MD steps
     int nsteps() const { return nsteps_; }

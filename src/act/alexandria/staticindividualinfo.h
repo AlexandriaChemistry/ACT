@@ -186,7 +186,7 @@ public:
      */
     size_t parameterVersion(InteractionType itype) const
     {
-        auto tu = typeUpdate_.find(itype);
+        const auto tu = typeUpdate_.find(itype);
         return std::max(allUpdate_, typeUpdate_.end() == tu ? 0 : tu->second);
     }
 
@@ -237,7 +237,7 @@ public:
      */
     std::map<eRMS, FittingTarget> *fittingTargets(iMolSelect ims)
     {
-        auto tt = targets_.find(ims);
+        const auto tt = targets_.find(ims);
         if (targets_.end() == tt)
         {
             return nullptr;
@@ -262,7 +262,7 @@ public:
      */
     const std::map<eRMS, FittingTarget> &fittingTargetsConst(iMolSelect ims) const
     {
-        auto tt = targets_.find(ims);
+        const auto tt = targets_.find(ims);
         GMX_RELEASE_ASSERT(targets_.end() != tt, gmx::formatString("Cannot find selection %s", iMolSelectName(ims).c_str()).c_str());
         return tt->second;
     }
@@ -275,12 +275,12 @@ public:
      */
     FittingTarget *target(iMolSelect ims, eRMS rms)
     {
-        auto itarget = targets_.find(ims);
+        const auto itarget = targets_.find(ims);
         if (itarget == targets_.end())
         {
             return nullptr;
         }
-        auto ift = itarget->second.find(rms);
+        const auto ift = itarget->second.find(rms);
         if (ift == itarget->second.end())
         {
             return nullptr;

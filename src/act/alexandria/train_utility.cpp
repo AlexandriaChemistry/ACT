@@ -95,7 +95,7 @@ static void print_stats(gmx::TextWriter *tw,
     {
         return;
     }
-    std::string newprop = gmx::formatString("%s (%s)", prop, unit);
+    const std::string newprop = gmx::formatString("%s (%s)", prop, unit);
     if (useOffset)
     {
         if (bHeader)
@@ -178,8 +178,8 @@ static void print_stats(gmx::TextWriter *tw,
 static void print_lsq_set(FILE *fp, const gmx_stats &lsq)
 {
     fprintf(fp, "@type nxy\n");
-    auto x = lsq.getX();
-    auto y = lsq.getY();
+    const auto &x = lsq.getX();
+    const auto &y = lsq.getY();
     for(size_t i = 0; i < x.size(); i++)
     {
         fprintf(fp, "%10g  %10g\n", x[i], y[i]);
@@ -310,7 +310,7 @@ static void print_corr(const char                    *outfile,
     bool                     haveData = false;
     for (auto &ims : iMolSelectNames())
     {
-        auto qs = stats.find(ims.first);
+        const auto qs = stats.find(ims.first);
         if (qs != stats.end())
         {
             for (auto &i : qs->second)
@@ -350,7 +350,7 @@ static void print_corr(const char                      *outfile,
     bool                     haveData = false;
     for (auto &ims : iMolSelectNames())
     {
-        auto qs = stats.find(ims.first);
+        const auto qs = stats.find(ims.first);
         if (qs != stats.end())
         {
             int N = qs->second.get_npoints();
@@ -396,7 +396,7 @@ static void write_q_histo(gmx::TextWriter                  *tw,
         hh = xvgropen(qhisto, "Histogram for charges", "q (e)", "a.u.", oenv);
         xvgrLegend(hh, types, oenv);
     }
-    auto model  = qPropertyTypeName(qPropertyType::ACM);
+    const auto model  = qPropertyTypeName(qPropertyType::ACM);
     tw->writeLine();
     tw->writeLine("*** Charge statistics per atomtype ***");
     tw->writeLine("Atomtype       N     Min Average     Max  StdDev");
@@ -407,7 +407,7 @@ static void write_q_histo(gmx::TextWriter                  *tw,
         {
             int  nbins = 20;
             std::vector<double> x, y;
-            if (q.second.make_histogram(0, &nbins, eHisto::Y, 1, &x, &y) == eStats::OK)
+            if (q.second.make_histogram(0, &nbins, eHisto::Y, true, &x, &y) == eStats::OK)
             {
                 if (hh)
                 {
@@ -423,8 +423,8 @@ static void write_q_histo(gmx::TextWriter                  *tw,
                 auto qmin = *std::min_element(yyy.begin(), yyy.end());
                 auto qmax = *std::max_element(yyy.begin(), yyy.end());
                 q.second.get_ase(&aver, &stddev, &error);
-                auto qdata = gmx::formatString("%8s  %6zu  %6.3f  %6.3f  %6.3f  %6.3f", q.first.c_str(),
-                                               q.second.get_npoints(), qmin, aver, qmax, stddev);
+                const auto qdata = gmx::formatString("%8s  %6zu  %6.3f  %6.3f  %6.3f  %6.3f", q.first.c_str(),
+                                                     q.second.get_npoints(), qmin, aver, qmax, stddev);
                 tw->writeLine(qdata);
             }
         }
@@ -512,7 +512,7 @@ void TrainForceFieldPrinter::analysePolarisability(MsgHandler          *msghandl
     for(auto qp = mol->qProps()->begin(); qp < mol->qProps()->end(); ++qp)
     {
         auto qcalc = qp->qPact();
-        auto qelec = qp->qPqmConst();
+        const auto qelec = qp->qPqmConst();
         qcalc->calcPolarizability(msghandler, pd, mol->topology(), forceComp);
         auto acalc = qcalc->polarizabilityTensor();
     
@@ -634,14 +634,14 @@ static void writeCoordinates(const std::vector<ActAtom>  &atoms,
                              const std::vector<gmx::RVec> &xmin)
 {
     // The directory exists only if parameters are optimized
-    auto dir = std::filesystem::path(pdb).parent_path();
+    const auto dir = std::filesystem::path(pdb).parent_path();
     if (!dir.empty())
     {
         std::filesystem::create_directories(dir);
     }
     FILE *out = gmx_fio_fopen(pdb.c_str(), "w");
     matrix box = { { 4, 0, 0 }, { 0, 4, 0 }, { 0, 0, 4 } };
-    std::vector<std::string> resnames = { "A", "B" };
+    const std::vector<std::string> resnames = { "A", "B" };
     pdbWriter(out, title.c_str(), atoms, xorig, resnames,
               epbcNONE, box, 'A', 1, {}, nullptr, false);
 
@@ -724,7 +724,7 @@ static void plot_spectrum(const char                *filenm,
         normalize_vector(&act_spec);
         normalize_vector(&qm_spec);
     }
-    std::string title = gmx::formatString("Infrared spectrum for %s", molname.c_str());
+    const std::string title = gmx::formatString("Infrared spectrum for %s", molname.c_str());
     FILE *xvg = xvgropen(filenm, title.c_str(), "Frequency (1/cm)",
                          "Intensity (a.u.)", oenv);
     if (!qm_freq.empty())
@@ -758,13 +758,13 @@ static void addThermo(MsgHandler                *msghandler,
 {
     real scale_factor = 1;
     real roomTemp     = 298.15;
-    std::string eunit("kJ/mol");
-    std::string sunit("J/mol K");
+    const std::string eunit("kJ/mol");
+    const std::string sunit("J/mol K");
     jtree->addValueUnit("Epot", gmx_ftoa(epot), eunit);
     JsonTree jtc0("T=0");
     JsonTree jtcRT(gmx::formatString("T=%g", roomTemp));
-    ThermoChemistry tc0(msghandler, mol, *coords, atomenergy, freq, epot, 0.0, 1, scale_factor);
-    ThermoChemistry tcRT(msghandler, mol, *coords, atomenergy, freq, epot, roomTemp, 1, scale_factor);
+    const ThermoChemistry tc0(msghandler, mol, *coords, atomenergy, freq, epot, 0.0, 1, scale_factor);
+    const ThermoChemistry tcRT(msghandler, mol, *coords, atomenergy, freq, epot, roomTemp, 1, scale_factor);
     jtree->addObject("Symmetry number", gmx::formatString("%d", tcRT.symmetryNumber()));
     {
         jtc0.addValueUnit("Zero point energy", gmx_ftoa(tc0.ZPE()), eunit);
@@ -831,8 +831,8 @@ void doFrequencyAnalysis(MsgHandler               *msghandler,
                    &output, debugNMA);
     auto unit      = mpo_unit2(MolPropObservable::FREQUENCY);
     auto uniti     = mpo_unit2(MolPropObservable::INTENSITY);
-    auto ref_freq  = mol->referenceFrequencies();
-    auto ref_inten = mol->referenceIntensities();
+    const auto &ref_freq  = mol->referenceFrequencies();
+    const auto &ref_inten = mol->referenceIntensities();
     plot_spectrum(spectrumFileName, mol->getMolname(), lineWidth, alex_freq,
                   intensities, ref_freq, ref_inten, oenv, true);
     JsonTree ftree("Frequencies");
@@ -950,7 +950,7 @@ static void print_diatomics(const alexandria::ACTMol                            
         rvec_sub(xxx[0], xxx[1], dx);
         dist.push_back(norm(dx));
     }
-    auto filename = mol->getMolname() + ".xvg";
+    const auto filename = mol->getMolname() + ".xvg";
     FILE *fp = xvgropen(filename.c_str(), "QM - Coulomb Energy", "Distance (nm)", "Energy (kJ/mol)", oenv);
     size_t i = 0;
     for (const auto &ecm : energyComponentMap)
@@ -958,7 +958,7 @@ static void print_diatomics(const alexandria::ACTMol                            
         double eee = ecm.first;
         for(const auto itype : { InteractionType::ELECTROSTATICS, InteractionType::INDUCTION })
         {
-            auto esm = ecm.second.find(itype);
+            const auto esm = ecm.second.find(itype);
             if (ecm.second.end() != esm)
             {
                 eee -= esm->second;
@@ -1015,7 +1015,7 @@ void TrainForceFieldPrinter::writeMolpropsEnergies(MsgHandler          *msghandl
             const auto allprops = exper.properties();
             for(auto prop = allprops->begin(); prop != allprops->end(); prop++)
             {
-                auto ie = interE.find(prop->first);
+                const auto ie = interE.find(prop->first);
                 if (interE.end() != ie)
                 {
                     if (prop->second.size() != 1)
@@ -1027,7 +1027,7 @@ void TrainForceFieldPrinter::writeMolpropsEnergies(MsgHandler          *msghandl
                     else
                     {
                         auto me    = static_cast<MolecularEnergy *>(prop->second[0].get());
-                        auto ae    = interactionEnergyMap[ii].find(ie->second);
+                        const auto ae    = interactionEnergyMap[ii].find(ie->second);
                         if (ae != interactionEnergyMap[ii].end())
                         {
                             auto value = ae->second.eact();
@@ -1109,14 +1109,14 @@ void TrainForceFieldPrinter::printEnergyForces(MsgHandler                       
         for(const auto &ie: iem)
         {
             auto val    = ie.first;
-            auto result = std::find_if(interE.begin(), interE.end(),
-                                       [val](const auto& mo) {return mo.second == val; });
+            const auto result = std::find_if(interE.begin(), interE.end(),
+                                             [val](const auto& mo) {return mo.second == val; });
 
             if (interE.end() == result)
             {
                 continue;
             }
-            auto tt = targets.find(result->first);
+            const auto tt = targets.find(result->first);
             if ((printAll || ( tt != targets.end() && tt->second.weight() > 0)))
             {
                 if (ie.second.haveQM() && ie.second.haveACT())
@@ -1176,9 +1176,9 @@ void TrainForceFieldPrinter::printEnergyForces(MsgHandler                       
         for(const auto &iem : interactionEnergyMap)
         {
             auto ttt   = iem.find(InteractionType::EPOT);
-            auto exper = std::find_if(expers.begin(), expers.end(), 
-                                      [&ttt](const Experiment& x)
-                                      { return x.id() == ttt->second.id(); });
+            const auto exper = std::find_if(expers.begin(), expers.end(), 
+                                            [&ttt](const Experiment& x)
+                                            { return x.id() == ttt->second.id(); });
             if (expers.end() != exper)
             {
                 std::string myline;
@@ -1187,7 +1187,7 @@ void TrainForceFieldPrinter::printEnergyForces(MsgHandler                       
                 JsonTree jexper(cexper);
                 for(const auto &t : terms_)
                 {
-                    auto ttt = iem.find(t);
+                    const auto ttt = iem.find(t);
                     
                     JsonTree jterm(interactionEnergyName(t));
                     bool     found = false;
@@ -1239,7 +1239,7 @@ void TrainForceFieldPrinter::printEnergyForces(MsgHandler                       
         }
     }
     // RMS energy
-    if (energyMap.size() > 0)
+    if (!energyMap.empty())
     {
         msghandler->write(low_print_stats(&myepot, "Energy", mol->getMolname().c_str()));
     }
@@ -1302,8 +1302,8 @@ void TrainForceFieldPrinter::printEnergyForces(MsgHandler                       
 
             if (rmsd > 0.1) // nm
             {
-                auto pdb   = gmx::formatString("inds/%s-original-minimized.pdb", mol->getMolname().c_str());
-                auto title = gmx::formatString("%s RMSD %g Angstrom", mol->getMolname().c_str(), 10*rmsd);
+                const auto pdb   = gmx::formatString("inds/%s-original-minimized.pdb", mol->getMolname().c_str());
+                const auto title = gmx::formatString("%s RMSD %g Angstrom", mol->getMolname().c_str(), 10*rmsd);
                 writeCoordinates(mol->atomsConst(), pdb, title, coords, xmin);
             }
             msghandler->write(gmx::formatString("   %-20s  %10s  %10s  %10s minimization",
@@ -1347,10 +1347,10 @@ static void dump_xyz(const std::string &label,
     auto &expconst = mol->experimentConst();
     if (static_cast<size_t>(actener.id()) < expconst.size())
     {
-        auto filename = gmx::formatString("%s-%d.xyz", label.c_str(), actener.id());
+        const auto filename = gmx::formatString("%s-%d.xyz", label.c_str(), actener.id());
         auto actatoms = mol->topology()->atoms();
         auto coords   = expconst[actener.id()].getCoordinates();
-        FILE *fp = gmx_ffopen(filename.c_str(), "w");
+        FILE *fp = gmx_ffopen(filename, "w");
         fprintf(fp, "%5d\n", mol->nRealAtoms());
         fprintf(fp, "Energy QM %g ACT %g QM datafile %s molname %s\n", actener.eqm(), actener.eact(),
                 expconst[actener.id()].getDatafile().c_str(),
@@ -1415,11 +1415,11 @@ static void collectOutlier(std::vector<Outlier> *outliers,
         {
             // Only the name of the data file, which may include a path,
             // dump_xyz adds the extension
-            auto        datafile = std::filesystem::path(ener.datafile()).filename().string();
-            std::string myfnm    = gmx::formatString("%s-%s-%s",
-                                                     mol->getMolname().c_str(),
-                                                     label.c_str(),
-                                                     datafile.c_str());
+            const auto  datafile = std::filesystem::path(ener.datafile()).filename().string();
+            const std::string myfnm    = gmx::formatString("%s-%s-%s",
+                                                           mol->getMolname().c_str(),
+                                                           label.c_str(),
+                                                           datafile.c_str());
             dump_xyz(myfnm, mol, ener);
         }
     }
@@ -1434,8 +1434,8 @@ void TrainForceFieldPrinter::printOutliers(gmx::TextWriter                      
                                            const std::vector<alexandria::ACTMol> *actmol)
 {
     double epotMax = 1.5*sigma;
-    auto   intName = bIntermolecular ? interactionEnergyName(itype) : interactionTypeToString(itype);
-    auto   label   = gmx::formatString("%s-%s", intName.c_str(), iMolSelectName(ims).c_str());
+    const auto intName = bIntermolecular ? interactionEnergyName(itype) : interactionTypeToString(itype);
+    const auto label   = gmx::formatString("%s-%s", intName.c_str(), iMolSelectName(ims).c_str());
     tw->writeStringFormatted("\nOverview of %s outliers for %s (Diff > %.3f)\n",
             label.c_str(), qPropertyTypeName(qPropertyType::ACM).c_str(), epotMax);
     tw->writeStringFormatted("----------------------------------\n");
@@ -1447,13 +1447,13 @@ void TrainForceFieldPrinter::printOutliers(gmx::TextWriter                      
         for (const auto &miem : molInteractionEnergyMap_)
         {
             std::string toFind(miem.first);
-            auto actmolptr = std::find_if(actmol->begin(), actmol->end(),
-                                          [&toFind](const ACTMol &x) { return x.getMolname() == toFind;});
+            const auto actmolptr = std::find_if(actmol->begin(), actmol->end(),
+                                                [&toFind](const ACTMol &x) { return x.getMolname() == toFind;});
             if (actmolptr->datasetType() == ims)
             {
                 for(const auto &emm : miem.second)
                 {
-                    auto emmptr = emm.find(itype);
+                    const auto emmptr = emm.find(itype);
                     if (emm.end() == emmptr)
                     {
                         continue;
@@ -1469,8 +1469,8 @@ void TrainForceFieldPrinter::printOutliers(gmx::TextWriter                      
         for (const auto &miem : molEnergyMap_)
         {
             std::string toFind(miem.first);
-            auto actmolptr = std::find_if(actmol->begin(), actmol->end(),
-                                          [&toFind](const ACTMol &x) { return x.getMolname() == toFind;});
+            const auto actmolptr = std::find_if(actmol->begin(), actmol->end(),
+                                                [&toFind](const ACTMol &x) { return x.getMolname() == toFind;});
             if (actmolptr->datasetType() == ims)
             {
                 for(const auto &emm : miem.second)
@@ -1560,9 +1560,9 @@ void TrainForceFieldPrinter::print(MsgHandler                  *msghandler,
         gmx_stats gcharge;
         lsq_charge.insert(std::pair<iMolSelect, qtStats>(ims.first, {{ qPropertyType::ACM, gcharge }}));
     
-        for (auto ai : pd->particleTypesConst())
+        for (const auto &ai : pd->particleTypesConst())
         {
-            auto qparam = ai.second.parameterConst("charge");
+            const auto qparam = ai.second.parameterConst("charge");
             if (Mutability::ACM == qparam.mutability())
             {
                 auto lll = lsqt.find(ims.first);
@@ -1627,7 +1627,7 @@ void TrainForceFieldPrinter::print(MsgHandler                  *msghandler,
                                      mol->symmetryNumber(),
                                      iMolSelectName(ims).c_str());
 
-            gmx::RVec vzero = { 0, 0, 0 };
+            const gmx::RVec vzero = { 0, 0, 0 };
             std::vector<gmx::RVec> forces(mol->atomsConst().size(), vzero);
 
             // Now compute all the ESP RMSDs and multipoles and print it.
@@ -1673,12 +1673,12 @@ void TrainForceFieldPrinter::print(MsgHandler                  *msghandler,
             }
             // Charges
             auto atoms = topology->atoms();
-            auto lll   = lsqt.find(ims);
+            const auto lll   = lsqt.find(ims);
             for(size_t ai = 0; ai < atoms.size(); ai++)
             {
                 if (atoms[ai].pType() == ActParticle::Atom)
                 {
-                    auto llF = lll->second.find(atoms[ai].ffType());
+                    const auto llF = lll->second.find(atoms[ai].ffType());
                     if (lll->second.end() != llF)
                     {
                         auto qa = atoms[ai].totalCharge();
@@ -1712,7 +1712,7 @@ void TrainForceFieldPrinter::print(MsgHandler                  *msghandler,
             // Energies
             if (sii->haveFittingTargetSelection(ims))
             {
-                std::vector<std::string> tcout;
+                const std::vector<std::string> tcout;
                 printEnergyForces(msghandler, &jtmol, pd, forceComp, sii->fittingTargetsConst(ims),
                                   atomenergy, &(*mol), ims, oenv, printAll);
 
@@ -1741,7 +1741,7 @@ void TrainForceFieldPrinter::print(MsgHandler                  *msghandler,
             {
                 continue;
             }
-            std::string name = gmx::formatString("%s-%s", qPropertyTypeName(qt).c_str(), ims.second.c_str());
+            const std::string name = gmx::formatString("%s-%s", qPropertyTypeName(qt).c_str(), ims.second.c_str());
             if (lsq_epot_[ims.first][qt].get_npoints() > 0)
             {
                 print_stats(tw, "Potential energy", "kJ/mol", 1.0, &lsq_epot_[ims.first][qt],
@@ -1780,7 +1780,7 @@ void TrainForceFieldPrinter::print(MsgHandler                  *msghandler,
             }
             if (bPolar && qt == qPropertyType::ACM)
             {
-                std::string polunit("Angstrom3");
+                const std::string polunit("Angstrom3");
                 auto polfactor = convertFromGromacs(1.0, polunit);
                 print_stats(tw, "Polariz. components", polunit.c_str(), polfactor,
                             &lsq_alpha_[ims.first][qPropertyType::ACM],    header, "Electronic", name.c_str(), useOffset_, &jstats);
@@ -1799,9 +1799,9 @@ void TrainForceFieldPrinter::print(MsgHandler                  *msghandler,
     const char *alex  = "Alexandria";
     for(auto &mpo : mpoMultiPoles)
     {
-        std::string cmdFlag = gmx::formatString("-%scorr", mpo_name(mpo));
-        std::string title   = gmx::formatString("%s components (%s)", mpo_name(mpo),
-                                                mpo_unit2(mpo));
+        const std::string cmdFlag = gmx::formatString("-%scorr", mpo_name(mpo));
+        const std::string title   = gmx::formatString("%s components (%s)", mpo_name(mpo),
+                                                      mpo_unit2(mpo));
         print_corr(opt2fn_null(cmdFlag.c_str(), filenm.size(), filenm.data()),
                    nullptr, title.c_str(), alex, lsq_multi_[mpo], oenv);
     }
@@ -1810,10 +1810,10 @@ void TrainForceFieldPrinter::print(MsgHandler                  *msghandler,
                lsq_epot_, oenv);
     for(const auto &tt : terms_)
     {
-        std::string fnm   = gmx::formatString("%s%s.xvg", compoundFile_ ? compoundFile_ : "",
-                                              interactionEnergyName(tt).c_str());
-        std::string title = gmx::formatString("%s (kJ/mol)",
-                                              InteractionType::EPOT == tt ? "Interaction energy" : interactionTypeToString(tt).c_str());
+        const std::string fnm   = gmx::formatString("%s%s.xvg", compoundFile_ ? compoundFile_ : "",
+                                                    interactionEnergyName(tt).c_str());
+        const std::string title = gmx::formatString("%s (kJ/mol)",
+                                                    InteractionType::EPOT == tt ? "Interaction energy" : interactionTypeToString(tt).c_str());
         print_corr(fnm.c_str(), nullptr, title.c_str(), alex, lsq_einter_[tt], oenv);
     }
     print_corr(opt2fn_null("-forcecorr", filenm.size(), filenm.data()),
@@ -1970,19 +1970,19 @@ void print_header(gmx::TextWriter             *tw,
             value.assign("help");
         }
         {
-            std::string left = gmx::formatString("Option: %s (%s), Value: %s\n  Help: ", 
-                                                 p.option, type.c_str(), value.c_str());
+            const std::string left = gmx::formatString("Option: %s (%s), Value: %s\n  Help: ", 
+                                                       p.option, type.c_str(), value.c_str());
             gmx::TextLineWrapperSettings settings;
             settings.setLineLength(71);
             settings.setFirstLineIndent(0);
             settings.setIndent(8);
-            gmx::TextLineWrapper wrapper(settings);
-            std::string toWrap(p.desc);
+            const gmx::TextLineWrapper wrapper(settings);
+            const std::string toWrap(p.desc);
             tw->writeStringFormatted("%s%s\n", left.c_str(),
                                      wrapper.wrapToString(toWrap).c_str());
         }
     }
-    if (filenms.size() > 0)
+    if (!filenms.empty())
     {
         tw->ensureEmptyLine();
         tw->writeLine("Files used");

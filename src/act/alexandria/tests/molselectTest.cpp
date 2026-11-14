@@ -52,7 +52,7 @@ namespace
 
 TEST(MolSelectTest, IMolSelectConstructorAndGetters)
 {
-    IMolSelect ims("water", iMolSelect::Train, 5);
+    const IMolSelect ims("water", iMolSelect::Train, 5);
     EXPECT_EQ(ims.iupac(), "water");
     EXPECT_EQ(ims.status(), iMolSelect::Train);
     EXPECT_EQ(ims.index(), 5);
@@ -60,14 +60,14 @@ TEST(MolSelectTest, IMolSelectConstructorAndGetters)
 
 TEST(MolSelectTest, IMolSelectIsNotDimer)
 {
-    IMolSelect ims("ethanol", iMolSelect::Test, 0);
+    const IMolSelect ims("ethanol", iMolSelect::Test, 0);
     EXPECT_FALSE(ims.isDimer());
 }
 
 TEST(MolSelectTest, IMolSelectIsDimer)
 {
     // Dimers use '#' separator in IUPAC name
-    IMolSelect ims("water#methanol", iMolSelect::Train, 1);
+    const IMolSelect ims("water#methanol", iMolSelect::Train, 1);
     EXPECT_TRUE(ims.isDimer());
 }
 
@@ -75,7 +75,7 @@ TEST(MolSelectTest, IMolSelectIsDimer)
 
 TEST(MolSelectTest, MolSelectEmpty)
 {
-    MolSelect ms;
+    const MolSelect ms;
     EXPECT_EQ(ms.nMol(), 0u);
     EXPECT_EQ(ms.countDimers(), 0u);
 }

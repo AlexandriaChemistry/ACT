@@ -79,9 +79,9 @@ void OneBonded::writeHistogram(const char             *fn_prefix,
     }
     auto Nsample = lsq_.get_npoints();
 
-    std::string  title = gmx::formatString("%s N = %d", id_.id().c_str(),
-                                           static_cast<int>(Nsample));
-    std::string  fn    = gmx::formatString("%s_%s.xvg", fn_prefix, id_.id().c_str());
+    const std::string title = gmx::formatString("%s N = %d", id_.id().c_str(),
+                                                static_cast<int>(Nsample));
+    const std::string fn    = gmx::formatString("%s_%s.xvg", fn_prefix, id_.id().c_str());
     FILE        *fp    = xvgropen(fn.c_str(), title.c_str(),
                                   xaxis, "N", oenv);
     for (int j = 0; (j < nbins); j++)
@@ -167,7 +167,7 @@ void AllBondeds::addBondeds(MsgHandler             *msghandler,
         // But there is a simple routine to fix it. Only the atoms are needed,
         // the virtual sites cannot be constructed since the topology is built
         // without parameters, see missingParameters::Generate.
-        auto coords = mmi.experCoords(exper.getCoordinates(), false);
+        const auto coords = mmi.experCoords(exper.getCoordinates(), false);
         addBonded(msghandler, iType, mmi, bondId, atomid, coords);
     }
 }
@@ -269,7 +269,7 @@ void AllBondeds::addBonded(MsgHandler                   *msghandler,
                            [bondId](const OneBonded &b){ return bondId == b.id(); });
     if (bondeds_[iType].end() == ob)
     {
-        bondeds_[iType].push_back(OneBonded(bondId));
+        bondeds_[iType].emplace_back(bondId);
         ob = bondeds_[iType].end()-1;
     }
     ob->addPoint(refValue);
@@ -315,15 +315,15 @@ static real calc_r13(const ForceField    *pd,
     double r12 = 0, r23 = 0, r13 = 0;
     auto atoms      = bondId.atoms();
     auto bondOrders = bondId.bondOrders();
-    Identifier aij ({atoms[0], atoms[1] }, { bondOrders[0] }, CanSwap::Yes);
-    Identifier akj ({atoms[2], atoms[1] }, { bondOrders[1] }, CanSwap::Yes);
+    const Identifier aij ({atoms[0], atoms[1] }, { bondOrders[0] }, CanSwap::Yes);
+    const Identifier akj ({atoms[2], atoms[1] }, { bondOrders[1] }, CanSwap::Yes);
 
-    std::string type("bondlength");
+    const std::string type("bondlength");
     auto &fs  = pd->findForcesConst(InteractionType::BONDS);
     if (fs.parameterExists(aij) && fs.parameterExists(akj))
     {
-        auto bij = fs.findParameterTypeConst(aij, type);
-        auto bkj = fs.findParameterTypeConst(akj, type);
+        const auto &bij = fs.findParameterTypeConst(aij, type);
+        const auto &bkj = fs.findParameterTypeConst(akj, type);
 
         r12 = convertToGromacs(bij.value(), bij.unit());
         r23 = convertToGromacs(bkj.value(), bkj.unit());
@@ -353,16 +353,16 @@ static void calc_linear_angle_a(const ForceField    *pd,
 {
     auto atoms      = bondId.atoms();
     auto bondOrders = bondId.bondOrders();
-    auto bij = Identifier({atoms[0], atoms[1]}, {bondOrders[0]}, CanSwap::Yes);
-    auto bjk = Identifier({atoms[1], atoms[2]}, {bondOrders[1]}, CanSwap::Yes);
+    const auto bij = Identifier({atoms[0], atoms[1]}, {bondOrders[0]}, CanSwap::Yes);
+    const auto bjk = Identifier({atoms[1], atoms[2]}, {bondOrders[1]}, CanSwap::Yes);
     auto &fs = pd->findForcesConst(InteractionType::BONDS);
     if (!fs.parameterExists(bij) || !fs.parameterExists(bjk))
     {
         GMX_THROW(gmx::InternalError(gmx::formatString("Cannot find bond %s or %s in force field", bij.id().c_str(), bjk.id().c_str()).c_str()));
     }
-    std::string blen("bondlength");
-    auto pij = fs.findParameterTypeConst(bij, blen);
-    auto pjk = fs.findParameterTypeConst(bjk, blen);
+    const std::string blen("bondlength");
+    const auto &pij = fs.findParameterTypeConst(bij, blen);
+    const auto &pjk = fs.findParameterTypeConst(bjk, blen);
     *alin = pjk.value()/(pij.value()+pjk.value());
     *sigmalin = std::sqrt(gmx::square(pij.uncertainty())+
                           gmx::square(pjk.uncertainty()));
@@ -393,7 +393,7 @@ void AllBondeds::updateForceField(gmx::TextWriter *tw,
             size_t N = 0;
             real   av = 0, sig = 0;
             i.getAverageSigmaN(&av, &sig, &N);
-            auto bondId = i.id();
+            const auto bondId = i.id();
             // Note that the order of parameters is important!
             // Rounding the numbers to 1/10 pm and 1/10 degree
             round_numbers(&av, &sig, 10);
@@ -485,7 +485,7 @@ void AllBondeds::updateForceField(gmx::TextWriter *tw,
             size_t N = 0;
             real   av = 0, sig = 0;
             i.getAverageSigmaN(&av, &sig, &N);
-            auto bondId = i.id();
+            const auto bondId = i.id();
             switch (iType)
             {
             case InteractionType::BONDS:
@@ -503,7 +503,7 @@ void AllBondeds::updateForceField(gmx::TextWriter *tw,
                             bondId.id().c_str(), av, sig, static_cast<int>(N), (sig > angle_tol_) ? " WARNING" : "");
                     if (fType == Potential::UREY_BRADLEY_ANGLES)
                     {
-                        std::string unit("pm");
+                        const std::string unit("pm");
                         double r13 = convertFromGromacs(calc_r13(pd, bondId, av), unit);
                         fs->addParameter(bondId, pname[ubR13],
                                          ForceFieldParameter(unit, r13, 0, N, r13*bfactor_, r13/bfactor_,
@@ -603,7 +603,7 @@ void AllBondeds::extractGeometries(MsgHandler           *msghandler,
         {
             alexandria::ACTMol mmi;
             mmi.Merge(std::move(&(*mpi)));
-            if (mmi.getMolname().size() == 0)
+            if (mmi.getMolname().empty())
             {
                 msghandler->msg(ACTStatus::Warning,
                                 gmx::formatString("Empty molname for molecule with formula %s\n", mmi.formula().c_str()));

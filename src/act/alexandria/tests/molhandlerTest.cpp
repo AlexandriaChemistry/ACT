@@ -68,11 +68,10 @@ static void add_energies(const ForceField                        *pd,
                          const std::map<InteractionType, double> &energies,
                          const char                              *label)
 {
-    auto fsc = pd->forcesConst();
-    for(auto &imf : energies)
+       for(auto &imf : energies)
     {
-        std::string fname   = interactionTypeToString(imf.first);
-        std::string mylabel = gmx::formatString("%s %s", fname.c_str(), label);
+        const std::string fname   = interactionTypeToString(imf.first);
+        const std::string mylabel = gmx::formatString("%s %s", fname.c_str(), label);
 
         checker->checkReal(imf.second, mylabel.c_str());
     }
@@ -84,7 +83,7 @@ protected:
     void test(const char *molname, const char *forcefield, bool nma, double ftoler=1e-15)
     {
         gmx::test::TestReferenceChecker checker_(this->rootChecker());
-        auto tolerance = gmx::test::relativeToleranceAsFloatingPoint(1.0, 5e-2);
+        const auto tolerance = gmx::test::relativeToleranceAsFloatingPoint(1.0, 5e-2);
         checker_.setDefaultTolerance(tolerance);
         const char                      *conf     = (char *)"minimum";
         std::string                      dataName;
@@ -99,7 +98,7 @@ protected:
         bool   userqtot = false;
         MsgHandler msghandler;
         msghandler.setPrintLevel(ACTStatus::Warning);
-        importFile(&msghandler, pd, dataName.c_str(), &molprops,
+        importFile(&msghandler, pd, dataName, &molprops,
                    conf, JobType::OPT, userqtot, &qtot, true);
         EXPECT_TRUE(msghandler.ok());
         std::vector<ACTMol> mps;
@@ -114,7 +113,7 @@ protected:
             epsilonr = 1;
         }
         auto forceComp = new ForceComputer(shellTolerance, shellMaxIter, epsilonr);
-        std::vector<double>    qcustom;
+        const std::vector<double> qcustom;
         for(auto &molprop: molprops)
         {
             ACTMol mm;
@@ -144,7 +143,7 @@ protected:
             forceComp->compute(&msghandler, pd, mp.topology(), &coords, &forces, &eBefore);
             add_energies(pd, &checker_, eBefore, "before");
             
-            MolHandler mh;
+            const MolHandler mh;
             
             std::vector<gmx::RVec> xmin = coords;
             double rmsd = mh.coordinateRmsd(mp.atomsConst(), coords, &xmin);
@@ -233,8 +232,8 @@ protected:
                 double scale_factor = 1;
                 AtomizationEnergy atomenergy;
                 atomenergy.read();
-                ThermoChemistry tc(nullptr, &mp, coords, atomenergy, freq, eAfter[InteractionType::EPOT],
-                                   298.15, 1, scale_factor);
+                const ThermoChemistry tc(nullptr, &mp, coords, atomenergy, freq, eAfter[InteractionType::EPOT],
+                                         298.15, 1, scale_factor);
                 checker_.checkReal(tc.ZPE(),  "Zero point energy (kJ/mol)");
                 checker_.checkReal(tc.DHform(), "Delta H form (kJ/mol)");
                 for(const auto &tcc : tccmap())
@@ -271,7 +270,7 @@ static void prepareMolecule(ForceField *pd, const char *file, const ForceCompute
     msghandler.setPrintLevel(ACTStatus::Warning);
     std::vector<alexandria::MolProp> molprops;
     double qtot = 0;
-    importFile(&msghandler, pd, gmx::test::TestFileManager::getInputFilePath(std::string("molecules/") + file).c_str(),
+    importFile(&msghandler, pd, gmx::test::TestFileManager::getInputFilePath(std::string("molecules/") + file),
                &molprops, "minimum", JobType::OPT, false, &qtot, true);
     ASSERT_TRUE(msghandler.ok());
     ASSERT_EQ(1u, molprops.size());
@@ -291,11 +290,11 @@ TEST_F (MolHandlerTest, MinimizersAgree)
     auto pd = getForceField("ACS-g1");
     MsgHandler msghandler;
     msghandler.setPrintLevel(ACTStatus::Warning);
-    ForceComputer          forceComp(1e-10, 100, 1);
+    const ForceComputer    forceComp(1e-10, 100, 1);
     ACTMol                 mol;
     std::vector<gmx::RVec> x0;
     prepareMolecule(pd, "acetone.sdf", forceComp, &mol, &x0);
-    MolHandler          mh;
+    const MolHandler    mh;
     std::vector<double> epot;
     for (auto alg : { eMinimizeAlgorithm::LBFGS, eMinimizeAlgorithm::Newton, eMinimizeAlgorithm::Steep })
     {
@@ -326,11 +325,11 @@ TEST_F (MolHandlerTest, MinimizersConvergeWithShells)
     MsgHandler msghandler;
     msghandler.setPrintLevel(ACTStatus::Warning);
     // The shells converge within the precision of the forces
-    ForceComputer          forceComp(gmx::test::precisionTolerance(1e-10, 1e-6), 100, 1);
+    const ForceComputer    forceComp(gmx::test::precisionTolerance(1e-10, 1e-6), 100, 1);
     ACTMol                 mol;
     std::vector<gmx::RVec> x0;
     prepareMolecule(pd, "water_dimer.pdb", forceComp, &mol, &x0);
-    MolHandler mh;
+    const MolHandler mh;
     for (auto alg : { eMinimizeAlgorithm::Newton, eMinimizeAlgorithm::Steep })
     {
         SCOPED_TRACE(eMinimizeAlgorithmToString(alg));
@@ -355,11 +354,11 @@ static void testNormalModes(const char *file, size_t nvibration)
     auto pd = getForceField("ACS-g1");
     MsgHandler msghandler;
     msghandler.setPrintLevel(ACTStatus::Warning);
-    ForceComputer          forceComp(1e-12, 100, 1);
+    const ForceComputer    forceComp(1e-12, 100, 1);
     ACTMol                 mol;
     std::vector<gmx::RVec> x;
     prepareMolecule(pd, file, forceComp, &mol, &x);
-    MolHandler              mh;
+    const MolHandler        mh;
     SimulationConfigHandler simConfig;
     simConfig.setForceTolerance(1e-10);
     std::map<InteractionType, double> energies;
@@ -374,7 +373,7 @@ static void testNormalModes(const char *file, size_t nvibration)
     }
     // Rotated and moved
     double c = std::cos(0.7), sn = std::sin(0.7);
-    auto   r   = [](double v) { return static_cast<real>(v); };
+    const auto r   = [](double v) { return static_cast<real>(v); };
     matrix rot = { { r(c), r(-sn), 0 }, { r(sn*0.6), r(c*0.6), r(0.8) }, { r(-sn*0.8), r(-c*0.8), r(0.6) } };
     std::vector<gmx::RVec> xr(x.size());
     for (size_t i = 0; i < x.size(); i++)

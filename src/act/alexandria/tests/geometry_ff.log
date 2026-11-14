@@ -1,0 +1,526 @@
+
+     Welcome to the Alexandria Chemistry Toolkit
+
+       Version 1-dev-20261023-b404308368-dirty
+
+              Copyright (c) 2014-2025
+
+Mohammad M. Ghahremanpour, Paul J. van Maaren and David van der Spoel
+
+See https://github.com/AlexandriaChemistry/ACT for details.
+
+The Alexandria Chemistry Toolkit (ACT) is free software under the GNU Public License v 2.
+Read more at https://www.gnu.org/licenses/gpl-2.0.html.
+
+Parts of ACT are under the GNU Lesser Public License 2.1 as indicated
+in the individual files.
+
+# This file was created Sun Oct 25 15:58:35 2026
+
+Verbosity level 3 (Info or more serious messages are printed).
+
+Program and command-line information
+====================================
+Executable:   /Users/spoel/tools/bin/alexandria
+Data prefix:  /Users/spoel/tools
+Working dir:  /Users/spoel/GG/ACT/src/act/alexandria/tests
+Command line:
+  alexandria geometry_ff -mp /Users/spoel/Alexandria/ACTdata/MolProps/mp2-aug-cc-pvtz.xml -ff /Users/spoel/ACS-pol.xml -o /Users/spoel/ACS-pol.xml -bfactor 0.95 -afactor 0.95 -factor 0.5
+
+Software and compilation information
+====================================
+ACT version:        1-dev-20261023-b404308368-dirty
+GIT SHA1 hash:      b404308368b524e82edf09f0e209bda71a46cd0e (dirty)
+Precision:          double
+Memory model:       64 bit
+MPI library:        MPI
+GPU support:        disabled
+SIMD instructions:  NONE
+C compiler:         /usr/bin/clang AppleClang 17.0.0.17000604
+C compiler flags:       -Wall -Wno-unused -Wunused-value -Wunused-parameter -Wno-unknown-pragmas  -g 
+C++ compiler:       /usr/bin/clang++ AppleClang 17.0.0.17000604
+C++ compiler flags:     -std=c++20  -Wdeprecated -Wextra -Wno-missing-field-initializers -Wpointer-arith -Wmissing-prototypes -Wall -Wno-unknown-pragmas  -g 
+
+# This file was created Sun Oct 25 15:58:35 2026
+# The Alexandria Chemistry Toolkit.
+#
+There are 319 molprops. Will now sort them.
+There were 0 double entries, leaving 319 after merging.
+Error - Atom type problem: Cannot find atomtype f (atom 0) in forcefield, there are 12 atomtypes.
+Error: Cannot make topology for 1-1-1-trifluoroethane
+Error - Atom type problem: Cannot find atomtype f (atom 0) in forcefield, there are 12 atomtypes.
+Error: Cannot make topology for 1-1-difluoroethane
+Error - Atom type problem: Cannot find atomtype n2 (atom 0) in forcefield, there are 12 atomtypes.
+Error: Cannot make topology for 1-butyl-3-methylimidazolium
+Error - Atom type problem: Cannot find atomtype n2 (atom 2) in forcefield, there are 12 atomtypes.
+Error: Cannot make topology for 1-ethyl-2-methyl-1H-imidazol-3-ium
+Error - Atom type problem: Cannot find atomtype c2 (atom 0) in forcefield, there are 12 atomtypes.
+Error: Cannot make topology for 1-ethyl-3-methylimidazolium
+Error - Atom type problem: Cannot find atomtype n2 (atom 2) in forcefield, there are 12 atomtypes.
+Error: Cannot make topology for 1-ethyl-4-methyl-1H-imidazol-3-ium
+Error - Atom type problem: Cannot find atomtype n2 (atom 2) in forcefield, there are 12 atomtypes.
+Error: Cannot make topology for 1-ethyl-5-methyl-1H-imidazol-3-ium
+Error - Atom type problem: Cannot find atomtype n2 (atom 0) in forcefield, there are 12 atomtypes.
+Error: Cannot make topology for 1-methylimidazolium
+Error - Atom type problem: Cannot find atomtype n2 (atom 2) in forcefield, there are 12 atomtypes.
+Error: Cannot make topology for 12-diethyl-1H-imidazol-3-ium
+Error - Atom type problem: Cannot find atomtype n2 (atom 1) in forcefield, there are 12 atomtypes.
+Error: Cannot make topology for 12-dimethyl-1H-imidazol-3-ium
+Error - Atom type problem: Cannot find atomtype n2 (atom 2) in forcefield, there are 12 atomtypes.
+Error: Cannot make topology for 13-diethyl-1H-imidazol-3-ium
+Error - Atom type problem: Cannot find atomtype c2 (atom 0) in forcefield, there are 12 atomtypes.
+Error: Cannot make topology for 13-dimethylimidazolium
+Error - Atom type problem: Cannot find atomtype n2 (atom 2) in forcefield, there are 12 atomtypes.
+Error: Cannot make topology for 14-diethyl-1H-imidazol-3-ium
+Error - Atom type problem: Cannot find atomtype n2 (atom 1) in forcefield, there are 12 atomtypes.
+Error: Cannot make topology for 14-dimethyl-1H-imidazol-3-ium
+Error - Atom type problem: Cannot find atomtype n2 (atom 2) in forcefield, there are 12 atomtypes.
+Error: Cannot make topology for 15-diethyl-1H-imidazol-3-ium
+Error - Atom type problem: Cannot find atomtype n2 (atom 1) in forcefield, there are 12 atomtypes.
+Error: Cannot make topology for 15-dimethyl-1H-imidazol-3-ium
+Error - Atom type problem: Cannot find atomtype hn (atom 0) in forcefield, there are 12 atomtypes.
+Error: Cannot make topology for 2-aminoethanimidamide
+Error - Atom type problem: Cannot find atomtype c2 (atom 2) in forcefield, there are 12 atomtypes.
+Error: Cannot make topology for 2-ethyl-1-methyl-1H-imidazol-3-ium
+Error - Atom type problem: Cannot find atomtype c2 (atom 2) in forcefield, there are 12 atomtypes.
+Error: Cannot make topology for 2-ethyl-3-methyl-1H-imidazol-3-ium
+Error - Atom type problem: Cannot find atomtype c2 (atom 2) in forcefield, there are 12 atomtypes.
+Error: Cannot make topology for 2-ethyl-4-methyl-1H-imidazol-3-ium
+Error - Atom type problem: Cannot find atomtype c2 (atom 2) in forcefield, there are 12 atomtypes.
+Error: Cannot make topology for 2-ethyl-5-methyl-1H-imidazol-3-ium
+Error - Atom type problem: Cannot find atomtype c2 (atom 2) in forcefield, there are 12 atomtypes.
+Error: Cannot make topology for 2-methylpropionimidine
+Error - Atom type problem: Cannot find atomtype c2 (atom 2) in forcefield, there are 12 atomtypes.
+Error: Cannot make topology for 23-diethyl-1H-imidazol-3-ium
+Error - Atom type problem: Cannot find atomtype c2 (atom 1) in forcefield, there are 12 atomtypes.
+Error: Cannot make topology for 23-dimethyl-1H-imidazol-3-ium
+Error - Atom type problem: Cannot find atomtype c2 (atom 2) in forcefield, there are 12 atomtypes.
+Error: Cannot make topology for 24-diethyl-1H-imidazol-3-ium
+Error - Atom type problem: Cannot find atomtype c2 (atom 1) in forcefield, there are 12 atomtypes.
+Error: Cannot make topology for 24-dimethyl-1H-imidazol-3-ium
+Error - Atom type problem: Cannot find atomtype c2 (atom 2) in forcefield, there are 12 atomtypes.
+Error: Cannot make topology for 25-diethyl-1H-imidazol-3-ium
+Error - Atom type problem: Cannot find atomtype c2 (atom 1) in forcefield, there are 12 atomtypes.
+Error: Cannot make topology for 25-dimethyl-1H-imidazol-3-ium
+Error - Atom type problem: Cannot find atomtype n3 (atom 2) in forcefield, there are 12 atomtypes.
+Error: Cannot make topology for 2R-2-aminopropanimidamide
+Error - Atom type problem: Cannot find atomtype n2 (atom 2) in forcefield, there are 12 atomtypes.
+Error: Cannot make topology for 3-ethyl-1-methyl-1H-imidazol-3-ium
+Error - Atom type problem: Cannot find atomtype n2 (atom 0) in forcefield, there are 12 atomtypes.
+Error: Cannot make topology for 3-ethyl-1H-indole
+Error - Atom type problem: Cannot find atomtype n2 (atom 2) in forcefield, there are 12 atomtypes.
+Error: Cannot make topology for 3-ethyl-2-methyl-1H-imidazol-3-ium
+Error - Atom type problem: Cannot find atomtype n2 (atom 2) in forcefield, there are 12 atomtypes.
+Error: Cannot make topology for 3-ethyl-4-methyl-1H-imidazol-3-ium
+Error - Atom type problem: Cannot find atomtype n2 (atom 2) in forcefield, there are 12 atomtypes.
+Error: Cannot make topology for 3-ethyl-5-methyl-1H-imidazol-3-ium
+Error - Atom type problem: Cannot find atomtype n2 (atom 0) in forcefield, there are 12 atomtypes.
+Error: Cannot make topology for 3-methyl-1H-indole
+Error - Atom type problem: Cannot find atomtype c2 (atom 2) in forcefield, there are 12 atomtypes.
+Error: Cannot make topology for 34-diethyl-1H-imidazol-3-ium
+Error - Atom type problem: Cannot find atomtype c2 (atom 1) in forcefield, there are 12 atomtypes.
+Error: Cannot make topology for 34-dimethyl-1H-imidazol-3-ium
+Error - Atom type problem: Cannot find atomtype c2 (atom 2) in forcefield, there are 12 atomtypes.
+Error: Cannot make topology for 35-diethyl-1H-imidazol-3-ium
+Error - Atom type problem: Cannot find atomtype c2 (atom 1) in forcefield, there are 12 atomtypes.
+Error: Cannot make topology for 35-dimethyl-1H-imidazol-3-ium
+Error - Atom type problem: Cannot find atomtype c2 (atom 2) in forcefield, there are 12 atomtypes.
+Error: Cannot make topology for 4-ethyl-1-methyl-1H-imidazol-3-ium
+Error - Atom type problem: Cannot find atomtype c2 (atom 2) in forcefield, there are 12 atomtypes.
+Error: Cannot make topology for 4-ethyl-2-methyl-1H-imidazol-3-ium
+Error - Atom type problem: Cannot find atomtype c2 (atom 2) in forcefield, there are 12 atomtypes.
+Error: Cannot make topology for 4-ethyl-3-methyl-1H-imidazol-3-ium
+Error - Atom type problem: Cannot find atomtype c2 (atom 2) in forcefield, there are 12 atomtypes.
+Error: Cannot make topology for 4-ethyl-5-methyl-1H-imidazol-3-ium
+Error - Atom type problem: Cannot find atomtype c2 (atom 0) in forcefield, there are 12 atomtypes.
+Error: Cannot make topology for 4-methylphenol
+Error - Atom type problem: Cannot find atomtype c2 (atom 2) in forcefield, there are 12 atomtypes.
+Error: Cannot make topology for 45-diethyl-1H-imidazol-3-ium
+Error - Atom type problem: Cannot find atomtype c2 (atom 1) in forcefield, there are 12 atomtypes.
+Error: Cannot make topology for 45-dimethyl-1H-imidazol-3-ium
+Error - Atom type problem: Cannot find atomtype c2 (atom 2) in forcefield, there are 12 atomtypes.
+Error: Cannot make topology for 5-ethyl-1-methyl-1H-imidazol-3-ium
+Error - Atom type problem: Cannot find atomtype n2 (atom 0) in forcefield, there are 12 atomtypes.
+Error: Cannot make topology for 5-ethyl-1H-imidazole
+Error - Atom type problem: Cannot find atomtype c2 (atom 2) in forcefield, there are 12 atomtypes.
+Error: Cannot make topology for 5-ethyl-2-methyl-1H-imidazol-3-ium
+Error - Atom type problem: Cannot find atomtype c2 (atom 2) in forcefield, there are 12 atomtypes.
+Error: Cannot make topology for 5-ethyl-3-methyl-1H-imidazol-3-ium
+Error - Atom type problem: Cannot find atomtype c2 (atom 2) in forcefield, there are 12 atomtypes.
+Error: Cannot make topology for 5-ethyl-4-methyl-1H-imidazol-3-ium
+Error - Atom type problem: Cannot find atomtype c2 (atom 1) in forcefield, there are 12 atomtypes.
+Error: Cannot make topology for 5-methyl-1H-imidazole
+Error - Atom type problem: Cannot find atomtype o2 (atom 0) in forcefield, there are 12 atomtypes.
+Error: Cannot make topology for N-ethyl-N-methylacetamide
+Error - Atom type problem: Cannot find atomtype c2 (atom 4) in forcefield, there are 12 atomtypes.
+Error: Cannot make topology for N-methylacetamide
+Error - Atom type problem: Cannot find atomtype c2 (atom 0) in forcefield, there are 12 atomtypes.
+Error: Cannot make topology for acetamide
+Error - Atom type problem: Cannot find atomtype c2 (atom 1) in forcefield, there are 12 atomtypes.
+Error: Cannot make topology for acetate
+Error - Atom type problem: Cannot find atomtype o2 (atom 1) in forcefield, there are 12 atomtypes.
+Error: Cannot make topology for acetic-acid
+Error - Atom type problem: Cannot find atomtype c2 (atom 1) in forcefield, there are 12 atomtypes.
+Error: Cannot make topology for acetimidine
+Error - Atom type problem: Cannot find atomtype c2 (atom 0) in forcefield, there are 12 atomtypes.
+Error: Cannot make topology for adenine
+Error - Atom type problem: Cannot find atomtype hn (atom 0) in forcefield, there are 12 atomtypes.
+Error: Cannot make topology for ammonia
+Error - Atom type problem: Cannot find atomtype hn (atom 0) in forcefield, there are 12 atomtypes.
+Error: Cannot make topology for ammonium
+Error - Atom type problem: Cannot find atomtype c2 (atom 0) in forcefield, there are 12 atomtypes.
+Error: Cannot make topology for aniline
+Error - Atom type problem: Cannot find atomtype Ar (atom 0) in forcefield, there are 12 atomtypes.
+Error: Cannot make topology for argon
+Error - Atom type problem: Cannot find atomtype c2 (atom 0) in forcefield, there are 12 atomtypes.
+Error: Cannot make topology for benzene
+Error - Atom type problem: Cannot find atomtype be (atom 0) in forcefield, there are 12 atomtypes.
+Error: Cannot make topology for beryllium-oxide
+Error - Atom type problem: Cannot find atomtype be (atom 0) in forcefield, there are 12 atomtypes.
+Error: Cannot make topology for beryllium-sulfide
+Error - Atom type problem: Cannot find atomtype f (atom 1) in forcefield, there are 12 atomtypes.
+Error: Cannot make topology for bis-trifluoromethanesulfone-imide
+Error - Atom type problem: Cannot find atomtype b (atom 0) in forcefield, there are 12 atomtypes.
+Error: Cannot make topology for boron-monochloride
+Error - Atom type problem: Cannot find atomtype b (atom 0) in forcefield, there are 12 atomtypes.
+Error: Cannot make topology for boron-monofluoride
+Error - Atom type problem: Cannot find atomtype b (atom 0) in forcefield, there are 12 atomtypes.
+Error: Cannot make topology for boron-nitride
+Error - Atom type problem: Cannot find atomtype Br- (atom 0) in forcefield, there are 12 atomtypes.
+Error: Cannot make topology for bromide
+Error - Atom type problem: Cannot find atomtype br (atom 0) in forcefield, there are 12 atomtypes.
+Error: Cannot make topology for bromine
+Error - Atom type problem: Cannot find atomtype br (atom 0) in forcefield, there are 12 atomtypes.
+Error: Cannot make topology for bromine-chloride
+Error - Atom type problem: Cannot find atomtype br (atom 0) in forcefield, there are 12 atomtypes.
+Error: Cannot make topology for bromine-fluoride
+Error - Atom type problem: Cannot find atomtype br (atom 0) in forcefield, there are 12 atomtypes.
+Error: Cannot make topology for bromo-dichloro-fluoromethane
+Error - Atom type problem: Cannot find atomtype br (atom 0) in forcefield, there are 12 atomtypes.
+Error: Cannot make topology for bromo-dichloro-methane
+Error - Atom type problem: Cannot find atomtype br (atom 0) in forcefield, there are 12 atomtypes.
+Error: Cannot make topology for bromo-fluoro-methane
+Error - Atom type problem: Cannot find atomtype br (atom 0) in forcefield, there are 12 atomtypes.
+Error: Cannot make topology for bromochlorodifluoromethane
+Error - Atom type problem: Cannot find atomtype br (atom 1) in forcefield, there are 12 atomtypes.
+Error: Cannot make topology for bromochlorofluoromethane
+Error - Atom type problem: Cannot find atomtype br (atom 1) in forcefield, there are 12 atomtypes.
+Error: Cannot make topology for bromochloromethane
+Error - Atom type problem: Cannot find atomtype br (atom 0) in forcefield, there are 12 atomtypes.
+Error: Cannot make topology for bromodifluoromethane
+Error - Atom type problem: Cannot find atomtype br (atom 1) in forcefield, there are 12 atomtypes.
+Error: Cannot make topology for bromomethane
+Error - Atom type problem: Cannot find atomtype br (atom 1) in forcefield, there are 12 atomtypes.
+Error: Cannot make topology for bromotrichloromethane
+Error - Atom type problem: Cannot find atomtype br (atom 1) in forcefield, there are 12 atomtypes.
+Error: Cannot make topology for bromotrifluoromethane
+Error - Atom type problem: Cannot find atomtype c2 (atom 1) in forcefield, there are 12 atomtypes.
+Error: Cannot make topology for butanoate
+Error - Atom type problem: Cannot find atomtype ca (atom 0) in forcefield, there are 12 atomtypes.
+Error: Cannot make topology for calcium-oxide
+Error - Atom type problem: Cannot find atomtype ca (atom 0) in forcefield, there are 12 atomtypes.
+Error: Cannot make topology for calcium-sulfide
+Error - Atom type problem: Cannot find atomtype s1 (atom 0) in forcefield, there are 12 atomtypes.
+Error: Cannot make topology for carbon-monosulfide
+Error - Atom type problem: Cannot find atomtype o1 (atom 0) in forcefield, there are 12 atomtypes.
+Error: Cannot make topology for carbon-monoxide
+Error - Atom type problem: Cannot find atomtype Cs+ (atom 0) in forcefield, there are 12 atomtypes.
+Error: Cannot make topology for cesium
+Error - Atom type problem: Cannot find atomtype br (atom 0) in forcefield, there are 12 atomtypes.
+Error: Cannot make topology for cesium-bromide
+Error - Atom type problem: Cannot find atomtype cl (atom 0) in forcefield, there are 12 atomtypes.
+Error: Cannot make topology for cesium-chloride
+Error - Atom type problem: Cannot find atomtype f (atom 0) in forcefield, there are 12 atomtypes.
+Error: Cannot make topology for cesium-fluoride
+Error - Atom type problem: Cannot find atomtype i (atom 0) in forcefield, there are 12 atomtypes.
+Error: Cannot make topology for cesium-iodide
+Error - Atom type problem: Cannot find atomtype Cs+ (atom 0) in forcefield, there are 12 atomtypes.
+Error: Cannot make topology for cesium-ion
+Error - Atom type problem: Cannot find atomtype Cl- (atom 0) in forcefield, there are 12 atomtypes.
+Error: Cannot make topology for chloride
+Error - Atom type problem: Cannot find atomtype cl (atom 0) in forcefield, there are 12 atomtypes.
+Error: Cannot make topology for chlorine
+Error - Atom type problem: Cannot find atomtype cl (atom 0) in forcefield, there are 12 atomtypes.
+Error: Cannot make topology for chlorine-fluoride
+Error - Atom type problem: Cannot find atomtype i (atom 0) in forcefield, there are 12 atomtypes.
+Error: Cannot make topology for chloro-iodo-methane
+Error - Atom type problem: Cannot find atomtype cl (atom 1) in forcefield, there are 12 atomtypes.
+Error: Cannot make topology for chlorodifluoromethane
+Error - Atom type problem: Cannot find atomtype cl (atom 1) in forcefield, there are 12 atomtypes.
+Error: Cannot make topology for chlorofluoromethane
+Error - Atom type problem: Cannot find atomtype cl (atom 1) in forcefield, there are 12 atomtypes.
+Error: Cannot make topology for chloromethane
+Error - Atom type problem: Cannot find atomtype cl (atom 1) in forcefield, there are 12 atomtypes.
+Error: Cannot make topology for chlorotrifluoromethane
+Error - Atom type problem: Cannot find atomtype n1 (atom 0) in forcefield, there are 12 atomtypes.
+Error: Cannot make topology for cyanide
+Error - Atom type problem: Cannot find atomtype c2 (atom 0) in forcefield, there are 12 atomtypes.
+Error: Cannot make topology for cytosine
+Error - Atom type problem: Cannot find atomtype n2 (atom 0) in forcefield, there are 12 atomtypes.
+Error: Cannot make topology for cytosine+
+Error - Atom type problem: Cannot find atomtype n2 (atom 0) in forcefield, there are 12 atomtypes.
+Error: Cannot make topology for diaminomethylidene-ethyl-azanium
+Error - Atom type problem: Cannot find atomtype n2 (atom 0) in forcefield, there are 12 atomtypes.
+Error: Cannot make topology for diaminomethylidene-methyl-azanium
+Error - Atom type problem: Cannot find atomtype br (atom 0) in forcefield, there are 12 atomtypes.
+Error: Cannot make topology for dibromo-fluoro-methane
+Error - Atom type problem: Cannot find atomtype br (atom 1) in forcefield, there are 12 atomtypes.
+Error: Cannot make topology for dibromodifluoromethane
+Error - Atom type problem: Cannot find atomtype br (atom 0) in forcefield, there are 12 atomtypes.
+Error: Cannot make topology for dibromomethane
+Error - Atom type problem: Cannot find atomtype c1 (atom 0) in forcefield, there are 12 atomtypes.
+Error: Cannot make topology for dicarbon
+Error - Atom type problem: Cannot find atomtype cl (atom 1) in forcefield, there are 12 atomtypes.
+Error: Cannot make topology for dichlorodifluoromethane
+Error - Atom type problem: Cannot find atomtype cl (atom 0) in forcefield, there are 12 atomtypes.
+Error: Cannot make topology for dichlorofluoromethane
+Error - Atom type problem: Cannot find atomtype cl (atom 0) in forcefield, there are 12 atomtypes.
+Error: Cannot make topology for dichloromethane
+Error - Atom type problem: Cannot find atomtype n1 (atom 0) in forcefield, there are 12 atomtypes.
+Error: Cannot make topology for dicyanamide
+Error - Atom type problem: Cannot find atomtype i (atom 0) in forcefield, there are 12 atomtypes.
+Error: Cannot make topology for difluoro-iodo-methane
+Error - Atom type problem: Cannot find atomtype f (atom 0) in forcefield, there are 12 atomtypes.
+Error: Cannot make topology for difluoromethane
+Error - Atom type problem: Cannot find atomtype i (atom 0) in forcefield, there are 12 atomtypes.
+Error: Cannot make topology for diiodomethane
+Error - Atom type problem: Cannot find atomtype li (atom 0) in forcefield, there are 12 atomtypes.
+Error: Cannot make topology for dilithium
+Error - Atom type problem: Cannot find atomtype s3 (atom 4) in forcefield, there are 12 atomtypes.
+Error: Cannot make topology for dimethyl-disulfide
+Error - Atom type problem: Cannot find atomtype n3 (atom 4) in forcefield, there are 12 atomtypes.
+Error: Cannot make topology for dimethylamine
+Error - Atom type problem: Cannot find atomtype c2 (atom 2) in forcefield, there are 12 atomtypes.
+Error: Cannot make topology for dimethylpropionimidine
+Error - Atom type problem: Cannot find atomtype s3 (atom 2) in forcefield, there are 12 atomtypes.
+Error: Cannot make topology for ethanethiol-gauche
+Error - Atom type problem: Cannot find atomtype s3 (atom 5) in forcefield, there are 12 atomtypes.
+Error: Cannot make topology for ethyl-methyl-sulfide-trans
+Error - Atom type problem: Cannot find atomtype n3 (atom 0) in forcefield, there are 12 atomtypes.
+Error: Cannot make topology for ethylamine
+Error - Atom type problem: Cannot find atomtype n4 (atom 0) in forcefield, there are 12 atomtypes.
+Error: Cannot make topology for ethylammonium
+Error - Atom type problem: Cannot find atomtype n4 (atom 0) in forcefield, there are 12 atomtypes.
+Error: Cannot make topology for ethylazanium
+Error - Atom type problem: Cannot find atomtype c2 (atom 7) in forcefield, there are 12 atomtypes.
+Error: Cannot make topology for ethylbenzene
+Error - Atom type problem: Cannot find atomtype F- (atom 0) in forcefield, there are 12 atomtypes.
+Error: Cannot make topology for fluoride
+Error - Atom type problem: Cannot find atomtype f (atom 0) in forcefield, there are 12 atomtypes.
+Error: Cannot make topology for fluorine
+Error - Atom type problem: Cannot find atomtype i (atom 0) in forcefield, there are 12 atomtypes.
+Error: Cannot make topology for fluoro-iodo-methane
+Error - Atom type problem: Cannot find atomtype c2 (atom 0) in forcefield, there are 12 atomtypes.
+Error: Cannot make topology for fluorobenzene
+Error - Atom type problem: Cannot find atomtype f (atom 1) in forcefield, there are 12 atomtypes.
+Error: Cannot make topology for fluoromethane
+Error - Atom type problem: Cannot find atomtype o2 (atom 0) in forcefield, there are 12 atomtypes.
+Error: Cannot make topology for formamide
+Error - Atom type problem: Cannot find atomtype o2 (atom 0) in forcefield, there are 12 atomtypes.
+Error: Cannot make topology for formate
+Error - Atom type problem: Cannot find atomtype h2 (atom 0) in forcefield, there are 12 atomtypes.
+Error: Cannot make topology for formic-acid
+Error - Atom type problem: Cannot find atomtype h2 (atom 0) in forcefield, there are 12 atomtypes.
+Error: Cannot make topology for formidine
+Error - Atom type problem: Cannot find atomtype c2 (atom 0) in forcefield, there are 12 atomtypes.
+Error: Cannot make topology for guanidine
+Error - Atom type problem: Cannot find atomtype c2 (atom 0) in forcefield, there are 12 atomtypes.
+Error: Cannot make topology for guanidinium
+Error - Atom type problem: Cannot find atomtype c2 (atom 0) in forcefield, there are 12 atomtypes.
+Error: Cannot make topology for guanine
+Error - Atom type problem: Cannot find atomtype He (atom 0) in forcefield, there are 12 atomtypes.
+Error: Cannot make topology for helium
+Error - Atom type problem: Cannot find atomtype p3 (atom 0) in forcefield, there are 12 atomtypes.
+Error: Cannot make topology for hexafluorophosphate
+Error - Atom type problem: Cannot find atomtype br (atom 0) in forcefield, there are 12 atomtypes.
+Error: Cannot make topology for hydrogen-bromide
+Error - Atom type problem: Cannot find atomtype cl (atom 0) in forcefield, there are 12 atomtypes.
+Error: Cannot make topology for hydrogen-chloride
+Error - Atom type problem: Cannot find atomtype c1 (atom 1) in forcefield, there are 12 atomtypes.
+Error: Cannot make topology for hydrogen-cyanide
+Error - Atom type problem: Cannot find atomtype f (atom 0) in forcefield, there are 12 atomtypes.
+Error: Cannot make topology for hydrogen-fluoride
+Error - Atom type problem: Cannot find atomtype i (atom 0) in forcefield, there are 12 atomtypes.
+Error: Cannot make topology for hydrogen-iodide
+Error - Atom type problem: Cannot find atomtype c2 (atom 0) in forcefield, there are 12 atomtypes.
+Error: Cannot make topology for imidazole
+Error - Atom type problem: Cannot find atomtype c2 (atom 0) in forcefield, there are 12 atomtypes.
+Error: Cannot make topology for imidazolium
+Error - Atom type problem: Cannot find atomtype n2 (atom 0) in forcefield, there are 12 atomtypes.
+Error: Cannot make topology for indole
+Error - Atom type problem: Cannot find atomtype I- (atom 0) in forcefield, there are 12 atomtypes.
+Error: Cannot make topology for iodide
+Error - Atom type problem: Cannot find atomtype i (atom 0) in forcefield, there are 12 atomtypes.
+Error: Cannot make topology for iodine
+Error - Atom type problem: Cannot find atomtype i (atom 0) in forcefield, there are 12 atomtypes.
+Error: Cannot make topology for iodine-bromide
+Error - Atom type problem: Cannot find atomtype i (atom 0) in forcefield, there are 12 atomtypes.
+Error: Cannot make topology for iodine-chloride
+Error - Atom type problem: Cannot find atomtype i (atom 0) in forcefield, there are 12 atomtypes.
+Error: Cannot make topology for iodine-fluoride
+Error - Atom type problem: Cannot find atomtype i (atom 0) in forcefield, there are 12 atomtypes.
+Error: Cannot make topology for iodine-monoxide
+Error - Atom type problem: Cannot find atomtype h2 (atom 1) in forcefield, there are 12 atomtypes.
+Error: Cannot make topology for iodobromomethane
+Error - Atom type problem: Cannot find atomtype i (atom 1) in forcefield, there are 12 atomtypes.
+Error: Cannot make topology for iodomethane
+Error - Atom type problem: Cannot find atomtype Kr (atom 0) in forcefield, there are 12 atomtypes.
+Error: Cannot make topology for krypton
+Error - Atom type problem: Cannot find atomtype Li+ (atom 0) in forcefield, there are 12 atomtypes.
+Error: Cannot make topology for lithium
+Error - Atom type problem: Cannot find atomtype li (atom 0) in forcefield, there are 12 atomtypes.
+Error: Cannot make topology for lithium-bromide
+Error - Atom type problem: Cannot find atomtype li (atom 0) in forcefield, there are 12 atomtypes.
+Error: Cannot make topology for lithium-chloride
+Error - Atom type problem: Cannot find atomtype li (atom 0) in forcefield, there are 12 atomtypes.
+Error: Cannot make topology for lithium-fluoride
+Error - Atom type problem: Cannot find atomtype li (atom 1) in forcefield, there are 12 atomtypes.
+Error: Cannot make topology for lithium-hydride
+Error - Atom type problem: Cannot find atomtype li (atom 0) in forcefield, there are 12 atomtypes.
+Error: Cannot make topology for lithium-iodide
+Error - Atom type problem: Cannot find atomtype Li+ (atom 0) in forcefield, there are 12 atomtypes.
+Error: Cannot make topology for lithium-ion
+Error - Atom type problem: Cannot find atomtype mg (atom 0) in forcefield, there are 12 atomtypes.
+Error: Cannot make topology for magnesium-oxide
+Error - Atom type problem: Cannot find atomtype mg (atom 0) in forcefield, there are 12 atomtypes.
+Error: Cannot make topology for magnesium-sulfide
+Error - Atom type problem: Cannot find atomtype h2 (atom 2) in forcefield, there are 12 atomtypes.
+Error: Cannot make topology for methanediol
+Error - Atom type problem: Cannot find atomtype s3 (atom 0) in forcefield, there are 12 atomtypes.
+Error: Cannot make topology for methanethiol
+Error - Atom type problem: Cannot find atomtype n3 (atom 0) in forcefield, there are 12 atomtypes.
+Error: Cannot make topology for methylamine
+Error - Atom type problem: Cannot find atomtype n4 (atom 0) in forcefield, there are 12 atomtypes.
+Error: Cannot make topology for methylammonium
+Error - Atom type problem: Cannot find atomtype Ne (atom 0) in forcefield, there are 12 atomtypes.
+Error: Cannot make topology for neon
+Error - Atom type problem: Cannot find atomtype n2 (atom 0) in forcefield, there are 12 atomtypes.
+Error: Cannot make topology for nitric-oxide-ion
+Error - Atom type problem: Cannot find atomtype n1 (atom 0) in forcefield, there are 12 atomtypes.
+Error: Cannot make topology for nitrogen
+Error - Atom type problem: Cannot find atomtype o2 (atom 0) in forcefield, there are 12 atomtypes.
+Error: Cannot make topology for oxygen
+Error - Atom type problem: Cannot find atomtype o2 (atom 0) in forcefield, there are 12 atomtypes.
+Error: Cannot make topology for p-ethylphenol
+Error - Atom type problem: Cannot find atomtype f (atom 0) in forcefield, there are 12 atomtypes.
+Error: Cannot make topology for pentafluoroethane
+Error - Atom type problem: Cannot find atomtype c2 (atom 0) in forcefield, there are 12 atomtypes.
+Error: Cannot make topology for phenol
+Error - Atom type problem: Cannot find atomtype p3 (atom 0) in forcefield, there are 12 atomtypes.
+Error: Cannot make topology for phosphor-nitride
+Error - Atom type problem: Cannot find atomtype p3 (atom 0) in forcefield, there are 12 atomtypes.
+Error: Cannot make topology for phosphorus-monofluoride
+Error - Atom type problem: Cannot find atomtype K+ (atom 0) in forcefield, there are 12 atomtypes.
+Error: Cannot make topology for potassium
+Error - Atom type problem: Cannot find atomtype br (atom 0) in forcefield, there are 12 atomtypes.
+Error: Cannot make topology for potassium-bromide
+Error - Atom type problem: Cannot find atomtype cl (atom 0) in forcefield, there are 12 atomtypes.
+Error: Cannot make topology for potassium-chloride
+Error - Atom type problem: Cannot find atomtype f (atom 0) in forcefield, there are 12 atomtypes.
+Error: Cannot make topology for potassium-fluoride
+Error - Atom type problem: Cannot find atomtype i (atom 0) in forcefield, there are 12 atomtypes.
+Error: Cannot make topology for potassium-iodide
+Error - Atom type problem: Cannot find atomtype K+ (atom 0) in forcefield, there are 12 atomtypes.
+Error: Cannot make topology for potassium-ion
+Error - Atom type problem: Cannot find atomtype c2 (atom 0) in forcefield, there are 12 atomtypes.
+Error: Cannot make topology for propanamide
+Error - Atom type problem: Cannot find atomtype o2 (atom 0) in forcefield, there are 12 atomtypes.
+Error: Cannot make topology for propanoate
+Error - Atom type problem: Cannot find atomtype c2 (atom 2) in forcefield, there are 12 atomtypes.
+Error: Cannot make topology for propionimidine
+Error - Atom type problem: Cannot find atomtype n3 (atom 10) in forcefield, there are 12 atomtypes.
+Error: Cannot make topology for propylamine
+Error - Atom type problem: Cannot find atomtype c2 (atom 0) in forcefield, there are 12 atomtypes.
+Error: Cannot make topology for pyrimidine
+Error - Atom type problem: Cannot find atomtype Rb+ (atom 0) in forcefield, there are 12 atomtypes.
+Error: Cannot make topology for rubidium
+Error - Atom type problem: Cannot find atomtype br (atom 0) in forcefield, there are 12 atomtypes.
+Error: Cannot make topology for rubidium-bromide
+Error - Atom type problem: Cannot find atomtype cl (atom 0) in forcefield, there are 12 atomtypes.
+Error: Cannot make topology for rubidium-chloride
+Error - Atom type problem: Cannot find atomtype f (atom 0) in forcefield, there are 12 atomtypes.
+Error: Cannot make topology for rubidium-fluoride
+Error - Atom type problem: Cannot find atomtype i (atom 0) in forcefield, there are 12 atomtypes.
+Error: Cannot make topology for rubidium-iodide
+Error - Atom type problem: Cannot find atomtype Rb+ (atom 0) in forcefield, there are 12 atomtypes.
+Error: Cannot make topology for rubidium-ion
+Error - Atom type problem: Cannot find atomtype Na+ (atom 0) in forcefield, there are 12 atomtypes.
+Error: Cannot make topology for sodium
+Error - Atom type problem: Cannot find atomtype na (atom 0) in forcefield, there are 12 atomtypes.
+Error: Cannot make topology for sodium-bromide
+Error - Atom type problem: Cannot find atomtype Na+ (atom 0) in forcefield, there are 12 atomtypes.
+Error: Cannot make topology for sodium-chloride
+Error - Atom type problem: Cannot find atomtype na (atom 0) in forcefield, there are 12 atomtypes.
+Error: Cannot make topology for sodium-fluoride
+Error - Atom type problem: Cannot find atomtype na (atom 1) in forcefield, there are 12 atomtypes.
+Error: Cannot make topology for sodium-hydride
+Error - Atom type problem: Cannot find atomtype i (atom 0) in forcefield, there are 12 atomtypes.
+Error: Cannot make topology for sodium-iodide
+Error - Atom type problem: Cannot find atomtype Na+ (atom 0) in forcefield, there are 12 atomtypes.
+Error: Cannot make topology for sodium-ion
+Error - Atom type problem: Cannot find atomtype b (atom 0) in forcefield, there are 12 atomtypes.
+Error: Cannot make topology for tetrafluoroborate
+Error - Atom type problem: Cannot find atomtype f (atom 1) in forcefield, there are 12 atomtypes.
+Error: Cannot make topology for tetrafluoromethane
+Error - Atom type problem: Cannot find atomtype c2 (atom 0) in forcefield, there are 12 atomtypes.
+Error: Cannot make topology for thymine
+Error - Atom type problem: Cannot find atomtype c2 (atom 0) in forcefield, there are 12 atomtypes.
+Error: Cannot make topology for toluene
+Error - Atom type problem: Cannot find atomtype br (atom 1) in forcefield, there are 12 atomtypes.
+Error: Cannot make topology for tribromomethane
+Error - Atom type problem: Cannot find atomtype cl (atom 1) in forcefield, there are 12 atomtypes.
+Error: Cannot make topology for trichlorofluoromethane
+Error - Atom type problem: Cannot find atomtype cl (atom 1) in forcefield, there are 12 atomtypes.
+Error: Cannot make topology for trichloromethane
+Error - Atom type problem: Cannot find atomtype c2 (atom 1) in forcefield, there are 12 atomtypes.
+Error: Cannot make topology for trifluoroacetate
+Error - Atom type problem: Cannot find atomtype f (atom 1) in forcefield, there are 12 atomtypes.
+Error: Cannot make topology for trifluoromethane
+Error - Atom type problem: Cannot find atomtype i (atom 1) in forcefield, there are 12 atomtypes.
+Error: Cannot make topology for triiodomethane
+Error - Atom type problem: Cannot find atomtype n3 (atom 0) in forcefield, there are 12 atomtypes.
+Error: Cannot make topology for trimethylamine
+Error - Atom type problem: Cannot find atomtype n2 (atom 0) in forcefield, there are 12 atomtypes.
+Error: Cannot make topology for uracil
+Error - Atom type problem: Cannot find atomtype c2 (atom 0) in forcefield, there are 12 atomtypes.
+Error: Cannot make topology for urea
+Error - Atom type problem: Cannot find atomtype ow (atom 0) in forcefield, there are 12 atomtypes.
+Error: Cannot make topology for water
+Error - Atom type problem: Cannot find atomtype Xe (atom 0) in forcefield, there are 12 atomtypes.
+Error: Cannot make topology for xenon
+bond-c3_b~hc_b len 109.9 sigma 6.2 (pm) N = 23495
+bond-c3_b~c3_b len 155.2 sigma 8 (pm) N = 9868
+bond-c3_b~h1_b len 110 sigma 5.9 (pm) N = 4235
+bond-c3_b~o3_b len 142.9 sigma 7.1 (pm) N = 2450
+bond-ho_b~o3_b len 97.5 sigma 5.6 (pm) N = 2240
+bond-ha_b~ha_b len 74.1 sigma 0.3 (pm) N = 3
+angle-hc_b~c3_b~hc_b angle 107.2 sigma 10.1 (deg) N = 17948 WARNING
+angle-c3_b~c3_b~hc_b angle 110.1 sigma 10.3 (deg) N = 34589 WARNING
+angle-c3_b~c3_b~c3_b angle 106.9 sigma 23.5 (deg) N = 8414 WARNING
+angle-c3_b~c3_b~h1_b angle 108.8 sigma 8.3 (deg) N = 4676 WARNING
+angle-c3_b~c3_b~o3_b angle 109.7 sigma 6.7 (deg) N = 3115
+angle-h1_b~c3_b~h1_b angle 107.7 sigma 9.2 (deg) N = 1897 WARNING
+angle-h1_b~c3_b~o3_b angle 109.7 sigma 7.6 (deg) N = 4235
+angle-c3_b~o3_b~ho_b angle 107 sigma 10.1 (deg) N = 2240 WARNING
+angle-c3_b~o3_b~c3_b angle 115.8 sigma 8 (deg) N = 105
+dihedral-c3_b~c3_b~c3_b~hc_b angle 182.256 sigma 102.424 (deg)
+dihedral-hc_b~c3_b~c3_b~hc_b angle 178.806 sigma 99.9482 (deg)
+dihedral-c3_b~c3_b~c3_b~c3_b angle 174.369 sigma 101.3 (deg)
+dihedral-c3_b~c3_b~c3_b~h1_b angle 174.907 sigma 114.883 (deg)
+dihedral-c3_b~c3_b~c3_b~o3_b angle 191.545 sigma 87.1611 (deg)
+dihedral-h1_b~c3_b~c3_b~hc_b angle 182.096 sigma 94.0194 (deg)
+dihedral-hc_b~c3_b~c3_b~o3_b angle 175.846 sigma 101.525 (deg)
+dihedral-c3_b~c3_b~o3_b~ho_b angle 184.825 sigma 104.458 (deg)
+dihedral-h1_b~c3_b~o3_b~ho_b angle 175.691 sigma 100.991 (deg)
+dihedral-o3_b~c3_b~c3_b~o3_b angle 171.76 sigma 108.83 (deg)
+dihedral-h1_b~c3_b~c3_b~o3_b angle 182.436 sigma 100.777 (deg)
+dihedral-c3_b~c3_b~o3_b~c3_b angle 167.668 sigma 50.4487 (deg)
+dihedral-c3_b~o3_b~c3_b~h1_b angle 191.53 sigma 117.552 (deg)
+dihedral-h1_b~c3_b~c3_b~h1_b angle 176.866 sigma 94.7426 (deg)
+Extracted 6 BONDS
+Extracted 9 ANGLES
+Extracted 14 PROPER_DIHEDRALS
+Program finished, please check the output in this file.
+
+Thanks for using the Alexandria Chemistry Toolkit.
+    https://github.com/AlexandriaChemistry/ACT

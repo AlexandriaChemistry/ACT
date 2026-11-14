@@ -93,7 +93,7 @@ protected:
             return 0;
         }
         // Coulomb has all of them, each once
-        auto coulomb = nb.range(InteractionType::ELECTROSTATICS);
+        const auto coulomb = nb.range(InteractionType::ELECTROSTATICS);
         std::set<std::pair<int, int>> found;
         for (const auto &p : coulomb)
         {
@@ -101,12 +101,12 @@ protected:
             EXPECT_TRUE(p.params().empty());
         }
         EXPECT_EQ(expected, found);
-        auto isShell = [&atoms](const PairView &p)
+        const auto isShell = [&atoms](const PairView &p)
         {
             return (atoms[p.atomIndex(0)].pType() == ActParticle::Shell ||
                     atoms[p.atomIndex(1)].pType() == ActParticle::Shell);
         };
-        auto isInter = [natom0](const PairView &p)
+        const auto isInter = [natom0](const PairView &p)
         {
             return ((static_cast<size_t>(p.atomIndex(0)) < natom0) != (static_cast<size_t>(p.atomIndex(1)) < natom0));
         };
@@ -119,10 +119,10 @@ protected:
                 continue;
             }
             SCOPED_TRACE(interactionTypeToString(itype));
-            auto all = nb.range(itype);
+            const auto all = nb.range(itype);
             // The separations: without shells first, intermolecular last
-            auto noShells   = nb.shellEntries(itype, false);
-            auto withShells = nb.shellEntries(itype, true);
+            const auto noShells   = nb.shellEntries(itype, false);
+            const auto withShells = nb.shellEntries(itype, true);
             EXPECT_EQ(all.size(), noShells.size() + withShells.size());
             if (top.hasShellSplit())
             {
@@ -137,7 +137,7 @@ protected:
             }
             if (top.hasIntermolecular())
             {
-                auto   inter = nb.intermolecular(itype);
+                const auto inter = nb.intermolecular(itype);
                 size_t ninter = 0;
                 for (const auto &p : all)
                 {
@@ -164,7 +164,7 @@ protected:
                 if (k < all.size() && all[k].atomIndices() == c.atomIndices())
                 {
                     const auto &p  = all[k++];
-                    auto        ff = fs.parametersConst().find(p.id());
+                    const auto  ff = fs.parametersConst().find(p.id());
                     EXPECT_TRUE(fs.parametersConst().end() != ff) << p.id().id();
                     EXPECT_EQ(names.size(), p.params().size());
                     if (fs.parametersConst().end() == ff || names.size() != p.params().size())
@@ -173,7 +173,7 @@ protected:
                     }
                     for (size_t i = 0; i < names.size(); i++)
                     {
-                        auto   fp    = ff->second.find(names[i]);
+                        const auto fp    = ff->second.find(names[i]);
                         double value = (ff->second.end() == fp) ? 0 : fp->second.internalValue();
                         // Bitwise, since some parameters are NaN
                         EXPECT_EQ(0, std::memcmp(&value, &p.params()[i], sizeof(double))) << p.id().id() << " " << names[i];

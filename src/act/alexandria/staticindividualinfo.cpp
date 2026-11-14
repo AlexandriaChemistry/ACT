@@ -68,7 +68,7 @@ void StaticIndividualInfo::setOutputFile(const std::string &outputFile)
     if (cr_->isMasterOrMiddleMan())
     {   
         // The files of each individual are in its directory
-        auto fileName = std::filesystem::path(outputFile).filename().string();
+        const auto fileName = std::filesystem::path(outputFile).filename().string();
         outputFile_   = prefix_ + "ind" + std::to_string(id_) + "-" + fileName;
     }
 }
@@ -120,8 +120,8 @@ void StaticIndividualInfo::updateForceField(MsgHandler                *msghandle
                                             const std::vector<double> &bases)
 {
     static const size_t timer = Timings::instance().index("Force field update");
-    ScopedTimer         scoped(timer);
-    if (bases.size() == 0)
+    const ScopedTimer   scoped(timer);
+    if (bases.empty())
     {
         return;
     }
@@ -130,7 +130,7 @@ void StaticIndividualInfo::updateForceField(MsgHandler                *msghandle
         msghandler->msg(ACTStatus::Error,
                         gmx::formatString("Number of parameters to update in forcefield (%zu) does not match the known number of parameters (%zu)",
                                           bases.size(),
-                                          optIndex().size()).c_str());
+                                          optIndex().size()));
     }
     std::set<int> mychanged = changed;
     if (mychanged.empty())
@@ -263,15 +263,15 @@ void StaticIndividualInfo::sumChiSquared(MsgHandler       *msghandler,
             }
         }
     }
-    auto myft = targets_.find(ims);
+    const auto myft = targets_.find(ims);
     if (myft != targets_.end())
     {
-        auto etot = myft->second.find(eRMS::TOT);
+        const auto etot = myft->second.find(eRMS::TOT);
         GMX_RELEASE_ASSERT(etot != myft->second.end(),
                            gmx::formatString("Cannot find etot for %s",
                                              iMolSelectName(ims).c_str()).c_str());
         etot->second.reset();
-        auto tc = targets_.find(ims);
+        const auto tc = targets_.find(ims);
         if (tc != targets_.end())
         {
             for (const auto &ft : tc->second)
@@ -294,7 +294,7 @@ void StaticIndividualInfo::sumChiSquared(MsgHandler       *msghandler,
 
 void StaticIndividualInfo::resetChiSquared(iMolSelect ims)
 {
-    auto fts = targets_.find(ims);
+    const auto fts = targets_.find(ims);
     if (fts != targets_.end())
     {
         for (auto &ft : fts->second)
@@ -380,12 +380,12 @@ void StaticIndividualInfo::generateOptimizationIndex(MsgHandler                *
                 {
                     for(auto &param : fpl.second)
                     {
-                        std::string pf2 = interactionTypeToString(fs.first) + ":" + param.first;
+                        const std::string pf2 = interactionTypeToString(fs.first) + ":" + param.first;
                         if (mg->fit(param.first) || mg->fit(pf2))
                         {
                             if (param.second.isMutable() && param.second.ntrain() >= mg->mindata())
                             {
-                                optIndex_.push_back(OptimizationIndex(fs.first, fpl.first, param.first));
+                                optIndex_.emplace_back(fs.first, fpl.first, param.first);
                             }
                             else if (msghandler && msghandler->debug())
                             {
@@ -398,17 +398,17 @@ void StaticIndividualInfo::generateOptimizationIndex(MsgHandler                *
                     }
                 }
                 // Now check combination rules
-                std::string exponent("exponent");
-                for(auto crule : fs.second.combinationRules())
+                const std::string exponent("exponent");
+                for(const auto &crule : fs.second.combinationRules())
                 {
                     if (fs.second.combinationRuleConst(crule.first).ffplConst().mutability() == Mutability::Bounded)
                     {
                         // Check both just exponent and interactionType specific version, in case
                         // only the exponent of VANDERWAALS is to be trained but not others.
-                        std::string pf2 = interactionTypeToString(fs.first) + ":" + exponent;
+                        const std::string pf2 = interactionTypeToString(fs.first) + ":" + exponent;
                         if (mg->fit(exponent) || mg->fit(pf2))
                         {
-                            optIndex_.push_back(OptimizationIndex(fs.first, crule.first, exponent));
+                            optIndex_.emplace_back(fs.first, crule.first, exponent);
                         }
                     }
                 }
@@ -421,7 +421,7 @@ void StaticIndividualInfo::generateOptimizationIndex(MsgHandler                *
             {
                 if (p.second.isMutable() && mg->fit(p.first) && p.second.ntrain() > 0)
                 {
-                    optIndex_.push_back(OptimizationIndex(pt.second.id().id(), p.first));
+                    optIndex_.emplace_back(pt.second.id().id(), p.first);
                 }
             }
         }
@@ -433,11 +433,11 @@ void StaticIndividualInfo::generateOptimizationIndex(MsgHandler                *
             auto fcs = pd_.forcesConst();
             for(auto &i : optIndex_)
             {
-                auto ff = fcs.find(i.iType());
+                const auto ff = fcs.find(i.iType());
                 if (fcs.end() != ff)
                 {
                     auto pp = ff->second.parametersConst();
-                    auto gg = pp.find(i.id());
+                    const auto gg = pp.find(i.id());
                     if (pp.end() != gg)
                     {
                         const auto &fs = gg->second.find(i.parameterType());
@@ -550,7 +550,7 @@ void StaticIndividualInfo::fillVectors(unsigned int mindata,
             }
             else if (pd_.interactionPresent(iType))
             {
-                auto fs = pd_.findForcesConst(iType);
+                const auto fs = pd_.findForcesConst(iType);
                 // First look in force parameters
                 if (fs.parameterExists(optIndex.id()))
                 {
@@ -561,7 +561,7 @@ void StaticIndividualInfo::fillVectors(unsigned int mindata,
                     // Look in combination rules
                     if (fs.combinationRuleExists(optIndex.id().id()))
                     {
-                        auto pcr = fs.combinationRuleConst(optIndex.id().id());
+                        const auto pcr = fs.combinationRuleConst(optIndex.id().id());
                         p = pcr.ffplConst();
                     }
                 }
@@ -591,7 +591,7 @@ void StaticIndividualInfo::fillVectors(unsigned int mindata,
                 cr_->send(dest, paramNames_[i]);
                 cr_->send(dest, paramNamesWOClass_[i]);
                 cr_->send(dest, ntrain_[i]);
-                std::string mutab = mutabilityName(mutability_[i]);
+                const std::string mutab = mutabilityName(mutability_[i]);
                 cr_->send(dest, mutab);
             }
         }

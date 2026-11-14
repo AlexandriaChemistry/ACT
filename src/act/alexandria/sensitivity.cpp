@@ -222,7 +222,7 @@ bool Sensitivity::flat() const
     {
         return false;
     }
-    auto   minmax  = std::minmax_element(chi2_.begin(), chi2_.end());
+    const auto minmax  = std::minmax_element(chi2_.begin(), chi2_.end());
     double chi2max = std::max(std::abs(*minmax.first), std::abs(*minmax.second));
     return *minmax.second - *minmax.first <= 16*std::numeric_limits<double>::epsilon()*chi2max;
 }
@@ -255,7 +255,7 @@ nlohmann::ordered_json Sensitivity::toJson(size_t             index,
     js["name"]  = label;
     // The label contains the particle type and the parameter name
     auto pn = split(label, ' ');
-    js["particle"]  = pn.size() > 0 ? pn[0] : "";
+    js["particle"]  = !pn.empty() ? pn[0] : "";
     js["parameter"] = pn.size() > 1 ? pn[1] : "";
     if (checked_)
     {
@@ -582,7 +582,7 @@ HessianDiagnostic diagnoseHessian(const std::vector<std::vector<double>> &hessia
         }
         sg(i) = gradient[i]*range[i];
     }
-    Eigen::SelfAdjointEigenSolver<Eigen::MatrixXd> solver(S);
+    const Eigen::SelfAdjointEigenSolver<Eigen::MatrixXd> solver(S);
     const auto &eval = solver.eigenvalues();
     hd.eigenvalueMin = eval.minCoeff();
     hd.eigenvalueMax = eval.maxCoeff();
@@ -592,7 +592,7 @@ HessianDiagnostic diagnoseHessian(const std::vector<std::vector<double>> &hessia
     {
         // The Newton step in scaled coordinates, -S^-1 g
         const auto     &evec = solver.eigenvectors();
-        Eigen::VectorXd step = -evec*((evec.transpose()*sg).cwiseQuotient(eval));
+        const Eigen::VectorXd step = -evec*((evec.transpose()*sg).cwiseQuotient(eval));
         hd.maxNewtonStepFraction = step.cwiseAbs().maxCoeff();
     }
     return hd;

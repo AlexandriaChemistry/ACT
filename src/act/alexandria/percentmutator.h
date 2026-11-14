@@ -70,13 +70,13 @@ public:
         : ga::Mutator(seed, algorithm), sii_(sii), percent_(percent) {}                
 
     //! \copydoc ga::Mutator::mutate
-    virtual void mutate(MsgHandler *msghandler,
-                        ga::Genome *genome,
-                        ga::Genome *bestGenome,
-                        double      prMut);
+    void mutate(MsgHandler *msghandler,
+                ga::Genome *genome,
+                ga::Genome *bestGenome,
+                double      prMut) override;
 
     //! \return whether a minimum was found
-    bool foundMinimum() { return false; }
+    bool foundMinimum() override { return false; }
 };
 
 

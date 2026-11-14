@@ -259,8 +259,8 @@ int gentop(int argc, char *argv[])
         }
         if (!opt2bSet("-openmm", fnm.size(), fnm.data()))
         {
-            std::string tfn = gmx::formatString("%s%s", index.c_str(),
-                                                bITP ? ftp2fn(efITP, fnm.size(), fnm.data()) : ftp2fn(efTOP, fnm.size(), fnm.data()));
+            const std::string tfn = gmx::formatString("%s%s", index.c_str(),
+                                                      bITP ? ftp2fn(efITP, fnm.size(), fnm.data()) : ftp2fn(efTOP, fnm.size(), fnm.data()));
             actmol->PrintTopology(&msghandler, tfn.c_str(), &pd, forceComp,
                                   coords, bITP);
         }
@@ -272,8 +272,8 @@ int gentop(int argc, char *argv[])
         if (opt2bSet("-c", fnm.size(), fnm.data()))
         {
             matrix box = { { 5, 0, 0 }, { 0, 5, 0 }, { 0, 0, 5 }};
-            std::string cfn = gmx::formatString("%s%s", index.c_str(),
-                                                opt2fn("-c", fnm.size(), fnm.data()));
+            const std::string cfn = gmx::formatString("%s%s", index.c_str(),
+                                                      opt2fn("-c", fnm.size(), fnm.data()));
             if (opt2parg_bSet("-box", pa.size(), pa.data()))
             {
                 for(int m = 0; m < DIM; m++)

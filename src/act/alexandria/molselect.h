@@ -93,7 +93,7 @@ private:
 public:
     
     //! Constructor
-    MolSelect() {};
+    MolSelect() = default;
     /*! \brief Add one entry
      * \param[in] iupac The molecule name
      * \param[in] index A number

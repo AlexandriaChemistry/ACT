@@ -287,7 +287,7 @@ private:
 
 public:
     //! Set the generation, see ga::Mutator::setGeneration
-    void setGeneration(int generation) { myGeneration_ = generation; }
+    void setGeneration(int generation) override { myGeneration_ = generation; }
 
 
     /*!
@@ -317,10 +317,10 @@ public:
      * \param[in]  prMut      Probability for mutation. 
      *                   Abused as a boolean for evaluating the test set here, if > 0.
      */
-    virtual void mutate(MsgHandler                *msghandler,
-                        ga::Genome                *genome,
-                        ga::Genome                *bestGenome,
-                        double                     prMut);
+    void mutate(MsgHandler                *msghandler,
+                ga::Genome                *genome,
+                ga::Genome                *bestGenome,
+                double                     prMut) override;
 
     //! \return whether the test set is evaluated during the steps, which mutateLockstep does not do
     bool evaluateTestSet() const { return evaluateTestSet_; }
@@ -350,10 +350,10 @@ public:
     }
 
     //! \return whether a minimum was found
-    bool foundMinimum() { return bMinimum_; }
+    bool foundMinimum() override { return bMinimum_; }
 
     //! \return the number of steps in one mutation
-    size_t numberOfSteps() const
+    size_t numberOfSteps() const override
     {
         return bch_->maxIter() * sii_->nParam();
     }
@@ -370,8 +370,8 @@ public:
      * \param[in] bestGenome    The genome with highest fitness
      */
     void printMonteCarloStatistics(gmx::TextWriter  *tw,
-                                   const ga::Genome &initialGenome,
-                                   const ga::Genome &bestGenome);
+                                            const ga::Genome &initialGenome,
+                                            const ga::Genome &bestGenome);
 
     /*!
      * \brief Open parameter convergence files

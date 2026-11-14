@@ -265,7 +265,7 @@ void compare(const Evaluation &a, const Evaluation &b, double tolerance)
     ASSERT_EQ(a.targets.size(), b.targets.size());
     for (const auto &t : b.targets)
     {
-        auto at = a.targets.find(t.first);
+        const auto at = a.targets.find(t.first);
         ASSERT_TRUE(at != a.targets.end());
         EXPECT_NEAR(at->second, t.second, tolerance*std::abs(t.second))
             << "target " << rmsName(t.first);
@@ -384,7 +384,7 @@ VdwRange vdwRange(Potential pot, const std::string &name)
     {
         return pot == Potential::LJ14_7 ? VdwRange{ "", 0.03, 0.1 } : VdwRange{ "", 4, 10 };
     }
-    auto r = ranges.find(name);
+    const auto r = ranges.find(name);
     GMX_RELEASE_ASSERT(r != ranges.end(), gmx::formatString("No range for %s", name.c_str()).c_str());
     return r->second;
 }
@@ -414,7 +414,7 @@ void replaceVdw(ForceField *pd, Potential pot)
         unsigned int ntrain = entry.second.begin()->second.ntrain();
         for (const auto &name : potentialToParameterName(pot))
         {
-            auto r = vdwRange(pot, name);
+            const auto r = vdwRange(pot, name);
             vdw.addParameter(entry.first, name,
                              ForceFieldParameter(r.unit, 0.5*(r.minimum + r.maximum), 0, ntrain,
                                                  r.minimum, r.maximum, Mutability::Bounded, true, true));
@@ -437,7 +437,7 @@ void setCombinationRules(ForceField *pd, const std::map<std::string, std::string
     for (const auto &r : rules)
     {
         // The exponent of GeneralizedMean is trained too
-        ForceFieldParameter exponent("", 1.5, 0, 1, -4, 4, Mutability::Bounded, true, false);
+        const ForceFieldParameter exponent("", 1.5, 0, 1, -4, 4, Mutability::Bounded, true, false);
         vdw->addCombinationRule(r.first, r.second, exponent);
     }
 }
@@ -470,7 +470,7 @@ void baseForceField(gmx::test::TestFileManager *fileManager,
     fc->setKeepShells(false);
     fc->setGpuResident(gpu);
     *baseFiles = files0;
-    GaTestHelper original(1, *fit, uc.targets, files0, fc);
+    const GaTestHelper original(1, *fit, uc.targets, files0, fc);
     ASSERT_FALSE(original.sii->optIndex().empty()) << "No parameters to train in " << uc.files.forceField;
     baseFiles->forceField = fileManager->getTemporaryFilePath("base.xml");
     writeValues(files0.forceField, original.sii->optIndex(), randomValues(original.sii),
@@ -492,7 +492,7 @@ void checkUpdates(gmx::test::TestFileManager *fileManager,
 {
     // The shells start from the same positions each time, otherwise the
     // results depend on the evaluations before, see setKeepShells
-    auto makeForceComputer = [gpu]()
+    const auto makeForceComputer = [gpu]()
     {
         auto fc = new ForceComputer();
         fc->setKeepShells(false);
@@ -509,7 +509,7 @@ void checkUpdates(gmx::test::TestFileManager *fileManager,
     // The charges are only on the processor if it generates them
     const bool charges = !gpu;
     auto values = parameterValues(sii);
-    auto before = evaluate(&incremental, values, {}, charges);
+    const auto before = evaluate(&incremental, values, {}, charges);
     EXPECT_GT(before.chi2, 0);
     // First each parameter is changed as in an MCMC step that is rejected,
     // which takes little time
@@ -524,7 +524,7 @@ void checkUpdates(gmx::test::TestFileManager *fileManager,
         probe[k]        = otherValue(*p);
         auto values1    = values;
         values1[k]      = probe[k];
-        auto tried      = evaluate(&incremental, values1, { static_cast<int>(k) }, charges);
+        const auto tried      = evaluate(&incremental, values1, { static_cast<int>(k) }, charges);
         probeChanged[k] = resultChanged(tried, before);
         compare(evaluate(&incremental, values, { static_cast<int>(k) }, charges), before, tolerance);
     }
@@ -537,8 +537,8 @@ void checkUpdates(gmx::test::TestFileManager *fileManager,
     std::map<std::string, size_t> chosen;
     for (size_t k = 0; k < optIndex.size(); k++)
     {
-        auto kind = kindOf(optIndex[k]);
-        auto c    = chosen.find(kind);
+        const auto kind = kindOf(optIndex[k]);
+        const auto c    = chosen.find(kind);
         if (c == chosen.end())
         {
             chosen[kind] = k;
@@ -584,7 +584,7 @@ void checkUpdates(gmx::test::TestFileManager *fileManager,
             }
         }
         ASSERT_EQ(1, which.count(k)) << "Parameter " << k << " did not change";
-        auto reference = evaluate(&fresh, changed, {}, charges);
+        const auto reference = evaluate(&fresh, changed, {}, charges);
         if (resultChanged(reference, before))
         {
             relevant.insert(kindOf(oi));
@@ -690,7 +690,7 @@ std::map<std::string, UpdateCase> updateCases()
     {
         UpdateCase uc = hf;
         auto pot      = ruleSets[i].first;
-        auto rules    = ruleSets[i].second;
+        const auto rules    = ruleSets[i].second;
         uc.modify     = [pot, rules](ForceField *pd)
         {
             replaceVdw(pd, pot);
@@ -815,7 +815,7 @@ void compareRecipes(const ForceField          *pd,
                 {
                     int set = recipes->directSet(pd, entry.first, topentry->id());
                     ASSERT_GE(set, 0) << interactionTypeToString(entry.first) << " " << topentry->id().id();
-                    auto fromRecipe = recipes->evaluate(set);
+                    const auto fromRecipe = recipes->evaluate(set);
                     EXPECT_TRUE(sameParameters(topentry->params(), fromRecipe))
                         << interactionTypeToString(entry.first) << " " << topentry->id().id()
                         << ": topology" << parametersText(topentry->params())
@@ -839,7 +839,7 @@ void compareRecipes(const ForceField          *pd,
                     }
                     int set = recipes->pairSet(pd, itype, pt->ids[t]);
                     ASSERT_GE(set, 0) << interactionTypeToString(itype) << " " << pt->ids[t].id();
-                    auto fromRecipe = recipes->evaluate(set);
+                    const auto fromRecipe = recipes->evaluate(set);
                     EXPECT_TRUE(sameParameters(pt->params[t], fromRecipe))
                         << interactionTypeToString(itype) << " " << pt->ids[t].id()
                         << ": topology" << parametersText(pt->params[t])
@@ -914,7 +914,7 @@ void writeOtherUnits(const std::string &ffFile, const std::string &fileName)
         }
         for (auto &p : entry.second)
         {
-            auto u = units.find(p.first);
+            const auto u = units.find(p.first);
             if (u == units.end())
             {
                 continue;
@@ -946,11 +946,11 @@ TEST_F(ParameterUpdateTest, OtherUnitsOfVanDerWaals)
     uc.files.oneH       = false;
     uc.targets          = { eRMS::Interaction, eRMS::Electrostatics, eRMS::Exchange,
                             eRMS::Dispersion, eRMS::Induction };
-    auto fit = trainableNames(uc.files.forceField);
+    const auto fit = trainableNames(uc.files.forceField);
     // Random values, such that the van der Waals energies are not zero
     auto native = uc.files;
     {
-        GaTestHelper original(1, fit, uc.targets, uc.files);
+        const GaTestHelper original(1, fit, uc.targets, uc.files);
         native.forceField = fileManager_.getTemporaryFilePath("native.xml");
         writeValues(uc.files.forceField, original.sii->optIndex(), randomValues(original.sii),
                     native.forceField);
@@ -1021,7 +1021,7 @@ TEST_F(ParameterUpdateTest, FixedZeroEpsilonLeftOut)
         readForceField(ffPath(fixed.forceField), &pd);
         for (auto &entry : *pd.findForces(InteractionType::VDW)->parametersNoRemoval())
         {
-            auto eps = entry.second.find("epsilon");
+            const auto eps = entry.second.find("epsilon");
             if (entry.first.atoms().size() == 1 && entry.second.end() != eps &&
                 eps->second.mutability() == Mutability::Fixed && eps->second.value() == 0)
             {
@@ -1144,7 +1144,7 @@ TEST(ChargePropertiesTest, GivenChargesKeepCoulombPairs)
     // A charge for each particle, also for the virtual site
     std::vector<double> q(atoms.size(), 0.1);
     q[0] = -0.1*(atoms.size() - 1);
-    auto coulombPairs = [](const ACTMol &mol)
+    const auto coulombPairs = [](const ACTMol &mol)
     {
         return mol.topology()->nonBondedPairs().range(InteractionType::ELECTROSTATICS).size();
     };
@@ -1170,7 +1170,7 @@ TEST(ChargePropertiesTest, OnlyWithData)
     EXPECT_GT(chi2Without, 0);
     EXPECT_EQ(chi2Without, chi2With);
     // The alcohols have dipoles, quadrupoles and electrostatic potentials
-    GaTestFiles alcohols;
+    const GaTestFiles alcohols;
     double      chi2 = 0;
     EXPECT_TRUE(needChargeProperties(alcohols, { eRMS::EPOT, eRMS::MU }, &chi2));
     EXPECT_TRUE(needChargeProperties(alcohols, { eRMS::EPOT, eRMS::ESP }, &chi2));
@@ -1192,7 +1192,7 @@ TEST_F(ParameterUpdateTest, RecipeRowsAsProcessorRowsGpu)
     for (const std::string label : { "alc-pol-wbh", "hf-pg-vsites" })
     {
         SCOPED_TRACE(label);
-        auto                     uc = updateCases()[label];
+        const auto               uc = updateCases()[label];
         std::vector<std::string> fit;
         GaTestFiles              baseFiles;
         baseForceField(&fileManager_, uc, true, &fit, &baseFiles);
@@ -1248,12 +1248,12 @@ TEST_F(ParameterUpdateTest, ProcessorMatchesGpu)
     {
         return;
     }
-    auto uc  = updateCases()["alc-pol-wbh"];
-    auto fit = trainableNames(uc.files.forceField);
+    const auto uc  = updateCases()["alc-pol-wbh"];
+    const auto fit = trainableNames(uc.files.forceField);
     // Random values of the parameters to start from, as in checkUpdates
     auto baseFiles = uc.files;
     {
-        GaTestHelper original(1, fit, uc.targets, uc.files);
+        const GaTestHelper original(1, fit, uc.targets, uc.files);
         baseFiles.forceField = fileManager_.getTemporaryFilePath("base.xml");
         writeValues(uc.files.forceField, original.sii->optIndex(), randomValues(original.sii),
                     baseFiles.forceField);
@@ -1277,8 +1277,8 @@ TEST_F(ParameterUpdateTest, ProcessorMatchesGpu)
     for (size_t step = 0; step <= nsteps; step++)
     {
         SCOPED_TRACE(gmx::formatString("step %zu", step));
-        auto onProcessor = evaluate(helpers[0], values, changed, false);
-        auto onGpu       = evaluate(helpers[1], values, changed, false);
+        const auto onProcessor = evaluate(helpers[0], values, changed, false);
+        const auto onGpu       = evaluate(helpers[1], values, changed, false);
         // The relaxation of the shells stops at a force tolerance, at which
         // the processor and the GPU differ a little
         compare(onGpu, onProcessor, 1e-4);

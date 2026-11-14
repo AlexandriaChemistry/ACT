@@ -46,7 +46,7 @@ namespace
 // most 4, and 32 or 64 middlemen would share them evenly
 TEST(QueueBalanceTest, OneAtATime)
 {
-    auto qb = queueBalance(256, 1, 63);
+    const auto qb = queueBalance(256, 1, 63);
     EXPECT_EQ(256u, qb.groups);
     EXPECT_EQ(5u, qb.rounds);
     EXPECT_NEAR(1 - 256.0/315, qb.idle, 1e-12);
@@ -58,7 +58,7 @@ TEST(QueueBalanceTest, OneAtATime)
 // two of them while the others wait half the time
 TEST(QueueBalanceTest, LockstepOneMiddlemanShort)
 {
-    auto qb = queueBalance(256, 4, 63);
+    const auto qb = queueBalance(256, 4, 63);
     EXPECT_EQ(64u, qb.groups);
     EXPECT_EQ(2u, qb.rounds);
     EXPECT_NEAR(1 - 64.0/126, qb.idle, 1e-12);
@@ -71,7 +71,7 @@ TEST(QueueBalanceTest, Even)
 {
     for (auto c : { std::array<size_t, 3>{ 256, 4, 64 }, { 256, 2, 128 }, { 256, 1, 64 }, { 480, 4, 40 } })
     {
-        auto qb = queueBalance(c[0], c[1], c[2]);
+        const auto qb = queueBalance(c[0], c[1], c[2]);
         EXPECT_EQ(0.0, qb.idle) << c[0] << " " << c[1] << " " << c[2];
     }
 }
@@ -79,7 +79,7 @@ TEST(QueueBalanceTest, Even)
 // Test: More middlemen than groups leave some without work
 TEST(QueueBalanceTest, MoreMiddlemenThanGroups)
 {
-    auto qb = queueBalance(256, 4, 128);
+    const auto qb = queueBalance(256, 4, 128);
     EXPECT_EQ(64u, qb.groups);
     EXPECT_EQ(1u, qb.rounds);
     EXPECT_NEAR(0.5, qb.idle, 1e-12);
@@ -89,7 +89,7 @@ TEST(QueueBalanceTest, MoreMiddlemenThanGroups)
 // Test: A population that is not a multiple of -lockstep has a smaller last group
 TEST(QueueBalanceTest, LastGroupSmaller)
 {
-    auto qb = queueBalance(10, 4, 3);
+    const auto qb = queueBalance(10, 4, 3);
     EXPECT_EQ(3u, qb.groups);
     EXPECT_EQ(1u, qb.rounds);
     EXPECT_EQ(0.0, qb.idle);
@@ -98,7 +98,7 @@ TEST(QueueBalanceTest, LastGroupSmaller)
 // Test: Nothing to share
 TEST(QueueBalanceTest, Empty)
 {
-    auto qb = queueBalance(0, 4, 63);
+    const auto qb = queueBalance(0, 4, 63);
     EXPECT_EQ(0u, qb.groups);
     EXPECT_EQ(0.0, qb.idle);
 }
