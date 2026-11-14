@@ -263,6 +263,23 @@ def equals_default(text, replacements):
     return [(start, offset + length - start, b" = default;")]
 
 
+def emplace(text, replacements):
+    """Remove the spaces inside the braces that modernize-use-emplace removes,
+    such that push_back({ a, b }) becomes emplace_back(a, b)."""
+    fix = []
+    for offset, length, new in replacements:
+        removed = text[offset:offset + length]
+        if removed.endswith(b"{") and not new.endswith(b"{"):
+            while text[offset + length:offset + length + 1] == b" ":
+                length += 1
+        elif new == b"" and removed == b"}":
+            while offset > 0 and text[offset - 1:offset] == b" ":
+                offset -= 1
+                length += 1
+        fix.append((offset, length, new))
+    return fix
+
+
 def layout(name, text, diag_offset, replacements):
     """The replacements of one fix in the layout of the ACT code, None to leave the fix out."""
     if name == "misc-const-correctness":
@@ -272,6 +289,8 @@ def layout(name, text, diag_offset, replacements):
     if name == "modernize-use-equals-default":
         fix = equals_default(text, replacements)
         return fix if fix is not None else replacements
+    if name == "modernize-use-emplace":
+        return emplace(text, replacements)
     return replacements
 
 
