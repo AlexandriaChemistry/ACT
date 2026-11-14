@@ -4192,6 +4192,7 @@ void GpuTrainingSystem::selectReplica(size_t) {}
 std::pair<double, double> GpuTrainingSystem::chargeDifference() const { return { 0, 0 }; }
 void GpuTrainingSystem::copyChargesToMolecules() {}
 void GpuTrainingSystem::resetShells() {}
+void GpuTrainingSystem::resetShellFailures() {}
 void GpuTrainingSystem::keepShells() {}
 bool GpuTrainingSystem::restoreShells(int) { return false; }
 void GpuTrainingSystem::constructVsites() {}
@@ -4219,6 +4220,7 @@ void GpuTrainingSystem::computeForces(int) {}
 bool GpuTrainingSystem::haveKeptShells() const { return false; }
 size_t GpuTrainingSystem::relax(int, const bool[2], const gpu::RelaxSettings &, size_t *nFailed) { *nFailed = 0; return 0; }
 size_t GpuTrainingSystem::relaxStatistics(size_t *nFailed) { *nFailed = 0; return 0; }
+size_t GpuTrainingSystem::shellFailures(size_t, size_t, int) { return 0; }
 void GpuTrainingSystem::setMultipoleBlocks(bool) {}
 bool GpuTrainingSystem::setMultipoles(int) { return false; }
 bool GpuTrainingSystem::multipoleSums(std::vector<double> *) { return false; }
@@ -4775,6 +4777,11 @@ public:
             blockIndex[(blocks[b].replica*mols.size() + blocks[b].mol)*nwhat + blocks[b].what] = b;
         }
     }
+
+    //! The failed slots of each block, see GpuTrainingSystem::shellFailures
+    std::vector<uint32_t> blockFailed;
+    //! Whether blockFailed is that of the last relaxation
+    bool                  blockFailedValid = false;
 
     //! The index of the block of a molecule and topology, -1 if none
     int find(size_t mol, int what, size_t replica = 0) const
@@ -5894,6 +5901,15 @@ void GpuTrainingSystem::selectReplica(size_t replica)
         }
         im.resident = replica;
     }
+    // The conformations whose shells did not converge go with the energies,
+    // see ACTMol::shellFailures
+    for (size_t k = 0; k < im.mols.size(); k++)
+    {
+        for (int what = 0; what < 3; what++)
+        {
+            im.mols[k]->conformationData(what)->shellFailures = shellFailures(k, replica, what);
+        }
+    }
     // Only charges that were copied after they were generated, see copyChargesToMolecules
     if (!im.acmGenerated)
     {
@@ -6538,6 +6554,7 @@ size_t GpuTrainingSystem::relax(int what, const bool relaxMonomer[2], const gpu:
     size_t nComputed = 0;
     bool   notFinite = false;
     gpu::relaxBlocks(im.system, u, relax.data(), settings, &nComputed, &notFinite, nFailed);
+    im.blockFailedValid = false;
     im.countFlops(what == 2 ? 2 : -2, 2, nComputed);
     if (notFinite)
     {
@@ -6743,6 +6760,10 @@ bool GpuTrainingSystem::setChain(const GpuChainSetup &setup)
             cm.nbound      = setup.bounds[k].size();
             cm.skippable   = setup.skippable[k] ? 1 : 0;
             cm.multipole   = (im.multipolesReady && im.find(k, 3, r) >= 0) ? 1 : 0;
+            for (int w = 0; w < 3; w++)
+            {
+                cm.shellBlocks[w] = im.find(k, w, r);
+            }
             if (cm.nbound > 0 && acmFirst[k] < 0)
             {
                 // The charges are not those of the GPU
@@ -6861,6 +6882,7 @@ bool GpuTrainingSystem::setChain(const GpuChainSetup &setup)
     c.blockWhat    = blockWhat.data();
     c.nparam       = setup.nparam;
     c.lossFunction = setup.lossFunction;
+    c.shellFailurePenalty = setup.shellFailurePenalty;
     gpu::createChain(im.system, c);
     im.chain = true;
     return true;
@@ -7013,7 +7035,8 @@ void GpuTrainingSystem::chainEnd(std::vector<gpu::ChainResults> *results)
         gpu::chainResults(im.system, r, &(*results)[r]);
     }
     im.chainFlops();
-    im.chainRun = false;
+    im.chainRun         = false;
+    im.blockFailedValid = false;
     // The charges, the virtual sites and the values on the GPU are those of
     // the last step, which the processor does not know: all are made again
     // in the next evaluation, see uploadParameters
@@ -7073,6 +7096,34 @@ int GpuTrainingSystem::chainCheckValues()
                 hostRecipe.size(), recipe.size(), hostAcm.size(), acm.size());
     }
     return ndiff;
+}
+
+void GpuTrainingSystem::resetShellFailures()
+{
+    auto &im = *impl_;
+    gpu::resetBlockShellFailures(im.system);
+    im.blockFailedValid = false;
+}
+
+size_t GpuTrainingSystem::shellFailures(size_t mol, size_t replica, int what)
+{
+    auto &im = *impl_;
+    if (!im.blockFailedValid)
+    {
+        gpu::blockShellFailures(im.system, &im.blockFailed);
+        im.blockFailedValid = true;
+    }
+    size_t n = 0;
+    // The monomers and the dimer, not the structures of the multipoles
+    for (int w = 0; w < 3; w++)
+    {
+        int b = (what < 0 || what == w) ? im.find(mol, w, replica) : -1;
+        if (b >= 0 && static_cast<size_t>(b) < im.blockFailed.size())
+        {
+            n += im.blockFailed[b];
+        }
+    }
+    return n;
 }
 
 size_t GpuTrainingSystem::relaxStatistics(size_t *nFailed)

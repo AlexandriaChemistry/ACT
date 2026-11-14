@@ -188,6 +188,15 @@ void copyCoordinates(System *, size_t, size_t, const uint32_t *, size_t, const u
 {
 }
 
+void resetBlockShellFailures(System *)
+{
+}
+
+void blockShellFailures(System *, std::vector<uint32_t> *failed)
+{
+    failed->clear();
+}
+
 void relaxStatistics(System *, RelaxStatistics *stats)
 {
     *stats = RelaxStatistics();

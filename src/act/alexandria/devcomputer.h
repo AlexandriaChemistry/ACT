@@ -135,8 +135,17 @@ public:
         optIndex_ = optIndex;
     }
 
+    /*! \brief The penalty of each conformation whose shells did not converge
+     * Energies of shells that stopped at the maximum number of iterations
+     * depend on where the relaxation started, which -shell_keep changes,
+     * so parameters for which the shells do not converge are penalized
+     * rather than judged by such energies, see ACTMol::shellFailures.
+     */
+    static constexpr double shellFailurePenalty = 1.0;
+
     /*! \brief Add the penalty for total atomic charges (including shells and vsites)
-     * outside the bounds of their ACM charge parameter to the eRMS::BOUNDS target
+     * outside the bounds of their ACM charge parameter to the eRMS::BOUNDS target,
+     * and that of the conformations whose shells did not converge, see shellFailurePenalty
      * \param[in]    msghandler    Not used
      * \param[in]    forceComputer Not used
      * \param[in]    actmols       The molecules to compute the deviation for

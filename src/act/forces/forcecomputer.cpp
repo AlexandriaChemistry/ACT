@@ -1496,7 +1496,7 @@ void ForceComputer::relaxMonomer(MsgHandler                  *msghandler,
         {
             continue;
         }
-        const auto *cdata = molptr->conformationData(im);
+        auto *cdata = molptr->conformationData(im);
         for(size_t c = 0; c < cdata->nconf(); c++)
         {
             if (cdata->confs[c].done ? shellsStalled(cdata, c, 0, stallIterations_) :
@@ -1504,6 +1504,7 @@ void ForceComputer::relaxMonomer(MsgHandler                  *msghandler,
                              0, maxShellDistance2)/pols[im].nShell() > msForceToler_))
             {
                 nShellConvergeFailed_ += 1;
+                cdata->shellFailures  += 1;
             }
         }
     }
@@ -1619,7 +1620,7 @@ void ForceComputer::relaxDimer(MsgHandler                  *msghandler,
         auto  fh   = molptr->fragmentHandler();
         auto &tops = fh->topologies();
         auto &pols = fh->polInfo();
-        const auto *cdata = molptr->conformationData(2);
+        auto *cdata = molptr->conformationData(2);
         for(size_t c = 0; c < cdata->nconf(); c++)
         {
             bool done   = cdata->confs[c].done;
@@ -1638,6 +1639,7 @@ void ForceComputer::relaxDimer(MsgHandler                  *msghandler,
                 }
             }
             nShellConvergeFailed_ += failed ? 1 : 0;
+            cdata->shellFailures  += failed ? 1 : 0;
         }
     }
 }
@@ -1861,6 +1863,8 @@ void ForceComputer::computeRelaxedEnergiesGpu(MsgHandler                        
     {
         gs.resetShells();
     }
+    // The conformations whose shells do not converge in this evaluation
+    gs.resetShellFailures();
     gs.constructVsites();
     // With the shells of the previous evaluation, the forces with the shells
     // on their parents are not needed, only the energies, see setKeepShells
@@ -2005,6 +2009,7 @@ void ForceComputer::chainEvaluateGpu(const ForceField *pd, const std::vector<ACT
     }
     const bool keepShells = keepShells_;
     gs.resetShells();
+    gs.resetShellFailures();
     gs.constructVsites();
     const bool restoreKept = keepShells && gs.haveKeptShells();
     gs.compute(-1, !restoreKept, true);
@@ -2167,6 +2172,15 @@ void ForceComputer::computeRelaxedEnergies(MsgHandler                  *msghandl
     // the intermolecular interactions, the monomers are not needed then.
     // The forces would lack the intramolecular contributions.
     bool intermolecular = !forces;
+    // The conformations whose shells do not converge in all relaxations of
+    // this evaluation, see relaxMonomer and relaxDimer
+    for(auto molptr : allmols)
+    {
+        for(size_t what = 0; what < 3; what++)
+        {
+            molptr->conformationData(what)->shellFailures = 0;
+        }
+    }
     // Loop over molecules
     for(auto molptr : allmols)
     {

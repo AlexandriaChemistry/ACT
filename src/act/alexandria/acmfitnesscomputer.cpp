@@ -875,6 +875,7 @@ bool ACMFitnessComputer::setupChain(const DeviationTask &dt)
         setup.params.push_back(oi.forceFieldParameter());
     }
     setup.lossFunction = static_cast<int>(lossFunction_);
+    setup.shellFailurePenalty = BoundsDevComputer::shellFailurePenalty;
     for (auto molptr : dt.selected)
     {
         std::vector<GpuChainBound> bounds;
@@ -1492,6 +1493,12 @@ double ACMFitnessComputer::finishDeviation(MsgHandler *msghandler, DeviationTask
             {
                 molBound[m] = bdc ? BoundsDevComputer::moleculeBound(selected[m], bdc->cachedBounds(selected[m], sii_->forcefield()), lossFunction_)
                                   : BoundsDevComputer::moleculeBound(selected[m], sii_->forcefield(), lossFunction_);
+                // The conformations of this replica whose shells did not converge
+                auto gs = forceComp_->gpuTrainingSystem();
+                if (gs)
+                {
+                    molBound[m] += BoundsDevComputer::shellFailurePenalty*gs->shellFailures(m, dt->replica);
+                }
             }
         }
     }

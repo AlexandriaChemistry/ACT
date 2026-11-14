@@ -72,7 +72,8 @@ void BoundsDevComputer::calcDeviation(MsgHandler                    *,
     }
     for(auto mol : actmols)
     {
-        mytarget->second.increase(1, moleculeBound(mol, cachedBounds(mol, forcefield), lossFunction));
+        mytarget->second.increase(1, moleculeBound(mol, cachedBounds(mol, forcefield), lossFunction) +
+                                  shellFailurePenalty*mol->shellFailures());
     }
 }
 

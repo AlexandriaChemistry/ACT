@@ -313,6 +313,15 @@ public:
      * \return The data
      */
     ConformationData *conformationData(size_t what) { return &conformationData_[what]; }
+    /*! \brief The conformations of the monomers and the dimer whose shells
+     * did not converge in the last energy calculation, see ConformationData::shellFailures
+     * \return The number of conformations
+     */
+    size_t shellFailures() const
+    {
+        return conformationData_[0].shellFailures + conformationData_[1].shellFailures +
+            conformationData_[2].shellFailures;
+    }
 
     /*! \brief The structures of the multipoles as conformations, for the GPU
      * Those of the charge properties with a dipole or a quadrupole of

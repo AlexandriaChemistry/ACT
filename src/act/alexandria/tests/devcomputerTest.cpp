@@ -2229,6 +2229,60 @@ TEST_F(PropertyDevComputerTest, StiffShellsStopAtCoordinateResolution)
     }
 }
 
+// Test: The conformations whose shells did not converge are counted for each
+// molecule, as many as ForceComputer counts in total, and each adds
+// BoundsDevComputer::shellFailurePenalty to the bound of its molecule, also
+// with the relaxations of the induction correction. With a single iteration
+// and a tight tolerance the shells cannot converge. On the processor.
+TEST_F(PropertyDevComputerTest, ShellFailuresPenalized)
+{
+    const ProcessorOnly cpu;
+    MsgHandler    msghandler;
+    ForceField    pd;
+    readForceField(fileManager().getInputFilePath("forcefields/PG-pol-ions.xml"), &pd);
+    const std::vector<std::pair<int, bool>> cases = { { 1, false }, { 1, true }, { 100, false }, { 100, true } };
+    for (const auto &[maxiter, induc2] : cases)
+    {
+        const ForceComputer forceComputer(1e-8, maxiter, pd.epsilonr());
+        auto mols = prepareMolecules(&msghandler, &pd, &forceComputer, { "water#chloride" },
+                                     fileManager().getInputFilePath("molprop/ion-water.xml"));
+        ASSERT_EQ(1u, mols.size());
+        // Only the failures of this calculation
+        forceComputer.resetStatistics();
+        forceComputer.computeRelaxedEnergies(&msghandler, &pd, pointers(&mols), true, induc2, false);
+        EXPECT_TRUE(msghandler.ok());
+        size_t failures = 0;
+        for (auto &mol : mols)
+        {
+            failures += mol.shellFailures();
+        }
+        EXPECT_EQ(forceComputer.numShellConvergenceFailed(), failures) << maxiter << " " << induc2;
+        if (maxiter == 1)
+        {
+            EXPECT_GT(failures, 0u);
+        }
+        else
+        {
+            EXPECT_EQ(0u, failures);
+        }
+        // The bound of the charges plus the penalty of the failures
+        BoundsDevComputer computer(nullptr);
+        std::map<eRMS, FittingTarget> targets;
+        targets.insert({eRMS::BOUNDS, FittingTarget(eRMS::BOUNDS, iMolSelect::Train)});
+        computer.calcDeviation(&msghandler, &forceComputer, pointers(&mols),
+                               &targets, &pd, LossFunction::MSE);
+        double expected = 0;
+        for (auto &mol : mols)
+        {
+            expected += BoundsDevComputer::moleculeBound(&mol, &pd, LossFunction::MSE) +
+                BoundsDevComputer::shellFailurePenalty*mol.shellFailures();
+        }
+        EXPECT_DOUBLE_EQ(expected, targets.find(eRMS::BOUNDS)->second.chiSquared()) << maxiter << " " << induc2;
+        EXPECT_GE(targets.find(eRMS::BOUNDS)->second.chiSquared(),
+                  BoundsDevComputer::shellFailurePenalty*failures) << maxiter;
+    }
+}
+
 // Test: -shell_keep on the processor gives the energies of starting from the
 // cores, with fewer iterations, and keeps the shells that converged
 TEST_F(PropertyDevComputerTest, ShellKeepSameEnergies)
