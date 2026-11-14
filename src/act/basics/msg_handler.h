@@ -122,7 +122,11 @@ enum class ACTMessage
         //! Inconsistent atom order across experiments in a MolProp
         InconsistentAtomOrder,
         //! Bond found between two different fragments in a dimer
-        InterFragmentBond
+        InterFragmentBond,
+        //! A compound with its atoms in another order than in other molecules
+        InconsistentCompoundOrder,
+        //! A dimer A#B that also occurs as B#A, or with its fragments in the order B, A
+        SwappedDimer
     };
 
 extern std::map<ACTMessage, const std::string> ACTMessages;

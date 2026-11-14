@@ -184,6 +184,50 @@ TEST_F(EditMPTest, CheckWithForceField)
     EXPECT_NE(std::string::npos, text.str().find("Force field file")) << text.str();
 }
 
+//! \return the text of a file
+static std::string fileText(const std::string &fileName)
+{
+    const std::ifstream in(fileName);
+    std::stringstream   text;
+    text << in.rdbuf();
+    return text.str();
+}
+
+// Test: -validate finds no problems in a file with consistent dimers, and
+// writes all molecules
+TEST_F(EditMPTest, ValidateConsistent)
+{
+    const auto input = fileManager().getInputFilePath("molprop/ion-water.xml");
+    const auto mps   = run({ input }, { { "-validate", "" } });
+    EXPECT_EQ(read(input).size(), mps.size());
+    EXPECT_EQ(experiments(read(input)), experiments(mps));
+    const auto text = fileText(log_);
+    EXPECT_EQ(std::string::npos, text.find("occurs as")) << text;
+    EXPECT_EQ(std::string::npos, text.find("has its atoms in the order")) << text;
+}
+
+// Test: -validate reports a dimer that occurs as water#chloride and as
+// chloride#water
+TEST_F(EditMPTest, ValidateDimerInBothOrders)
+{
+    auto mps   = read(fileManager().getInputFilePath("molprop/ion-water.xml"));
+    auto again = read(fileManager().getInputFilePath("molprop/ion-water.xml"));
+    for (auto &mp : again)
+    {
+        if (mp.getMolname() == "water#chloride")
+        {
+            mp.SetMolname("chloride#water");
+            mps.push_back(std::move(mp));
+            break;
+        }
+    }
+    const auto input = fileManager().getTemporaryFilePath("both-orders.xml");
+    MolPropWrite(input.c_str(), mps, false);
+    run({ input }, { { "-validate", "" } });
+    const auto text = fileText(log_);
+    EXPECT_NE(std::string::npos, text.find("Dimer chloride#water occurs as water#chloride as well")) << text;
+}
+
 // Test: The histograms of the interaction energies are written for each
 // compound that has them, the range is reported in the log file
 TEST_F(EditMPTest, EnergyHistogram)
