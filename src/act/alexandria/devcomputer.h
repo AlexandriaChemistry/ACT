@@ -234,20 +234,6 @@ public:
  */
 class EspDevComputer : public DevComputer
 {
-
-private:
-
-    /*! \brief Dump charges to a file
-     * Debugging routine
-     * \todo move to cpp file
-     * \param[in] tw   The textwriter
-     * \param[in] mol  The molecule to read from
-     * \param[in] info Additional debugging information
-     */
-    void dumpQX(gmx::TextWriter              *tw,
-                const ACTMol                 *mol,
-                const std::string            &info);
-   
 public:
 
     //! Create an ESP deviation computer with current charge-distribution widths.
