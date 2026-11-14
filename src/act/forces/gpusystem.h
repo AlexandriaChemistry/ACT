@@ -150,6 +150,8 @@ struct GpuChainSetup
     std::vector<const ForceFieldParameter *> params;
     //! The loss function, as GpuDeviationSetup
     int                                     lossFunction = 0;
+    //! The bound of each conformation whose shells did not converge, see shellFailures
+    double                                  shellFailurePenalty = 0;
 };
 
 class GpuTrainingSystem
@@ -220,6 +222,9 @@ public:
 
     //! Put the shells on their parents, as ForceComputer::computeRelaxedEnergies
     void resetShells();
+
+    //! Start counting the conformations whose shells do not converge anew, see shellFailures
+    void resetShellFailures();
 
     /*! \brief Keep the shells of all topologies, for restoreShells
      * Nothing is kept when a displacement was not finite since the last call.
@@ -362,6 +367,17 @@ public:
      * \return The number of slots computed in all iterations
      */
     size_t relaxStatistics(size_t *nFailed);
+
+    /*! \brief The conformations of the monomers and the dimer of a molecule
+     * whose shells did not converge in their last relaxation, as
+     * ACTMol::shellFailures, in the relaxations since resetShellFailures.
+     * Waits for the GPU after a relaxation.
+     * \param[in] mol     The molecule
+     * \param[in] replica The replica
+     * \param[in] what    0 or 1 for a monomer, 2 for the dimer, -1 for all three
+     * \return The number of conformations
+     */
+    size_t shellFailures(size_t mol, size_t replica, int what = -1);
 
     /*! \brief Whether prepare makes blocks of the structures of the multipoles
      * The structures of the charge properties with a dipole or quadrupole

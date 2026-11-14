@@ -1041,6 +1041,18 @@ struct RelaxStatistics
  */
 void relaxStatistics(System *system, RelaxStatistics *stats);
 
+/*! \brief Start counting the slots whose shells do not converge anew, see blockShellFailures
+ * \param[in] system The system
+ */
+void resetBlockShellFailures(System *system);
+
+/*! \brief The slots of each block whose shells did not converge in the
+ * relaxations since resetBlockShellFailures, waits for the GPU
+ * \param[in]  system The system
+ * \param[out] failed For each block the number of slots
+ */
+void blockShellFailures(System *system, std::vector<uint32_t> *failed);
+
 /*! \brief Whether a displacement was not finite in the last relaxation, on the GPU
  * For work that depends on it without waiting, such as keepShells.
  * \param[in] system The system
@@ -1316,6 +1328,10 @@ struct ChainMolecule
     uint32_t multipole   = 0;
     //! The replica, whose parameters it has, see ChainSystem::nreplica
     uint32_t replica     = 0;
+    //! Its blocks of the two monomers and the dimer, -1 if none, whose
+    //! conformations that did not converge add to its bound, see
+    //! blockShellFailures and ChainSystem::shellFailurePenalty
+    int32_t  shellBlocks[3] = { -1, -1, -1 };
 };
 
 //! The bound of the charge of a particle and those that are added to it
@@ -1397,6 +1413,8 @@ struct ChainSystem
     const int32_t       *acmIndex   = nullptr;
     //! The loss function, as DeviationSystem::lossFunction
     int                  lossFunction = 0;
+    //! The bound of each conformation whose shells did not converge, see ChainMolecule::shellBlocks
+    double               shellFailurePenalty = 0;
 };
 
 /*! \brief Copy what the chain needs to the GPU, the sets kept are empty

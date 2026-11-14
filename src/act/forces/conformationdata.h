@@ -926,6 +926,11 @@ struct ConformationData
     bool useArraysDouble() const { return doublePrecision && !std::is_same_v<real, double>; }
     //! Energies
     ConformationEnergies energies;
+    /*! \brief The conformations whose shells did not converge in the relaxations
+     * of the last energy calculation, ForceComputer::computeRelaxedEnergies,
+     * those of the induction correction included, as numShellConvergenceFailed
+     */
+    size_t               shellFailures = 0;
     //! Whether the virtual sites in the conformations were constructed
     bool                 haveVsites   = false;
     //! The Topology::vsiteVersion the virtual sites were constructed for

@@ -671,6 +671,8 @@ public:
     int64_t                        *keptShells_ = nullptr;
     //! Whether the shells of each slot converged in the last relaxation, see keepShells
     char                           *converged_ = nullptr;
+    //! The slots of each block whose shells did not converge since resetBlockShellFailures
+    uint32_t                       *blockFailed_ = nullptr;
     //! The energies of all blocks after and before relaxing, at fixedStart_, see keepEnergies
     double                         *energiesAfter_  = nullptr;
     double                         *energiesBefore_ = nullptr;
@@ -708,6 +710,8 @@ public:
     ChainTerm                      *chainTerms_     = nullptr;
     uint32_t                        nchainTerm_     = 0;
     int                             chainLoss_      = 0;
+    //! See ChainSystem::shellFailurePenalty
+    double                          chainShellPenalty_ = 0;
     //! The first value of the first set kept of each molecule, and the size of a set
     uint64_t                       *chainEntry_     = nullptr;
     std::vector<uint64_t>           chainEntryHost_;
@@ -1061,6 +1065,8 @@ System *createSystem(const SystemBlock *blocks, size_t nblock)
     sys->queue_->memset(sys->relaxStats_, 0, 3*sizeof(uint64_t));
     sys->converged_    = sys->allocate<char>(std::max<uint64_t>(sys->nslotAll_, 1));
     sys->queue_->memset(sys->converged_, 0, std::max<uint64_t>(sys->nslotAll_, 1));
+    sys->blockFailed_  = sys->allocate<uint32_t>(std::max<size_t>(nblock, 1));
+    sys->queue_->memset(sys->blockFailed_, 0, std::max<size_t>(nblock, 1)*sizeof(uint32_t));
     sys->saved_.assign(nblock, nullptr);
     sys->upload(sys->forceShells_, forceShells.data(), forceShells.size());
     sys->upload(sys->movingShells_, movingShells.data(), movingShells.size());
@@ -2933,6 +2939,23 @@ void relaxBlocks(System *sys, const char *use, const char *relax,
             count.fetch_add(1);
         }
     });
+    // The slots of each block relaxed whose shells did not converge, added
+    // to those of the other relaxations since resetBlockShellFailures
+    auto dBF = sys->blockFailed_;
+    queue->parallel_for(sycl::range<1>(nb), [=](sycl::id<1> id)
+    {
+        uint32_t b = id[0];
+        if (dU[b])
+        {
+            const DeviceSystemBlock &blk = dB[b];
+            uint32_t                 n   = 0;
+            for (uint32_t c = 0; c < blk.nslot; c++)
+            {
+                n += dCv[blk.slotOffset + c] ? 0 : 1;
+            }
+            dBF[b] += n;
+        }
+    });
     if (!settings.poll)
     {
         // The statistics stay on the GPU, see relaxStatistics
@@ -2976,6 +2999,24 @@ void relaxBlocks(System *sys, const char *use, const char *relax,
         *nComputed += std::count(hDone + i*nslotAll, hDone + (i+1)*nslotAll, 0);
     }
     *notFinite = validFlag != 0;
+}
+
+void resetBlockShellFailures(System *sys)
+{
+    if (sys->blockFailed_ && sys->nblock_ > 0)
+    {
+        sys->queue_->memset(sys->blockFailed_, 0, sys->nblock_*sizeof(uint32_t));
+    }
+}
+
+void blockShellFailures(System *sys, std::vector<uint32_t> *failed)
+{
+    failed->assign(sys->nblock_, 0);
+    if (sys->blockFailed_ && sys->nblock_ > 0)
+    {
+        sys->queue_->memcpy(failed->data(), sys->blockFailed_, sys->nblock_*sizeof(uint32_t));
+        sys->queue_->wait_and_throw();
+    }
 }
 
 void relaxStatistics(System *sys, RelaxStatistics *stats)
@@ -3713,6 +3754,7 @@ void createChain(System *sys, const ChainSystem &c)
     sys->nchainRecipeValue_ = c.nrecipeValue;
     sys->nchainAcmValue_    = c.nacmValue;
     sys->chainLoss_   = c.lossFunction;
+    sys->chainShellPenalty_ = c.shellFailurePenalty;
     // The sets kept of each molecule, see chainEntrySize
     sys->chainEntryHost_.assign(c.nmol, 0);
     sys->chainSizeHost_.assign(c.nmol, 0);
@@ -4026,6 +4068,9 @@ struct ChainView
     uint32_t             ntarget;
     uint32_t             nblock;
     int                  lossFunction;
+    //! The conformations of each block that did not converge, and their penalty, see boundOf
+    const uint32_t      *blockFailed;
+    double               shellPenalty;
     //! The parameters of a replica, and the replicas
     size_t               nparam;
     size_t               nreplica;
@@ -4071,11 +4116,7 @@ struct ChainView
 #endif
         const ChainMolecule &cm    = mols[m];
         double               bound = 0;
-        if (!acmCharges)
-        {
-            return bound;
-        }
-        for (uint32_t k = 0; k < cm.nbound; k++)
+        for (uint32_t k = 0; k < cm.nbound && acmCharges; k++)
         {
             const ChainBound &cb = bounds[cm.boundOffset + k];
             double q = acmCharges[cb.charge] + (cb.secondCharge >= 0 ? charges[cb.secondCharge] : 0.0);
@@ -4092,7 +4133,14 @@ struct ChainView
                 bound += deviationLoss(lossFunction, q - cb.maximum);
             }
         }
-        return bound;
+        // The conformations whose shells did not converge, as
+        // ACMFitnessComputer::finishDeviation adds them
+        uint32_t failed = 0;
+        for (int w = 0; w < 3; w++)
+        {
+            failed += (cm.shellBlocks[w] >= 0 && blockFailed) ? blockFailed[cm.shellBlocks[w]] : 0;
+        }
+        return bound + shellPenalty*failed;
     }
 
     /*! \brief The pairs of weight and loss of a molecule for each term, as finishDeviation
@@ -4271,6 +4319,8 @@ static ChainView chainView(System *sys)
     v.ntarget      = sys->dev_.ntarget;
     v.nblock       = sys->nblock_;
     v.lossFunction = sys->chainLoss_;
+    v.blockFailed  = sys->blockFailed_;
+    v.shellPenalty = sys->chainShellPenalty_;
     v.nparam       = sys->nchainParam_;
     v.nreplica     = sys->nchainReplica_;
     return v;
