@@ -64,8 +64,8 @@ void merge_xml(MsgHandler                             *msg_handler,
  * - each compound, a fragment identified by its InChI, has its atoms in the
  *   same order (names and types) in all molecules, the first one it occurs in
  *   is the reference, such that it can be treated as one compound, and
- * - no dimer A#B also occurs as B#A, and the fragments of a dimer A#B are
- *   in the order of A and B, if their names are those of the dimer.
+ * - the fragments of a dimer A#B are in the order of A and B, if their
+ *   names are those of the dimer. Both A#B and B#A may occur.
  * Each problem is an error of msghandler.
  * \param[in]    msghandler For the problems
  * \param[inout] mps        The molecules

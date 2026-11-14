@@ -206,8 +206,8 @@ TEST_F(EditMPTest, ValidateConsistent)
     EXPECT_EQ(std::string::npos, text.find("has its atoms in the order")) << text;
 }
 
-// Test: -validate reports a dimer that occurs as water#chloride and as
-// chloride#water
+// Test: -validate accepts a file with a dimer as water#chloride and as
+// chloride#water, if each is consistent
 TEST_F(EditMPTest, ValidateDimerInBothOrders)
 {
     auto mps   = read(fileManager().getInputFilePath("molprop/ion-water.xml"));
@@ -225,7 +225,7 @@ TEST_F(EditMPTest, ValidateDimerInBothOrders)
     MolPropWrite(input.c_str(), mps, false);
     run({ input }, { { "-validate", "" } });
     const auto text = fileText(log_);
-    EXPECT_NE(std::string::npos, text.find("Dimer chloride#water occurs as water#chloride as well")) << text;
+    EXPECT_EQ(std::string::npos, text.find("Error")) << text;
 }
 
 // Test: The histograms of the interaction energies are written for each

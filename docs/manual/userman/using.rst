@@ -22,14 +22,22 @@ the output of which is given in :numref:`tab-act-commands` .
    |             | temperature.                                               |
    +-------------+------------------------------------------------------------+
    | edit_ff     | Manipulate and compare force field files in various ways   |
-   |             | and test whether reading and writing works.                |
+   |             | and test whether reading and writing works. Can analyze    |
+   |             | which parameters are close to their bounds, change values  |
+   |             | and bounds, set combination rules, and check the           |
+   |             | parameters with *-validate*: values within their bounds,   |
+   |             | minimum not above maximum, non-negative parameters not     |
+   |             | negative, and each parameter defined once.                 |
    +-------------+------------------------------------------------------------+
    | edit_mp     | Utility to merge a number of molecular property files and  |
    |             | a SQLite database. Can also test reading and writing the   |
    |             | molecular property file. It can also check the molecular   |
    |             | property file for missing hydrogens and for whether it is  |
    |             | possible to generate topologies for all compounds.         |
-   |             | Finally it can generate charges for all compounds.         |
+   |             | Finally it can generate charges for all compounds. With    |
+   |             | *-validate* it checks that all experiments of a compound   |
+   |             | and all occurrences of a molecule list the atoms in the    |
+   |             | same order, see :ref:`below <sec-validatemp>`.             |
    +-------------+------------------------------------------------------------+
    | gen_ff      | Generate a force field file from a user specification.     |
    +-------------+------------------------------------------------------------+
@@ -47,6 +55,13 @@ the output of which is given in :numref:`tab-act-commands` .
    |             | table.                                                     |
    +-------------+------------------------------------------------------------+
    | min_complex | Generate inputs for an energy scan.                        |
+   +-------------+------------------------------------------------------------+
+   | minimize    | Minimize the energy of a molecule or complex with respect  |
+   |             | to the coordinates, with a force field from the ACT. Atoms |
+   |             | can be frozen with an index file and bonds and angles      |
+   |             | constrained. Writes the minimized structure and a log      |
+   |             | file; *simulate -minimize* does the same before a          |
+   |             | simulation.                                                |
    +-------------+------------------------------------------------------------+
    | nma         | Perform normal mode analysis and compute vibrational       |
    |             | frequencies and thermochemistry properties.                |
@@ -337,6 +352,20 @@ This also lists problems that have to be corrected by hand: values outside the b
   alexandria edit_ff -ff fixed.xml -p bondenergy -nonneg no -o fixed2.xml
 
 where *-a* limits the change to some identifiers. Parameters of particle types other than the charge are always non-negative.
+
+.. _sec-validatemp:
+
+The molecular property files can be checked in a similar way::
+
+  alexandria edit_mp -mp data.xml -validate -o checked.xml
+
+This checks that
+
+* all experiments (calculations) of a molecule list the atoms in the same order, with the same names and types, as the one from which the topology is made; the coordinates are matched to the topology by the order of the atoms. An experiment with another order is removed, with a warning that names its data file. If it is an experiment of a dimer A#B with the atoms in the order of B#A, the warning says so;
+* each compound, identified by its InChI, has its atoms in the same order in all molecules it occurs in, for instance water as a monomer and in all dimers with water. The first molecule in which the compound occurs is the reference, and the error names the molecules and data files that differ;
+* the atoms of each fragment of a molecule match its formula, the fragments of a dimer are not bonded to each other, and the fragments of a dimer A#B are in the order of A and B.
+
+A file may contain both a dimer A#B and a dimer B#A, for instance with the other molecule as hydrogen bond donor, as long as each is consistent. The number of problems is printed, and each is written to the log file. The molecules are written to the output file, without the experiments that were removed. The same checks of single molecules are made when *train_ff* reads the data, which skips the molecules that are not consistent.
 
 .. _sec-parallel:
 
