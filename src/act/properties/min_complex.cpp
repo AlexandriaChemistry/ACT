@@ -161,7 +161,7 @@ int min_complex(int argc, char *argv[])
         {
             auto eMin = eMinimizeStatus::OK;
             /* Generate output file for debugging if requested */
-            MolHandler molhandler;
+            const MolHandler molhandler;
             std::vector<gmx::RVec> xmin   = coords;
             std::map<InteractionType, double> energies;
             {
@@ -176,9 +176,9 @@ int min_complex(int argc, char *argv[])
                                                   {});
             if (eMinimizeStatus::OK != eMin)
             {
-                auto text = gmx::formatString("Minimization of %s: %s",
-                                              actmol.getMolname().c_str(),
-                                              minimizeStatusMessage(eMin, energies[InteractionType::EPOT]).c_str());
+                const auto text = gmx::formatString("Minimization of %s: %s",
+                                                    actmol.getMolname().c_str(),
+                                                    minimizeStatusMessage(eMin, energies[InteractionType::EPOT]).c_str());
                 tw->writeStringFormatted("%s\n", text.c_str());
                 fprintf(stderr, "%s, check log file %s\n", text.c_str(), msghandler.filename().c_str());
             }
@@ -207,8 +207,8 @@ int min_complex(int argc, char *argv[])
                         actmol.getMolname().c_str(),
                         energies[InteractionType::EPOT], 
                         einter[InteractionType::EPOT], rmsd);
-                std::string confout = gmx::formatString("%s.pdb",
-                                                        actmol.getMolname().c_str());
+                const std::string confout = gmx::formatString("%s.pdb",
+                                                              actmol.getMolname().c_str());
                 actmol.PrintConformation(confout.c_str(), xmin, false, box);
             }
         }

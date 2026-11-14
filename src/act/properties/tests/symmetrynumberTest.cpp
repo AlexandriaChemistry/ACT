@@ -50,7 +50,7 @@ struct Structure
     void add(int z, double x0, double y0, double z0)
     {
         Z.push_back(z);
-        x.push_back({ static_cast<real>(x0), static_cast<real>(y0), static_cast<real>(z0) });
+        x.emplace_back(static_cast<real>(x0), static_cast<real>(y0), static_cast<real>(z0));
     }
 };
 
@@ -283,7 +283,7 @@ TEST(SymmetryNumberTest, Tolerance)
 TEST(SymmetryNumberTest, SearchLimit)
 {
     // With a too small search limit the result is unknown
-    auto s = ring(6, 6);
+    const auto s = ring(6, 6);
     EXPECT_EQ(0, rotationalSymmetryNumber(s.Z, massesOf(s), s.x, 0.01, 3));
 }
 

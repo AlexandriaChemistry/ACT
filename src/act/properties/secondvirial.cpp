@@ -89,7 +89,7 @@ void forceFieldSummary(JsonTree      *jtree,
     jtree->addObject(JsonTree("Checksum", pd->checkSum()));
     jtree->addObject(JsonTree("Polarizable", yesno_names[pd->polarizable()]));
     jtree->addObject(JsonTree("Charge generation", 
-                              chargeGenerationAlgorithmName(pd->chargeGenerationAlgorithm()).c_str()));
+                              chargeGenerationAlgorithmName(pd->chargeGenerationAlgorithm())));
     // The same for van der Waals and Coulomb
     int nexcl = std::max(0, pd->nexcl());
     jtree->addObject(JsonTree("# vanderwaals exclusions", gmx_itoa(nexcl)));
@@ -108,7 +108,7 @@ void forceFieldSummary(JsonTree      *jtree,
         if (!ffpl.parametersConst().empty())
         {
             JsonTree fftree(interactionTypeToString(itype));
-            auto function = potentialToString(ffpl.potential());
+            const auto function = potentialToString(ffpl.potential());
             if (!function.empty())
             {
                 fftree.addObject(JsonTree("Force function", function));
@@ -150,7 +150,7 @@ void ReRunner::addOptions(std::vector<t_pargs>      *pargs,
             pargs->push_back(pa[i]);
         }
     
-        std::vector<t_filenm> fnm = {
+        const std::vector<t_filenm> fnm = {
             { efXVG, "-eh", "mayer",      ffOPTWR },
             { efXVG, "-b2", "B2T",        ffOPTWR }
         };
@@ -230,7 +230,7 @@ void ReRunner::plotB2temp(const char *b2file)
     }
     else
     {
-        std::vector<std::string> legend = {
+        const std::vector<std::string> legend = {
             "Total", "Classical", "Force", "Torque1", "Torque2"
         };
         xvgrLegend(b2p, legend, oenv_);
@@ -282,7 +282,7 @@ static void allParticleCoords(const std::vector<ActAtom>   &atoms,
         else
         {
             // Will be constructed, e.g. a virtual site
-            coords->push_back({ 0, 0, 0 });
+            coords->emplace_back(0, 0, 0);
         }
     }
     if (index != x.size())
@@ -391,7 +391,7 @@ void ReRunner::runB2(CommunicationRecord         *cr,
                      const std::vector<t_filenm> &fnm)
 {
     // Compute the relative masses
-    std::vector<double> masses = {
+    const std::vector<double> masses = {
         actmol->fragmentHandler()->topologies()[0].mass(),
         actmol->fragmentHandler()->topologies()[1].mass()
     };
@@ -421,7 +421,7 @@ void ReRunner::runB2(CommunicationRecord         *cr,
     if (cr->isMaster())
     {
         static const size_t timer = Timings::instance().index("Random numbers");
-        ScopedTimer         scoped(timer);
+        const ScopedTimer   scoped(timer);
         gendimers_.generateRandomNumbers(maxdimer);
         allRand = gendimers_.allRandom();
         gendimers_.clearAllRandom();
@@ -431,10 +431,10 @@ void ReRunner::runB2(CommunicationRecord         *cr,
      * The random numbers are added to those of the previous rounds.
      * Returns the number of orientations of this node.
      */
-    auto distribute = [&](int start, int end)
+    const auto distribute = [&](int start, int end)
     {
         static const size_t timer = Timings::instance().index("Distributing orientations");
-        ScopedTimer         scoped(timer);
+        const ScopedTimer   scoped(timer);
         int nper  = (end - start) / cr->size();
         int nrest = (end - start) % cr->size();
         int nmine = 0;
@@ -484,8 +484,8 @@ void ReRunner::runB2(CommunicationRecord         *cr,
     // Will be used to obtain a seed for the random number engine for bootstrapping
     std::random_device                 bsRand;
     // Standard mersenne_twister_engine seeded with rd()
-    std::mt19937                       bsGen(bsRand());
-    std::uniform_int_distribution<int> bsDistr(0, gendimers_.ndist());
+    const std::mt19937                 bsGen(bsRand());
+    const std::uniform_int_distribution<int> bsDistr(0, gendimers_.ndist());
 
     // Temperature array.
     auto   Temperature = temperatures();
@@ -497,7 +497,7 @@ void ReRunner::runB2(CommunicationRecord         *cr,
     // Temporary arrays for weighted properties.
     B2Data b2data(gendimers_.ndist(), Temperature, eMin_);
     
-    gmx::RVec rvnul = { 0, 0, 0 };
+    const gmx::RVec rvnul = { 0, 0, 0 };
     // Moments of inertia, averaged over all dimers. The sum is over many
     // dimers, in double precision.
     std::vector<gmx::RVec> inertia    = { rvnul, rvnul };
@@ -573,7 +573,7 @@ void ReRunner::runB2(CommunicationRecord         *cr,
             // Generate a new set of dimers for all distances
             if (!gendimers_.hasTrajectory())
             {
-                ScopedTimer scoped(prepareTimer);
+                const ScopedTimer scoped(prepareTimer);
                 gendimers_.generateDimers(msghandler, &dimers);
                 if (gendimers_.outCoords())
                 {
@@ -722,8 +722,8 @@ void ReRunner::runB2(CommunicationRecord         *cr,
                         const double *f  = fs + DIM*(atomStart[kk]+j)*st;
                         for(size_t c = 0; c < ndim; c++)
                         {
-                            dvec xi = { xc[c], xc[st+c], xc[2*st+c] };
-                            dvec fc = { f[c], f[st+c], f[2*st+c] };
+                            const dvec xi = { xc[c], xc[st+c], xc[2*st+c] };
+                            const dvec fc = { f[c], f[st+c], f[2*st+c] };
                             // Rotate coordinates and force vector, in
                             // double precision as the input
                             dvec ri = { 0, 0, 0 }, fi = { 0, 0, 0 }, ti;
@@ -830,7 +830,7 @@ void ReRunner::runB2(CommunicationRecord         *cr,
             }
             // Now we have computed energies, forces and torques for all
             // dimers of this orientation. Time to update the intermediate structure
-            ScopedTimer scoped(addTimer);
+            const ScopedTimer scoped(addTimer);
             b2data.addOrientation(dimIndex, dimDist, dimEnergy, force2Mol, torqueMol, dimWeight);
         }
         ndone = nround;
@@ -850,7 +850,7 @@ void ReRunner::runB2(CommunicationRecord         *cr,
 
         if (cr->isMaster())
         {
-            ScopedTimer scoped(b2Timer);
+            const ScopedTimer scoped(b2Timer);
             msghandler->write(gmx::formatString("\nSecond virial coefficient (cm^3/mol) from %d dimer orientations", nround));
             if (b2total.nOverlap() > 0)
             {
@@ -900,7 +900,7 @@ void ReRunner::runB2(CommunicationRecord         *cr,
         }
     }
 
-    ScopedTimer scoped(outputTimer);
+    const ScopedTimer scoped(outputTimer);
     // Gather generated dimer coordinates from all nodes and write to -ox file
     if (gendimers_.outCoords() && !gendimers_.hasTrajectory())
     {
@@ -1110,7 +1110,7 @@ int b2(int argc, char *argv[])
         // The number of shell iterations per force calculation, summed
         // over the processes
         ForceComputerStatistics fcStats;
-        auto stats = fcStats.statistics(&cr, &forceComp, 0, true);
+        const auto stats = fcStats.statistics(&cr, &forceComp, 0, true);
         if (cr.isMaster())
         {
             msghandler.write(stats);
@@ -1125,7 +1125,7 @@ int b2(int argc, char *argv[])
     }
     phase.stop();
     // The timings go into the json file, or else only into the log file
-    auto peak = theoreticalPeakPerCore();
+    const auto peak = theoreticalPeakPerCore();
     printTimings(&cr, cr.isMaster() ? msghandler.tw() : nullptr, phase.wallTime(),
                  writeJson ? &jtree : nullptr, &peak);
     if (writeJson)

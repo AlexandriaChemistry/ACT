@@ -353,7 +353,7 @@ protected:
         addMD(&cmd, 300, 1993);
         ASSERT_EQ(0, run(&cmd));
         EXPECT_TRUE(fileNotEmpty(files.trajectory));
-        auto xvg = readXvg(files.energy);
+        const auto xvg = readXvg(files.energy);
         // Energies are written every 10 steps
         ASSERT_EQ(10u, xvg.rows.size());
         checkEnergies(xvg);
@@ -445,7 +445,7 @@ TEST_F(SimulateTest, Reproducibility)
 // model needs much shorter time steps.
 TEST_F(SimulateTest, MDShells)
 {
-    auto ffFile = fileManager().getInputFilePath("forcefields/SWM4-NDP.xml");
+    const auto ffFile = fileManager().getInputFilePath("forcefields/SWM4-NDP.xml");
     SimulateFiles sp;
     auto cmdsp = baseCommand("water_dimer.pdb", "shells-sp", &sp, ffFile);
     cmdsp.append("-sp");
@@ -519,7 +519,7 @@ TEST_F(SimulateTest, RerunShellsVsites)
 {
     for (const std::string model : { "SWM4-NDP", "TIP5P" })
     {
-        auto ffFile = fileManager().getInputFilePath("forcefields/" + model + ".xml");
+        const auto ffFile = fileManager().getInputFilePath("forcefields/" + model + ".xml");
         SimulateFiles sp;
         auto cmd = baseCommand("water_dimer.pdb", model + "-sp", &sp, ffFile);
         cmd.append("-sp");
@@ -539,16 +539,16 @@ TEST_F(SimulateTest, RerunShellsVsites)
 // given file, and without it no such file is written
 TEST_F(SimulateTest, JsonFile)
 {
-    auto ffFile = fileManager().getInputFilePath("forcefields/SWM4-NDP.xml");
+    const auto ffFile = fileManager().getInputFilePath("forcefields/SWM4-NDP.xml");
     SimulateFiles sp;
     auto cmd  = baseCommand("water_dimer.pdb", "json-sp", &sp, ffFile);
-    auto json = fileManager().getTemporaryFilePath("json-sp.json");
+    const auto json = fileManager().getTemporaryFilePath("json-sp.json");
     cmd.append("-sp");
     cmd.addOption("-json", json);
     ASSERT_EQ(0, run(&cmd));
     std::ifstream in(json);
     ASSERT_TRUE(in.good()) << "Cannot open " << json;
-    auto tree = nlohmann::json::parse(in);
+    const auto tree = nlohmann::json::parse(in);
     EXPECT_TRUE(tree.contains("simulate")) << tree.dump();
 
     // Left over from elsewhere, it would hide that it is written by default
@@ -730,7 +730,7 @@ TEST_F(SimulateTest, ConstraintsKeepDistances)
             {
                 if (distance(x0[i], x0[j]) < 1.65)
                 {
-                    bonds.push_back({ i, j });
+                    bonds.emplace_back(i, j);
                     neighbours[i].push_back(j);
                     neighbours[j].push_back(i);
                 }
@@ -738,7 +738,7 @@ TEST_F(SimulateTest, ConstraintsKeepDistances)
         }
         ASSERT_EQ(9u, bonds.size()) << "acetone has nine bonds";
         // The largest change of a distance along the trajectory
-        auto maxChange = [&](const std::vector<std::pair<size_t, size_t>> &pairs)
+        const auto maxChange = [&](const std::vector<std::pair<size_t, size_t>> &pairs)
         {
             double dmax = 0;
             for(const auto &x : frames)
@@ -844,8 +844,8 @@ TEST_F(SimulateTest, AngleConstraintsWater)
 // Test: The minimizers find the same structure with constraints
 TEST_F(SimulateTest, MinimizeConstrained)
 {
-    std::string molFile("methanethiol.sdf");
-    auto distance = [](const std::vector<std::vector<double>> &x, int i, int j)
+    const std::string molFile("methanethiol.sdf");
+    const auto distance = [](const std::vector<std::vector<double>> &x, int i, int j)
     {
         double d2 = 0;
         for(int m = 0; m < DIM; m++)
@@ -861,9 +861,9 @@ TEST_F(SimulateTest, MinimizeConstrained)
         for(const std::string alg : { "LBFGS", "Steep", "Newton" })
         {
             SimulateFiles files;
-            auto label   = "min" + constrain + alg;
+            const auto label   = "min" + constrain + alg;
             auto cmd     = baseCommand(molFile, label, &files);
-            auto confout = fileManager().getTemporaryFilePath(label + "-confout.pdb");
+            const auto confout = fileManager().getTemporaryFilePath(label + "-confout.pdb");
             cmd.addOption("-minimize");
             cmd.addOption("-minalg", alg);
             cmd.addOption("-maxiter", 1000);
@@ -914,11 +914,11 @@ TEST_F(SimulateTest, MinimizeConstrained)
 // Test: Freezing atoms in a minimization with constraints
 TEST_F(SimulateTest, MinimizeFreezeConstrained)
 {
-    std::string   molFile("acetone-3-oep.log.pdb");
+    const std::string molFile("acetone-3-oep.log.pdb");
     SimulateFiles files;
     auto cmd     = baseCommand(molFile, "freezecons", &files);
-    auto confout = fileManager().getTemporaryFilePath("freezecons-confout.pdb");
-    auto ndx     = fileManager().getTemporaryFilePath("freezecons.ndx");
+    const auto confout = fileManager().getTemporaryFilePath("freezecons-confout.pdb");
+    const auto ndx     = fileManager().getTemporaryFilePath("freezecons.ndx");
     {
         std::ofstream out(ndx);
         out << "[ Frozen ]\n1 2\n";
@@ -959,7 +959,7 @@ TEST_F(SimulateTest, MinimizeThenMD)
 {
     SimulateFiles files;
     auto cmd     = baseCommand("acetone-3-oep.log.pdb", "minmd", &files);
-    auto confout = fileManager().getTemporaryFilePath("minmd-confout.pdb");
+    const auto confout = fileManager().getTemporaryFilePath("minmd-confout.pdb");
     cmd.addOption("-minimize");
     cmd.addOption("-c", confout);
     addMD(&cmd, 300, 1993);
@@ -1022,7 +1022,7 @@ TEST_F(SimulateTest, MinimizeDimer)
 {
     SimulateFiles files;
     auto cmd     = baseCommand("water_dimer.pdb", "mindimer", &files);
-    auto confout = fileManager().getTemporaryFilePath("mindimer-confout.pdb");
+    const auto confout = fileManager().getTemporaryFilePath("mindimer-confout.pdb");
     cmd.addOption("-minimize");
     cmd.addOption("-c", confout);
     EXPECT_EQ(0, run(&cmd));
@@ -1032,11 +1032,11 @@ TEST_F(SimulateTest, MinimizeDimer)
 // Test: Frozen atoms do not move during minimization
 TEST_F(SimulateTest, MinimizeFreeze)
 {
-    std::string   molFile("acetone-3-oep.log.pdb");
+    const std::string molFile("acetone-3-oep.log.pdb");
     SimulateFiles files;
     auto cmd     = baseCommand(molFile, "freeze", &files);
-    auto confout = fileManager().getTemporaryFilePath("freeze-confout.pdb");
-    auto ndx     = fileManager().getTemporaryFilePath("freeze.ndx");
+    const auto confout = fileManager().getTemporaryFilePath("freeze-confout.pdb");
+    const auto ndx     = fileManager().getTemporaryFilePath("freeze.ndx");
     {
         std::ofstream out(ndx);
         out << "[ Frozen ]\n1 2\n";
@@ -1076,7 +1076,7 @@ TEST_F(SimulateTest, MinimizeFreeze)
 TEST_F(SimulateTest, PositionRestraints)
 {
     // The water dimer moved from the origin
-    auto molFile = fileManager().getTemporaryFilePath("shifted.pdb");
+    const auto molFile = fileManager().getTemporaryFilePath("shifted.pdb");
     {
         std::ifstream in(alexandriaFile("molecules/water_dimer.pdb"));
         std::ofstream out(molFile);
@@ -1119,7 +1119,7 @@ TEST_F(SimulateTest, PositionRestraints)
         {
             EXPECT_GT(xvg.rows[0][cpr], 0);
         }
-        std::ifstream     in(files.log);
+        const std::ifstream in(files.log);
         std::stringstream log;
         log << in.rdbuf();
         EXPECT_NE(std::string::npos, log.str().find("The motion of the center of mass is not removed")) << r0;
@@ -1131,7 +1131,7 @@ TEST_F(SimulateTest, WriteMolprop)
 {
     SimulateFiles files;
     auto cmd = baseCommand("acetone.sdf", "omp", &files);
-    auto omp = fileManager().getTemporaryFilePath("omp.xml");
+    const auto omp = fileManager().getTemporaryFilePath("omp.xml");
     cmd.addOption("-sp");
     cmd.addOption("-omp", omp);
     ASSERT_EQ(0, run(&cmd));
@@ -1175,16 +1175,16 @@ TEST_F(SimulateTest, MinimizeTool)
 {
     for(const std::string constrain : { "no", "bonds" })
     {
-        std::string   molFile("water_dimer.pdb");
+        const std::string molFile("water_dimer.pdb");
         SimulateFiles files;
         auto cmd     = baseCommand(molFile, "simmin" + constrain, &files);
-        auto simout  = fileManager().getTemporaryFilePath("simmin" + constrain + "-confout.pdb");
+        const auto simout  = fileManager().getTemporaryFilePath("simmin" + constrain + "-confout.pdb");
         cmd.addOption("-minimize");
         cmd.addOption("-constrain", constrain);
         cmd.addOption("-c", simout);
         ASSERT_EQ(0, run(&cmd));
 
-        auto minout  = fileManager().getTemporaryFilePath("minimize" + constrain + "-confout.pdb");
+        const auto minout  = fileManager().getTemporaryFilePath("minimize" + constrain + "-confout.pdb");
         auto mincmd  = minimizeCommand(alexandriaFile("forcefields/ACS-g1.xml"),
                                        alexandriaFile("molecules/" + molFile), minout,
                                        fileManager().getTemporaryFilePath("minimize" + constrain + ".log"));
@@ -1211,8 +1211,8 @@ TEST_F(SimulateTest, MinimizeToolNotConverged)
 {
     for(const std::string alg : { "LBFGS", "Steep", "Newton" })
     {
-        auto confout = fileManager().getTemporaryFilePath("notconverged" + alg + "-confout.pdb");
-        auto log     = fileManager().getTemporaryFilePath("notconverged" + alg + ".log");
+        const auto confout = fileManager().getTemporaryFilePath("notconverged" + alg + "-confout.pdb");
+        const auto log     = fileManager().getTemporaryFilePath("notconverged" + alg + ".log");
         auto cmd     = minimizeCommand(alexandriaFile("forcefields/ACS-g1.xml"),
                                        alexandriaFile("molecules/acetone.sdf"), confout, log);
         cmd.addOption("-minalg", alg);
@@ -1244,8 +1244,8 @@ TEST_F(SimulateTest, MinimizeToolNotConverged)
 // negative before and after minimization
 TEST_F(SimulateTest, MinimizeToolShells)
 {
-    auto confout = fileManager().getTemporaryFilePath("shells-confout.pdb");
-    auto log     = fileManager().getTemporaryFilePath("minimize-shells.log");
+    const auto confout = fileManager().getTemporaryFilePath("shells-confout.pdb");
+    const auto log     = fileManager().getTemporaryFilePath("minimize-shells.log");
     auto cmd     = minimizeCommand(fileManager().getInputFilePath("forcefields/SWM4-NDP.xml"),
                                    alexandriaFile("molecules/water_dimer.pdb"), confout, log);
     ASSERT_EQ(0, minimize(cmd.argc(), cmd.argv()));

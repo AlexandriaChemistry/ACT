@@ -204,7 +204,7 @@ int simulate(int argc, char *argv[])
     {
         phase.next("Polarizability");
         // Make a copy since it maybe changed
-        auto xx     = actmol.xOriginal();
+        const auto xx     = actmol.xOriginal();
         auto qprops = actmol.qProps();
         for(auto qp = qprops->begin(); qp < qprops->end(); ++qp)
         {
@@ -212,7 +212,7 @@ int simulate(int argc, char *argv[])
             qCalc->initializeMoments();
             qCalc->calcPolarizability(&msghandler, &pd, actmol.topology(), &forceComp);
             auto alpha = qCalc->polarizabilityTensor();
-            std::string unit("A^3");
+            const std::string unit("A^3");
             double fac = convertFromGromacs(1, unit);
             JsonTree poltree("Polarizability");
 
@@ -241,8 +241,8 @@ int simulate(int argc, char *argv[])
     }
     else
     {
-        MolHandler molhandler;
-        std::vector<gmx::RVec> coords = actmol.xOriginal();
+        const MolHandler molhandler;
+        const std::vector<gmx::RVec> coords = actmol.xOriginal();
         std::vector<gmx::RVec> xmin   = coords;
         auto nfrag = actmol.fragmentHandler()->topologies().size();
         msghandler.msg(ACTStatus::Info, gmx::formatString("There are %lu fragments.", nfrag));
@@ -253,12 +253,12 @@ int simulate(int argc, char *argv[])
             std::vector<gmx::RVec> forces(actmol.atomsConst().size());
             forceComp.compute(&msghandler, &pd, actmol.topology(), &xmin, &forces, &energies);
             JsonTree jtener("Energies before");
-            std::string unit("kJ/mol");
+            const std::string unit("kJ/mol");
             for (const auto &ener : energies)
             {
-                auto val = gmx::formatString("%.4f", ener.second);
+                const auto val = gmx::formatString("%.4f", ener.second);
                 jtener.addValueUnit(interactionTypeToString(ener.first),
-                                    val.c_str(), unit);
+                                    val, unit);
             }
             jtree.addObject(jtener);
             if (nfrag == 2)
@@ -352,7 +352,7 @@ int simulate(int argc, char *argv[])
     }
     phase.stop();
     // The timings go into the json file, or else only into the log file
-    auto peak = theoreticalPeakPerCore();
+    const auto peak = theoreticalPeakPerCore();
     printTimings(&cr, msghandler.tw(), phase.wallTime(), json ? &jtree : nullptr, &peak);
     if (json)
     {

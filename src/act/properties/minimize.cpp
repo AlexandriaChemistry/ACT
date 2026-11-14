@@ -60,12 +60,12 @@ static void addEnergies(JsonTree                                *jtree,
                         const std::map<InteractionType, double> &energies)
 {
     JsonTree    jtener(name);
-    std::string unit("kJ/mol");
+    const std::string unit("kJ/mol");
     for (const auto &ener : energies)
     {
-        auto val = gmx::formatString("%.4f", ener.second);
+        const auto val = gmx::formatString("%.4f", ener.second);
         jtener.addValueUnit(interactionTypeToString(ener.first),
-                            val.c_str(), unit);
+                            val, unit);
     }
     jtree->addObject(jtener);
 }
@@ -97,7 +97,7 @@ eMinimizeStatus minimizeMolecule(MsgHandler                    *msghandler,
         }
     }
 
-    auto coords = *xmin;
+    const auto coords = *xmin;
     std::map<InteractionType, double> energies;
     {
         std::vector<gmx::RVec> forces(actmol->atomsConst().size());
@@ -112,7 +112,7 @@ eMinimizeStatus minimizeMolecule(MsgHandler                    *msghandler,
                                         actmol->getMolname().c_str(),
                                         eMinimizeAlgorithmToString(sch.minAlg()).c_str()));
 
-    MolHandler molhandler;
+    const MolHandler molhandler;
     auto eMin = molhandler.minimizeCoordinates(msghandler, pd, actmol->topology(), forceComp, sch,
                                                xmin, &energies, freeze);
     if (epot)

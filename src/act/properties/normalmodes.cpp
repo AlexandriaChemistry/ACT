@@ -162,8 +162,8 @@ int nma(int argc, char *argv[])
     }
     auto eMin = eMinimizeStatus::OK;
     /* Generate output file for debugging if requested */
-    MolHandler molhandler;
-    std::vector<gmx::RVec> coords = actmol.xOriginal();
+    const MolHandler molhandler;
+    const std::vector<gmx::RVec> coords = actmol.xOriginal();
     std::vector<gmx::RVec> xmin   = coords;
     if (sch.minimize())
     {
@@ -177,7 +177,7 @@ int nma(int argc, char *argv[])
                            gmx::formatString("Final energy: %g. RMSD wrt original structure %g nm.",
                                              energies[InteractionType::EPOT], rmsd));
             JsonTree jtener("Energies");
-            std::string unit("kJ/mol");
+            const std::string unit("kJ/mol");
             for (const auto &ener : energies)
             {
                 jtener.addValueUnit(interactionTypeToString(ener.first),

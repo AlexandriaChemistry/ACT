@@ -95,7 +95,7 @@ void DimerGenerator::addOptions(std::vector<t_pargs>      *pa,
                                 std::vector<t_filenm>     *fnm,
                                 std::vector<const char *> *desc)
 {
-    std::vector<t_pargs> mypa = {
+    const std::vector<t_pargs> mypa = {
         { "-ndist", FALSE, etINT, {&ndist_},
           "Number of equidistant distances to use for computing interaction energies and forces. Total number of dimers is the product of maxdimer and ndist. If less than two, the range from mindist to maxdist will be divided into bins of 2.5 pm." },
         { "-mindist", FALSE, etREAL, {&mindist_},
@@ -123,7 +123,7 @@ void DimerGenerator::addOptions(std::vector<t_pargs>      *pa,
     {
         pa->push_back(pp);
     }
-    std::vector<t_filenm>  myfnm = {
+    const std::vector<t_filenm> myfnm = {
         { efXYZ, "-ox",   "dimers",  ffOPTWR },
         { efTRX, "-traj", "dimers",  ffOPTRD }
     };
@@ -181,7 +181,7 @@ static void dump_coords(const char                                *outcoords,
                         const std::vector<std::vector<gmx::RVec>> &coords)
 {
     FILE *fp = gmx_ffopen(outcoords, "w");
-    auto atoms = actmol->atomsConst();
+    const auto &atoms = actmol->atomsConst();
     for(size_t ix = 0; ix < coords.size(); ix++)
     {
         fprintf(fp, "%5lu\n", atoms.size());
@@ -388,15 +388,15 @@ void DimerGenerator::prepare(MsgHandler       *msghandler,
     }
     if (minimize_)
     {
-        ForceComputer           forceComp;
-        MolHandler              molhandler;
-        SimulationConfigHandler sch;
+        const ForceComputer     forceComp;
+        const MolHandler        molhandler;
+        const SimulationConfigHandler sch;
         // Dummy array.
-        std::vector<int> freeze;
+        const std::vector<int> freeze;
         for(size_t j = 0; j < tops.size(); j++)
         {
             std::map<InteractionType, double> energies;
-            auto xBefore = xmOrig_[j];
+            const auto xBefore = xmOrig_[j];
             auto eMin = molhandler.minimizeCoordinates(msghandler, pd, &tops[j],
                                                        &forceComp, sch,
                                                        &xmOrig_[j], &energies, freeze);

@@ -185,7 +185,7 @@ void B2Data::addOrientation(const std::vector<size_t>    &index,
     {
         // Added at once, after the orientations before it
         flush();
-        Orientation one = { energy, weight, { force2[0], force2[1] }, { torque[0], torque[1] } };
+        const Orientation one = { energy, weight, { force2[0], force2[1] }, { torque[0], torque[1] } };
         addRange(one, index.data(), 0, ndimer);
         return;
     }

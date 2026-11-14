@@ -146,9 +146,9 @@ protected:
         cmd.addOption("-T1", 400.0);
         cmd.addOption("-T2", 500.0);
         cmd.addOption("-dT", 100.0);
-        auto label     = gmx::formatString("%s-%d", ffName.c_str(), nDimer);
-        auto b2file    = fileManager().getTemporaryFilePath(label + "-B2T.xvg");
-        auto mayerfile = fileManager().getTemporaryFilePath(label + "-mayer.xvg");
+        const auto label     = gmx::formatString("%s-%d", ffName.c_str(), nDimer);
+        const auto b2file    = fileManager().getTemporaryFilePath(label + "-B2T.xvg");
+        const auto mayerfile = fileManager().getTemporaryFilePath(label + "-mayer.xvg");
         cmd.addOption("-b2", b2file);
         cmd.addOption("-eh", mayerfile);
         cmd.addOption("-g", fileManager().getTemporaryFilePath(label + "-b2.log"));
@@ -180,7 +180,7 @@ protected:
                    const std::vector<std::pair<std::string, int>> &sampling = {})
     {
         std::vector<std::vector<double>> mayer;
-        auto rows = runB2(ffName, nDimer, sampling, &mayer);
+        const auto rows = runB2(ffName, nDimer, sampling, &mayer);
         if (gmx_node_rank() == 0)
         {
             checkWater(rows, mayer, checkTorqueSymmetry);
@@ -216,8 +216,8 @@ protected:
         cmd.addOption("-shelltoler", 1e-8);
         cmd.addOption("-shellMaxIter", 100);
         cmd.addOption("-block", block);
-        auto label    = gmx::formatString("%s-%d", ffName.c_str(), nDimer);
-        auto jsonFile = fileManager().getTemporaryFilePath(label + "-b2.json");
+        const auto label    = gmx::formatString("%s-%d", ffName.c_str(), nDimer);
+        const auto jsonFile = fileManager().getTemporaryFilePath(label + "-b2.json");
         cmd.addOption("-json", jsonFile);
         cmd.addOption("-b2", fileManager().getTemporaryFilePath(label + "-B2T.xvg"));
         cmd.addOption("-eh", fileManager().getTemporaryFilePath(label + "-mayer.xvg"));
@@ -430,7 +430,7 @@ void checkDimers(const std::string &fileName, int nDimer, int nDist)
             int n;
             iss >> n;
             number.push_back(n);
-            x.push_back({});
+            x.emplace_back();
         }
         else if (!x.empty())
         {
@@ -466,7 +466,7 @@ void checkDimers(const std::string &fileName, int nDimer, int nDist)
 TEST_F(WaterB2Test, OutputDimers)
 {
     int  nDimer = 12, nDist = 9;
-    auto output = fileManager().getTemporaryFilePath("dimers.xyz");
+    const auto output = fileManager().getTemporaryFilePath("dimers.xyz");
     gmx::test::CommandLine cmd;
     cmd.append("b2");
     cmd.addOption("-ff", fileManager().getInputFilePath("forcefields/SPCE.xml"));
