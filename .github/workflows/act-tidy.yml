@@ -1,0 +1,66 @@
+name: Alexandria Chemistry Toolkit clean-up check (make tidy)
+run-name: ${{ github.actor }} checks that make tidy changes nothing
+on: [push]
+# The directories of src/act that have been cleaned up with make tidy, see
+# issue #1535. The check fails if make tidy would change any of them; run
+# make tidy ACT_TIDY_PATHS="..." in a build directory and commit the result.
+# The same clang-tidy version and build options as for the clean-up are used,
+# since another version or configuration may suggest other fixes.
+env:
+  TIDY_DIRS: >-
+    src/act/alexandria
+    src/act/basics
+    src/act/coulombintegrals
+    src/act/forcefield
+    src/act/forces
+    src/act/gpu
+    src/act/molprop
+    src/act/properties
+    src/act/qgen
+    src/act/statistics
+    src/act/topology
+    src/act/utility
+jobs:
+  Tidy:
+    runs-on: macos-latest
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
+    steps:
+      - name: Check out repository code
+        uses: actions/checkout@v6
+      - name: Install system dependencies
+        run: |
+          brew install open-mpi libxml2
+      - uses: conda-incubator/setup-miniconda@v4
+        with:
+          auto-update-conda: true
+          channels: conda-forge
+          conda-remove-defaults: "true"
+          python-version: "3.12"
+      - name: Install the dependencies and clang-tidy
+        shell: bash -el {0}
+        run: |
+          conda install conda-forge::librdkit-dev=2025.09.4 conda-forge::libboost-devel eigen conda-forge::nlohmann_json conda-forge::openmm llvm-openmp cmake pyyaml conda-forge::clang-tools=23.1.5 conda-forge::clang=23.1.5
+          clang-tidy --version
+      - name: Configure ACT
+        shell: bash -el {0}
+        run: |
+          # clang-tidy only needs the compilation database, nothing is built
+          mkdir build; cd build
+          cmake -DCMAKE_BUILD_TYPE=Release -DACT_DOUBLE=OFF -DACT_MPI=ON -DACT_BUILD_MANUAL=OFF \
+                -DCMAKE_PREFIX_PATH=${CONDA_PREFIX} \
+                -DCMAKE_C_COMPILER=/usr/bin/clang -DCMAKE_CXX_COMPILER=/usr/bin/clang++ ..
+      - name: Run make tidy
+        shell: bash -el {0}
+        run: |
+          python admin/clang_tidy_fix.py --build-dir build --source-dir . \
+                 --clang-tidy $(which clang-tidy) -j 4 ${TIDY_DIRS}
+      - name: Check that make tidy changed nothing
+        run: |
+          if ! git diff --quiet -- ${TIDY_DIRS}; then
+            git diff --stat -- ${TIDY_DIRS}
+            git diff -- ${TIDY_DIRS}
+            echo "::error::make tidy changes the code, run make tidy ACT_TIDY_PATHS=\"<directory>\" and commit the result"
+            exit 1
+          fi
+          echo "make tidy changes nothing in ${TIDY_DIRS}"

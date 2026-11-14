@@ -21,6 +21,9 @@ pointers) const are left out, unless --const-scalars is given.
 Fixes that overlap with another fix are left for the next run, so run
 make tidy until it reports no more fixes.
 
+The exit status is 2 if clang-tidy reported compiler errors, since the
+fixes of those files may be incomplete, and 0 otherwise.
+
 Only code that is compiled in the build directory is seen by clang-tidy,
 so code for other configurations (e.g. SYCL or no MPI) is left as is.
 Check the result with git diff and rebuild before committing.
@@ -564,7 +567,8 @@ def main():
         print("Nothing changed")
     else:
         print(f"Changed {changed} files, check them with git diff and rebuild")
-    return 0
+    # The fixes of files with compiler errors may be incomplete
+    return 2 if failed else 0
 
 
 if __name__ == "__main__":
