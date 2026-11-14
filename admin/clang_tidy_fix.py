@@ -135,22 +135,60 @@ def west_const(text, diag_offset, replacements):
     shift = CONST_WIDTH - removed
     if shift > 0:
         # The rest of the declaration moves to the right, and so must the lines
-        # that continue it if they are aligned with it, i.e. start to the right
-        # of the name, as arguments under an opening parenthesis. Lines that are
-        # indented relative to the statement, as the body of a lambda or the
-        # elements of a list in braces, stay where they are.
+        # that continue it where they are aligned with it: the lines in
+        # parentheses or brackets, as arguments under an opening parenthesis,
+        # and the lines outside brackets that start to the right of the = or (
+        # after the name. Lines in braces, as the body of a lambda or the
+        # elements of a list, are indented relative to the statement and stay
+        # where they are.
         end = statement_end(text, offset)
         if end is None:
             return None
-        name_column = offset - line_start(text, offset)
-        line = text.find(b"\n", offset)
-        if 0 <= line < end and len(indentation(text, line + 1)) > name_column:
-            while 0 <= line < end:
-                line += 1
-                if text[line:line + 1] not in (b"\n", b""):
-                    fix.append((line, 0, b" " * shift))
-                line = text.find(b"\n", line)
+        after_name = re.compile(rb"[A-Za-z_]\w*\s*").match(text, offset)
+        if after_name is None:
+            return None
+        aligned_column = after_name.end() - line_start(text, offset)
+        for line in continuation_lines(text, offset, end):
+            stack = continuation_lines.stack[line]
+            if text[line:line + 1] in (b"\n", b"") or b"{" in stack:
+                continue
+            if stack or len(indentation(text, line)) > aligned_column:
+                fix.append((line, 0, b" " * shift))
     return fix
+
+
+def continuation_lines(text, offset, end):
+    """The starts of the lines after the one of offset up to end, skipping
+    strings and comments. For each, continuation_lines.stack holds the
+    brackets that are open at its start."""
+    starts = []
+    continuation_lines.stack = {}
+    stack = []
+    i = offset
+    while i < end:
+        c = text[i:i + 1]
+        if c in (b'"', b"'"):
+            i += 1
+            while i < end and text[i:i + 1] != c:
+                i += 2 if text[i:i + 1] == b"\\" else 1
+        elif text.startswith(b"//", i):
+            i = text.find(b"\n", i) - 1
+            if i < 0:
+                break
+        elif text.startswith(b"/*", i):
+            i = text.find(b"*/", i) + 1
+            if i <= 0:
+                break
+        elif c in (b"(", b"[", b"{"):
+            stack.append(c)
+        elif c in (b")", b"]", b"}"):
+            if stack:
+                stack.pop()
+        elif c == b"\n":
+            starts.append(i + 1)
+            continuation_lines.stack[i + 1] = b"".join(stack)
+        i += 1
+    return starts
 
 
 def statement_end(text, offset):
