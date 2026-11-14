@@ -140,7 +140,7 @@ private:
     
 public:    
     //! Constructor
-    gmx_stats() {}
+    gmx_stats() = default;
     
     /*! \brief
      * Add a point to the data set
