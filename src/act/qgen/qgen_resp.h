@@ -115,7 +115,7 @@ class QgenResp
 {
     public:
         //! Default constructor
-        QgenResp() {}
+        QgenResp() = default;
 
         //! \return the charge distribution type
         ChargeDistributionType chargeType() const { return ChargeDistributionType_; }

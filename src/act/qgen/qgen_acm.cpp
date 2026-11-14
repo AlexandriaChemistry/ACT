@@ -79,7 +79,7 @@ QgenAcm::QgenAcm(MsgHandler                 *msghandler,
     {
         auto atype = pd->findParticleType(atoms[i].ffType());
         atomicNumber_.push_back(atype->atomnumber());
-        auto qparm = atype->parameterConst("charge");
+        const auto qparm = atype->parameterConst("charge");
         if (atype->hasInteractionType(entype))
         {
             const auto &acmtype = atype->interactionTypeToIdentifier(entype);
@@ -92,7 +92,7 @@ QgenAcm::QgenAcm(MsgHandler                 *msghandler,
         }
         else
         {
-            acmtypes.push_back("");
+            acmtypes.emplace_back("");
         }
         // For EEM we need only the Mutability::ACM particles, but if we use SQE
         // we need all atoms connected by bonds. As a result when using SQE the
@@ -132,7 +132,7 @@ QgenAcm::QgenAcm(MsgHandler                 *msghandler,
         {
             //! \todo this code does not make sense, if there is no BCC, the EEM
             // values will not be stored and updated.
-            auto acmtype = atype->interactionTypeToIdentifier(entype);
+            const auto acmtype = atype->interactionTypeToIdentifier(entype);
             const auto *acm = eem.findParametersPtrConst(acmtype);
             acm_id_.push_back(acm);
         }
@@ -197,8 +197,8 @@ QgenAcm::QgenAcm(MsgHandler                 *msghandler,
                 {
                     msghandler->fatal("Compounds with part of the atoms having fixed charges are not supported.");
                 }
-                auto ai = acmtypes[nonFixed_[b.aI()]];
-                auto aj = acmtypes[nonFixed_[b.aJ()]];
+                const auto &ai = acmtypes[nonFixed_[b.aI()]];
+                const auto &aj = acmtypes[nonFixed_[b.aJ()]];
                 Identifier bccId( { ai, aj }, { b.bondOrder() }, fs.canSwap());
                 double dcf = 1;
                 if (!fs.parameterExists(bccId))
@@ -291,16 +291,16 @@ void QgenAcm::dump(MsgHandler                 *msg_handler,
             }
             msgs.push_back(msg);
         }
-        msgs.push_back("\n");
-        msgs.push_back("RHS_ matrix:");
+        msgs.emplace_back("\n");
+        msgs.emplace_back("RHS_ matrix:");
         for (size_t i = 0; i < nonFixed_.size(); i++)
         {
             msgs.push_back(gmx::formatString("%2zu RHS_ = %10g\n", i, rhs_[i]));
         }
-        msgs.push_back("\n");
+        msgs.emplace_back("\n");
 
-        msgs.push_back("                                          Core                 Shell\n");
-        msgs.push_back("Res  Atom   Nr       J0    chi0  row   q   zeta        row    q     zeta\n");
+        msgs.emplace_back("                                          Core                 Shell\n");
+        msgs.emplace_back("Res  Atom   Nr       J0    chi0  row   q   zeta        row    q     zeta\n");
         for (size_t i = 0; i < atoms->size(); i++)
         {
             for (auto m = 0; m < DIM; m++)
@@ -313,7 +313,7 @@ void QgenAcm::dump(MsgHandler                 *msg_handler,
             msg += gmx::formatString(" %3d %8.5f %8.4f\n", row_[i], q_[i], zeta_[i]);
             msgs.push_back(msg);
         }
-        msgs.push_back("\n");
+        msgs.emplace_back("\n");
         msgs.push_back(gmx::formatString("|mu| = %8.3f ( %8.3f  %8.3f  %8.3f )\n\n",
                                          norm(mu), mu[XX], mu[YY], mu[ZZ]));
         for (const auto &msg: msgs)

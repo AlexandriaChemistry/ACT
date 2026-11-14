@@ -199,7 +199,7 @@ void QtypeProps::setPolarizabilityTensor(const tensor &alpha)
 {
     copy_mat(alpha, alpha_);
     // In double precision, as the results are stored
-    auto element = [this](int m, int n) { return static_cast<double>(alpha_[m][n]); };
+    const auto element = [this](int m, int n) { return static_cast<double>(alpha_[m][n]); };
     double a = gmx::square(element(XX, XX) - element(YY, YY));
     double b = gmx::square(element(XX, XX) - element(ZZ, ZZ));
     double c = gmx::square(element(ZZ, ZZ) - element(YY, YY));
@@ -212,7 +212,7 @@ void QtypeProps::setPolarizabilityTensor(const tensor &alpha)
 
 double QtypeProps::dipole(MsgHandler *msghandler) const
 {
-    auto mm = multipoles_.find(MolPropObservable::DIPOLE);
+    const auto mm = multipoles_.find(MolPropObservable::DIPOLE);
     if (multipoles_.end() == mm)
     {
         msghandler->fatal("No dipole!");
@@ -232,7 +232,7 @@ bool QtypeProps::hasMultipole(MolPropObservable mpo) const
 
 const std::vector<double> QtypeProps::getMultipole(MsgHandler *msghandler, MolPropObservable mpo) const
 {
-    auto mf = multipoles_.find(mpo);
+    const auto mf = multipoles_.find(mpo);
     if (mf == multipoles_.end())
     {
         msghandler->fatal(gmx::formatString("No such observable %s in multipoles",
@@ -319,8 +319,8 @@ void QtypeProps::calcPolarizability(MsgHandler          *msghandler,
 
 void QtypeProps::calcMoments(MsgHandler *msg_handler)
 {
-    GMX_RELEASE_ASSERT(q_.size() > 0, gmx::formatString("No charges for %s", qPropertyTypeName(qtype_).c_str()).c_str());
-    GMX_RELEASE_ASSERT(x_.size() > 0, gmx::formatString("No coordinates for %s", qPropertyTypeName(qtype_).c_str()).c_str());
+    GMX_RELEASE_ASSERT(!q_.empty(), gmx::formatString("No charges for %s", qPropertyTypeName(qtype_).c_str()).c_str());
+    GMX_RELEASE_ASSERT(!x_.empty(), gmx::formatString("No coordinates for %s", qPropertyTypeName(qtype_).c_str()).c_str());
     bool AllZero = true;
     for(size_t i = 0; AllZero && i < atomNumber_.size(); i++)
     {

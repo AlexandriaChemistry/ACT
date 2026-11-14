@@ -60,7 +60,7 @@ void QgenResp::potcomp(const char             *potcomp,
                        const gmx_output_env_t *oenv)
 {
     FILE       *fp;
-    std::string unit("Hartree/e");
+    const std::string unit("Hartree/e");
 
     if (potcomp)
     {
@@ -88,11 +88,11 @@ void QgenResp::potcomp(const char             *potcomp,
 void QgenResp::writePdbComparison(const std::vector<ActAtom>   &atoms,
                                   const std::string            &pdbdiff)
 {
-    std::string potUnit("Hartree/e");
+    const std::string potUnit("Hartree/e");
     double xfac = convertFromGromacs(1, "Angstrom");
     if (!pdbdiff.empty())
     {
-        FILE *fp = gmx_ffopen(pdbdiff.c_str(), "w");
+        FILE *fp = gmx_ffopen(pdbdiff, "w");
         for (size_t i = 0; i < atoms.size(); i++)
         {
             fprintf(fp, "%-6s%5u  %-4.4s%3.3s %c%4lu%c   %8.3f%8.3f%8.3f%6.2f%6.2f\n",
@@ -138,16 +138,16 @@ void QgenResp::writeDiffCube(const QgenResp         *src,
                              int                     rho)
 {
     FILE       *fp;
-    int         i, m, ix, iy, iz;
+    int         m, ix, iy, iz;
     real        pp, r, rmin;
     gmx_stats   gst, ppcorr;
 
-    bool        histo = (0 != histFn.size());
-    std::string lengthUnit("Bohr");
-    std::string potUnit("Hartree/e");
-    if (0 != cubeFn.size())
+    bool        histo = (!histFn.empty());
+    const std::string lengthUnit("Bohr");
+    const std::string potUnit("Hartree/e");
+    if (!cubeFn.empty())
     {
-        fp = gmx_ffopen(cubeFn.c_str(), "w");
+        fp = gmx_ffopen(cubeFn, "w");
         fprintf(fp, "%s\n", title.c_str());
         fprintf(fp, "POTENTIAL\n");
         fprintf(fp, "%5d%12.6f%12.6f%12.6f\n",
@@ -227,23 +227,13 @@ void QgenResp::writeDiffCube(const QgenResp         *src,
     }
     if (histo)
     {
-        int   nb = 0;
-        std::vector<double> x, y;
-
         fp = xvgropen(histFn.c_str(), "Absolute deviation from QM", "Distance (nm)",
                       "Potential", oenv);
         gst.dump_xy(fp);
-        if (0)
-        {
-            gst.make_histogram(0.01, &nb, eHisto::X, 0, &x, &y);
-            for (i = 0; (i < nb); i++)
-            {
-                fprintf(fp, "%10g  %10g\n", x[i], y[i]);
-            }
-        }
+
         fclose(fp);
         // The correlation is written next to the histogram
-        auto corrFn = histFn.substr(0, histFn.rfind('.')) + "-corr.xvg";
+        const auto corrFn = histFn.substr(0, histFn.rfind('.')) + "-corr.xvg";
         fp = xvgropen(corrFn.c_str(), "Correlation between QM and Calc", "Pot (QM)",
                       "Pot (Calc)", oenv);
         ppcorr.dump_xy(fp);
@@ -255,8 +245,8 @@ void QgenResp::writeCube(const std::string      &fn,
                          const std::string      &title,
                          const gmx_output_env_t *oenv)
 {
-    QgenResp    dummy;
-    std::string empty;
+    const QgenResp dummy;
+    const std::string empty;
     writeDiffCube(&dummy,  fn, empty, title, oenv, 0);
 }
 
@@ -264,8 +254,8 @@ void QgenResp::writeRho(const std::string      &fn,
                         const std::string      &title,
                         const gmx_output_env_t *oenv)
 {
-    QgenResp    dummy;
-    std::string empty;
+    const QgenResp dummy;
+    const std::string empty;
     writeDiffCube(&dummy,  fn, empty, title, oenv, 1);
 }
 
@@ -279,7 +269,7 @@ void QgenResp::readCube(const std::string &fn, bool bESPonly)
     std::string         tmp;
     int                 line = 0;
     bool                bOK  = true;
-    std::string         Bohr("Bohr");
+    const std::string   Bohr("Bohr");
     while (bOK && tr.readLine(&tmp))
     {
         while (!tmp.empty() && tmp[tmp.length()-1] == '\n')
@@ -353,10 +343,10 @@ void QgenResp::readCube(const std::string &fn, bool bESPonly)
         }
         else if (line >= 6+natom)
         {
-            std::vector<std::string> ss = gmx::splitString(tmp);
+            const std::vector<std::string> ss = gmx::splitString(tmp);
             for (const auto &s : ss)
             {
-                pot.push_back(convertToGromacs(my_atof(s.c_str(), "energy"), "Hartree/e"));
+                pot.push_back(convertToGromacs(my_atof(s, "energy"), "Hartree/e"));
             }
         }
 
@@ -377,7 +367,7 @@ void QgenResp::readCube(const std::string &fn, bool bESPonly)
                     e[YY] = origin_[YY] + iy*space_[YY];
                     e[ZZ] = origin_[ZZ] + iz*space_[ZZ];
 
-                    ep_.push_back(EspPoint(e, pot[m]));
+                    ep_.emplace_back(e, pot[m]);
                 }
             }
         }
@@ -444,7 +434,7 @@ void QgenResp::makeGrid(real                          spacing,
             for (int k = 0; (k < nxyz_[ZZ]); k++)
             {
                 xyz[ZZ] = xmin[ZZ] + k*space_[ZZ];
-                ep_.push_back(EspPoint(xyz, 0));
+                ep_.emplace_back(xyz, 0);
             }
         }
     }
