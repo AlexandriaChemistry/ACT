@@ -1,0 +1,5 @@
+<map id="alexandria::gpu::AcmVsite" name="alexandria::gpu::AcmVsite">
+<area shape="rect" id="Node000001" title="A virtual site of the structure of a molecule for the charge generation Its parameters follow from a ..." alt="" coords="8,106,200,134"/>
+<area shape="rect" id="Node000002" href="$structalexandria_1_1gpu_1_1VsiteEntry.xhtml" title="A virtual site with prepared parameters The parents are ordered as the construction routines of vsite..." alt="" coords="5,5,203,33"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="106,47,107,106,101,105,102,50"/>
+</map>

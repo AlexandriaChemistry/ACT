@@ -1,0 +1,5 @@
+<map id="Graphical Class Hierarchy" name="Graphical Class Hierarchy">
+<area shape="rect" id="Node000000" href="$classga_1_1Sorter.xhtml" title="Abstract class for sorting the population based on the fitness of each Individual." alt="" coords="5,5,90,33"/>
+<area shape="rect" id="Node000001" href="$classga_1_1EmptySorter.xhtml" title="Sorter which does nothing. Will be used when sorting is not required." alt="" coords="138,5,264,33"/>
+<area shape="poly" id="edge38_Node000000_Node000001" title=" " alt="" coords="105,17,140,19,135,19,105,22"/>
+</map>

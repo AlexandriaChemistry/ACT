@@ -1,0 +1,26 @@
+var searchData=
+[
+  ['data_0',['data',['../structalexandria_1_1ConformationSet.xhtml#a0f8ba48f65e209599db085bbb18c65a1',1,'alexandria::ConformationSet']]],
+  ['datafile_1',['dataFile',['../structalexandria_1_1CoordsEnergy.xhtml#a90cce949d73ce5a1f94a14ab72c6c77d',1,'alexandria::CoordsEnergy']]],
+  ['datafile_2',['datafile',['../structalexandria_1_1Outlier.xhtml#aa3acec3c0aba0bc0c1771eb3a8b7b744',1,'alexandria::Outlier']]],
+  ['dchi_3',['dchi',['../structalexandria_1_1QgenAcm_1_1SqeSources.xhtml#a0defe9f799fb33f4ab1eb1506a2920c8',1,'alexandria::QgenAcm::SqeSources']]],
+  ['dchifactor_4',['dchiFactor',['../structalexandria_1_1QgenAcm_1_1SqeSources.xhtml#a53a597b4dcb4cd436c89a3fb170b7291',1,'alexandria::QgenAcm::SqeSources']]],
+  ['defaultgpuminimumwork_5',['defaultGpuMinimumWork',['../namespacealexandria.xhtml#aff6a0c06dead29d5646d454a13bacf49',1,'alexandria']]],
+  ['depoffset_6',['depOffset',['../structalexandria_1_1gpu_1_1ChainMolecule.xhtml#a95e96e09b4ec8a90082d151f350428f7',1,'alexandria::gpu::ChainMolecule']]],
+  ['deps_7',['deps',['../structalexandria_1_1GpuChainSetup.xhtml#a1c29e354d010976f77eedf7c040d7a90',1,'alexandria::GpuChainSetup::deps'],['../structalexandria_1_1gpu_1_1ChainSystem.xhtml#ab047147269a7679f1cb7b0c0bef1c545',1,'alexandria::gpu::ChainSystem::deps']]],
+  ['descending_5f_8',['descending_',['../classga_1_1Sorter.xhtml#a307968ff65da52d2714e6fff74f36f09',1,'ga::Sorter']]],
+  ['determinantprecision_9',['determinantPrecision',['../namespacealexandria.xhtml#a082a01e4f8231610763e634b52e34fd3',1,'alexandria']]],
+  ['deviation_10',['deviation',['../structalexandria_1_1ConformationData.xhtml#aab2be74ee3f7e9539a0e3195c880d118',1,'alexandria::ConformationData']]],
+  ['dg_5fdesc_11',['dg_desc',['../namespacealexandria.xhtml#a0b2ae9acd438f7a0edd9f2a239cc7dad',1,'alexandria']]],
+  ['dimer_12',['dimer',['../structalexandria_1_1GpuMoleculeDeviations.xhtml#a3f0f06757ebadc754207524965754584',1,'alexandria::GpuMoleculeDeviations::dimer'],['../structalexandria_1_1gpu_1_1DeviationDimer.xhtml#a45a7055773629338a70add43c8e9fe84',1,'alexandria::gpu::DeviationDimer::dimer'],['../structalexandria_1_1gpu_1_1ChainMolecule.xhtml#aea9060bfbc58b641dfff7540d08162d8',1,'alexandria::gpu::ChainMolecule::dimer']]],
+  ['dimerblock_13',['dimerBlock',['../structalexandria_1_1gpu_1_1AcmMolecule.xhtml#a3c93da31a5384e7486397b50799a45ac',1,'alexandria::gpu::AcmMolecule']]],
+  ['dimers_14',['dimers',['../structalexandria_1_1gpu_1_1DeviationSystem.xhtml#aca1b2da2a3eec0aa19b4a67459e7a3cb',1,'alexandria::gpu::DeviationSystem']]],
+  ['dimertargets_15',['dimerTargets',['../namespacealexandria.xhtml#aad78f856356701c99256d12a6ee800a0',1,'alexandria']]],
+  ['dipole_16',['dipole',['../structalexandria_1_1gpu_1_1MultipoleStructure.xhtml#a317b1be3b336140448ebe47024e3b4ad',1,'alexandria::gpu::MultipoleStructure']]],
+  ['dist_17',['dist',['../structalexandria_1_1combination_1_1PairCombination.xhtml#a908d9da76a050beaf53199188b026f59',1,'alexandria::combination::PairCombination::dist'],['../structalexandria_1_1dimer__coords.xhtml#aa30ccd24fd148be56220bfeafd1674e1',1,'alexandria::dimer_coords::dist']]],
+  ['done_18',['done',['../structalexandria_1_1gpu_1_1RelaxMolecule.xhtml#a95178fd3278f604cbaa02311448e1199',1,'alexandria::gpu::RelaxMolecule::done'],['../structalexandria_1_1CoordsEnergy.xhtml#af299e2428a24be98b2586f605b5fc530',1,'alexandria::CoordsEnergy::done']]],
+  ['doubleprecision_19',['doublePrecision',['../structalexandria_1_1ConformationData.xhtml#a5c262c56de5ac865427ef65719d7a85d',1,'alexandria::ConformationData']]],
+  ['dx_20',['dx',['../structalexandria_1_1ShellRelaxation.xhtml#aad7f701880c5cb9b59ca43dcbc675086',1,'alexandria::ShellRelaxation']]],
+  ['dxforce_21',['dxForce',['../structalexandria_1_1ShellRelaxation.xhtml#adaa3f7584d97794e867a9a09345f3b93',1,'alexandria::ShellRelaxation']]],
+  ['dxfprev_22',['dxfPrev',['../structalexandria_1_1gpu_1_1anonymous__namespace_02relaxation_8cpp_03_1_1FragmentState.xhtml#a0cdebd55553924616759afb4a6bba5dc',1,'alexandria::gpu::anonymous_namespace{relaxation.cpp}::FragmentState']]]
+];

@@ -1,0 +1,5 @@
+<map id="alexandria::Harmonics" name="alexandria::Harmonics">
+<area shape="rect" id="Node000001" title="Harmonic frequencies or intensities. Distinction between the two is through the MolPropObservable." alt="" coords="23,81,191,109"/>
+<area shape="rect" id="Node000002" href="$classalexandria_1_1GenericProperty.xhtml" title="Generic molecular property base clase." alt="" coords="5,5,209,33"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="109,47,109,82,105,79,105,51"/>
+</map>

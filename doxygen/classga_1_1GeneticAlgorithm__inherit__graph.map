@@ -1,0 +1,9 @@
+<map id="ga::GeneticAlgorithm" name="ga::GeneticAlgorithm">
+<area shape="rect" id="Node000001" title="Class which encapsulates a genetic algorithm." alt="" coords="122,5,281,33"/>
+<area shape="rect" id="Node000002" href="$classga_1_1HybridGAMC.xhtml" title="Genetic algorithm with selection, crossover and mutation, used for both the GA and the HYBRID optimiz..." alt="" coords="5,90,134,117"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="170,42,92,91,89,87,165,41"/>
+<area shape="rect" id="Node000003" href="$classga_1_1MCMC.xhtml" title="Optimizer that evolves force field parameters by a Markov chain Monte Carlo (MCMC) algorithm,..." alt="" coords="158,90,245,117"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="203,47,204,91,199,88,200,51"/>
+<area shape="rect" id="Node000004" href="$classga_1_1anonymous__namespace_02operatorsTest_8cpp_03_1_1StaticGA.xhtml" title="A genetic algorithm that does not evolve." alt="" coords="269,81,486,126"/>
+<area shape="poly" id="edge3_Node000001_Node000004" title=" " alt="" coords="244,37,333,80,328,81,243,43"/>
+</map>

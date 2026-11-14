@@ -1,0 +1,5 @@
+<map id="ga::Individual" name="ga::Individual">
+<area shape="rect" id="Node000001" title="Abstract individual for genetic algorithms." alt="" coords="47,5,156,33"/>
+<area shape="rect" id="Node000002" href="$classalexandria_1_1ACMIndividual.xhtml" title="An individual for the Alexandria Charge Model (ACM) It has its own force field parameters and handles..." alt="" coords="5,81,198,109"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="103,47,104,82,99,80,100,51"/>
+</map>

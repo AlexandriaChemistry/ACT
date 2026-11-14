@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>3.5. Sensitivity Analysis &#8212; ACT 1.2b documentation</title>
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=03e43079" />
+    <link rel="stylesheet" type="text/css" href="../_static/classic.css?v=2bf1fcf8" />
+    <link rel="stylesheet" type="text/css" href="../_static/mystnb.11b39860a7a0cbfd473a3ad8a317855267ff0bd372690045ca344a6b62be495e.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="../_static/togglebutton.css?v=9c3e77be" />
+    <link rel="stylesheet" type="text/css" href="../_static/sphinx_lesson.css?v=e9df6548" />
+    <link rel="stylesheet" type="text/css" href="../_static/term_role_formatting.css?v=4194e21c" />
+    <link rel="stylesheet" type="text/css" href="../_static/sphinx_rtd_theme_ext_color_contrast.css?v=01954304" />
+    
+    <script src="../_static/documentation_options.js?v=00cc29cc"></script>
+    <script src="../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="../_static/copybutton.js?v=6dbb43f8"></script>
+    <script src="../_static/minipres.js?v=a0d29692"></script>
+    <script>let toggleHintShow = 'Click to show';</script>
+    <script>let toggleHintHide = 'Click to hide';</script>
+    <script>let toggleOpenOnPrint = 'true';</script>
+    <script src="../_static/togglebutton.js?v=b8b12719"></script>
+    <script>var togglebuttonSelector = '.toggle, .admonition.dropdown';</script>
+    <script>window.MathJax = {"options": {"processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
+    <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="3.6. Force field design" href="ffdesign.html" />
+    <link rel="prev" title="3.4. Fitness function" href="fitness.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="Related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="ffdesign.html" title="3.6. Force field design"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="fitness.html" title="3.4. Fitness function"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">ACT 1.2b documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="header.html" accesskey="U"><span class="section-number">3. </span>Reference Manual</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href=""><span class="section-number">3.5. </span>Sensitivity Analysis</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <section id="sensitivity-analysis">
+<h1><span class="section-number">3.5. </span>Sensitivity Analysis<a class="headerlink" href="#sensitivity-analysis" title="Link to this heading">¶</a></h1>
+<p>The sensitivity analysis is a post-optimization tool that evaluates how sensitive
+the total chi-squared (<span class="math notranslate nohighlight">\(\chi^2\)</span>) deviation is to small changes in each
+individual force field parameter and, optionally, in each pair of parameters. It
+helps identify which parameters have the most influence on the fitting quality,
+which parameters are correlated, and whether the optimization has converged to a
+well-defined minimum.</p>
+<p>The sensitivity analysis runs automatically after parameter optimization. The
+<em>-sensitivity</em> option selects it: <em>1D</em> (the default) changes each parameter on its
+own, <em>2D</em> also changes every pair of parameters, and <em>No</em> disables the analysis. The
+analysis can also be run on an existing force field without re-training by combining
+it with the <em>-nooptimize</em> and <em>-norandom_init</em> flags.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The sensitivity analysis is only available with the MCMC and HYBRID optimizers.
+It is not supported with the Genetic Algorithm (<em>-optimizer GA</em>).</p>
+</div>
+<section id="running-sensitivity-analysis">
+<h2><span class="section-number">3.5.1. </span>Running Sensitivity Analysis<a class="headerlink" href="#running-sensitivity-analysis" title="Link to this heading">¶</a></h2>
+<p>The sensitivity analysis runs automatically after training with MCMC or HYBRID. To
+disable it, pass <em>-sensitivity No</em>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">alexandria</span> <span class="n">train_ff</span> <span class="o">-</span><span class="n">sensitivity</span> <span class="n">No</span> <span class="o">-</span><span class="n">optimizer</span> <span class="n">MCMC</span> <span class="p">[</span><span class="n">other</span> <span class="n">flags</span><span class="o">...</span><span class="p">]</span>
+</pre></div>
+</div>
+<p>To analyze an existing force field without re-training, use:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">alexandria</span> <span class="n">train_ff</span> <span class="o">-</span><span class="n">nooptimize</span> <span class="o">-</span><span class="n">norandom_init</span> \
+    <span class="o">-</span><span class="n">fc_inter</span> <span class="o">-</span><span class="n">fit</span> <span class="s1">&#39;param1 param2 param3&#39;</span> <span class="p">[</span><span class="n">other</span> <span class="n">flags</span><span class="o">...</span><span class="p">]</span>
+</pre></div>
+</div>
+<p>Here, <em>-fc_inter</em> selects intermolecular energy as the fitting target (alternatively
+<em>-fc_epot</em> for intramolecular energy), and <em>-fit</em> specifies the space-separated
+names of the parameters to analyze. Add <em>-sensitivity 2D</em> for the two-dimensional
+analysis, and <em>-sensout</em> to choose the name of the output file.</p>
+<p>The analysis is done for the parameters as they are. Parameters that are zero in a
+force field that is not trained yet, like the Lennard-Jones parameters of a
+template force field, may not change <span class="math notranslate nohighlight">\(\chi^2\)</span> at all; they are reported as
+<em>flat</em>, see below.</p>
+</section>
+<section id="algorithm">
+<h2><span class="section-number">3.5.2. </span>Algorithm<a class="headerlink" href="#algorithm" title="Link to this heading">¶</a></h2>
+<p>For each trainable force field parameter <span class="math notranslate nohighlight">\(p_i\)</span>, the algorithm evaluates
+<span class="math notranslate nohighlight">\(\chi^2\)</span> at three nearby points, one of which is the parameter itself:</p>
+<ul class="simple">
+<li><p><span class="math notranslate nohighlight">\(p_i - \delta p,\; p_i,\; p_i + \delta p\)</span> if these are within the bounds</p></li>
+<li><p><span class="math notranslate nohighlight">\(p_i,\; p_i + \delta p,\; p_i + 2\delta p\)</span> if <span class="math notranslate nohighlight">\(p_i - \delta p\)</span> is below the lower bound</p></li>
+<li><p><span class="math notranslate nohighlight">\(p_i - 2\delta p,\; p_i - \delta p,\; p_i\)</span> if <span class="math notranslate nohighlight">\(p_i + \delta p\)</span> is above the upper bound</p></li>
+</ul>
+<p>where <span class="math notranslate nohighlight">\(\delta p = (p_\mathrm{upper} - p_\mathrm{lower}) / 200\)</span> (0.5% of
+the allowed range) and <span class="math notranslate nohighlight">\(p_\mathrm{lower}\)</span>, <span class="math notranslate nohighlight">\(p_\mathrm{upper}\)</span> are the
+allowed bounds for the parameter. The <span class="math notranslate nohighlight">\(\chi^2\)</span> of the parameter itself is
+that of the current parameter set, so two evaluations are needed per parameter.</p>
+<p>The three <span class="math notranslate nohighlight">\((p,\,\chi^2)\)</span> pairs are then fit to a parabola</p>
+<div class="math notranslate nohighlight">
+\[\chi^2(p) = a \cdot p^2 + b \cdot p + c\]</div>
+<p>using least-squares regression. The fit is done in coordinates centred on
+<span class="math notranslate nohighlight">\(p_i\)</span> and scaled by <span class="math notranslate nohighlight">\(\delta p\)</span>, such that it stays accurate for
+parameters with narrow bounds, and converted to <span class="math notranslate nohighlight">\(a, b, c\)</span> afterwards. A
+curvature smaller than the rounding errors of <span class="math notranslate nohighlight">\(\chi^2\)</span> is set to zero. If
+<span class="math notranslate nohighlight">\(\chi^2\)</span> is the same at all three points, the parameter is <em>flat</em>: it does
+not change <span class="math notranslate nohighlight">\(\chi^2\)</span> here, and has neither curvature nor slope. The minimum
+of this parabola is located at</p>
+<div class="math notranslate nohighlight">
+\[p_\mathrm{opt} = -\frac{b}{2a}, \qquad
+\chi^2_\mathrm{min} = a\, p_\mathrm{opt}^2 + b\, p_\mathrm{opt} + c.\]</div>
+<p>All other parameters are kept at their trained values while each parameter is
+perturbed in turn, so the analysis captures the <em>local</em> sensitivity around the
+training solution. The analysis is performed on the training set only.</p>
+<p>A parameter is <em>converged</em> if</p>
+<ol class="arabic simple">
+<li><p>the parabola curves upwards, <span class="math notranslate nohighlight">\(a &gt; 0\)</span>, such that it has a minimum, and</p></li>
+<li><p>the parameter is within 5% of its allowed range of that minimum,
+<span class="math notranslate nohighlight">\(|p_i - p_\mathrm{opt}| \le 0.05\,(p_\mathrm{upper} - p_\mathrm{lower})\)</span>.</p></li>
+</ol>
+<p>Here <span class="math notranslate nohighlight">\(p_\mathrm{opt}\)</span> is limited to the bounds, such that a parameter at a
+bound is converged if the minimum of the parabola lies beyond that bound. The
+parameter set is in a minimum if all parameters are converged.</p>
+</section>
+<section id="two-dimensional-analysis">
+<h2><span class="section-number">3.5.3. </span>Two-dimensional analysis<a class="headerlink" href="#two-dimensional-analysis" title="Link to this heading">¶</a></h2>
+<p>Each parameter on its own can be at the minimum of its parabola while the
+parameter set is not in a minimum: two strongly correlated parameters form a
+valley in which each one is optimal given the other, and a saddle point looks like
+a minimum along each axis. With <em>-sensitivity 2D</em> every pair of parameters
+<span class="math notranslate nohighlight">\((p_i, p_j)\)</span> is analysed as well, on the <span class="math notranslate nohighlight">\(3 \times 3\)</span> grid of the
+three values of each parameter from the one-dimensional analysis. Five points of
+the grid are known from that analysis, the four corners, where both parameters
+differ from their own value, are computed. The surface is described as the sum of
+the two parabolas plus a coupling term</p>
+<div class="math notranslate nohighlight">
+\[\chi^2(x, y) \approx P_i(x) + P_j(y) - \chi^2_0 + a_{ij}\,(x - p_i)(y - p_j)\]</div>
+<p>where <span class="math notranslate nohighlight">\(P_i\)</span> and <span class="math notranslate nohighlight">\(P_j\)</span> are the parabolas of the parameters and
+<span class="math notranslate nohighlight">\(\chi^2_0\)</span> is <span class="math notranslate nohighlight">\(\chi^2\)</span> of the parameter set. The coupling is fitted to
+what the parabolas do not describe at the corners,</p>
+<div class="math notranslate nohighlight">
+\[a_{ij} = \frac{\sum_k r_k\,\Delta x_k \Delta y_k}{\sum_k (\Delta x_k \Delta y_k)^2},
+\qquad r_k = \chi^2_k - \left[P_i(x_k) + P_j(y_k) - \chi^2_0\right]\]</div>
+<p>with <span class="math notranslate nohighlight">\(\Delta x_k = x_k - p_i\)</span> and <span class="math notranslate nohighlight">\(\Delta y_k = y_k - p_j\)</span>. On a symmetric
+grid this is the mixed central difference, and it is exact for a quadratic
+surface, also at bounds. The root mean square of the corners that the surface does
+not describe is reported as <em>corner_rms</em>; a large value means that <span class="math notranslate nohighlight">\(\chi^2\)</span> is
+not quadratic on the scale of <span class="math notranslate nohighlight">\(\delta p\)</span>. The Hessian and the gradient of the
+pair at the parameter set are</p>
+<div class="math notranslate nohighlight">
+\[\begin{split}H = \begin{pmatrix} 2a_i &amp; a_{ij} \\ a_{ij} &amp; 2a_j \end{pmatrix}, \qquad
+g = \begin{pmatrix} 2a_i p_i + b_i \\ 2a_j p_j + b_j \end{pmatrix}, \qquad
+\rho_{ij} = \frac{a_{ij}}{2\sqrt{a_i a_j}}\end{split}\]</div>
+<p>where the dimensionless coupling <span class="math notranslate nohighlight">\(\rho_{ij}\)</span> is defined if both curvatures are
+positive, and is between -1 and 1 for a minimum. The surface of a pair is</p>
+<ul class="simple">
+<li><p>a <em>minimum</em> if both curvatures and the determinant of <span class="math notranslate nohighlight">\(H\)</span> are positive,
+that is <span class="math notranslate nohighlight">\(|\rho_{ij}| &lt; 1\)</span>,</p></li>
+<li><p>a <em>saddle</em> if the determinant is negative,</p></li>
+<li><p>a <em>maximum</em> if both curvatures are negative and the determinant is positive,</p></li>
+<li><p><em>degenerate</em> if a curvature is zero, or the determinant is zero compared to its
+terms, for instance for a flat parameter or a valley without a minimum.</p></li>
+</ul>
+<p>A pair is <em>converged</em> if its surface is a minimum, and both parameters are within
+5% of their range of the minimum of the surface within the bounds. If the
+stationary point <span class="math notranslate nohighlight">\(p - H^{-1} g\)</span> lies outside the bounds, that minimum is on an
+edge of the bounds, where the surface is a parabola in the other parameter. In 2D
+the parameter set is in a minimum if all parameters and all pairs are converged.
+The analysis takes <span class="math notranslate nohighlight">\(2N\)</span> evaluations of <span class="math notranslate nohighlight">\(\chi^2\)</span> in 1D and <span class="math notranslate nohighlight">\(2N^2\)</span>
+in 2D for <span class="math notranslate nohighlight">\(N\)</span> parameters:</p>
+<table class="docutils align-default" id="id1">
+<caption><span class="caption-number">Table 3.5 </span><span class="caption-text">Number of evaluations of <span class="math notranslate nohighlight">\(\chi^2\)</span> of the training set</span><a class="headerlink" href="#id1" title="Link to this table">¶</a></caption>
+<thead>
+<tr class="row-odd"><th class="head"><p>Parameters <em>N</em></p></th>
+<th class="head"><p>1D</p></th>
+<th class="head"><p>2D</p></th>
+<th class="head"><p>Pairs</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>10</p></td>
+<td><p>20</p></td>
+<td><p>200</p></td>
+<td><p>45</p></td>
+</tr>
+<tr class="row-odd"><td><p>42</p></td>
+<td><p>84</p></td>
+<td><p>3,528</p></td>
+<td><p>861</p></td>
+</tr>
+<tr class="row-even"><td><p>100</p></td>
+<td><p>200</p></td>
+<td><p>20,000</p></td>
+<td><p>4,950</p></td>
+</tr>
+</tbody>
+</table>
+<p>They are divided over the master and the middlemen. The Hessian of all parameters
+follows from the pairs as well. It is scaled by the ranges of the parameters,
+<span class="math notranslate nohighlight">\(H_{ij} (p^\mathrm{upper}_i - p^\mathrm{lower}_i)(p^\mathrm{upper}_j - p^\mathrm{lower}_j)\)</span>,
+such that its eigenvalues do not depend on the units of the parameters, and the
+analysis reports whether it is positive definite, its extreme eigenvalues and the
+largest component of the Newton step <span class="math notranslate nohighlight">\(-H^{-1} g\)</span> relative to the range of the
+parameter. All pairs can be minima while the Hessian of all parameters is not
+positive definite, so this is a stricter test; it is reported but not used for the
+convergence.</p>
+</section>
+<section id="convergence-during-training">
+<h2><span class="section-number">3.5.4. </span>Convergence during training<a class="headerlink" href="#convergence-during-training" title="Link to this heading">¶</a></h2>
+<p>During training with the HYBRID optimizer, the <em>-max_local_minimum_generations</em>
+option stops the training when the best parameter set has been in a minimum for
+that number of generations. The test for a minimum is two-dimensional with
+<em>-sensitivity 2D</em>, and one-dimensional otherwise, also with <em>-sensitivity No</em>. It is
+done in each generation, so the two-dimensional test costs <span class="math notranslate nohighlight">\(2N^2\)</span> evaluations
+of <span class="math notranslate nohighlight">\(\chi^2\)</span> per generation. With <em>-v 3</em> the log file reports for each
+generation how many parameters, and in 2D pairs, are converged. Adaptive step sizes
+(<em>-adaptive_steps</em>) use the force constants of the one-dimensional analysis.</p>
+</section>
+<section id="output-format">
+<h2><span class="section-number">3.5.5. </span>Output Format<a class="headerlink" href="#output-format" title="Link to this heading">¶</a></h2>
+<p>The results are written to a JSON file, set with <em>-sensout</em> (default
+<em>sensitivity.json</em>). The log file only gets a summary:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">Sensitivity</span> <span class="n">analysis</span> <span class="p">(</span><span class="mi">1</span><span class="n">D</span><span class="p">)</span> <span class="n">of</span> <span class="mi">42</span> <span class="n">parameters</span> <span class="n">on</span> <span class="n">the</span> <span class="n">Train</span> <span class="nb">set</span><span class="p">,</span> <span class="mi">84</span> <span class="n">chi2</span> <span class="n">evaluations</span><span class="p">,</span> <span class="n">chi2_0</span> <span class="o">=</span> <span class="mf">0.482</span>
+<span class="n">Converged</span><span class="p">:</span> <span class="mi">41</span><span class="o">/</span><span class="mi">42</span> <span class="n">parameters</span><span class="p">,</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">a</span> <span class="n">minimum</span><span class="o">.</span>
+<span class="n">Details</span> <span class="n">of</span> <span class="n">the</span> <span class="n">sensitivity</span> <span class="n">analysis</span> <span class="n">are</span> <span class="ow">in</span> <span class="n">sensitivity</span><span class="o">.</span><span class="n">json</span>
+</pre></div>
+</div>
+<p>or, in 2D:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">Sensitivity</span> <span class="n">analysis</span> <span class="p">(</span><span class="mi">2</span><span class="n">D</span><span class="p">)</span> <span class="n">of</span> <span class="mi">42</span> <span class="n">parameters</span> <span class="ow">and</span> <span class="mi">861</span> <span class="n">pairs</span> <span class="n">on</span> <span class="n">the</span> <span class="n">Train</span> <span class="nb">set</span><span class="p">,</span> <span class="mi">3528</span> <span class="n">chi2</span> <span class="n">evaluations</span><span class="p">,</span> <span class="n">chi2_0</span> <span class="o">=</span> <span class="mf">0.482</span>
+<span class="n">Converged</span><span class="p">:</span> <span class="mi">41</span><span class="o">/</span><span class="mi">42</span> <span class="n">parameters</span><span class="p">,</span> <span class="mi">850</span><span class="o">/</span><span class="mi">861</span> <span class="n">pairs</span> <span class="p">(</span><span class="mi">858</span> <span class="n">minimum</span><span class="p">,</span> <span class="mi">3</span> <span class="n">saddle</span><span class="p">,</span> <span class="mi">0</span> <span class="n">maximum</span><span class="p">,</span> <span class="mi">0</span> <span class="n">degenerate</span><span class="p">),</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">a</span> <span class="n">minimum</span><span class="o">.</span>
+<span class="n">The</span> <span class="n">Hessian</span> <span class="n">of</span> <span class="nb">all</span> <span class="n">parameters</span> <span class="ow">is</span> <span class="n">positive</span> <span class="n">definite</span><span class="o">.</span>
+<span class="n">Details</span> <span class="n">of</span> <span class="n">the</span> <span class="n">sensitivity</span> <span class="n">analysis</span> <span class="n">are</span> <span class="ow">in</span> <span class="n">sensitivity</span><span class="o">.</span><span class="n">json</span>
+</pre></div>
+</div>
+<p>If there are flat parameters, a line says how many.</p>
+<p>and the json output of <em>train_ff</em> (<em>-json</em>) gets the same summary under the key
+<em>sensitivity</em>, with the name of the file. The file has the following structure,
+shown here for one parameter:</p>
+<div class="highlight-json notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;sensitivity&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;mode&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;1D&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;dataset&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Train&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;chi2_0&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">0.482</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;n_parameters&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">42</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;n_evaluations&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">84</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;tolerance_fraction&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">0.05</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;minimum&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;n_parameters_converged&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">41</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;n_parameters_flat&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;parameters&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">      </span><span class="p">{</span>
+<span class="w">        </span><span class="nt">&quot;index&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;OW epsilon&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;particle&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;OW&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;parameter&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;epsilon&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;lower&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">0.0</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;upper&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">20.0</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;p_orig&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">5.0</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;chi2_orig&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">0.482</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;points&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nt">&quot;p&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">4.9</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;chi2&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">0.496</span><span class="w"> </span><span class="p">},</span>
+<span class="w">                    </span><span class="p">{</span><span class="w"> </span><span class="nt">&quot;p&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">5.0</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;chi2&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">0.482</span><span class="w"> </span><span class="p">},</span>
+<span class="w">                    </span><span class="p">{</span><span class="w"> </span><span class="nt">&quot;p&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">5.1</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;chi2&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">0.495</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="p">],</span>
+<span class="w">        </span><span class="nt">&quot;fit_ok&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;flat&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;a&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">1.35</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;b&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">-13.6</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;c&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">34.4</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;p_min&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">5.002</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;chi2_min&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">0.482</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;p_min_bounded&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">5.002</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;converged&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;delta&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">0.1</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;force_constant&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">0.054</span>
+<span class="w">      </span><span class="p">}</span>
+<span class="w">    </span><span class="p">]</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>The fields are:</p>
+<ul class="simple">
+<li><p><strong>mode</strong> - the analysis that was done, <em>1D</em> or <em>2D</em>.</p></li>
+<li><p><strong>chi2_0</strong> - the <span class="math notranslate nohighlight">\(\chi^2\)</span> of the current (trained) parameter set before
+any perturbation.</p></li>
+<li><p><strong>n_evaluations</strong> - the number of <span class="math notranslate nohighlight">\(\chi^2\)</span> computations, not counting
+<em>chi2_0</em>.</p></li>
+<li><p><strong>minimum</strong> - whether all parameters are converged, see above.</p></li>
+<li><p><strong>name</strong>, <strong>particle</strong>, <strong>parameter</strong> - the force field parameter.</p></li>
+<li><p><strong>lower</strong>, <strong>upper</strong>, <strong>delta</strong> - its bounds and the step
+<span class="math notranslate nohighlight">\(\delta p\)</span>.</p></li>
+<li><p><strong>points</strong> - the parameter values at which <span class="math notranslate nohighlight">\(\chi^2\)</span> was computed, in
+increasing order, with their <span class="math notranslate nohighlight">\(\chi^2\)</span>.</p></li>
+<li><p><strong>a, b, c</strong> - coefficients of the fitted parabola
+<span class="math notranslate nohighlight">\(\chi^2(p) = a p^2 + b p + c\)</span>. The fit is done in coordinates
+centred on the parameter and scaled by the step, such that it stays
+accurate for parameters with narrow bounds. <strong>fit_ok</strong> is false if the
+parabola could not be fitted.</p></li>
+<li><p><strong>p_min</strong>, <strong>chi2_min</strong> - the extremum of the parabola, <em>null</em> if the
+parabola is a straight line. <strong>p_min_bounded</strong> is <em>p_min</em> limited to the
+bounds.</p></li>
+<li><p><strong>flat</strong> - whether <span class="math notranslate nohighlight">\(\chi^2\)</span> is the same at all points, and
+<strong>n_parameters_flat</strong> the number of flat parameters.</p></li>
+<li><p><strong>converged</strong> - whether the parameter is converged, see above.</p></li>
+<li><p><strong>force_constant</strong> - the dimensionless force constant <span class="math notranslate nohighlight">\(a/p^2\)</span>, used for
+adaptive step sizes.</p></li>
+</ul>
+<p>In 2D the file has these as well:</p>
+<div class="highlight-json notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;sensitivity&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;n_pairs&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">861</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;n_pairs_converged&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">850</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;pair_shapes&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nt">&quot;minimum&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">858</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;saddle&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">3</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;maximum&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;degenerate&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="p">},</span>
+<span class="w">    </span><span class="nt">&quot;pairs&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">      </span><span class="p">{</span>
+<span class="w">        </span><span class="nt">&quot;i&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;j&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;names&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="w"> </span><span class="s2">&quot;OW epsilon&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;OW sigma&quot;</span><span class="w"> </span><span class="p">],</span>
+<span class="w">        </span><span class="nt">&quot;grid&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nt">&quot;p_i&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="w"> </span><span class="mf">4.9</span><span class="p">,</span><span class="w"> </span><span class="mf">5.0</span><span class="p">,</span><span class="w"> </span><span class="mf">5.1</span><span class="w"> </span><span class="p">],</span>
+<span class="w">                  </span><span class="nt">&quot;p_j&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="w"> </span><span class="mf">0.312</span><span class="p">,</span><span class="w"> </span><span class="mf">0.315</span><span class="p">,</span><span class="w"> </span><span class="mf">0.318</span><span class="w"> </span><span class="p">],</span>
+<span class="w">                  </span><span class="nt">&quot;chi2&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="w"> </span><span class="p">[</span><span class="w"> </span><span class="mf">0.509</span><span class="p">,</span><span class="w"> </span><span class="mf">0.496</span><span class="p">,</span><span class="w"> </span><span class="mf">0.490</span><span class="w"> </span><span class="p">],</span>
+<span class="w">                            </span><span class="p">[</span><span class="w"> </span><span class="mf">0.488</span><span class="p">,</span><span class="w"> </span><span class="mf">0.482</span><span class="p">,</span><span class="w"> </span><span class="mf">0.484</span><span class="w"> </span><span class="p">],</span>
+<span class="w">                            </span><span class="p">[</span><span class="w"> </span><span class="mf">0.488</span><span class="p">,</span><span class="w"> </span><span class="mf">0.495</span><span class="p">,</span><span class="w"> </span><span class="mf">0.509</span><span class="w"> </span><span class="p">]</span><span class="w"> </span><span class="p">]</span><span class="w"> </span><span class="p">},</span>
+<span class="w">        </span><span class="nt">&quot;a_ij&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">66.1</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;rho&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">0.91</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;corner_rms&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">2.1e-6</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;hessian&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="w"> </span><span class="p">[</span><span class="w"> </span><span class="mf">2.7</span><span class="p">,</span><span class="w"> </span><span class="mf">66.1</span><span class="w"> </span><span class="p">],</span><span class="w"> </span><span class="p">[</span><span class="w"> </span><span class="mf">66.1</span><span class="p">,</span><span class="w"> </span><span class="mf">1960.0</span><span class="w"> </span><span class="p">]</span><span class="w"> </span><span class="p">],</span>
+<span class="w">        </span><span class="nt">&quot;gradient&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="w"> </span><span class="mf">-0.05</span><span class="p">,</span><span class="w"> </span><span class="mf">0.42</span><span class="w"> </span><span class="p">],</span>
+<span class="w">        </span><span class="nt">&quot;shape&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;minimum&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;p_min&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="w"> </span><span class="mf">5.03</span><span class="p">,</span><span class="w"> </span><span class="mf">0.3138</span><span class="w"> </span><span class="p">],</span><span class="w"> </span><span class="nt">&quot;chi2_min&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">0.4818</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;p_min_bounded&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="w"> </span><span class="mf">5.03</span><span class="p">,</span><span class="w"> </span><span class="mf">0.3138</span><span class="w"> </span><span class="p">],</span>
+<span class="w">        </span><span class="nt">&quot;converged&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span>
+<span class="w">      </span><span class="p">}</span>
+<span class="w">    </span><span class="p">],</span>
+<span class="w">    </span><span class="nt">&quot;hessian_diagnostic&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="nt">&quot;positive_definite&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">&quot;eigenvalue_min&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">0.21</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">&quot;eigenvalue_max&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">5.4e3</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">&quot;max_newton_step_fraction&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">0.012</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p><strong>grid</strong> - the values of both parameters and <span class="math notranslate nohighlight">\(\chi^2\)</span> on the grid,
+<em>chi2[k][l]</em> at <em>p_i[k]</em> and <em>p_j[l]</em>.</p></li>
+<li><p><strong>a_ij</strong>, <strong>rho</strong>, <strong>corner_rms</strong>, <strong>hessian</strong>, <strong>gradient</strong>, <strong>shape</strong> - the
+coupling, the dimensionless coupling, the deviation of the corners, the Hessian,
+the gradient and the shape of the pair, see above.</p></li>
+<li><p><strong>p_min</strong>, <strong>chi2_min</strong> - the stationary point of a minimum and its
+<span class="math notranslate nohighlight">\(\chi^2\)</span>, <strong>p_min_bounded</strong> the minimum within the bounds, all <em>null</em> if
+the pair is not a minimum.</p></li>
+<li><p><strong>hessian_diagnostic</strong> - the Hessian of all parameters, see above.</p></li>
+</ul>
+<p>Numbers are written with full precision, flags as <em>true</em> or <em>false</em> and undefined
+values as <em>null</em>.</p>
+</section>
+<section id="interpretation">
+<h2><span class="section-number">3.5.6. </span>Interpretation<a class="headerlink" href="#interpretation" title="Link to this heading">¶</a></h2>
+<p>The coefficient <em>a</em> of the fitted parabola quantifies how sharply <span class="math notranslate nohighlight">\(\chi^2\)</span>
+responds to changes in the parameter:</p>
+<ul class="simple">
+<li><p><strong>Large</strong> <span class="math notranslate nohighlight">\(|a|\)</span> - the <span class="math notranslate nohighlight">\(\chi^2\)</span> surface is steeply curved near the
+current value; the parameter is <em>sensitive</em> and must be determined accurately.
+A large <em>a</em> also indicates a well-defined minimum.</p></li>
+<li><p><strong>Small</strong> <span class="math notranslate nohighlight">\(|a| \approx 0\)</span> - the <span class="math notranslate nohighlight">\(\chi^2\)</span> surface is nearly flat; the
+parameter has little influence on the training targets in the explored range. Such
+parameters may be poorly constrained by the data and are candidates for fixing at
+a reasonable value or removing from the fit.</p></li>
+</ul>
+<p>The estimated minimum (<strong>pmin</strong>, <strong>chi2min</strong>) gives a first-order estimate of the
+optimal parameter value and the achievable <span class="math notranslate nohighlight">\(\chi^2\)</span> from the local curvature.
+If <em>pmin</em> is far from the trained value, the optimization may not have fully
+converged for that parameter, or the training data does not strongly constrain it.
+When <em>a</em> is very small (insensitive parameter), the estimated <em>pmin</em> extrapolates
+far outside the sampled range and should be treated with caution.</p>
+<p>If the fitted parabola has <em>negative</em> curvature (<span class="math notranslate nohighlight">\(a &lt; 0\)</span>), the current
+parameter value sits at a local <em>maximum</em> of the chi-squared surface, which suggests
+an ill-conditioned or degenerate optimization landscape for that parameter.</p>
+<p>A <em>flat</em> parameter does not influence the training targets at all at its current
+value. In a trained force field it is not constrained by the data; in a force field
+that is not trained yet it is often zero together with a parameter it multiplies,
+like <span class="math notranslate nohighlight">\(\sigma\)</span> with <span class="math notranslate nohighlight">\(\epsilon = 0\)</span>, or a virtual site without charge. All
+pairs with a flat parameter are degenerate.</p>
+<p>In 2D, <span class="math notranslate nohighlight">\(\rho_{ij}\)</span> close to 1 or -1 means that two parameters are strongly
+correlated: the data constrain a combination of them better than each one, and the
+trained values of each may not be meaningful on their own. A <em>saddle</em> means that the
+parameter set is not at a minimum even if both parameters are converged on their
+own; the training can still lower <span class="math notranslate nohighlight">\(\chi^2\)</span> by changing both.</p>
+<p>The sensitivity analysis is particularly useful for:</p>
+<ul class="simple">
+<li><p>Identifying insensitive (poorly constrained) parameters that can be fixed or
+removed from the fitting.</p></li>
+<li><p>Identifying correlated parameters, with the two-dimensional analysis.</p></li>
+<li><p>Checking whether the optimization has converged near a well-defined minimum.</p></li>
+<li><p>Guiding subsequent optimization runs by revealing parameters that may benefit from
+a broader or finer search range.</p></li>
+</ul>
+</section>
+</section>
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../index.html">
+              <img class="logo" src="../_static/AClogo.png" alt="Logo of ACT"/>
+            </a></p>
+<h3><a href="../index.html">Table of Contents</a></h3>
+<p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../preface/preface.html">1. Preface</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../userman/header.html">2. User Manual</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="header.html">3. Reference Manual</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="energy.html">3.1. Energy Function</a></li>
+<li class="toctree-l2"><a class="reference internal" href="integration.html">3.2. Shell Relaxation and Integration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="training.html">3.3. Force Field Training Algorithms</a></li>
+<li class="toctree-l2"><a class="reference internal" href="fitness.html">3.4. Fitness function</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">3.5. Sensitivity Analysis</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#running-sensitivity-analysis">3.5.1. Running Sensitivity Analysis</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#algorithm">3.5.2. Algorithm</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#two-dimensional-analysis">3.5.3. Two-dimensional analysis</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#convergence-during-training">3.5.4. Convergence during training</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#output-format">3.5.5. Output Format</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#interpretation">3.5.6. Interpretation</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="ffdesign.html">3.6. Force field design</a></li>
+<li class="toctree-l2"><a class="reference internal" href="targets.html">3.7. Force Field Training Targets</a></li>
+<li class="toctree-l2"><a class="reference internal" href="targets.html#parameters-for-force-field-training">3.8. Parameters for Force Field Training</a></li>
+<li class="toctree-l2"><a class="reference internal" href="data.html">3.9. Training Data</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../jupyter/header.html">4. Interactive Notebooks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../devman/header.html">5. Developer Manual</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../references.html">6. References</a></li>
+</ul>
+
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/refman/sensitivity.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<search id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="Related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="ffdesign.html" title="3.6. Force field design"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="fitness.html" title="3.4. Fitness function"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">ACT 1.2b documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="header.html" ><span class="section-number">3. </span>Reference Manual</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href=""><span class="section-number">3.5. </span>Sensitivity Analysis</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+    &#169; Copyright 2026, ACT development team.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 8.2.3.
+    </div>
+  </body>
+</html>

@@ -1,0 +1,5 @@
+<map id="alexandria::SetRecipe" name="alexandria::SetRecipe">
+<area shape="rect" id="Node000001" title="How to compute one set of parameters from the values The parameters are in the order of the potential..." alt="" coords="13,123,177,151"/>
+<area shape="rect" id="Node000002" href="$structalexandria_1_1combination_1_1PairCombination.xhtml" title="How the parameters of a potential are combined into those of a pair, see pairParameters." alt="" coords="5,5,185,50"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="97,64,98,123,92,122,93,67"/>
+</map>

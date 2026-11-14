@@ -1,0 +1,17 @@
+<map id="alexandria::gpu::SystemBlock" name="alexandria::gpu::SystemBlock">
+<area shape="rect" id="Node000001" title="A topology and its conformations, resident on the GPU, see createSystem The layout is that of compute..." alt="" coords="682,145,897,173"/>
+<area shape="rect" id="Node000002" href="$structalexandria_1_1gpu_1_1InteractionList.xhtml" title="A list of interactions of one potential in a block, see SystemBlock The interactions without shells a..." alt="" coords="314,33,538,61"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="552,59,606,71,659,86,720,114,770,145,765,145,717,118,657,91,605,76,552,65"/>
+<area shape="rect" id="Node000003" href="$structalexandria_1_1gpu_1_1PairEntry.xhtml" title="A pair interaction with prepared parameters, see PairKernel For the potentials other than Coulomb,..." alt="" coords="18,5,206,33"/>
+<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="221,26,316,36,311,39,223,32"/>
+<area shape="rect" id="Node000004" href="$structalexandria_1_1gpu_1_1BondedEntry.xhtml" title="A bonded interaction with prepared parameters, see BondedKernel." alt="" coords="5,61,219,89"/>
+<area shape="poly" id="edge3_Node000002_Node000004" title=" " alt="" coords="233,67,289,63,327,61,322,63,290,68,235,72"/>
+<area shape="rect" id="Node000005" href="$structalexandria_1_1gpu_1_1VsiteEntry.xhtml" title="A virtual site with prepared parameters The parents are ordered as the construction routines of vsite..." alt="" coords="327,89,524,117"/>
+<area shape="poly" id="edge4_Node000001_Node000005" title=" " alt="" coords="540,113,658,130,726,145,720,145,658,135,540,118"/>
+<area shape="rect" id="Node000006" href="$structalexandria_1_1gpu_1_1ForceShell.xhtml" title="A shell whose force is part of the convergence criterion, see shellForces2 in forcecomputer...." alt="" coords="327,145,524,173"/>
+<area shape="poly" id="edge5_Node000001_Node000006" title=" " alt="" coords="540,157,684,159,679,160,540,162"/>
+<area shape="rect" id="Node000007" href="$structalexandria_1_1gpu_1_1MovingShell.xhtml" title="A shell that is moved, see ForceComputer::updateShells." alt="" coords="321,201,531,229"/>
+<area shape="poly" id="edge6_Node000001_Node000007" title=" " alt="" coords="546,202,658,187,730,174,735,173,658,192,547,207"/>
+<area shape="rect" id="Node000008" href="$structalexandria_1_1gpu_1_1ShellFragment.xhtml" title="The shells of a monomer, which converge together." alt="" coords="314,257,538,285"/>
+<area shape="poly" id="edge7_Node000001_Node000008" title=" " alt="" coords="553,256,606,246,657,231,719,202,766,174,771,173,721,207,659,236,607,251,554,261"/>
+</map>

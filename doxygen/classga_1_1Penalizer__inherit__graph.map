@@ -1,0 +1,9 @@
+<map id="ga::Penalizer" name="ga::Penalizer">
+<area shape="rect" id="Node000001" title="Penalizes a population." alt="" coords="5,57,111,85"/>
+<area shape="rect" id="Node000002" href="$classga_1_1CatastrophePenalizer.xhtml" title="A catastrophe happens and a fraction of the population (at random) is randomized." alt="" coords="176,5,360,33"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="125,52,158,43,210,32,205,35,159,48,127,57"/>
+<area shape="rect" id="Node000003" href="$classga_1_1VolumeFractionPenalizer.xhtml" title="Penalizer that punishes the population if its volume is not large enough." alt="" coords="165,57,371,85"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="125,69,167,70,162,72,127,74"/>
+<area shape="rect" id="Node000004" href="$classga_1_1anonymous__namespace_02operatorsTest_8cpp_03_1_1CountingOperator.xhtml" title="Terminator and penalizer that count how often they were asked." alt="" coords="159,110,377,171"/>
+<area shape="poly" id="edge3_Node000001_Node000004" title=" " alt="" coords="117,88,175,108,170,110,117,93"/>
+</map>

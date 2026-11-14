@@ -1,0 +1,19 @@
+<map id="src/act/forcefield/parameterrecipes.h" name="src/act/forcefield/parameterrecipes.h">
+<area shape="rect" id="Node000001" title="Recipes for the parameters of interactions in the units of the program, from the values of the force ..." alt="" coords="94,5,246,50"/>
+<area shape="rect" id="Node000002" title=" " alt="" coords="113,174,179,201"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="92,45,49,66,30,81,14,99,9,112,10,124,17,134,29,144,62,161,101,174,96,177,60,166,26,149,13,138,5,126,3,112,9,97,26,77,46,61,95,41"/>
+<area shape="rect" id="Node000003" title=" " alt="" coords="24,98,74,126"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="137,53,83,91,79,87,140,48"/>
+<area shape="rect" id="Node000004" title=" " alt="" coords="98,98,157,126"/>
+<area shape="poly" id="edge3_Node000001_Node000004" title=" " alt="" coords="160,48,144,85,139,83,158,53"/>
+<area shape="rect" id="Node000005" title=" " alt="" coords="182,98,244,126"/>
+<area shape="poly" id="edge4_Node000001_Node000005" title=" " alt="" coords="182,48,202,84,196,84,181,53"/>
+<area shape="rect" id="Node000006" href="$combinationkernels_8h.xhtml" title="The combination rules as functions for the processor and the GPU." alt="" coords="298,174,549,201"/>
+<area shape="poly" id="edge5_Node000001_Node000006" title=" " alt="" coords="246,34,310,43,374,56,429,73,450,84,464,96,471,113,469,131,449,164,445,160,464,129,466,114,460,100,447,88,427,78,373,61,309,48,247,39"/>
+<area shape="rect" id="Node000008" href="$setrecipe_8h.xhtml" title="A recipe for the parameters of an interaction, for the processor and the GPU." alt="" coords="268,98,451,126"/>
+<area shape="poly" id="edge7_Node000001_Node000008" title=" " alt="" coords="220,48,318,90,313,92,220,53"/>
+<area shape="rect" id="Node000007" title=" " alt="" coords="392,249,455,277"/>
+<area shape="poly" id="edge6_Node000006_Node000007" title=" " alt="" coords="425,200,426,235,421,232,422,204"/>
+<area shape="poly" id="edge8_Node000008_Node000002" title=" " alt="" coords="319,128,195,172,193,167,324,125"/>
+<area shape="poly" id="edge9_Node000008_Node000006" title=" " alt="" coords="372,124,405,162,399,161,370,129"/>
+</map>

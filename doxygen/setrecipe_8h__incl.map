@@ -1,0 +1,9 @@
+<map id="src/act/forcefield/setrecipe.h" name="src/act/forcefield/setrecipe.h">
+<area shape="rect" id="Node000001" title="A recipe for the parameters of an interaction, for the processor and the GPU." alt="" coords="64,5,193,50"/>
+<area shape="rect" id="Node000002" title=" " alt="" coords="5,98,71,126"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="103,53,66,89,62,85,106,48"/>
+<area shape="rect" id="Node000003" href="$combinationkernels_8h.xhtml" title="The combination rules as functions for the processor and the GPU." alt="" coords="94,98,344,126"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="153,48,196,87,191,88,152,53"/>
+<area shape="rect" id="Node000004" title=" " alt="" coords="188,174,250,201"/>
+<area shape="poly" id="edge3_Node000003_Node000004" title=" " alt="" coords="221,124,222,159,217,157,217,128"/>
+</map>

@@ -1,0 +1,7 @@
+<map id="ga::Initializer" name="ga::Initializer">
+<area shape="rect" id="Node000001" title="Abstract class for initializing and randomizing Individual/Genome instances." alt="" coords="5,36,112,64"/>
+<area shape="rect" id="Node000002" href="$classalexandria_1_1ACMInitializer.xhtml" title="Initializes Individual instances as ACMIndividual objects." alt="" coords="192,5,382,33"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="127,38,194,31,189,33,128,43"/>
+<area shape="rect" id="Node000003" href="$classga_1_1anonymous__namespace_02operatorsTest_8cpp_03_1_1MarkInitializer.xhtml" title="Initializer that sets all bases to a fixed value." alt="" coords="160,57,414,102"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="127,56,162,62,157,63,127,61"/>
+</map>

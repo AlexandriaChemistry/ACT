@@ -1,0 +1,5 @@
+<map id="alexandria::gpu::PairBlock" name="alexandria::gpu::PairBlock">
+<area shape="rect" id="Node000001" title="The interactions of one potential of a molecule, see RelaxMolecule." alt="" coords="5,106,196,134"/>
+<area shape="rect" id="Node000002" href="$structalexandria_1_1gpu_1_1PairEntry.xhtml" title="A pair interaction with prepared parameters, see PairKernel For the potentials other than Coulomb,..." alt="" coords="6,5,195,33"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="103,47,103,106,98,105,98,50"/>
+</map>

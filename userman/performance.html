@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>2.4. Getting the best performance from ACT &#8212; ACT 1.2b documentation</title>
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=03e43079" />
+    <link rel="stylesheet" type="text/css" href="../_static/classic.css?v=2bf1fcf8" />
+    <link rel="stylesheet" type="text/css" href="../_static/mystnb.11b39860a7a0cbfd473a3ad8a317855267ff0bd372690045ca344a6b62be495e.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="../_static/togglebutton.css?v=9c3e77be" />
+    <link rel="stylesheet" type="text/css" href="../_static/sphinx_lesson.css?v=e9df6548" />
+    <link rel="stylesheet" type="text/css" href="../_static/term_role_formatting.css?v=4194e21c" />
+    <link rel="stylesheet" type="text/css" href="../_static/sphinx_rtd_theme_ext_color_contrast.css?v=01954304" />
+    
+    <script src="../_static/documentation_options.js?v=00cc29cc"></script>
+    <script src="../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="../_static/copybutton.js?v=6dbb43f8"></script>
+    <script src="../_static/minipres.js?v=a0d29692"></script>
+    <script>let toggleHintShow = 'Click to show';</script>
+    <script>let toggleHintHide = 'Click to hide';</script>
+    <script>let toggleOpenOnPrint = 'true';</script>
+    <script src="../_static/togglebutton.js?v=b8b12719"></script>
+    <script>var togglebuttonSelector = '.toggle, .admonition.dropdown';</script>
+    <script>window.MathJax = {"options": {"processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
+    <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="2.5. MD Simulations with Alexandria Force Fields" href="simulation.html" />
+    <link rel="prev" title="2.3. Using the ACT" href="using.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="Related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="simulation.html" title="2.5. MD Simulations with Alexandria Force Fields"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="using.html" title="2.3. Using the ACT"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">ACT 1.2b documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="header.html" accesskey="U"><span class="section-number">2. </span>User Manual</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href=""><span class="section-number">2.4. </span>Getting the best performance from ACT</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <section id="getting-the-best-performance-from-act">
+<span id="sec-performance"></span><h1><span class="section-number">2.4. </span>Getting the best performance from ACT<a class="headerlink" href="#getting-the-best-performance-from-act" title="Link to this heading">¶</a></h1>
+<p>Training a force field takes most of the computer time spent with ACT, so this chapter is mainly about <em>alexandria train_ff</em>. The run times quoted are examples from our own tests. The best settings depend on the computer and on the training set, so the most useful advice is to do a short test run with a few settings before a long one, see <a class="reference internal" href="#sec-measuring"><span class="std std-ref">Measuring and comparing the run time</span></a>.</p>
+<section id="building-act-for-speed">
+<h2><span class="section-number">2.4.1. </span>Building ACT for speed<a class="headerlink" href="#building-act-for-speed" title="Link to this heading">¶</a></h2>
+<ul class="simple">
+<li><p>Build in single precision, with <em>-DACT_DOUBLE=OFF</em>. The explicit SIMD routines then compute twice as many interactions per instruction, and a GPU can only be used in single precision builds. Energies are still summed in double precision.</p></li>
+<li><p>On a cluster, set <em>ACT_SIMD</em> to the SIMD instructions of the compute nodes if you compile on a head node with another processor, and give the compiler the instructions of the compute nodes in <em>CMAKE_CXX_FLAGS</em>, for instance <em>-march=native</em> when compiling on a compute node.</p></li>
+<li><p>For a GPU, build with <em>-DACT_GPU=SYCL</em>, see the installation chapter.</p></li>
+</ul>
+<p>The section <em>Code used</em> at the start of each log file tells which SIMD instructions, which precision and which GPU the program uses. Check it once on each new computer.</p>
+</section>
+<section id="how-train-ff-uses-the-processes">
+<h2><span class="section-number">2.4.2. </span>How train_ff uses the processes<a class="headerlink" href="#how-train-ff-uses-the-processes" title="Link to this heading">¶</a></h2>
+<p>One process, the master, runs the genetic algorithm. How the others work depends on the size of the population (<em>-pop_size</em>):</p>
+<ul class="simple">
+<li><p><strong>Population no larger than the number of processes.</strong> The processes are divided into one group per individual, a middleman and its helpers, and the molecules of the training set are divided over the processes of a group. Each individual needs the same number of processes, so use a multiple of the population size; otherwise the processes left over are idle, which <em>train_ff</em> warns about. Splitting the molecules over helpers stays efficient down to 4-5 molecules per process <span class="bibtex-citation" id="id1">[<a class="reference internal" href="../references.html#id144" title="David van der Spoel, Julián Marrades, Kristian Kříž, A. Najla Hosseini, Alfred T. Nordman, João Paulo Ataide Martins, Marie-Madeleine Walz, Paul J. van Maaren, and Mohammad M. Ghahremanpour. Evolutionary machine learning of physics-based force fields in high-dimensional parameter-space. Digit. Discovery, 4:1925-1935, 2025. doi:10.1039/d5dd00178a.">1</a>]</span>.</p></li>
+<li><p><strong>Population larger than the number of processes.</strong> This is possible with the GA and HYBRID optimizers. Each process except the master is then a middleman that computes one individual at a time, and gets the next one from the master when it is done. The master itself computes no individuals.</p></li>
+</ul>
+<p>In the second case, a generation ends when the last individual is done. If the number of middlemen does not divide the population, the last round of individuals keeps only some of the middlemen busy, and the others wait. Choose the number of processes such that every middleman computes the same number of individuals: one more than a divisor of the population. For example, a training with a population of 256 on a node with 288 cores (arrhenius, GH200) took:</p>
+<table class="docutils align-default" id="tab-processes">
+<caption><span class="caption-number">Table 2.6 </span><span class="caption-text">Run time of a training with a population of 256, by the number of processes.</span><a class="headerlink" href="#tab-processes" title="Link to this table">¶</a></caption>
+<thead>
+<tr class="row-odd"><th class="head"><p>Processes</p></th>
+<th class="head"><p>Middlemen</p></th>
+<th class="head"><p>Individuals per middleman</p></th>
+<th class="head"><p>Run time (s)</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>64</p></td>
+<td><p>63</p></td>
+<td><p>4 or 5</p></td>
+<td><p>89.1</p></td>
+</tr>
+<tr class="row-odd"><td><p>65</p></td>
+<td><p>64</p></td>
+<td><p>4</p></td>
+<td><p>82.0</p></td>
+</tr>
+<tr class="row-even"><td><p>129</p></td>
+<td><p>128</p></td>
+<td><p>2</p></td>
+<td><p>40.9</p></td>
+</tr>
+</tbody>
+</table>
+<p>With 64 processes, 4 middlemen compute a fifth individual in each generation while the 59 others wait. All three runs gave the same result, which does not depend on the number of processes. In general, use as many processes as there are physical cores, one more than a divisor of the population. At the start, <em>train_ff</em> notes on the terminal and in the log file when the middlemen would share the individuals unevenly, how long they would wait on average, and which numbers of processes avoid it.</p>
+</section>
+<section id="processor-or-gpu">
+<h2><span class="section-number">2.4.3. </span>Processor or GPU?<a class="headerlink" href="#processor-or-gpu" title="Link to this heading">¶</a></h2>
+<p>The GPU computes the training only for <strong>polarizable</strong> force fields, in single precision builds, with <em>train_ff -gpu_resident</em> (the default). Each process then keeps its molecules on the GPU, which computes the interactions, the virtual sites, the relaxation of the shells and the deviations from the reference data, and the charges if they are generated with SQE. The relaxation of the shells repeats the force calculation many times in each evaluation, which is expensive on a processor, and this is where the GPU gains most.</p>
+<p>For force fields <strong>without shells</strong>, the processor computes everything, also in a build with GPU support. Such a training takes the same time with and without <em>-nogpu</em>. Without shells, ACT only recomputes the molecules that a changed parameter affects, and of a dimer only the interactions between its two molecules, so one evaluation is short: about a hundred microseconds on a core for a training set of small dimers in our tests. That is shorter than the time needed just to start the work on a GPU and wait for the result, so for these force fields, use all cores of the node rather than the GPUs.</p>
+</section>
+<section id="training-on-gpus">
+<h2><span class="section-number">2.4.4. </span>Training on GPUs<a class="headerlink" href="#training-on-gpus" title="Link to this heading">¶</a></h2>
+<ul>
+<li><p><strong>Several processes per GPU.</strong> Each process waits for the GPU part of the time, so several processes per GPU keep it busy. On NVIDIA GPUs, start the multi-process service in the job script when several processes share a GPU, see the installation chapter. The service takes at most 48 or 60 processes per GPU, depending on the NVIDIA driver; the ranks beyond that compute without the GPU.</p></li>
+<li><p><strong>-lockstep.</strong> With a population larger than the number of processes, <em>-lockstep k</em> gives each middleman <em>k</em> individuals at once. The GPU runs the MCMC steps of these individuals together, in the same calculations: each step takes as many operations on the GPU, and as much waiting for it, for <em>k</em> individuals as for one. Fewer processes are needed, <em>pop_size/k</em> + 1, which also shortens the start-up of the GPU in each process. With a population of 128 on a node with eight AMD MI250X GCDs (dardel) and on a node with four NVIDIA GH200 (arrhenius) we measured:</p>
+<table class="docutils align-default" id="tab-lockstep">
+<caption><span class="caption-number">Table 2.7 </span><span class="caption-text">Wall time of the master in s of short trainings with a population of 128, by <em>-lockstep</em>, with <em>-shell_keep</em>.</span><a class="headerlink" href="#tab-lockstep" title="Link to this table">¶</a></caption>
+<thead>
+<tr class="row-odd"><th class="head"><p>Computer</p></th>
+<th class="head"><p>Training</p></th>
+<th class="head"><p><em>-lockstep 1</em>
+129 processes</p></th>
+<th class="head"><p><em>4</em>
+33</p></th>
+<th class="head"><p><em>8</em>
+17</p></th>
+<th class="head"><p><em>16</em>
+9</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>dardel, 8 MI250X GCDs</p></td>
+<td><p>HHpol</p></td>
+<td><p>63.3</p></td>
+<td><p>32.4</p></td>
+<td><p><strong>21.0</strong></p></td>
+<td><p>28.5</p></td>
+</tr>
+<tr class="row-odd"><td></td>
+<td><p>BFdb</p></td>
+<td><p>243.1</p></td>
+<td><p>167.6</p></td>
+<td><p><strong>156.4</strong></p></td>
+<td><p>172.8</p></td>
+</tr>
+<tr class="row-even"><td><p>arrhenius, 4 GH200</p></td>
+<td><p>HHpol</p></td>
+<td><p>101.0</p></td>
+<td><p>34.8</p></td>
+<td><p>23.5</p></td>
+<td><p><strong>22.0</strong></p></td>
+</tr>
+<tr class="row-odd"><td></td>
+<td><p>BFdb</p></td>
+<td><p>156.5</p></td>
+<td><p>84.6</p></td>
+<td><p>76.2</p></td>
+<td><p><strong>75.5</strong></p></td>
+</tr>
+</tbody>
+</table>
+<p>HHpol is a small training set (10 generations of 10 MCMC iterations), and most of what it gains from <em>-lockstep 8</em> is start-up time. BFdb is a large one (5 generations of 5 iterations); its GPUs are busy already with <em>-lockstep 4</em>, and computing more individuals at once does not make them faster. With 9 processes on 8 GCDs the GPUs have too little to do. <em>-lockstep 8</em> is a good choice on both computers. The result does not depend on <em>-lockstep</em>, except for where the relaxation of the shells starts, see <em>-shell_keep</em>, and through which middleman computes which individual: with the same seed, the BFdb runs above gave the same force field for all values, the HHpol runs did not.</p>
+<p>Without the GPU, or for a force field without shells, <em>train_ff</em> notes that <em>-lockstep</em> has no effect and hands out one individual at a time, which shares them more evenly over the middlemen: in a training with 256 individuals and 64 processes on dardel this took 1062 s, against 1601 s with groups of 4 individuals, since then one middleman computed a second group in each generation while the others waited. With <em>-lockstep</em>, the number of middlemen should divide the number of groups, see the note at the start. Each individual that a process computes at once also needs a copy of the molecules on the GPU, about 43 MB for BFdb; if the GPU runs out of memory, <em>train_ff</em> stops with a message that says so.</p>
+</li>
+<li><p><strong>-shell_keep.</strong> By default the relaxation of the shells starts from where the shells were the previous time, which needs fewer iterations when the parameters changed little. On an RTX A4500 this took a training from 179 s to 146 s. The relaxed shells differ within the tolerance on the forces, so the results differ slightly from those of <em>-noshell_keep</em>. In the trainings of <a class="reference internal" href="#tab-lockstep"><span class="std std-numref">Table 2.7</span></a>, which used <em>-shell_keep</em>, the shells needed about 25% fewer iterations than with <em>-noshell_keep</em>; BFdb took 7% less time on dardel (156 s against 167 s with <em>-lockstep 8</em>), and on arrhenius, where the relaxation is a smaller part of the time, the difference was 1-2%. Since where the relaxation starts depends on which individuals a process computed before, the result of a training with <em>-shell_keep</em> depends on the number of processes and on the computer. With <em>-noshell_keep</em>, the HHpol trainings reached the same <span class="math notranslate nohighlight">\(\chi^2\)</span> on dardel and on arrhenius for each value of <em>-lockstep</em>, and with <em>-lockstep 4</em> the same force field; with <em>-shell_keep</em> they did not. Both are correct within the tolerance on the forces; use <em>-noshell_keep</em> when runs must be reproduced exactly.</p></li>
+<li><p>Molecules that a changed parameter does not affect are not computed again; this happens automatically, also on the GPU.</p></li>
+</ul>
+<p>The best value of <em>-lockstep</em> depends on the GPU, on the number of GPUs per node and on the training set. Start with <em>-lockstep 8</em> and <em>pop_size/8</em> + 1 processes, and compare with 4 and 16 in a short run.</p>
+</section>
+<section id="measuring-and-comparing-the-run-time">
+<span id="sec-measuring"></span><h2><span class="section-number">2.4.5. </span>Measuring and comparing the run time<a class="headerlink" href="#measuring-and-comparing-the-run-time" title="Link to this heading">¶</a></h2>
+<p>At the end of the log file, <em>train_ff</em> prints how much time each part of the program took, summed over all processes and as an average per process for the master and for the middlemen, preceded by the wall time of the master. Useful lines are:</p>
+<ul class="simple">
+<li><p><em>MPI waiting in Middleman loop</em>: middlemen waiting for work, for instance at the end of each generation. A large share means that the processes are not used evenly, see <a class="reference internal" href="#tab-processes"><span class="std std-numref">Table 2.6</span></a>.</p></li>
+<li><p><em>MPI waiting in Genetic algorithm</em>: the master waiting for the middlemen, which is normal.</p></li>
+<li><p><em>GPU initialization</em> and <em>Startup</em>: one-time costs. In short test runs they can be a large part of the time; leave them out when comparing settings.</p></li>
+<li><p><em>GPU resident relaxation</em>, <em>GPU resident evaluation</em> and <em>Charge generation</em>: the computation itself.</p></li>
+</ul>
+<p>When comparing settings, keep in mind that:</p>
+<ul class="simple">
+<li><p>The run time of the same training on a GPU can vary by about 10% between runs. Compare settings in one job, run them alternately, and repeat them.</p></li>
+<li><p>The training may stop before <em>-max_generations</em> when the fitness of the test set no longer improves (<em>-max_test_generations</em>). Runs that differ in the last digits, for instance on different computers, may then run a different number of generations. Compare the time per generation, from the lines <em>Generation n/N</em> in the log file.</p></li>
+<li><p><em>Wall time of the master</em> starts after MPI has started. On some clusters starting MPI takes long, for instance about 0.7 s per process on the GH200 nodes of arrhenius, so the job takes longer than this time.</p></li>
+</ul>
+</section>
+</section>
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../index.html">
+              <img class="logo" src="../_static/AClogo.png" alt="Logo of ACT"/>
+            </a></p>
+<h3><a href="../index.html">Table of Contents</a></h3>
+<p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../preface/preface.html">1. Preface</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="header.html">2. User Manual</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="installation.html">2.1. Installation of the ACT</a></li>
+<li class="toctree-l2"><a class="reference internal" href="verification.html">2.2. Verifying changes to ACT</a></li>
+<li class="toctree-l2"><a class="reference internal" href="using.html">2.3. Using the ACT</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">2.4. Getting the best performance from ACT</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#building-act-for-speed">2.4.1. Building ACT for speed</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#how-train-ff-uses-the-processes">2.4.2. How train_ff uses the processes</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#processor-or-gpu">2.4.3. Processor or GPU?</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#training-on-gpus">2.4.4. Training on GPUs</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#measuring-and-comparing-the-run-time">2.4.5. Measuring and comparing the run time</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="simulation.html">2.5. MD Simulations with Alexandria Force Fields</a></li>
+<li class="toctree-l2"><a class="reference internal" href="properties.html">2.6. Predicting Molecular Properties</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../refman/header.html">3. Reference Manual</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../jupyter/header.html">4. Interactive Notebooks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../devman/header.html">5. Developer Manual</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../references.html">6. References</a></li>
+</ul>
+
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/userman/performance.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<search id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="Related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="simulation.html" title="2.5. MD Simulations with Alexandria Force Fields"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="using.html" title="2.3. Using the ACT"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">ACT 1.2b documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="header.html" ><span class="section-number">2. </span>User Manual</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href=""><span class="section-number">2.4. </span>Getting the best performance from ACT</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+    &#169; Copyright 2026, ACT development team.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 8.2.3.
+    </div>
+  </body>
+</html>
