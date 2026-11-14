@@ -113,6 +113,9 @@ namespace alexandria
         //! \return charge map
         const ChargeMap &chargeMapConst() const { return qmap_; }
 
+        //! \return the file of the monomers for the charges (-charges), empty if none
+        const std::string &chargeFile() const { return qmapfn_; }
+
         //! \return charge map for editing
         ChargeMap *chargeMap() { return &qmap_; }
 

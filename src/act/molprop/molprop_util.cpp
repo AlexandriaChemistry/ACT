@@ -37,6 +37,7 @@
 #include <algorithm>
 #include <cstdio>
 #include <map>
+#include <set>
 #include <string>
 #include <utility>
 
@@ -206,6 +207,21 @@ static const Experiment *referenceExperiment(const MolProp &mp)
     return nullptr;
 }
 
+/*! \brief The key of the compound of a fragment: its InChI and formula
+ * Some files have another identifier than an InChI, such as "1", which does
+ * not identify the compound.
+ * \param[in] frag The fragment
+ * \return The key, empty if the fragment has no InChI
+ */
+static std::string compoundKey(const Fragment &frag)
+{
+    if (frag.inchi().rfind("InChI=", 0) != 0)
+    {
+        return "";
+    }
+    return frag.inchi() + " " + frag.formula();
+}
+
 /*! \brief The order of the atoms of a fragment, as names and types
  * \param[in] atoms The atoms of the molecule
  * \param[in] frag  The fragment
@@ -226,23 +242,89 @@ static std::string fragmentOrder(const std::vector<CalcAtom> &atoms, const Fragm
     return order;
 }
 
-size_t validateMolProps(MsgHandler *msghandler, std::vector<MolProp> *mps)
+MolPropValidation validateMolProps(MsgHandler           *msghandler,
+                                   std::vector<MolProp> *mps,
+                                   std::vector<MolProp> *references,
+                                   ACTStatus             level)
 {
-    size_t nproblem = 0;
+    MolPropValidation result;
     for (auto &mp : *mps)
     {
         if (!mp.validate(msghandler))
         {
-            nproblem += 1;
+            result.nproblem += 1;
+            result.invalid.insert(mp.getMolname());
         }
     }
-    // The order of the atoms of each compound, by InChI, and the molecule
-    // and data file where it occurs first
-    struct FirstOccurrence
+    // Where an order of the atoms of a compound occurs
+    struct Occurrence
     {
         std::string molecule, datafile, order;
+        //! The number of molecules with this order, and the first of them
+        size_t      count = 0, first = 0;
+        bool        reference = false;
     };
-    std::map<std::string, FirstOccurrence> compounds;
+    // For each compound, by InChI and formula, its orders
+    std::map<std::string, std::map<std::string, Occurrence>> compounds;
+    size_t index = 0;
+    const auto collect = [&compounds, &index](const MolProp &mp, bool reference)
+    {
+        const auto ref = referenceExperiment(mp);
+        if (!ref)
+        {
+            return;
+        }
+        for (const auto &frag : mp.fragments())
+        {
+            const auto key   = compoundKey(frag);
+            const auto order = key.empty() ? std::string() : fragmentOrder(ref->calcAtomConst(), frag);
+            if (order.empty())
+            {
+                continue;
+            }
+            auto &occ = compounds[key][order];
+            if (occ.count == 0 && !occ.reference)
+            {
+                occ = { mp.getMolname(), ref->getDatafile(), order, 0, index, reference };
+            }
+            occ.count     += reference ? 0 : 1;
+            occ.reference  = occ.reference || reference;
+            index         += 1;
+        }
+    };
+    if (references)
+    {
+        for (auto &mp : *references)
+        {
+            if (mp.validate(msghandler))
+            {
+                collect(mp, true);
+            }
+        }
+    }
+    for (const auto &mp : *mps)
+    {
+        collect(mp, false);
+    }
+    // The reference order of each compound: that of the references, or else
+    // the most common one, the first of those if several are
+    std::map<std::string, const Occurrence *> chosen;
+    for (const auto &c : compounds)
+    {
+        const Occurrence *best = nullptr;
+        for (const auto &o : c.second)
+        {
+            const auto &occ = o.second;
+            if (!best ||
+                (occ.reference && !best->reference) ||
+                (occ.reference == best->reference &&
+                 (occ.count > best->count || (occ.count == best->count && occ.first < best->first))))
+            {
+                best = &occ;
+            }
+        }
+        chosen[c.first] = best;
+    }
     for (const auto &mp : *mps)
     {
         const auto ref = referenceExperiment(mp);
@@ -250,33 +332,26 @@ size_t validateMolProps(MsgHandler *msghandler, std::vector<MolProp> *mps)
         {
             continue;
         }
-        const auto *atoms = &ref->calcAtomConst();
         for (const auto &frag : mp.fragments())
         {
-            if (frag.inchi().empty())
-            {
-                continue;
-            }
-            const auto order = fragmentOrder(*atoms, frag);
+            const auto key   = compoundKey(frag);
+            const auto order = key.empty() ? std::string() : fragmentOrder(ref->calcAtomConst(), frag);
             if (order.empty())
             {
                 continue;
             }
-            const auto first = compounds.find(frag.inchi());
-            if (first == compounds.end())
+            const auto *best = chosen[key];
+            if (best->order != order)
             {
-                compounds.insert({ frag.inchi(), { mp.getMolname(), ref->getDatafile(), order } });
-            }
-            else if (first->second.order != order)
-            {
-                nproblem += 1;
-                msghandler->msg(ACTStatus::Error, ACTMessage::InconsistentCompoundOrder,
+                result.nproblem += 1;
+                result.invalid.insert(mp.getMolname());
+                msghandler->msg(level, ACTMessage::InconsistentCompoundOrder,
                                 gmx::formatString("Molecule %s (data file %s): compound %s has its atoms in the order %s, "
-                                                  "but in molecule %s (data file %s) in the order %s.",
+                                                  "but in the reference, molecule %s (data file %s%s), in the order %s.",
                                                   mp.getMolname().c_str(), ref->getDatafile().c_str(),
                                                   frag.iupac().empty() ? frag.inchi().c_str() : frag.iupac().c_str(),
-                                                  order.c_str(), first->second.molecule.c_str(),
-                                                  first->second.datafile.c_str(), first->second.order.c_str()));
+                                                  order.c_str(), best->molecule.c_str(), best->datafile.c_str(),
+                                                  best->reference ? " of the charges" : "", best->order.c_str()));
             }
         }
     }
@@ -295,15 +370,16 @@ size_t validateMolProps(MsgHandler *msghandler, std::vector<MolProp> *mps)
         const auto &frags = mp.fragments();
         if (a != b && frags.size() == 2 && frags[0].iupac() == b && frags[1].iupac() == a)
         {
-            nproblem += 1;
+            result.nproblem += 1;
+            result.invalid.insert(name);
             const auto ref = referenceExperiment(mp);
-            msghandler->msg(ACTStatus::Error, ACTMessage::SwappedDimer,
+            msghandler->msg(level, ACTMessage::SwappedDimer,
                             gmx::formatString("Dimer %s (data file %s) has its fragments in the order %s, %s.",
                                               name.c_str(), ref ? ref->getDatafile().c_str() : "none",
                                               b.c_str(), a.c_str()));
         }
     }
-    return nproblem;
+    return result;
 }
 
 } // namespace alexandria

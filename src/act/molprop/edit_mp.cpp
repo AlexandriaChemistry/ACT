@@ -573,7 +573,7 @@ int edit_mp(int argc, char *argv[])
     {
         // The problems are errors of the message handler, but the molecules
         // are written anyway, without the experiments that were removed
-        auto nproblem = validateMolProps(&msghandler, &mpt);
+        auto nproblem = validateMolProps(&msghandler, &mpt).nproblem;
         printf("Validation of %zu molecules: %zu problem(s)%s\n", mpt.size(), nproblem,
                nproblem > 0 ? gmx::formatString(", see %s", msghandler.filename().c_str()).c_str() : "");
     }

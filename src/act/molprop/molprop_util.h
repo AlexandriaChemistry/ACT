@@ -35,9 +35,11 @@
 #ifndef MOLPROP_UTIL_H
 #define MOLPROP_UTIL_H
 
+#include <set>
 #include <string>
 #include <vector>
 
+#include "act/basics/msg_handler.h"
 #include "act/molprop/molprop.h"
 #include "gromacs/utility/arrayref.h"
 
@@ -57,21 +59,43 @@ void merge_xml(MsgHandler                             *msg_handler,
                const gmx::ArrayRef<const std::string> &infiles,
                std::vector<alexandria::MolProp>       *mp);
 
+//! The result of validateMolProps
+struct MolPropValidation
+{
+    //! The number of problems
+    size_t                nproblem = 0;
+    //! The names of the molecules with problems
+    std::set<std::string> invalid;
+};
+
 /*! \brief Check that a set of molecules is consistent, as edit_mp -validate
  * First each molecule is checked with MolProp::validate, which removes the
  * experiments with the atoms in another order than the reference
  * experiment. Then all molecules are checked together:
- * - each compound, a fragment identified by its InChI, has its atoms in the
- *   same order (names and types) in all molecules, the first one it occurs in
- *   is the reference, such that it can be treated as one compound, and
+ * - each compound, a fragment identified by its InChI and formula (fragments
+ *   with another identifier than an InChI are not checked), has its atoms in the
+ *   same order (names and types) in all molecules, such that it can be
+ *   treated as one compound. The reference is the order of the compound in
+ *   the references, if it is there, or else the order that most molecules
+ *   have, the first of those if several are equally common, and
  * - the fragments of a dimer A#B are in the order of A and B, if their
  *   names are those of the dimer. Both A#B and B#A may occur.
- * Each problem is an error of msghandler.
+ * Each problem is a message of msghandler at the given level.
  * \param[in]    msghandler For the problems
  * \param[inout] mps        The molecules
- * \return The number of problems
+ * \param[inout] references Molecules whose order of the atoms of a compound
+ *                          is the reference, for instance the monomers of
+ *                          train_ff -charges, or nullptr. They are checked
+ *                          with MolProp::validate as well.
+ * \param[in]    level      The level of the messages of the problems
+ *                          found here, for instance a warning when
+ *                          train_ff leaves out the molecules
+ * \return The problems and the molecules that have them
  */
-size_t validateMolProps(MsgHandler *msghandler, std::vector<MolProp> *mps);
+MolPropValidation validateMolProps(MsgHandler           *msghandler,
+                                   std::vector<MolProp> *mps,
+                                   std::vector<MolProp> *references = nullptr,
+                                   ACTStatus             level      = ACTStatus::Error);
 
 } // namespace alexandria
 

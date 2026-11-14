@@ -846,13 +846,26 @@ size_t MolGen::Read(MsgHandler                          *msghandler,
     {
         msghandler->writeDebug(memory_usage());
     }
+        for (auto &m : mp)
+        {
+            m.generateComposition();
+        }
+        // An inconsistent compound, for instance with the atoms of the
+        // fragments of a dimer swapped, would give nonsensical coordinates,
+        // and the atoms of a compound have to be in the same order in all
+        // molecules, as in the monomers for the charges, if any, see
+        // validateMolProps
+        std::vector<MolProp> chargeMonomers;
+        if (!compR->chargeFile().empty())
+        {
+            MolPropRead(msghandler, compR->chargeFile().c_str(), &chargeMonomers);
+        }
+        const auto validation = validateMolProps(msghandler, &mp,
+                                                 chargeMonomers.empty() ? nullptr : &chargeMonomers,
+                                                 ACTStatus::Warning);
         for (auto mpi = mp.begin(); mpi < mp.end(); )
         {
-            mpi->generateComposition();
-            // An inconsistent compound, for instance with the atoms of
-            // the fragments of a dimer swapped, would give nonsensical
-            // coordinates.
-            bool valid = mpi->validate(msghandler);
+            bool valid = validation.invalid.count(mpi->getMolname()) == 0;
             if (!valid || !mpi->hasAllAtomTypes())
             {
                 /*
