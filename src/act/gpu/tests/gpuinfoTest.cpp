@@ -59,7 +59,7 @@ bool contains(const std::vector<std::string> &lines, const std::string &text)
 // Test: An AMD GPU has 64 lanes per compute unit, as the log shows for the MI250X
 TEST(GpuPeakTest, AmdInstinct)
 {
-    auto peak = gpu::estimatePeak("AMD", "AMD Instinct MI250X", 110, 1.7);
+    const auto peak = gpu::estimatePeak("AMD", "AMD Instinct MI250X", 110, 1.7);
     EXPECT_NEAR(2*64*110*1.7, peak.gflops, 1e-9);
     EXPECT_EQ("110 compute units x 64 lanes x 2 flop (FMA) x 1.70 GHz", peak.basis);
 }
@@ -113,7 +113,7 @@ TEST(GpuPeakTest, Unknown)
 // Test: A node without GPU device files gets that reason, and always how to look further
 TEST(NoGpuTest, NodeWithoutGpus)
 {
-    auto reasons = gpu::explainNoGpu(gpu::NoGpuFacts());
+    const auto reasons = gpu::explainNoGpu(gpu::NoGpuFacts());
     EXPECT_TRUE(contains(reasons, "no NVIDIA or AMD GPU device files"));
     EXPECT_TRUE(contains(reasons, "run on a node with GPUs"));
     EXPECT_TRUE(contains(reasons, "acpp-info -l"));
@@ -130,8 +130,8 @@ TEST(NoGpuTest, JobWithoutGpu)
         SCOPED_TRACE(value);
         gpu::NoGpuFacts facts;
         facts.nvidiaDevices = true;
-        facts.visibleDevices.push_back({ "CUDA_VISIBLE_DEVICES", value });
-        auto reasons = gpu::explainNoGpu(facts);
+        facts.visibleDevices.emplace_back("CUDA_VISIBLE_DEVICES", value);
+        const auto reasons = gpu::explainNoGpu(facts);
         EXPECT_TRUE(contains(reasons, std::string("CUDA_VISIBLE_DEVICES is \"") + value +
                                       "\", the queue system gave this job no GPU"));
         EXPECT_TRUE(contains(reasons, "sbatch --gres=gpu:1"));
@@ -144,7 +144,7 @@ TEST(NoGpuTest, JobWithGpus)
 {
     gpu::NoGpuFacts facts;
     facts.amdDevices = true;
-    facts.visibleDevices.push_back({ "ROCR_VISIBLE_DEVICES", "0,1" });
+    facts.visibleDevices.emplace_back("ROCR_VISIBLE_DEVICES", "0,1");
     EXPECT_FALSE(contains(gpu::explainNoGpu(facts), "queue system"));
 }
 
@@ -155,7 +155,7 @@ TEST(NoGpuTest, NoCudaBackend)
     facts.nvidiaDevices    = true;
     facts.runtimeDirectory = "/opt/acpp/lib";
     facts.backends         = { "hip", "omp" };
-    auto reasons = gpu::explainNoGpu(facts);
+    const auto reasons = gpu::explainNoGpu(facts);
     EXPECT_TRUE(contains(reasons, "NVIDIA GPUs, but AdaptiveCpp has no CUDA backend"));
     EXPECT_TRUE(contains(reasons, "adaptivecpp=*=cuda*"));
     EXPECT_TRUE(contains(reasons, "AdaptiveCpp in /opt/acpp/lib has the backends: hip omp"));
@@ -169,7 +169,7 @@ TEST(NoGpuTest, NoHipBackend)
     gpu::NoGpuFacts facts;
     facts.amdDevices = true;
     facts.backends   = { "cuda", "omp" };
-    auto reasons = gpu::explainNoGpu(facts);
+    const auto reasons = gpu::explainNoGpu(facts);
     EXPECT_TRUE(contains(reasons, "AMD GPUs, but AdaptiveCpp has no HIP backend"));
     EXPECT_FALSE(contains(reasons, "CUDA backend"));
 }
@@ -181,7 +181,7 @@ TEST(NoGpuTest, MatchingBackend)
     facts.nvidiaDevices = true;
     facts.amdDevices    = true;
     facts.backends      = { "cuda", "hip", "omp" };
-    auto reasons = gpu::explainNoGpu(facts);
+    const auto reasons = gpu::explainNoGpu(facts);
     EXPECT_FALSE(contains(reasons, "no CUDA backend"));
     EXPECT_FALSE(contains(reasons, "no HIP backend"));
     EXPECT_TRUE(contains(reasons, "acpp-info -l"));
@@ -193,7 +193,7 @@ TEST(NoGpuTest, NoBackends)
     gpu::NoGpuFacts facts;
     facts.nvidiaDevices    = true;
     facts.runtimeDirectory = "/opt/acpp/lib";
-    auto reasons = gpu::explainNoGpu(facts);
+    const auto reasons = gpu::explainNoGpu(facts);
     EXPECT_TRUE(contains(reasons, "AdaptiveCpp in /opt/acpp/lib has the backends: none"));
 }
 
@@ -207,7 +207,7 @@ TEST(GpuOutOfMemoryTest, Message)
     }
     catch (const std::bad_alloc &ex)
     {
-        std::string what = ex.what();
+        const std::string what = ex.what();
         EXPECT_NE(std::string::npos, what.find("NVIDIA RTX A4500, 20.0 GB")) << what;
         EXPECT_NE(std::string::npos, what.find("had 350.0 MB")) << what;
         EXPECT_NE(std::string::npos, what.find("1200.0 MB more")) << what;
@@ -227,26 +227,26 @@ TEST(GpuOutOfMemoryTest, Facts)
     facts.nodeProcesses = 33;
     facts.nodeGpus      = 1;
     facts.nvidia        = true;
-    auto noMps = gpu::outOfMemoryMessage("NVIDIA RTX A4500", 21.2e9, 63600000, 122900000, facts);
+    const auto noMps = gpu::outOfMemoryMessage("NVIDIA RTX A4500", 21.2e9, 63600000, 122900000, facts);
     EXPECT_NE(std::string::npos, noMps.find("All 33 processes on this node use this GPU")) << noMps;
     EXPECT_NE(std::string::npos, noMps.find("(MPS) does not run")) << noMps;
     EXPECT_NE(std::string::npos, noMps.find("nvidia-cuda-mps-control -d")) << noMps;
     EXPECT_NE(std::string::npos, noMps.find("a smaller -n of mpirun or srun")) << noMps;
 
     facts.mpsRuns = true;
-    auto mps = gpu::outOfMemoryMessage("NVIDIA RTX A4500", 21.2e9, 63600000, 122900000, facts);
+    const auto mps = gpu::outOfMemoryMessage("NVIDIA RTX A4500", 21.2e9, 63600000, 122900000, facts);
     EXPECT_EQ(std::string::npos, mps.find("does not run")) << mps;
 
     facts.nodeProcesses = 64;
     facts.nodeGpus      = 8;
     facts.nvidia        = false;
     facts.mpsRuns       = false;
-    auto amd = gpu::outOfMemoryMessage("AMD Instinct MI250X", 68.7e9, 1, 1, facts);
+    const auto amd = gpu::outOfMemoryMessage("AMD Instinct MI250X", 68.7e9, 1, 1, facts);
     EXPECT_NE(std::string::npos, amd.find("The 64 processes on this node share its 8 GPUs, up to 8 processes per GPU")) << amd;
     EXPECT_EQ(std::string::npos, amd.find("MPS")) << amd;
 
     facts.nodeProcesses = 0;
-    auto unknown = gpu::outOfMemoryMessage("AMD Instinct MI250X", 68.7e9, 1, 1, facts);
+    const auto unknown = gpu::outOfMemoryMessage("AMD Instinct MI250X", 68.7e9, 1, 1, facts);
     EXPECT_NE(std::string::npos, unknown.find("All processes that use this GPU share")) << unknown;
 }
 
@@ -255,8 +255,8 @@ TEST(GpuOutOfMemoryTest, Facts)
 // support, and no GPU without GPU support
 TEST(GpuInformationTest, Consistent)
 {
-    auto names = gpu::devices();
-    auto peaks = gpu::devicePeaks();
+    const auto names = gpu::devices();
+    const auto peaks = gpu::devicePeaks();
     EXPECT_EQ(names.size(), peaks.size());
     if (gpu::implementation().empty())
     {
