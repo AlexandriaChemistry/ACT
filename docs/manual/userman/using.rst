@@ -362,10 +362,10 @@ The molecular property files can be checked in a similar way::
 This checks that
 
 * all experiments (calculations) of a molecule list the atoms in the same order, with the same names and types, as the one from which the topology is made; the coordinates are matched to the topology by the order of the atoms. An experiment with another order is removed, with a warning that names its data file. If it is an experiment of a dimer A#B with the atoms in the order of B#A, the warning says so;
-* each compound, identified by its InChI, has its atoms in the same order in all molecules it occurs in, for instance water as a monomer and in all dimers with water. The first molecule in which the compound occurs is the reference, and the error names the molecules and data files that differ;
+* each compound, identified by its InChI and formula, has its atoms in the same order in all molecules it occurs in, for instance water as a monomer and in all dimers with water. The reference is the order that most molecules have, the first of those if several orders are equally common, and the error names the molecules and data files that differ. Fragments with another identifier than an InChI are not checked;
 * the atoms of each fragment of a molecule match its formula, the fragments of a dimer are not bonded to each other, and the fragments of a dimer A#B are in the order of A and B.
 
-A file may contain both a dimer A#B and a dimer B#A, for instance with the other molecule as hydrogen bond donor, as long as each is consistent. The number of problems is printed, and each is written to the log file. The molecules are written to the output file, without the experiments that were removed. The same checks of single molecules are made when *train_ff* reads the data, which skips the molecules that are not consistent.
+A file may contain both a dimer A#B and a dimer B#A, for instance with the other molecule as hydrogen bond donor, as long as each is consistent. The number of problems is printed, and each is written to the log file. The molecules are written to the output file, without the experiments that were removed. The same checks are made when *train_ff* reads the data, which leaves out the molecules with problems, with a warning. If monomers for the charges are given with *train_ff -charges*, the order of the atoms of a compound in that file is the reference, since the charges of the compound are copied from there to the atoms of all molecules.
 
 .. _sec-parallel:
 

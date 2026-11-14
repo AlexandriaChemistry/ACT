@@ -36,6 +36,7 @@
 #include "actpre.h"
 
 #include <memory>
+#include <set>
 #include <string>
 #include <vector>
 
@@ -1570,7 +1571,7 @@ TEST(ValidateMolPropsTest, SameOrderIsOk)
                                  { "water#water", { water, water } } });
     MsgHandler msghandler;
     msghandler.setPrintLevel(ACTStatus::Fatal);
-    EXPECT_EQ(0u, validateMolProps(&msghandler, &mps));
+    EXPECT_EQ(0u, validateMolProps(&msghandler, &mps).nproblem);
     EXPECT_TRUE(msghandler.ok());
     EXPECT_EQ(0u, msghandler.warningCount(ACTMessage::InconsistentCompoundOrder));
     EXPECT_EQ(0u, msghandler.warningCount(ACTMessage::SwappedDimer));
@@ -1584,9 +1585,53 @@ TEST(ValidateMolPropsTest, CompoundOrderDiffers)
                                  { "water#water", { water, waterHOH } } });
     MsgHandler msghandler;
     msghandler.setPrintLevel(ACTStatus::Fatal);
-    EXPECT_EQ(2u, validateMolProps(&msghandler, &mps));
+    EXPECT_EQ(2u, validateMolProps(&msghandler, &mps).nproblem);
     EXPECT_FALSE(msghandler.ok());
     EXPECT_EQ(2u, msghandler.warningCount(ACTMessage::InconsistentCompoundOrder));
+}
+
+// Test: The reference order of a compound is the most common one, also if a
+// molecule with another order comes first, and only the molecules with
+// another order are invalid
+TEST(ValidateMolPropsTest, MajorityOrderIsReference)
+{
+    auto mps = makeMolecules({ { "water#methanol", { waterHOH, methanol } },
+                               { "water", { water } },
+                               { "water#water", { water, water } } });
+    MsgHandler msghandler;
+    msghandler.setPrintLevel(ACTStatus::Fatal);
+    const auto result = validateMolProps(&msghandler, &mps);
+    EXPECT_EQ(1u, result.nproblem);
+    EXPECT_EQ(std::set<std::string>({ "water#methanol" }), result.invalid);
+}
+
+// Test: The order of a compound in the references, such as the monomers of
+// train_ff -charges, is the reference, even if fewer molecules have it
+TEST(ValidateMolPropsTest, ReferencesDecide)
+{
+    auto mps        = makeMolecules({ { "water#methanol", { waterHOH, methanol } },
+                                      { "water", { water } },
+                                      { "water#water", { water, water } } });
+    auto references = makeMolecules({ { "water", { waterHOH } } });
+    MsgHandler msghandler;
+    msghandler.setPrintLevel(ACTStatus::Fatal);
+    const auto result = validateMolProps(&msghandler, &mps, &references);
+    // Both waters of the dimer
+    EXPECT_EQ(3u, result.nproblem);
+    EXPECT_EQ(std::set<std::string>({ "water", "water#water" }), result.invalid);
+    EXPECT_EQ(3u, msghandler.warningCount(ACTMessage::InconsistentCompoundOrder));
+}
+
+// Test: Fragments with another identifier than an InChI, such as "1" in some
+// files, are not taken to be the same compound
+TEST(ValidateMolPropsTest, NoInchiIsNotChecked)
+{
+    const TestFragment a = { "1", "water", { "O", "H", "H" } };
+    const TestFragment b = { "1", "methanol", { "C", "O", "H", "H", "H", "H" } };
+    auto mps = makeMolecules({ { "water", { a } }, { "methanol", { b } } });
+    MsgHandler msghandler;
+    msghandler.setPrintLevel(ACTStatus::Fatal);
+    EXPECT_EQ(0u, validateMolProps(&msghandler, &mps).nproblem);
 }
 
 // Test: A file may have a dimer as A#B and as B#A, for instance with another
@@ -1597,7 +1642,7 @@ TEST(ValidateMolPropsTest, DimerInBothOrdersIsOk)
                                { "methanol#water", { methanol, water } } });
     MsgHandler msghandler;
     msghandler.setPrintLevel(ACTStatus::Fatal);
-    EXPECT_EQ(0u, validateMolProps(&msghandler, &mps));
+    EXPECT_EQ(0u, validateMolProps(&msghandler, &mps).nproblem);
     EXPECT_TRUE(msghandler.ok());
     EXPECT_EQ(0u, msghandler.warningCount(ACTMessage::SwappedDimer));
     EXPECT_EQ(0u, msghandler.warningCount(ACTMessage::InconsistentCompoundOrder));
@@ -1620,7 +1665,7 @@ TEST(ValidateMolPropsTest, ExperimentInSwappedOrder)
     ASSERT_EQ(2u, mps[0].experimentConst().size());
     MsgHandler msghandler;
     msghandler.setPrintLevel(ACTStatus::Fatal);
-    EXPECT_EQ(0u, validateMolProps(&msghandler, &mps));
+    EXPECT_EQ(0u, validateMolProps(&msghandler, &mps).nproblem);
     EXPECT_EQ(1u, msghandler.warningCount(ACTMessage::SwappedDimer));
     // Only the summary of the experiments removed
     EXPECT_EQ(1u, msghandler.warningCount(ACTMessage::InconsistentAtomOrder));
@@ -1633,7 +1678,7 @@ TEST(ValidateMolPropsTest, FragmentsInSwappedOrder)
     auto mps = makeMolecules({ { "water#methanol", { methanol, water } } });
     MsgHandler msghandler;
     msghandler.setPrintLevel(ACTStatus::Fatal);
-    EXPECT_EQ(1u, validateMolProps(&msghandler, &mps));
+    EXPECT_EQ(1u, validateMolProps(&msghandler, &mps).nproblem);
     EXPECT_EQ(1u, msghandler.warningCount(ACTMessage::SwappedDimer));
 }
 
