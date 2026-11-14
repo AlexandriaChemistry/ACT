@@ -1937,7 +1937,7 @@ static void storeEnergies(Potential             mypot,
     {
         terms[k] = cener->add(itypes[k]);
     }
-    auto eEpot = cener->add(InteractionType::EPOT);
+    const auto eEpot = cener->add(InteractionType::EPOT);
     // When the entries are computed in parts, the energies are added
     bool accumulate = cener->accumulate();
     // One term at a time such that the energies are contiguous
@@ -2223,7 +2223,7 @@ static double interactionFlops(Potential                   mypot,
             return true;
         }
     };
-    auto constant = [&](Cost kernel, bool isPair)
+    const auto constant = [&](Cost kernel, bool isPair)
     {
         double n = kernel.energy + (forces ? kernel.force : 0);
         if (isPair)
@@ -2415,7 +2415,7 @@ static inline void calcSome(MsgHandler                 *msghandler,
                             size_t                      ncompute,
                             CachedEnergies             *cached = nullptr)
 {
-    ScopedTimer timer(potentialTimer(mypot));
+    const ScopedTimer timer(potentialTimer(mypot));
     // The conformations for which the shells are not converged, see
     // lowComputeEnergies, and their slots, the others keep their energies
     const auto         &ca = cdata->arrays;
@@ -2511,7 +2511,7 @@ static void computeConformations(const Range               &entries,
         }
         withOne(one, entry, [&](const auto &o)
         {
-            auto lane = [&](size_t c)
+            const auto lane = [&](size_t c)
             {
                 std::array<gmx::RVec, NATOM> xl, fl;
                 for (int a = 0; a < NATOM; a++)
@@ -2621,7 +2621,7 @@ static bool calcConformations(Potential                        mypot,
                               const std::vector<size_t>       *slots,
                               CachedEnergies                  *cached = nullptr)
 {
-    ScopedTimer timer(potentialTimer(mypot));
+    const ScopedTimer timer(potentialTimer(mypot));
     // Energy term k of conformation c is stored at k*stride + c
     auto &energies = ca->energies;
     energies.assign(MAX_ENER*ca->stride, 0.0);
@@ -2694,7 +2694,7 @@ static bool calcCoulombKernel(Potential                   mypot,
     {
         return false;
     }
-    ScopedTimer timer(potentialTimer(mypot));
+    const ScopedTimer timer(potentialTimer(mypot));
     auto       &kernel = cached->kernel;
     auto       &terms  = cached->kernelTerms;
     auto       &widths = cached->kernelWidths;
@@ -2846,7 +2846,7 @@ static void applyGpuResults(Potential                   mypot,
                             const std::vector<size_t>  *active,
                             const std::vector<size_t>  *slots)
 {
-    ScopedTimer timer(potentialTimer(mypot));
+    const ScopedTimer timer(potentialTimer(mypot));
     auto &energies = ca->energies;
     energies.assign(MAX_ENER*ca->stride, 0.0);
     if constexpr (std::is_same_v<T, float>)
@@ -2931,7 +2931,7 @@ static void lowComputeEnergiesT(MsgHandler                *msghandler,
                                 size_t                    *gpuNext        = nullptr)
 {
     static const size_t timer = Timings::instance().index("Energy calculation overhead");
-    ScopedTimer         scoped(timer);
+    const ScopedTimer   scoped(timer);
     auto *coords = &cdata->confs;
     auto &cener  = cdata->energies;
     cener.setNumberOfConformations(coords->size());
@@ -2970,7 +2970,7 @@ static void lowComputeEnergiesT(MsgHandler                *msghandler,
     cdata->activeKnown = coords->size();
     size_t ndone = coords->size() - active.size();
     // The virtual sites requested by ConformationData::constructVsites
-    VsiteHandler vsiteHandler;
+    const VsiteHandler vsiteHandler;
     bool         constructVsites = cdata->constructVsites;
     cdata->constructVsites       = false;
     if (constructVsites)
@@ -3005,7 +3005,7 @@ static void lowComputeEnergiesT(MsgHandler                *msghandler,
     // The conformations that are done keep their energy, they only get
     // one if there was none, which is zero.
     bool newEpot = !cener.find(InteractionType::EPOT).have;
-    auto eEpot   = cener.add(InteractionType::EPOT);
+    const auto eEpot   = cener.add(InteractionType::EPOT);
     if (newEpot)
     {
         std::fill(eEpot.have, eEpot.have + coords->size(), 1);
@@ -3046,7 +3046,7 @@ static void lowComputeEnergiesT(MsgHandler                *msghandler,
         for(size_t k = 0; k < fixed.types.size(); k++)
         {
             // Through pointers that the stores cannot change
-            auto                       t      = cener.add(fixed.types[k]);
+            const auto                 t      = cener.add(fixed.types[k]);
             const char   *gmx_restrict haveK  = fixed.have[k].data();
             const double *gmx_restrict eK     = fixed.energies[k].data();
             double       *gmx_restrict before = t.before;
@@ -3117,7 +3117,7 @@ static void lowComputeEnergiesT(MsgHandler                *msghandler,
                 sameCharges(mypot, top->atoms(), cached->charges))
             {
                 static const size_t timer = Timings::instance().index("Energies used again");
-                ScopedTimer         scoped(timer);
+                const ScopedTimer   scoped(timer);
                 storeEnergies(mypot, coords->size(), nullptr, nullptr, &cener, cached->energies.data(),
                               cached->confStride, cached->termStride);
                 return;
@@ -3158,7 +3158,7 @@ static void lowComputeEnergiesT(MsgHandler                *msghandler,
         calcSome(msghandler, mypot, entries, top->atoms(), cdata, &cener, epsilonr,
                  ca.ncomputed(), cached);
     };
-    auto computePart = [&](Part part)
+    const auto computePart = [&](Part part)
     {
         // All types with interactions, the non-bonded pairs are stored
         // compactly, see NonBondedPairs
@@ -3259,7 +3259,7 @@ static void lowComputeEnergiesT(MsgHandler                *msghandler,
         fixed.have.resize(fixed.types.size());
         for(size_t k = 0; k < fixed.types.size(); k++)
         {
-            auto t = cener.find(fixed.types[k]);
+            const auto t = cener.find(fixed.types[k]);
             fixed.energies[k].assign(t.act, t.act + coords->size());
             fixed.have[k].assign(t.have, t.have + coords->size());
         }
@@ -3275,7 +3275,7 @@ static void lowComputeEnergiesT(MsgHandler                *msghandler,
     cener.setTermTypes(nullptr);
     // The van der Waals correction is part of the exchange, as in
     // ForceComputer::computeOnce
-    auto vdwCorr = cener.find(InteractionType::VDWCORRECTION);
+    const auto vdwCorr = cener.find(InteractionType::VDWCORRECTION);
     if (vdwCorr.have)
     {
         auto exchange = cener.add(InteractionType::EXCHANGE);
@@ -3383,9 +3383,9 @@ void computeEnergies(MsgHandler                  *msghandler,
         {
             continue;
         }
-        todo.push_back({ molptr, inter });
+        todo.emplace_back(molptr, inter);
     }
-    auto compute = [&](GpuBatch *gpuBatch, bool collect, size_t *gpuNext)
+    const auto compute = [&](GpuBatch *gpuBatch, bool collect, size_t *gpuNext)
     {
         for(const auto &mi : todo)
         {
@@ -3539,7 +3539,7 @@ void addShellFragment(const Topology   *top,
     fr.firstForceShell  = m->forceShells.size();
     fr.firstMovingShell = m->movingShells.size();
     fr.nShell           = pol.nShell();
-    auto wallOf = [&](size_t i, uint32_t *parent)
+    const auto wallOf = [&](size_t i, uint32_t *parent)
     {
         bool wall = maxShellDistance2 > 0 && atoms[i].parents().size() == 1;
         *parent   = wall ? atoms[i].parents()[0] + offset : 0;
@@ -3606,8 +3606,8 @@ bool addShellEntries(const ForceField *pd, double epsilonr, GpuRelaxMolecule *m)
         // The non-bonded pairs are stored compactly, see NonBondedPairs
         const auto &nb      = top.nonBondedPairs();
         bool        isPairs = nb.hasType(itype);
-        auto        entries = isPairs ? TopologyEntryRange() : top.shellEntries(itype, top.entry(itype), true);
-        auto        pairs   = isPairs ? nb.shellEntries(itype, true) : PairRange();
+        const auto  entries = isPairs ? TopologyEntryRange() : top.shellEntries(itype, top.entry(itype), true);
+        const auto  pairs   = isPairs ? nb.shellEntries(itype, true) : PairRange();
         if (isPairs ? pairs.empty() : entries.empty())
         {
             continue;
@@ -3619,7 +3619,7 @@ bool addShellEntries(const ForceField *pd, double epsilonr, GpuRelaxMolecule *m)
             return false;
         }
         std::vector<gpu::PairEntry> pe;
-        auto addEntries = [&](const auto &range)
+        const auto addEntries = [&](const auto &range)
         {
             pe.reserve(range.size());
             for (const auto &b : range)
@@ -3725,7 +3725,7 @@ bool relaxShellsGpu(const ForceField            *pd,
         return false;
     }
     static const size_t timer = Timings::instance().index("GPU shell relaxation");
-    ScopedTimer         scoped(timer);
+    const ScopedTimer   scoped(timer);
     std::vector<gpu::RelaxMolecule> rmols;
     for (auto &m : mols)
     {
@@ -3762,7 +3762,7 @@ bool relaxShellsGpu(const ForceField            *pd,
         rmols.push_back(rm);
     }
     static_assert(MAX_ENER == gpu::pairEnergyTerms, "The GPU has as many energy terms as MAX_ENER");
-    gpu::RelaxSettings settings = { msForceToler, maxShellDistance2, minStep, maxStep, maxIter, stallIterations,
+    const gpu::RelaxSettings settings = { msForceToler, maxShellDistance2, minStep, maxStep, maxIter, stallIterations,
                                     shellWallAngleTolerance };
     bool notFinite = false;
     if (!gpu::relaxShells(rmols.data(), rmols.size(), settings, nComputed, &notFinite))
@@ -3799,7 +3799,7 @@ bool relaxShellsGpu(const ForceField            *pd,
         {
             continue;
         }
-        auto eEpot = cener.add(InteractionType::EPOT);
+        const auto eEpot = cener.add(InteractionType::EPOT);
         for (auto c : confs)
         {
             eEpot.before[c] = eEpot.have[c] ? eEpot.before[c] : 0.0;
@@ -3808,7 +3808,7 @@ bool relaxShellsGpu(const ForceField            *pd,
         }
         for (size_t k = 0; k < fixed.types.size(); k++)
         {
-            auto t = cener.add(fixed.types[k]);
+            const auto t = cener.add(fixed.types[k]);
             for (auto c : confs)
             {
                 t.before[c] = t.have[c] ? t.before[c] : 0.0;
@@ -3832,7 +3832,7 @@ bool relaxShellsGpu(const ForceField            *pd,
         cener.setAccumulate(false);
         cener.setTermTypes(nullptr);
         // The van der Waals correction is part of the exchange, as in lowComputeEnergiesT
-        auto vdwCorr = cener.find(InteractionType::VDWCORRECTION);
+        const auto vdwCorr = cener.find(InteractionType::VDWCORRECTION);
         if (vdwCorr.have)
         {
             auto exchange = cener.add(InteractionType::EXCHANGE);
@@ -3966,7 +3966,7 @@ bool describeGpuTopology(const ForceField *pd, const Topology *top, Conformation
         const auto &nb = top->nonBondedPairs();
         for (int part = 0; part < 2; part++)
         {
-            auto addList = [&](const auto &entries)
+            const auto addList = [&](const auto &entries)
             {
                 gpu::InteractionList il;
                 il.bonded      = bonded;
@@ -4145,7 +4145,7 @@ bool checkGpuSystem(const ForceField *pd, const std::vector<ACTMol *> &allmols)
         }
         for (const auto &g : gpuE)
         {
-            auto cpu = cener.find(g.first);
+            const auto cpu = cener.find(g.first);
             if (!cpu.have)
             {
                 continue;
@@ -4685,7 +4685,7 @@ public:
         {
             return;
         }
-        std::set<size_t> acm(acmMols.begin(), acmMols.end());
+        const std::set<size_t> acm(acmMols.begin(), acmMols.end());
         for (size_t k = 0; k < mols.size(); k++)
         {
             if (acm.count(k) == 0 && !mols[k]->fragmentHandler()->fixedCharges())
@@ -5023,7 +5023,7 @@ public:
         {
             slots[s] = s;
         }
-        auto eEpot = cener.add(InteractionType::EPOT);
+        const auto eEpot = cener.add(InteractionType::EPOT);
         for (auto c : bl.confOfSlot)
         {
             eEpot.before[c] = eEpot.have[c] ? eEpot.before[c] : 0.0;
@@ -5047,7 +5047,7 @@ public:
         }
         cener.setTermTypes(nullptr);
         // The van der Waals correction is part of the exchange, as in lowComputeEnergiesT
-        auto vdwCorr = cener.find(InteractionType::VDWCORRECTION);
+        const auto vdwCorr = cener.find(InteractionType::VDWCORRECTION);
         if (vdwCorr.have)
         {
             auto exchange = cener.add(InteractionType::EXCHANGE);
@@ -5076,7 +5076,7 @@ public:
             {
                 if (static_cast<size_t>(t) >= stored.size() || !stored[static_cast<size_t>(t)])
                 {
-                    auto et = cener.find(t);
+                    const auto et = cener.find(t);
                     std::copy(et.act, et.act + cener.nconf(), et.before);
                 }
             }
@@ -5211,7 +5211,7 @@ bool GpuTrainingSystem::prepare(const ForceField *pd, const std::vector<ACTMol *
             }
             const Topology *top   = (what < 2) ? &tops[what] : molptr->topology();
             auto           *cdata = molptr->conformationData(what);
-            auto           &ca    = cdata->arrays;
+            const auto     &ca    = cdata->arrays;
             if (cdata->useArraysDouble() || ca.nconf != cdata->nconf())
             {
                 im.whyNot = gmx::formatString("the conformations of %s are not in single precision arrays",
@@ -5323,7 +5323,7 @@ bool GpuTrainingSystem::prepare(const ForceField *pd, const std::vector<ACTMol *
         std::map<const ForceFieldParameter *, uint32_t> valueIndex;
         size_t replica = 0;
         size_t molecule = 0;
-        auto valueOf = [&valueIndex, &im, &replica, &molecule](const ForceFieldParameter *p)
+        const auto valueOf = [&valueIndex, &im, &replica, &molecule](const ForceFieldParameter *p)
         {
             if (!p)
             {
@@ -5607,7 +5607,7 @@ void GpuTrainingSystem::stageParameters(size_t replica, const ForceField *pd, co
     static const size_t blockT = Timings::instance().index("GPU staging of charges, shells and virtual sites");
     static const size_t acmXT  = Timings::instance().index("GPU staging of coordinates for SQE");
     {
-        ScopedTimer blockTimer(blockT);
+        const ScopedTimer blockTimer(blockT);
         for (size_t b = b0; b < b0 + im.nblockReplica; b++)
         {
             if (im.stagedAll[replica] && !im.active.empty() && !im.active[b])
@@ -5680,7 +5680,7 @@ void GpuTrainingSystem::stageParameters(size_t replica, const ForceField *pd, co
         if (im.acmVsites && !(gpuMakes && im.acmVsitesOnGpu))
         {
             // Unless the GPU constructs them, see makeAcmVsites
-            ScopedTimer acmXTimer(acmXT);
+            const ScopedTimer acmXTimer(acmXT);
             st.acmX = im.acmCoordinates(fc);
         }
     }
@@ -5715,7 +5715,7 @@ std::vector<uint64_t> GpuTrainingSystem::moleculeSignatures(const ForceField *pd
     im.hostRows = false;
     im.active = std::move(active);
     // FNV-1a over the bytes of the parameters of the blocks of each molecule
-    auto hash = [](uint64_t h, const void *data, size_t n)
+    const auto hash = [](uint64_t h, const void *data, size_t n)
     {
         auto bytes = static_cast<const unsigned char *>(data);
         for (size_t i = 0; i < n; i++)
@@ -6038,10 +6038,10 @@ bool GpuTrainingSystem::setDeviations(const GpuDeviationSetup &setup)
                 dt.source = e*gpu::pairEnergyTerms + t;
             }
         }
-        auto vdw = bt.find(InteractionType::VDWCORRECTION);
+        const auto vdw = bt.find(InteractionType::VDWCORRECTION);
         if (vdw != bt.end())
         {
-            auto ex    = bt.find(InteractionType::EXCHANGE);
+            const auto ex    = bt.find(InteractionType::EXCHANGE);
             int  exsrc = ex != bt.end() ? ex->second.source : -1;
             auto &exch   = bt[InteractionType::EXCHANGE];
             exch.kind    = gpu::deviationExchange;
@@ -6354,7 +6354,7 @@ bool GpuTrainingSystem::deviationSums(std::vector<std::pair<double, double>> *su
                 }
             }
         }
-        sums->push_back({ sw, sl });
+        sums->emplace_back(sw, sl);
     }
     return true;
 }
@@ -6368,7 +6368,7 @@ bool GpuTrainingSystem::typeEnergies(const ACTMol *mol, int what, std::vector<Gp
 {
     const auto &im = *impl_;
     energies->clear();
-    auto k = std::find(im.mols.begin(), im.mols.end(), mol);
+    const auto k = std::find(im.mols.begin(), im.mols.end(), mol);
     if (k == im.mols.end())
     {
         return false;
@@ -6413,7 +6413,7 @@ bool GpuTrainingSystem::typeEnergies(const ACTMol *mol, int what, std::vector<Gp
         }
     }
     // The van der Waals correction is part of the exchange
-    auto vdw = types.find(InteractionType::VDWCORRECTION);
+    const auto vdw = types.find(InteractionType::VDWCORRECTION);
     if (vdw != types.end())
     {
         auto &exch = types[InteractionType::EXCHANGE];
@@ -6502,7 +6502,7 @@ void GpuTrainingSystem::compute(int what, bool forces, bool backup)
                     cener.setBackups(true);
                     for (auto t : cener.types())
                     {
-                        auto et = cener.find(t);
+                        const auto et = cener.find(t);
                         std::copy(et.act, et.act + cener.nconf(), et.before);
                     }
                 }
@@ -6795,7 +6795,7 @@ bool GpuTrainingSystem::setChain(const GpuChainSetup &setup)
         {
             recipeSlot[k] = im.recipes.findSlot(p);
         }
-        auto a = std::find(im.acmValues.begin(), im.acmValues.end(), p);
+        const auto a = std::find(im.acmValues.begin(), im.acmValues.end(), p);
         if (a != im.acmValues.end())
         {
             acmIndex[k] = a - im.acmValues.begin();
@@ -6987,7 +6987,7 @@ void GpuTrainingSystem::chainPropose(size_t step, const std::vector<int> &params
 {
     auto &im = *impl_;
     gpu::chainStepBefore(im.system, step);
-    auto qv = im.chainChanges(params);
+    const auto qv = im.chainChanges(params);
     gpu::chainMarkChanged(im.system, qv.first, qv.second);
     // As uploadParameters, all from the values on the GPU
     gpu::updateParameters(im.system, nullptr, nullptr, ONE_4PI_EPS0, pd->epsilonr());
@@ -7000,7 +7000,7 @@ void GpuTrainingSystem::chainFinish(size_t step, const std::vector<int> &params)
     gpu::chainStepAfter(im.system, step);
     // The value of a rejected change is that from before again, which the
     // next step makes the charges for, if they depend on it
-    auto qv = im.chainChanges(params);
+    const auto qv = im.chainChanges(params);
     gpu::chainMarkChanged(im.system, qv.first, qv.second);
 }
 
@@ -7045,7 +7045,7 @@ int GpuTrainingSystem::chainCheckValues()
     std::vector<double> recipe, acm;
     gpu::downloadValues(im.system, &recipe, &acm);
     int ndiff = 0;
-    auto report = [&ndiff](const char *what, size_t i, double gpu, double host)
+    const auto report = [&ndiff](const char *what, size_t i, double gpu, double host)
     {
         if (ndiff < 8)
         {

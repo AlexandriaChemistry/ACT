@@ -383,11 +383,11 @@ PeakPerformance theoreticalPeakPerCore()
             return peak;
         }
     }
-    auto        name = processorName();
+    const auto  name = processorName();
     std::string simd, source;
     int         fpc  = flopsPerCycle(name, &simd);
     double      ghz  = maxFrequency(name, &source);
-    std::string cpu  = name.empty() ? "unknown processor" : name;
+    const std::string cpu  = name.empty() ? "unknown processor" : name;
     if (fpc > 0 && ghz > 0)
     {
         peak.gflops = fpc*ghz;
@@ -404,7 +404,7 @@ PeakPerformance theoreticalPeakPerCore()
 
 void writeSimdInformation(gmx::TextWriter *writer)
 {
-    std::string name = processorName();
+    const std::string name = processorName();
     if (!name.empty())
     {
         writer->writeLine(gmx::formatString("Processor:          %s", name.c_str()));
@@ -444,7 +444,7 @@ void writeSimdInformation(gmx::TextWriter *writer)
                                    explicitSimdPairUnroll());
     }
     writer->writeLine(gmx::formatString("Explicit SIMD:      %s", status.c_str()));
-    auto peak = theoreticalPeakPerCore();
+    const auto peak = theoreticalPeakPerCore();
     if (peak.gflops > 0)
     {
         if (GMX_DOUBLE)
@@ -494,7 +494,7 @@ void writeCodeInformation(gmx::TextWriter *writer)
                                         GMX_DOUBLE ? "" : " also in this build"));
     writer->writeLine("Energies:           summed in double precision");
     writer->writeLine("Constraints:        in double precision");
-    auto gpuCode = gpu::implementation();
+    const auto gpuCode = gpu::implementation();
     if (gpuCode.empty())
     {
         writer->writeLine("GPU:                none, ACT was built without GPU support");
@@ -536,7 +536,7 @@ void writeCodeInformation(gmx::TextWriter *writer)
         }
         else if (!names.empty())
         {
-            auto chosen = gpu::gpuOfProcess();
+            const auto chosen = gpu::gpuOfProcess();
             writer->writeLine(chosen.empty() ?
                               gmx::formatString("                    this process uses GPU %d, the processes on a node are",
                                                 gpu::gpuIndex()) :

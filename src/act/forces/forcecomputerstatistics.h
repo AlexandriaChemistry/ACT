@@ -58,7 +58,7 @@ private:
      
 public:
     //! Constructor
-    ForceComputerStatistics() {}
+    ForceComputerStatistics() = default;
 
     /*! \brief Collects statistics from other nodes.
      * and returns a string summarizing it.

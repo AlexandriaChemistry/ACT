@@ -104,7 +104,7 @@ bool writeReversedSdf(const std::string &input, const std::string &output)
     {
         out << lines[4 + i] << "\n";
     }
-    auto renumber = [natom](int a) { return natom + 1 - a; };
+    const auto renumber = [natom](int a) { return natom + 1 - a; };
     for (int b = 0; b < nbond; b++)
     {
         const auto &bl = lines[4 + natom + b];
@@ -302,8 +302,8 @@ protected:
         {
             qtot += q;
         }
-        auto dataName = sdfFile[0] == '/' ? sdfFile : gmx::test::TestFileManager::getInputFilePath(sdfFile);
-        importFile(&msghandler_, pd, dataName.c_str(), &molprops,
+        const auto dataName = sdfFile[0] == '/' ? sdfFile : gmx::test::TestFileManager::getInputFilePath(sdfFile);
+        importFile(&msghandler_, pd, dataName, &molprops,
                    "minimum", JobType::OPT, !qfrag.empty(), &qtot, true);
         if (!msghandler_.ok() || molprops.size() != 1)
         {
@@ -404,7 +404,7 @@ protected:
         {
             for (int m = 0; m < DIM; m++)
             {
-                auto shifted = [&](double dx)
+                const auto shifted = [&](double dx)
                 {
                     auto xs = x0;
                     xs[a][m] += dx;
@@ -465,7 +465,7 @@ protected:
                 R[m][XX] = -R[m][XX];
             }
         }
-        gmx::RVec              shift = { 1.7, -0.6, 2.3 };
+        const gmx::RVec        shift = { 1.7, -0.6, 2.3 };
         auto                   y     = transformed(R, shift, mol.xOriginal());
         std::vector<gmx::RVec> g;
         double                 er = energy(pd, mol, &y, &g);
@@ -511,11 +511,11 @@ protected:
         ACTMol mol;
         ASSERT_TRUE(readMolecule(pd, sdfFile, qfrag, {}, &mol));
         expectEntries(mol, itypes);
-        auto label    = sdfFile.substr(sdfFile.find_last_of('/') + 1);
-        auto reversed = fileManager_.getTemporaryFilePath(label);
+        const auto label    = sdfFile.substr(sdfFile.find_last_of('/') + 1);
+        const auto reversed = fileManager_.getTemporaryFilePath(label);
         ASSERT_TRUE(writeReversedSdf(gmx::test::TestFileManager::getInputFilePath(sdfFile), reversed));
         // The compounds are in reverse order as well
-        std::vector<double> qrev(qfrag.rbegin(), qfrag.rend());
+        const std::vector<double> qrev(qfrag.rbegin(), qfrag.rend());
         ACTMol rmol;
         ASSERT_TRUE(readMolecule(pd, reversed, qrev, {}, &rmol));
         expectEntries(rmol, itypes);
@@ -808,7 +808,7 @@ TEST_F(PhysicsTest, EnergyCache)
     ForceField pd = *pd0;
     ACTMol     mol;
     ASSERT_TRUE(readMolecule(&pd, waterDimer, {}, {}, &mol));
-    auto                      x0 = mol.xOriginal();
+    const auto                x0 = mol.xOriginal();
     std::vector<std::vector<gmx::RVec>> coords(5);
     for (size_t c = 0; c < coords.size(); c++)
     {
@@ -831,7 +831,7 @@ TEST_F(PhysicsTest, EnergyCache)
         }
         computeConformations(&msghandler_, &pd, mol.topology(), cdata, false, false);
         EXPECT_TRUE(msghandler_.ok());
-        auto                e = cdata->energies.find(InteractionType::EPOT);
+        const auto          e = cdata->energies.find(InteractionType::EPOT);
         std::vector<double> ep;
         for (size_t c = 0; c < coords.size(); c++)
         {
@@ -839,19 +839,19 @@ TEST_F(PhysicsTest, EnergyCache)
         }
         return ep;
     };
-    auto fresh = [&]()
+    const auto fresh = [&]()
     {
         ConformationData cdata;
         return epot(&cdata);
     };
     auto  &timings  = Timings::instance();
     size_t reusedId = timings.index("Energies used again");
-    auto   reused   = [&timings, reusedId]() { return timings.calls()[reusedId]; };
+    const auto reused   = [&timings, reusedId]() { return timings.calls()[reusedId]; };
 
     ConformationData cdata;
-    auto             e1 = epot(&cdata);
+    const auto       e1 = epot(&cdata);
     double           n0 = reused();
-    auto             e2 = epot(&cdata);
+    const auto       e2 = epot(&cdata);
     EXPECT_GT(reused(), n0) << "energies used again";
     EXPECT_EQ(e1, e2);
     EXPECT_EQ(fresh(), e2);
@@ -863,7 +863,7 @@ TEST_F(PhysicsTest, EnergyCache)
     }
     cdata.invalidate();
     n0      = reused();
-    auto e3 = epot(&cdata);
+    const auto e3 = epot(&cdata);
     EXPECT_EQ(n0, reused()) << "nothing used again after the coordinates changed";
     EXPECT_EQ(fresh(), e3);
     EXPECT_NE(e1, e3);
@@ -885,21 +885,21 @@ TEST_F(PhysicsTest, EnergyCache)
     ASSERT_LT(qj, atoms.size());
     atoms[qi].setCharge(atoms[qi].charge() + 0.05);
     atoms[qj].setCharge(atoms[qj].charge() - 0.05);
-    auto e4 = epot(&cdata);
+    const auto e4 = epot(&cdata);
     EXPECT_EQ(fresh(), e4);
     EXPECT_NE(e3, e4);
 
     // A bond length, filled in the topology
     auto  itype  = InteractionType::BONDS;
     ASSERT_TRUE(mol.topology()->hasEntry(itype));
-    auto  id     = mol.topology()->entry(itype)[0]->id();
+    const auto id     = mol.topology()->entry(itype)[0]->id();
     auto *params = pd.findForces(itype)->findParameters(id);
     ASSERT_NE(nullptr, params);
     ASSERT_FALSE(params->empty());
     auto &param  = params->begin()->second;
     param.forceSetValue(1.1*param.value());
     mol.topologyPtr()->fillParameters(&msghandler_, &pd, missingParameters::Ignore);
-    auto e5 = epot(&cdata);
+    const auto e5 = epot(&cdata);
     EXPECT_EQ(fresh(), e5);
     EXPECT_NE(e4, e5);
 }
@@ -917,7 +917,7 @@ TEST_F(PhysicsTest, CoulombKernel)
     ASSERT_FALSE(pd->polarizable());
     ACTMol mol;
     ASSERT_TRUE(readMolecule(pd, waterDimer, {}, {}, &mol));
-    auto                      x0 = mol.xOriginal();
+    const auto                x0 = mol.xOriginal();
     std::vector<std::vector<gmx::RVec>> coords(7);
     for (size_t c = 0; c < coords.size(); c++)
     {
@@ -943,7 +943,7 @@ TEST_F(PhysicsTest, CoulombKernel)
         computeConformations(&msghandler_, pd, mol.topology(), cdata, false, false);
         setUseExplicitSimd(before);
         EXPECT_TRUE(msghandler_.ok());
-        auto                e = cdata->energies.find(InteractionType::EPOT);
+        const auto          e = cdata->energies.find(InteractionType::EPOT);
         std::vector<double> ep;
         for (size_t c = 0; c < coords.size(); c++)
         {
@@ -952,7 +952,7 @@ TEST_F(PhysicsTest, CoulombKernel)
         return ep;
     };
     ConformationData cdata;
-    auto compare = [&](const char *what)
+    const auto compare = [&](const char *what)
     {
         SCOPED_TRACE(what);
         ConformationData direct;
@@ -999,7 +999,7 @@ TEST_F(PhysicsTest, CoulombKernel)
     auto *zeta  = &ptype->parameters()->find(zetaName)->second;
     ASSERT_NE(0, zeta->value());
     double zeta0   = zeta->value();
-    auto   setZeta = [&](double value)
+    const auto setZeta = [&](double value)
     {
         zeta->forceSetValue(value);
         for (auto &atom : atoms)
@@ -1025,7 +1025,7 @@ TEST_F(PhysicsTest, ShellConvergenceAndMonomer)
     ACTMol mol;
     ASSERT_TRUE(readMolecule(pd, waterDimer, {}, {}, &mol));
     ASSERT_TRUE(mol.isDimer());
-    auto                                x0 = mol.xOriginal();
+    const auto                          x0 = mol.xOriginal();
     std::vector<std::vector<gmx::RVec>> coords(5, x0);
     // The second molecule moved a little in each conformation
     size_t natom1 = mol.fragmentHandler()->atomStart()[1];
@@ -1040,7 +1040,7 @@ TEST_F(PhysicsTest, ShellConvergenceAndMonomer)
     // step for a force below about 3e-5 kJ/mol/nm is smaller than the
     // precision of their coordinates in double precision, so they cannot
     // converge to a mean square force much below 1e-9.
-    ForceComputer     converged(1e-8, 100, 1);
+    const ForceComputer converged(1e-8, 100, 1);
     DimerInteractions result;
     converged.computeInteraction(&msghandler_, pd, &mol, coords, false, &result);
     EXPECT_TRUE(msghandler_.ok());
@@ -1056,7 +1056,7 @@ TEST_F(PhysicsTest, ShellConvergenceAndMonomer)
         EXPECT_TRUE(std::isfinite(result.einter[c]));
     }
     // One iteration with a tolerance that cannot be reached
-    ForceComputer oneIteration(1e-30, 1, 1);
+    const ForceComputer oneIteration(1e-30, 1, 1);
     DimerInteractions unconverged;
     oneIteration.computeInteraction(&msghandler_, pd, &mol, coords, false, &unconverged);
     EXPECT_GT(oneIteration.numShellConvergenceFailed(), 0u) << "the shells did not converge";

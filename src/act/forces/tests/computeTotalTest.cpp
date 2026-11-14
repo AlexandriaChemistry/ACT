@@ -75,8 +75,8 @@ bool readMolecule(MsgHandler        *msghandler,
     std::vector<MolProp> molprops;
     bool   userqtot   = false;
     double qtot_babel = 0;
-    auto   dataName   = gmx::test::TestFileManager::getInputFilePath("molecules/" + molName + ".sdf");
-    importFile(msghandler, pd, dataName.c_str(), &molprops,
+    const auto dataName   = gmx::test::TestFileManager::getInputFilePath("molecules/" + molName + ".sdf");
+    importFile(msghandler, pd, dataName, &molprops,
                "minimum", JobType::OPT, userqtot, &qtot_babel, true);
     if (!msghandler->ok() || molprops.size() != 1)
     {
@@ -107,7 +107,7 @@ void compareEnergies(const std::map<InteractionType, double> &ref,
     }
     for(const auto &e : ref)
     {
-        auto t = test.find(e.first);
+        const auto t = test.find(e.first);
         if (test.end() == t)
         {
             // Terms that are zero may be left out, as VDWCORRECTION
@@ -217,7 +217,7 @@ protected:
         ASSERT_EQ(nconf, energies.size());
         for(size_t c = 0; c < nconf; c++)
         {
-            auto label = gmx::formatString("%s %s conformation %zu", ffName.c_str(), molName.c_str(), c);
+            const auto label = gmx::formatString("%s %s conformation %zu", ffName.c_str(), molName.c_str(), c);
             auto xref  = x[c];
             std::vector<gmx::RVec>            fref(xref.size());
             std::map<InteractionType, double> eref;
@@ -266,7 +266,7 @@ protected:
             std::vector<std::vector<gmx::RVec>>            finter;
             std::vector<std::vector<gmx::RVec>>            x;
         };
-        auto run = [&](const std::vector<size_t> &confs)
+        const auto run = [&](const std::vector<size_t> &confs)
         {
             Result r;
             for(auto c : confs)
@@ -370,7 +370,7 @@ protected:
         const auto &astart = mol.fragmentHandler()->atomStart();
         for(size_t c = 0; c < nconf; c++)
         {
-            auto label = gmx::formatString("%s %s conformation %zu", ffName.c_str(), molName.c_str(), c);
+            const auto label = gmx::formatString("%s %s conformation %zu", ffName.c_str(), molName.c_str(), c);
             // The dimer
             auto                              xdimer = x[c];
             std::vector<gmx::RVec>            fref(xdimer.size());
@@ -397,7 +397,7 @@ protected:
             compareForces(fref, finter[c], 1e-5, label);
             // The terms add up to the interaction energy, except those that
             // are sums of other terms.
-            std::set<InteractionType> sums = { InteractionType::ALLELEC, InteractionType::EXCHIND,
+            const std::set<InteractionType> sums = { InteractionType::ALLELEC, InteractionType::EXCHIND,
                                                InteractionType::EPOT };
             double esum = 0;
             for(const auto &e : einter[c])
@@ -466,7 +466,7 @@ TEST_F(ComputeTotalTest, HyperpolarizableConvergence)
     EXPECT_EQ(0, shellMaxDistance(&pd));
     ACTMol mol;
     ASSERT_TRUE(readMolecule(&msghandler_, &pd, "water_dimer", &mol));
-    ForceComputer forceComp(1e-6, 100, 1);
+    const ForceComputer forceComp(1e-6, 100, 1);
     ConformationSet set;
     set.top = mol.topology();
     set.setCoordinates({ mol.xOriginal() });
@@ -509,7 +509,7 @@ TEST_F(ComputeTotalTest, InductionCorrectionPotential)
     forceComp_.computeTotal(&msghandler_, pd, &set, ShellOptions(), &energies);
     for(size_t c = 0; c < x.size(); c++)
     {
-        auto label = gmx::formatString("conformation %zu", c);
+        const auto label = gmx::formatString("conformation %zu", c);
         auto xref  = x[c];
         std::vector<gmx::RVec>            fref(xref.size());
         std::map<InteractionType, double> eref;
@@ -602,7 +602,7 @@ TEST_F(ComputeTotalTest, NoRelaxation)
     forceComp_.computeTotal(&msghandler_, pd, &set, options, &energies);
     for(size_t c = 0; c < x.size(); c++)
     {
-        auto label = gmx::formatString("conformation %zu", c);
+        const auto label = gmx::formatString("conformation %zu", c);
         auto xref  = x[c];
         std::vector<gmx::RVec>            fref(xref.size());
         std::map<InteractionType, double> eref;
@@ -611,7 +611,7 @@ TEST_F(ComputeTotalTest, NoRelaxation)
         // computeOnce gives the potential terms only
         for(const auto &e : eref)
         {
-            auto t = energies[c].find(e.first);
+            const auto t = energies[c].find(e.first);
             ASSERT_TRUE(energies[c].end() != t) << label << " " << interactionTypeToString(e.first);
             EXPECT_NEAR(e.second, t->second, gmx::test::precisionTolerance(1e-10, 1e-6)*std::max(1.0, std::abs(e.second)))
                 << label << " " << interactionTypeToString(e.first);
@@ -693,7 +693,7 @@ TEST_F(ComputeTotalTest, Statistics)
     std::vector<std::map<InteractionType, double>> energies;
     // Within the precision of the forces, which in single precision without
     // explicit SIMD are computed from single precision coordinates
-    ForceComputer forceComp(gmx::test::precisionTolerance(1e-12, 1e-4), 200, 1);
+    const ForceComputer forceComp(gmx::test::precisionTolerance(1e-12, 1e-4), 200, 1);
     forceComp.computeTotal(&msghandler_, pd, &set, ShellOptions(), &energies);
     EXPECT_EQ(2u, forceComp.numEvaluations());
     EXPECT_GE(forceComp.numShellIterations(), 2u);
@@ -810,8 +810,8 @@ TEST_F(ComputeTotalTest, DoublePrecisionArrays)
         EXPECT_EQ(!GMX_DOUBLE, set[1].data.arraysDouble.nconf > 0);
         for(size_t c = 0; c < x.size(); c++)
         {
-            auto label = gmx::formatString("%s %s conformation %zu", ffMol.first.c_str(),
-                                           ffMol.second.c_str(), c);
+            const auto label = gmx::formatString("%s %s conformation %zu", ffMol.first.c_str(),
+                                                 ffMol.second.c_str(), c);
             compareEnergies(energies[0][c], energies[1][c], gmx::test::precisionTolerance(1e-14, 1e-6), label);
             // As in the comparison of the explicit SIMD in single and double precision
             compareForces(set[0].data.f(c).toRVec(), set[1].data.f(c).toRVec(),

@@ -141,7 +141,7 @@ static inline SimdDouble sqrt(SimdDouble a) { return SimdDouble(vsqrtq_f64(a.v))
  */
 static inline SimdDouble pow2(SimdDouble n)
 {
-    int64x2_t bits = vshlq_n_s64(vaddq_s64(vcvtq_s64_f64(n.v), vdupq_n_s64(1023)), 52);
+    const int64x2_t bits = vshlq_n_s64(vaddq_s64(vcvtq_s64_f64(n.v), vdupq_n_s64(1023)), 52);
     return SimdDouble(vreinterpretq_f64_s64(bits));
 }
 
@@ -202,8 +202,8 @@ static inline SimdDouble integerDifferenceDouble(const std::int64_t *a, const st
  */
 static inline SimdFloat integerDifferenceFloat(const std::int64_t *a, const std::int64_t *b)
 {
-    float64x2_t lo = vcvtq_f64_s64(vsubq_s64(vld1q_s64(a), vld1q_s64(b)));
-    float64x2_t hi = vcvtq_f64_s64(vsubq_s64(vld1q_s64(a + 2), vld1q_s64(b + 2)));
+    const float64x2_t lo = vcvtq_f64_s64(vsubq_s64(vld1q_s64(a), vld1q_s64(b)));
+    const float64x2_t hi = vcvtq_f64_s64(vsubq_s64(vld1q_s64(a + 2), vld1q_s64(b + 2)));
     return SimdFloat(vcvt_high_f32_f64(vcvt_f32_f64(lo), hi));
 }
 
@@ -266,7 +266,7 @@ static inline SimdFloat sqrt(SimdFloat a) { return SimdFloat(vsqrtq_f32(a.v)); }
  */
 static inline SimdFloat pow2(SimdFloat n)
 {
-    int32x4_t bits = vshlq_n_s32(vaddq_s32(vcvtq_s32_f32(n.v), vdupq_n_s32(127)), 23);
+    const int32x4_t bits = vshlq_n_s32(vaddq_s32(vcvtq_s32_f32(n.v), vdupq_n_s32(127)), 23);
     return SimdFloat(vreinterpretq_f32_s32(bits));
 }
 

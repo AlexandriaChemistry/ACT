@@ -326,7 +326,7 @@ static S ttDispersion(double bDisp, const double *ctt, S r, S rinv, S *fscal)
         tail = simd::fma(tail, bDispr, S(ttTailCoefficients[j]));
     }
     tail = tail*terms[ttTerms]*bDispr*(1.0/(ttTerms+1));
-    auto       useTail = bDispr < ttTailMax;
+    const auto useTail = bDispr < ttTailMax;
     S fk      = 1.0;
     int        k       = 0;
     for (int m = 3; m <= 5; m++)
@@ -657,7 +657,7 @@ struct Coulomb
     static void compute(const double *p, S rsq, S *e, S *fscal)
     {
         // Particles on top of each other only have an energy with Gaussian charges
-        auto       overlap = !(rsq > 0.0);
+        const auto overlap = !(rsq > 0.0);
         S rinv    = simd::invsqrt(rsq);
         if constexpr (V == 1)
         {
@@ -735,7 +735,7 @@ struct Polarization
         auto ksh = p[0];
         auto fch = p[2];
         // A shell on top of its core has no energy
-        auto overlap = !(rsq > 0.0);
+        const auto overlap = !(rsq > 0.0);
         e[0]  += simd::select(overlap, 0.0, 0.5*ksh*rsq);
         *fscal = -ksh;
         if (fch > 0)
@@ -1136,28 +1136,28 @@ void computeAngles(TopologyEntryRange         entries,
                 ipb    = simd::fma(rkj[m], rkj[m], ipb);
             }
             // As cos_angle, limited to [-1, 1]
-            S ipab  = ipa*ipb;
+            const S ipab  = ipa*ipb;
             S costh = simd::select(ipab > 0.0, ip*simd::invsqrt(ipab), 1.0);
             costh            = simd::min(simd::max(costh, -1.0), 1.0);
-            S dth   = simd::acos(costh) - a.theta0;
+            const S dth   = simd::acos(costh) - a.theta0;
             fmaEnergy(energies + c, S(halfk), dth*dth);
             if constexpr (Forces)
             {
                 // There is no force for angles of 0 and 180 degrees
-                S costh2 = costh*costh;
-                S st     = simd::select(costh2 < 1.0,
-                                                 (-a.kt*dth)*simd::invsqrt(1.0 - costh2), 0.0);
-                S sth    = st*costh;
-                S nrij_1 = simd::invsqrt(ipa);
-                S nrkj_1 = simd::invsqrt(ipb);
-                S cik    = st*nrij_1*nrkj_1;
-                S cii    = sth*nrij_1*nrij_1;
-                S ckk    = sth*nrkj_1*nrkj_1;
+                const S costh2 = costh*costh;
+                const S st     = simd::select(costh2 < 1.0,
+                                                       (-a.kt*dth)*simd::invsqrt(1.0 - costh2), 0.0);
+                const S sth    = st*costh;
+                const S nrij_1 = simd::invsqrt(ipa);
+                const S nrkj_1 = simd::invsqrt(ipb);
+                const S cik    = st*nrij_1*nrkj_1;
+                const S cii    = sth*nrij_1*nrij_1;
+                const S ckk    = sth*nrkj_1*nrkj_1;
                 for (int m = 0; m < DIM; m++)
                 {
-                    S f_im = -(cik*rkj[m] - cii*rij[m]);
-                    S f_km = -(cik*rij[m] - ckk*rkj[m]);
-                    S f_jm = -f_im - f_km;
+                    const S f_im = -(cik*rkj[m] - cii*rij[m]);
+                    const S f_km = -(cik*rij[m] - ckk*rkj[m]);
+                    const S f_jm = -f_im - f_km;
                     T         *fi   = f + a.i + m*stride + c;
                     T         *fj   = f + a.j + m*stride + c;
                     T         *fk   = f + a.k + m*stride + c;
@@ -1235,7 +1235,7 @@ static inline void dihedralVectors(const DihedralParams          &d,
         v->r_kj[m] = loadDifference<T>(x + d.k + m*stride + c, x + d.j + m*stride + c);
         v->r_kl[m] = loadDifference<T>(x + d.k + m*stride + c, x + d.l + m*stride + c);
     }
-    auto cprod = [](const S *a, const S *b, S *axb)
+    const auto cprod = [](const S *a, const S *b, S *axb)
     {
         axb[XX] = a[YY]*b[ZZ] - a[ZZ]*b[YY];
         axb[YY] = a[ZZ]*b[XX] - a[XX]*b[ZZ];
@@ -1290,7 +1290,7 @@ static inline void dihedralForces(const DihedralParams     &d,
 {
     // There is no force if one of the planes is not defined
     S    toler  = v.nrkj2*dihedralEpsilon<T>();
-    auto ok     = v.iprm > toler && v.iprn > toler;
+    const auto ok     = v.iprm > toler && v.iprn > toler;
     S dd     = simd::select(ok, ddphi, 0.0)*nrkj;
     // 1/iprm and 1/iprn from s, such that there is no division
     S s2     = s*s;
@@ -1361,9 +1361,9 @@ void computeFourierDihedrals(TopologyEntryRange         entries,
         {
             DihedralVectors<S> v;
             dihedralVectors<T>(d, stride, c, x, &v);
-            S s       = invNormProduct(v);
-            S defined = v.iprm*v.iprn;
-            S cos_phi = -simd::select(defined > 0.0, v.mn*s, 1.0);
+            const S s       = invNormProduct(v);
+            const S defined = v.iprm*v.iprn;
+            const S cos_phi = -simd::select(defined > 0.0, v.mn*s, 1.0);
             // As in fourDihOne, energy sum_j c_j cos^j(phi) and its derivative
             S cosfac  = 1.0;
             S ener    = d.c[0];
@@ -1378,7 +1378,7 @@ void computeFourierDihedrals(TopologyEntryRange         entries,
             if constexpr (Forces)
             {
                 // -sin(phi) = sin(psi)
-                S nrkj = simd::sqrt(v.nrkj2);
+                const S nrkj = simd::sqrt(v.nrkj2);
                 dvdphi *= nrkj*v.ipr*s;
                 dihedralForces(d, stride, c, v, nrkj, s, dvdphi, f);
             }
@@ -1415,8 +1415,8 @@ void computeImproperDihedrals(TopologyEntryRange         entries,
         {
             DihedralVectors<S> v;
             dihedralVectors<T>(d, stride, c, x, &v);
-            S nrkj = simd::sqrt(v.nrkj2);
-            S phi  = simd::atan2(nrkj*v.ipr, v.mn);
+            const S nrkj = simd::sqrt(v.nrkj2);
+            const S phi  = simd::atan2(nrkj*v.ipr, v.mn);
             fmaEnergy(energies + c, halfk*phi, phi);
             if constexpr (Forces)
             {
@@ -1441,7 +1441,7 @@ bool computeExplicitSimdT(Potential                   mypot,
                           double                     *energies,
                           bool                        forces)
 {
-    auto pairs = [&](auto kernel)
+    const auto pairs = [&](auto kernel)
     {
         if (forces)
         {
@@ -1556,7 +1556,7 @@ bool coulombKernelsExplicitSimdT(const Range                &entries,
             S rsq = 0.0;
             for (int m = 0; m < DIM; m++)
             {
-                S dx = loadDifference<T>(xi + m*stride + c, xj + m*stride + c);
+                const S dx = loadDifference<T>(xi + m*stride + c, xj + m*stride + c);
                 rsq = simd::fma(dx, dx, rsq);
             }
             for (int k = 0; k < 4; k++)

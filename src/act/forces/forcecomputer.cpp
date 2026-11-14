@@ -426,7 +426,7 @@ static std::vector<std::pair<size_t, size_t>> shellParents(const std::vector<Act
         if (atoms[i].pType() == ActParticle::Shell &&
             atoms[i].parents().size() == 1)
         {
-            shells.push_back({ i, atoms[i].parents()[0] });
+            shells.emplace_back(i, atoms[i].parents()[0]);
         }
     }
     return shells;
@@ -666,7 +666,7 @@ size_t ForceComputer::updateShells(const Topology            *top,
     // the shells does not reduce it.
     // That is only tested if it no longer decreases, then the largest
     // force is needed.
-    auto stalled = [&](size_t j)
+    const auto stalled = [&](size_t j)
     {
         return msForce[j] > msForceToler_ && msForce[j] >= 0.5*msPrev[j];
     };
@@ -821,7 +821,7 @@ size_t ForceComputer::updateShells(const Topology            *top,
                 continue;
             }
             // The displacement is computed from the integers
-            Coordinate xold[DIM] = { xs[j], xs[j + stride], xs[j + 2*stride] };
+            const Coordinate xold[DIM] = { xs[j], xs[j + stride], xs[j + 2*stride] };
             if (quartic && rcs[j] == 0)
             {
                 // On top of the core the quartic term only contributes if
@@ -927,7 +927,7 @@ static void calcInduction(ConformationEnergies *cener)
     {
         if (isElecTerm(t) || InteractionType::EXCHANGE == t)
         {
-            terms.push_back({ t, cener->find(t) });
+            terms.emplace_back(t, cener->find(t));
         }
     }
     auto induction = cener->find(InteractionType::INDUCTION);
@@ -948,7 +948,7 @@ static void calcInduction(ConformationEnergies *cener)
                 eSum.act[c]    = 0.0;
             }
         }
-        auto addTerm = [nconf](const ConformationEnergies::Term &et, double *sum)
+        const auto addTerm = [nconf](const ConformationEnergies::Term &et, double *sum)
         {
             for(size_t c = 0; c < nconf && et.have; c++)
             {
@@ -1031,8 +1031,8 @@ static void addCorrection(ConformationEnergies      *cener,
                           const std::vector<double> &correction,
                           bool                       toInduction)
 {
-    auto eAllElec = cener->add(InteractionType::ALLELEC);
-    auto eExchInd = cener->add(InteractionType::EXCHIND);
+    const auto eAllElec = cener->add(InteractionType::ALLELEC);
+    const auto eExchInd = cener->add(InteractionType::EXCHIND);
     for(size_t c = 0; c < cener->nconf() && c < correction.size(); c++)
     {
         if (eAllElec.has(c))
@@ -1047,7 +1047,7 @@ static void addCorrection(ConformationEnergies      *cener,
     if (toInduction)
     {
         auto induction = cener->add(InteractionType::INDUCTION);
-        auto icorr     = cener->find(InteractionType::INDUCTIONCORRECTION);
+        const auto icorr     = cener->find(InteractionType::INDUCTIONCORRECTION);
         for(size_t c = 0; c < cener->nconf() && c < correction.size(); c++)
         {
             if (icorr.has(c))
@@ -1066,7 +1066,7 @@ static void addCorrection(ConformationEnergies      *cener,
 static std::vector<double> potentialCorrection(ConformationEnergies *cener)
 {
     std::vector<double> correction;
-    auto icorr = cener->find(InteractionType::INDUCTIONCORRECTION);
+    const auto icorr = cener->find(InteractionType::INDUCTIONCORRECTION);
     if (icorr.have)
     {
         correction.resize(cener->nconf(), 0.0);
@@ -1092,7 +1092,7 @@ static std::vector<double> sumElecTerms(ConformationEnergies *cener)
                              InteractionType::POLARIZATION,
                              InteractionType::CHARGETRANSFER })
     {
-        auto ee = cener->find(itype);
+        const auto ee = cener->find(itype);
         for(size_t c = 0; c < cener->nconf(); c++)
         {
             if (ee.has(c))
@@ -1113,7 +1113,7 @@ static void backupEnergies(ConformationEnergies *cener)
     // copying all of them is the same as copying only those.
     for(auto t : cener->types())
     {
-        auto et = cener->find(t);
+        const auto et = cener->find(t);
         std::copy(et.act, et.act + cener->nconf(), et.before);
     }
 }
@@ -1129,8 +1129,8 @@ static void subtractMonomers(ConformationEnergies *dimer, ConformationEnergies *
     bool backups = dimer->haveBackups();
     for(auto t : dimer->types())
     {
-        auto ed = dimer->find(t);
-        ConformationEnergies::Term em[2] = { monomers[0]->find(t), monomers[1]->find(t) };
+        const auto ed = dimer->find(t);
+        const ConformationEnergies::Term em[2] = { monomers[0]->find(t), monomers[1]->find(t) };
         for(size_t c = 0; c < dimer->nconf(); c++)
         {
             if (!ed.has(c))
@@ -1293,7 +1293,7 @@ static void keepRelaxedShells(const std::vector<ACTMol *> &allmols)
     {
         forEachConformation(allmols, what, [](ConformationData *cdata, size_t c, const Topology *top)
         {
-            auto  x     = cdata->x(c);
+            const auto x     = cdata->x(c);
             auto &kept  = cdata->confs[c].xkept;
             auto &atoms = top->atoms();
             kept.clear();
@@ -1326,7 +1326,7 @@ static bool restoreRelaxedShells(const std::vector<ACTMol *> &allmols, int what)
     bool restored = false;
     forEachConformation(allmols, what, [&restored](ConformationData *cdata, size_t c, const Topology *top)
     {
-        auto        x     = cdata->x(c);
+        const auto  x     = cdata->x(c);
         const auto &kept  = cdata->confs[c].xkept;
         auto       &atoms = top->atoms();
         size_t      k     = 0;
@@ -1371,7 +1371,7 @@ static void copyRelaxedMonomerShells(const std::vector<ACTMol *> &allmols)
             auto &mons  = *mol.monomerCoords(im);
             for(size_t i = 0; i < dimers->nconf(); i++)
             {
-                auto        xd = dimers->x(i);
+                const auto  xd = dimers->x(i);
                 const auto &xr = mons[i].xrelax;
                 for(size_t j = 0; j < atoms.size(); j++)
                 {
@@ -1417,7 +1417,7 @@ void ForceComputer::relaxMonomer(MsgHandler                  *msghandler,
                                  bool                         allForces) const
 {
     static const size_t timer = Timings::instance().index("Shell relaxation");
-    ScopedTimer         scoped(timer);
+    const ScopedTimer   scoped(timer);
     double              maxShellDistance = shellMaxDistance(pd);
     // The conformations that did not converge of each molecule, such that
     // the others are not visited in each iteration
@@ -1516,7 +1516,7 @@ void ForceComputer::relaxDimer(MsgHandler                  *msghandler,
                                bool                         allForces) const
 {
     static const size_t timer = Timings::instance().index("Shell relaxation");
-    ScopedTimer         scoped(timer);
+    const ScopedTimer   scoped(timer);
     double              maxShellDistance = shellMaxDistance(pd);
     // The conformations that did not converge of each molecule, such that
     // the others are not visited in each iteration
@@ -1682,7 +1682,7 @@ static void postProcessRelaxedEnergies(const std::vector<ACTMol *>            &a
                 // Split the total induction into second order induction and
                 // the remaining higher order induction correction.
                 size_t k     = &molptr - allmols.data();
-                auto   eit   = dimer->find(InteractionType::INDUCTION);
+                const auto eit   = dimer->find(InteractionType::INDUCTION);
                 std::vector<double> eInd(dimer->nconf(), 0.0);
                 for(size_t i = 0; i < dimer->nconf(); i++)
                 {
@@ -1709,7 +1709,7 @@ static void postProcessRelaxedEnergies(const std::vector<ACTMol *>            &a
         for(size_t i = 0; i < tops.size() && !inter; i++)
         {
             calcInduction(monomers[i]);
-            auto correction = potentialCorrection(monomers[i]);
+            const auto correction = potentialCorrection(monomers[i]);
             if (!correction.empty())
             {
                 addCorrection(monomers[i], correction, false);
@@ -1741,7 +1741,7 @@ bool ForceComputer::prepareGpuResident(const ForceField *pd, const std::vector<A
         return false;
     }
     static const size_t timer = Timings::instance().index("GPU resident setup");
-    ScopedTimer         scoped(timer);
+    const ScopedTimer   scoped(timer);
     if (!gpuSystem_)
     {
         gpuSystem_ = std::make_shared<GpuTrainingSystem>();
@@ -1782,7 +1782,7 @@ void ForceComputer::computeRelaxedEnergiesGpu(MsgHandler                        
                                               bool                                 deviationsOnly) const
 {
     static const size_t timer = Timings::instance().index("GPU resident evaluation");
-    ScopedTimer         scoped(timer);
+    const ScopedTimer   scoped(timer);
     auto &gs = *gpuSystem_;
     gs.setKeepEnergies(keepGpuEnergies_);
     // Only the deviations, the energies stay on the GPU, which does the
@@ -1792,7 +1792,7 @@ void ForceComputer::computeRelaxedEnergiesGpu(MsgHandler                        
     // With several replicas, the work on the processor is done for each,
     // with its energies in the molecules, see GpuTrainingSystem::selectReplica
     const size_t nrep = gs.nreplica();
-    auto forEachReplica = [&gs, nrep](const std::function<void(size_t)> &work)
+    const auto forEachReplica = [&gs, nrep](const std::function<void(size_t)> &work)
     {
         for (size_t r = 0; r < nrep; r++)
         {
@@ -1833,27 +1833,27 @@ void ForceComputer::computeRelaxedEnergiesGpu(MsgHandler                        
         {
             {
                 // The parameters of each replica, on the processor
-                ScopedTimer st(stageT);
+                const ScopedTimer st(stageT);
                 for (size_t r = 0; r < nrep; r++)
                 {
                     (*stage)(r);
                     gs.stageParameters(r, pd, this);
                 }
             }
-            ScopedTimer up(upload);
+            const ScopedTimer up(upload);
             gs.uploadParameters(pd);
         }
         else
         {
             {
-                ScopedTimer st(stageT);
+                const ScopedTimer st(stageT);
                 for (size_t r = 0; r < nrep; r++)
                 {
                     gs.stageParameters(r, pd, this);
                 }
             }
             // As GpuTrainingSystem::updateParameters
-            ScopedTimer up(upload);
+            const ScopedTimer up(upload);
             gs.uploadParameters(pd);
         }
     }
@@ -1866,18 +1866,18 @@ void ForceComputer::computeRelaxedEnergiesGpu(MsgHandler                        
     // on their parents are not needed, only the energies, see setKeepShells
     const bool restoreKept = keepShells && gs.haveKeptShells();
     // The energies before relaxing are backed up, to extract the induction
-    { ScopedTimer et(energyT); gs.compute(-1, !restoreKept, true); }
+    { const ScopedTimer et(energyT); gs.compute(-1, !restoreKept, true); }
     // The energies of computeForces are not needed, they are computed
     // after relaxing
     if (restoreKept && gs.restoreShells(-2))
     {
-        ScopedTimer et(energyT);
+        const ScopedTimer et(energyT);
         gs.computeForces(-2);
     }
     const bool all[2] = { true, true };
-    { ScopedTimer rt(relaxT); size_t nf = 0; nShellIter_ += gs.relax(-1, all, settings, &nf); nShellConvergeFailed_ += nf; }
+    { const ScopedTimer rt(relaxT); size_t nf = 0; nShellIter_ += gs.relax(-1, all, settings, &nf); nShellConvergeFailed_ += nf; }
     // Both monomers at once
-    { ScopedTimer et(energyT); gs.compute(-2, false); }
+    { const ScopedTimer et(energyT); gs.compute(-2, false); }
     // For each replica and molecule
     std::vector<std::vector<std::vector<double>>> eInduc2(nrep, std::vector<std::vector<double>>(allmols.size()));
     bool doInduc2 = separateInductionCorrection;
@@ -1895,7 +1895,7 @@ void ForceComputer::computeRelaxedEnergiesGpu(MsgHandler                        
         }
         gs.saveDimers();
         gs.copyRelaxedMonomerShells();
-        { ScopedTimer et(energyT); gs.compute(2); }
+        { const ScopedTimer et(energyT); gs.compute(2); }
         std::vector<std::vector<std::vector<double>>> eRef(nrep, std::vector<std::vector<double>>(allmols.size()));
         forEachReplica([&allmols, &eRef](size_t r)
         {
@@ -1909,11 +1909,11 @@ void ForceComputer::computeRelaxedEnergiesGpu(MsgHandler                        
             if (im > 0)
             {
                 gs.copyRelaxedMonomerShells();
-                { ScopedTimer et(energyT); gs.computeForces(2); }
+                { const ScopedTimer et(energyT); gs.computeForces(2); }
             }
             const bool relaxMonomer[2] = { im == 0, im == 1 };
-            { ScopedTimer rt(relaxT); size_t nf = 0; nShellIter_ += gs.relax(2, relaxMonomer, settings, &nf); nShellConvergeFailed_ += nf; }
-            { ScopedTimer et(energyT); gs.compute(2, false); }
+            { const ScopedTimer rt(relaxT); size_t nf = 0; nShellIter_ += gs.relax(2, relaxMonomer, settings, &nf); nShellConvergeFailed_ += nf; }
+            { const ScopedTimer et(energyT); gs.compute(2, false); }
             forEachReplica([&allmols, &eRef, &eInduc2](size_t r)
             {
                 for (size_t k = 0; k < allmols.size(); k++)
@@ -1931,15 +1931,15 @@ void ForceComputer::computeRelaxedEnergiesGpu(MsgHandler                        
         {
             gs.restoreShells(2);
         }
-        { ScopedTimer et(energyT); gs.computeForces(2); }
+        { const ScopedTimer et(energyT); gs.computeForces(2); }
     }
     else if (restoreKept && gs.restoreShells(2))
     {
-        ScopedTimer et(energyT);
+        const ScopedTimer et(energyT);
         gs.computeForces(2);
     }
-    { ScopedTimer rt(relaxT); size_t nf = 0; nShellIter_ += gs.relax(2, all, settings, &nf); nShellConvergeFailed_ += nf; }
-    { ScopedTimer et(energyT); gs.compute(2, false); }
+    { const ScopedTimer rt(relaxT); size_t nf = 0; nShellIter_ += gs.relax(2, all, settings, &nf); nShellConvergeFailed_ += nf; }
+    { const ScopedTimer et(energyT); gs.compute(2, false); }
     if (!settings.poll)
     {
         // Whether to keep the shells depends on them, see keepShells
@@ -1965,7 +1965,7 @@ void ForceComputer::computeRelaxedEnergiesGpu(MsgHandler                        
     }
     if (checkCharges)
     {
-        auto dq = gs.chargeDifference();
+        const auto dq = gs.chargeDifference();
         fprintf(stderr, "GPU resident check: %-22s largest difference %.2e (of %.6g)\n",
                 "charges", dq.first, dq.second);
     }
@@ -2131,8 +2131,8 @@ void ForceComputer::computeRelaxedEnergies(MsgHandler                  *msghandl
                 auto       &gpu = gpuEnergies[g];
                 for (auto itype : cpu.types())
                 {
-                    auto ec = cpu.find(itype);
-                    auto eg = gpu.find(itype);
+                    const auto ec = cpu.find(itype);
+                    const auto eg = gpu.find(itype);
                     if (!ec.have || !eg.have)
                     {
                         continue;
@@ -2160,7 +2160,7 @@ void ForceComputer::computeRelaxedEnergies(MsgHandler                  *msghandl
         return;
     }
     static const size_t timer = Timings::instance().index("Energy calculation overhead");
-    ScopedTimer         scoped(timer);
+    const ScopedTimer   scoped(timer);
     // Shells are relaxed using the forces
     bool forces = computeForces || pd->polarizable();
     // Without polarization, the interaction energies of dimers are those of
@@ -2440,7 +2440,7 @@ static void addFieldForces(const std::vector<ActAtom>  &atoms,
         {
             continue;
         }
-        auto f = cdata->f(c);
+        const auto f = cdata->f(c);
         for(size_t i = 0; i < atoms.size() && i < f.size(); i++)
         {
             real fac = FIELDFAC*atoms[i].charge();
@@ -2480,7 +2480,7 @@ void ForceComputer::computeTotal(MsgHandler                                     
     std::vector<std::vector<gmx::RVec>> inputShells;
     for(size_t c = 0; c < cdata->nconf(); c++)
     {
-        auto x  = cdata->x(c);
+        const auto x  = cdata->x(c);
         nEval_ += 1;
         if (vsites)
         {
@@ -2588,7 +2588,7 @@ void ForceComputer::computeTotal(MsgHandler                                     
         std::map<InteractionType, double> emap;
         for(auto t : cener.types())
         {
-            auto et = cener.find(t);
+            const auto et = cener.find(t);
             if (et.has(c))
             {
                 emap.insert({ t, et.act[c] });
@@ -2607,7 +2607,7 @@ void ForceComputer::computeTotal(MsgHandler                                     
                         InteractionType::POLARIZATION,
                         InteractionType::CHARGETRANSFER })
         {
-            auto tt = emap.find(et);
+            const auto tt = emap.find(et);
             if (emap.end() != tt)
             {
                 double before = relax ? cener.find(et).before[c] : tt->second;
@@ -2620,12 +2620,12 @@ void ForceComputer::computeTotal(MsgHandler                                     
         {
             emap.insert_or_assign(InteractionType::INDUCTION, eInduction);
         }
-        auto sum = [&emap](std::initializer_list<InteractionType> itypes)
+        const auto sum = [&emap](std::initializer_list<InteractionType> itypes)
         {
             double esum = 0;
             for(auto it : itypes)
             {
-                auto ee = emap.find(it);
+                const auto ee = emap.find(it);
                 if (emap.end() != ee)
                 {
                     esum += ee->second;
@@ -2670,10 +2670,10 @@ void ForceComputer::computeDimerConformations(MsgHandler                        
     size_t nconf  = coords.size();
     // The conformations of the previous call are used again, such that their
     // memory does not have to be allocated anew, but they are reset as new ones.
-    auto reset = [](ConformationData                       *cdata,
-                    size_t                                  c,
-                    std::vector<gmx::RVec>::const_iterator  begin,
-                    std::vector<gmx::RVec>::const_iterator  end)
+    const auto reset = [](ConformationData                       *cdata,
+                          size_t                                  c,
+                          std::vector<gmx::RVec>::const_iterator  begin,
+                          std::vector<gmx::RVec>::const_iterator  end)
     {
         auto *ce = &cdata->confs[c];
         ce->done = false;
@@ -2726,12 +2726,12 @@ void ForceComputer::computeInteraction(MsgHandler                               
     size_t nconf  = coords->size();
     // The energies are taken from the conformation data, see ConformationData::energies
     auto &dimerEnergies = mol->conformationData(2)->energies;
-    auto  dimerEpot     = dimerEnergies.find(InteractionType::EPOT);
-    ConformationEnergies::Term monomerEpot[2] = {
+    const auto dimerEpot     = dimerEnergies.find(InteractionType::EPOT);
+    const ConformationEnergies::Term monomerEpot[2] = {
         mol->conformationData(0)->energies.find(InteractionType::EPOT),
         mol->conformationData(1)->energies.find(InteractionType::EPOT)
     };
-    size_t nmonomer[2] = { mol->conformationData(0)->energies.nconf(),
+    const size_t nmonomer[2] = { mol->conformationData(0)->energies.nconf(),
                            mol->conformationData(1)->energies.nconf() };
     // The polarization is part of the induction
     std::vector<std::pair<InteractionType, ConformationEnergies::Term>> terms;
@@ -2739,7 +2739,7 @@ void ForceComputer::computeInteraction(MsgHandler                               
     {
         if (InteractionType::POLARIZATION != t)
         {
-            terms.push_back({ t, dimerEnergies.find(t) });
+            terms.emplace_back(t, dimerEnergies.find(t));
         }
     }
     // The output of the previous call is used again as well
@@ -2754,7 +2754,7 @@ void ForceComputer::computeInteraction(MsgHandler                               
         // removing those that are only updated
         for(auto it = emap.begin(); it != emap.end(); )
         {
-            auto t = dimerEnergies.find(it->first);
+            const auto t = dimerEnergies.find(it->first);
             if (InteractionType::POLARIZATION == it->first || !inDimer || !t.has(c))
             {
                 it = emap.erase(it);
@@ -2779,7 +2779,7 @@ void ForceComputer::computeInteraction(MsgHandler                               
         f = cdatas[2]->f(c).toRVec();
         for(size_t k = 0; k < 2; k++)
         {
-            auto fmon = cdatas[k]->f(c);
+            const auto fmon = cdatas[k]->f(c);
             if (c < nmonomer[k] && monomerEpot[k].has(c))
             {
                 e += monomerEpot[k].act[c];
@@ -2822,12 +2822,12 @@ void ForceComputer::computeInteraction(MsgHandler                               
     computeDimerConformations(msghandler, pd, mol, coords, separateInductionCorrection);
     // The energies are taken from the conformation data, see the other computeInteraction
     auto  dimerEnergies = &mol->conformationData(2)->energies;
-    auto  dimerEpot     = dimerEnergies->find(InteractionType::EPOT);
-    ConformationEnergies::Term monomerEpot[2] = {
+    const auto dimerEpot     = dimerEnergies->find(InteractionType::EPOT);
+    const ConformationEnergies::Term monomerEpot[2] = {
         mol->conformationData(0)->energies.find(InteractionType::EPOT),
         mol->conformationData(1)->energies.find(InteractionType::EPOT)
     };
-    size_t nmonomer[2] = { mol->conformationData(0)->energies.nconf(),
+    const size_t nmonomer[2] = { mol->conformationData(0)->energies.nconf(),
                            mol->conformationData(1)->energies.nconf() };
     for(size_t c = 0; c < nconf; c++)
     {
@@ -2847,7 +2847,7 @@ void ForceComputer::computeInteraction(MsgHandler                               
                                           mol->conformationData(2) };
     auto  &astart  = mol->fragmentHandler()->atomStart();
     size_t natom   = cdatas[2]->x(0).size();
-    size_t nmon[2] = { cdatas[0]->x(0).size(), cdatas[1]->x(0).size() };
+    const size_t nmon[2] = { cdatas[0]->x(0).size(), cdatas[1]->x(0).size() };
     const ConformationArrays<real> *arrays[3] = { &mol->conformationData(0)->arrays,
                                                   &mol->conformationData(1)->arrays,
                                                   &mol->conformationData(2)->arrays };
@@ -2884,8 +2884,8 @@ void ForceComputer::computeInteraction(MsgHandler                               
         result->f.resize(DIM*natom*nconf);
         for(size_t c = 0; c < nconf; c++)
         {
-            auto xdim = cdatas[2]->x(c);
-            auto fdim = cdatas[2]->f(c);
+            const auto xdim = cdatas[2]->x(c);
+            const auto fdim = cdatas[2]->f(c);
             for(size_t a = 0; a < natom; a++)
             {
                 for(int m = 0; m < DIM; m++)
@@ -2896,7 +2896,7 @@ void ForceComputer::computeInteraction(MsgHandler                               
             }
             for(size_t k = 0; k < 2; k++)
             {
-                auto fm = cdatas[k]->f(c);
+                const auto fm = cdatas[k]->f(c);
                 for(size_t a = 0; a < fm.size(); a++)
                 {
                     for(int m = 0; m < DIM; m++)
@@ -2919,7 +2919,7 @@ void ForceComputer::computeOnce(MsgHandler                        *msg_handler,
                                 std::map<InteractionType, double> *energies,
                                 const gmx::RVec                   &field) const
 {
-    Coordinates x(*coordinates);
+    const Coordinates x(*coordinates);
     computeOnce(msg_handler, pd, top, &x, forces, energies, field);
 }
 
@@ -2976,7 +2976,7 @@ static double potentialEnergy(MsgHandler                   *msghandler,
     cdata.confs.resize(1);
     cdata.setX(0, x);
     computePotential(msghandler, pot, entries, atoms, &cdata, epsilonr, false);
-    auto epot = cdata.energies.find(InteractionType::EPOT);
+    const auto epot = cdata.energies.find(InteractionType::EPOT);
     return epot.has(0) ? epot.act[0] : 0;
 }
 
@@ -3055,7 +3055,7 @@ void ForceComputer::plot(MsgHandler        *msghandler,
             {
                 if (InteractionType::IMPROPER_DIHEDRALS == itype)
                 {
-                    bbb.push_back(Bond(idih_bonds[i].first, idih_bonds[i].second, bos[i]));
+                    bbb.emplace_back(idih_bonds[i].first, idih_bonds[i].second, bos[i]);
                 }
                 else if (InteractionType::VDW == itype ||
                          InteractionType::ELECTROSTATICS == itype)
@@ -3064,16 +3064,16 @@ void ForceComputer::plot(MsgHandler        *msghandler,
                 }
                 else
                 {
-                    bbb.push_back(Bond(linear_bonds[i].first, linear_bonds[i].second, bos[i]));
+                    bbb.emplace_back(linear_bonds[i].first, linear_bonds[i].second, bos[i]);
                 }
             }
             Topology top;
             top.init(bbb);
 
-            auto subtype = i2s.find(itype);
+            const auto subtype = i2s.find(itype);
             if (i2s.end() != subtype)
             {
-                auto ptypes = pd->particleTypesConst();
+                const auto &ptypes = pd->particleTypesConst();
                 // Loop over subtypes (depending on the InteractionType)
                 for(const auto &atomsub : id.atoms())
                 {
@@ -3096,17 +3096,17 @@ void ForceComputer::plot(MsgHandler        *msghandler,
                 continue;
             }
             // Open outfile
-            std::string filename = gmx::formatString("%s_%s.xvg",
-                                                     interactionTypeToString(itype).c_str(),
-                                                     id.id().c_str());
+            const std::string filename = gmx::formatString("%s_%s.xvg",
+                                                           interactionTypeToString(itype).c_str(),
+                                                           id.id().c_str());
             std::vector<gmx::RVec> forces;
             gmx::RVec rvnul = { 0, 0, 0 };
-            FILE *fp = gmx_ffopen(filename.c_str(), "w");
+            FILE *fp = gmx_ffopen(filename, "w");
             std::map<InteractionType, double> energies;
             // Not every parameter makes a topology, e.g. when bonds are
             // missing for the atoms of an angle, these are skipped.
             bool built = false;
-            auto buildTopology = [&](std::vector<gmx::RVec> *coordinates)
+            const auto buildTopology = [&](std::vector<gmx::RVec> *coordinates)
             {
                 MsgHandler buildHandler;
                 buildHandler.setPrintLevel(ACTStatus::Fatal);
