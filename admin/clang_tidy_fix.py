@@ -308,10 +308,23 @@ def emplace(text, replacements):
 def reference(text, replacements):
     """Write the & that makes a variable a reference in front of the name, as
     in const auto &x, taking the place of a space of the padding of aligned
-    declarations."""
+    declarations, and remove the line of a copy that is not used."""
     fix = []
     for offset, length, new in replacements:
-        if length == 0 and new == b"&":
+        if new == b"" and length > 0:
+            # A statement that is removed takes its line with it, if it is
+            # the only statement on that line
+            start = line_start(text, offset)
+            removed = text[offset:offset + length]
+            if text[start:offset].strip() == b"":
+                if b"\n" in removed and removed[removed.rfind(b"\n"):].strip() == b"":
+                    # The removal runs into the indentation of the next line
+                    offset, length = start, offset + removed.rfind(b"\n") + 1 - start
+                else:
+                    end = text.find(b"\n", offset + length)
+                    if end >= 0 and text[offset + length:end].strip() == b"":
+                        offset, length = start, end + 1 - start
+        elif length == 0 and new == b"&":
             spaces = 0
             while text[offset + spaces:offset + spaces + 1] == b" ":
                 spaces += 1
