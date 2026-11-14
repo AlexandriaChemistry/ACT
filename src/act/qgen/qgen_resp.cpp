@@ -161,11 +161,11 @@ void QgenResp::setAtomSymmetry(const std::vector<int> &symmetricAtoms)
     std::string msg = gmx::formatString("Please pass me a correct symmetric atoms vector. There are %zu symmetricAtoms and %zu RespAtoms",
                                         symmetricAtoms.size(),
                                         nAtom_);
-    GMX_RELEASE_ASSERT(symmetricAtoms.size() == 0 ||
+    GMX_RELEASE_ASSERT(symmetricAtoms.empty() ||
                        symmetricAtoms.size() == nAtom_,
                        msg.c_str());
 
-    if (symmetricAtoms.size() == 0)
+    if (symmetricAtoms.empty())
     {
         for (size_t i = 0; i < nAtom_; i++)
         {
@@ -203,7 +203,7 @@ void QgenResp::writeHisto(const std::string      &fn,
     std::vector<double> x, y;
     int         nbin = 100;
 
-    if (0 == fn.size())
+    if (fn.empty())
     {
         return;
     }
@@ -212,7 +212,7 @@ void QgenResp::writeHisto(const std::string      &fn,
         gs.add_point(i, convertFromGromacs(ep_[i].vCalc(), "Hartree/e"), 0, 0);
     }
 
-    gs.make_histogram(0, &nbin, eHisto::Y, 1, &x, &y);
+    gs.make_histogram(0, &nbin, eHisto::Y, true, &x, &y);
 
     fp = xvgropen(fn.c_str(), title.c_str(), "Pot (1/a.u.)", "()", oenv);
     for (int i = 0; (i < nbin); i++)
@@ -243,8 +243,8 @@ void QgenResp::copyGrid(const QgenResp &src)
 void QgenResp::addEspPoint(double x, double y,
                            double z, double V)
 {
-    gmx::RVec rv(x, y, z);
-    ep_.push_back(EspPoint(rv, V));
+    const gmx::RVec rv(x, y, z);
+    ep_.emplace_back(rv, V);
 }
 
 void QgenResp::regularizeCharges(MsgHandler *msg_handler)

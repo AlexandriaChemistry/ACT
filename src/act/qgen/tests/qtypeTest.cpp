@@ -75,7 +75,7 @@ class QtypeTest : public gmx::test::CommandLineTestBase
         //! Init set tolerance
         QtypeTest () : checker_(this->rootChecker())
         {
-            auto tolerance = gmx::test::relativeToleranceAsFloatingPoint(1.0, GMX_DOUBLE ? 1e-10 : 1e-5);
+            const auto tolerance = gmx::test::relativeToleranceAsFloatingPoint(1.0, GMX_DOUBLE ? 1e-10 : 1e-5);
             checker_.setDefaultTolerance(tolerance);
         }
 
@@ -115,12 +115,12 @@ class QtypeTest : public gmx::test::CommandLineTestBase
             // Get forcefield
             auto pd  = getForceField(model);
 
-            auto dataName = gmx::test::TestFileManager::getInputFilePath(fileName);
+            const auto dataName = gmx::test::TestFileManager::getInputFilePath(fileName);
             bool   userqtot   = !qcustom.empty();
             double qtot_babel = qtotal;
             MsgHandler msghandler;
             msghandler.setPrintLevel(ACTStatus::Warning);
-            importFile(&msghandler, pd, dataName.c_str(), &molprops,
+            importFile(&msghandler, pd, dataName, &molprops,
                        conf, JobType::OPT, userqtot,
                        &qtot_babel, true);
             EXPECT_TRUE(msghandler.ok());
@@ -199,7 +199,7 @@ class QtypeTest : public gmx::test::CommandLineTestBase
 
 TEST_F (QtypeTest, ButanolPDB)
 {
-    std::vector<double> qcustom;
+    const std::vector<double> qcustom;
     testQtype("ACS-g4", inputFormat::PDB, "1-butanol", 0, qcustom);
 }
 
@@ -207,7 +207,7 @@ TEST_F (QtypeTest, CustomButanolPDB)
 {
     // These charges are what is produced by the ButanolPDB test.
     // Therefore they should generate the same moments.
-    std::vector<double> qcustom = { -0.37705087402262927,
+    const std::vector<double> qcustom = { -0.37705087402262927,
         0.12475677224623878,
         0.12917658810241425,
         0.12917607547179596,
@@ -229,25 +229,25 @@ TEST_F (QtypeTest, ButanolPDBCoQ)
 {
     // Since butanol is dipolar only, the center of charge should have
     // no effect on the dipole but higher moments may be off more.
-    std::vector<double> qcustom;
+    const std::vector<double> qcustom;
     testQtype("ACS-g4", inputFormat::PDB, "1-butanol", 0, qcustom);
 }
 
 TEST_F (QtypeTest, WaterPDB)
 {
-    std::vector<double> qcustom;
+    const std::vector<double> qcustom;
     testQtype("ACS-g4", inputFormat::PDB, "water", 0, qcustom);
 }
 
 TEST_F (QtypeTest, WaterPDBCoQ)
 {
-    std::vector<double> qcustom;
+    const std::vector<double> qcustom;
     testQtype("ACS-g4", inputFormat::PDB, "water", 0, qcustom);
 }
 
 TEST_F (QtypeTest, WaterPDBCustom)
 {
-    std::vector<double> qcustom = { 0.33, -0.66, 0.33 };
+    const std::vector<double> qcustom = { 0.33, -0.66, 0.33 };
     testQtype("ACS-g4", inputFormat::PDB, "water", 0, qcustom);
 }
 

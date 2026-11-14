@@ -48,9 +48,9 @@ namespace
 
 TEST(EspPointTest, ConstructorAndGetters)
 {
-    gmx::RVec coords = { 1.0, 2.0, 3.0 };
+    const gmx::RVec coords = { 1.0, 2.0, 3.0 };
     double     potential = 0.5;
-    EspPoint   ep(coords, potential);
+    const EspPoint ep(coords, potential);
 
     EXPECT_DOUBLE_EQ(1.0, ep.esp()[XX]);
     EXPECT_DOUBLE_EQ(2.0, ep.esp()[YY]);
@@ -60,21 +60,21 @@ TEST(EspPointTest, ConstructorAndGetters)
 
 TEST(EspPointTest, DefaultVCalcIsZero)
 {
-    gmx::RVec coords = { 0.0, 0.0, 0.0 };
-    EspPoint   ep(coords, 1.0);
+    const gmx::RVec coords = { 0.0, 0.0, 0.0 };
+    const EspPoint ep(coords, 1.0);
     EXPECT_DOUBLE_EQ(0.0, ep.vCalc());
 }
 
 TEST(EspPointTest, DefaultRhoIsZero)
 {
-    gmx::RVec coords = { 0.0, 0.0, 0.0 };
-    EspPoint   ep(coords, 1.0);
+    const gmx::RVec coords = { 0.0, 0.0, 0.0 };
+    const EspPoint ep(coords, 1.0);
     EXPECT_DOUBLE_EQ(0.0, ep.rho());
 }
 
 TEST(EspPointTest, SetV)
 {
-    gmx::RVec coords = { 0.0, 0.0, 0.0 };
+    const gmx::RVec coords = { 0.0, 0.0, 0.0 };
     EspPoint   ep(coords, 1.0);
     EXPECT_DOUBLE_EQ(1.0, ep.v());
     ep.setV(42.0);
@@ -83,7 +83,7 @@ TEST(EspPointTest, SetV)
 
 TEST(EspPointTest, SetVCalc)
 {
-    gmx::RVec coords = { 0.0, 0.0, 0.0 };
+    const gmx::RVec coords = { 0.0, 0.0, 0.0 };
     EspPoint   ep(coords, 1.0);
     ep.setVCalc(3.14);
     EXPECT_DOUBLE_EQ(3.14, ep.vCalc());
@@ -91,7 +91,7 @@ TEST(EspPointTest, SetVCalc)
 
 TEST(EspPointTest, SetRho)
 {
-    gmx::RVec coords = { 0.0, 0.0, 0.0 };
+    const gmx::RVec coords = { 0.0, 0.0, 0.0 };
     EspPoint   ep(coords, 0.0);
     ep.setRho(2.71828);
     EXPECT_DOUBLE_EQ(2.71828, ep.rho());
@@ -99,7 +99,7 @@ TEST(EspPointTest, SetRho)
 
 TEST(EspPointTest, NegativeValues)
 {
-    gmx::RVec coords = { -1.5, -2.5, -3.5 };
+    const gmx::RVec coords = { -1.5, -2.5, -3.5 };
     EspPoint   ep(coords, -0.123);
 
     EXPECT_DOUBLE_EQ(-1.5, ep.esp()[XX]);
@@ -116,7 +116,7 @@ TEST(EspPointTest, NegativeValues)
 
 TEST(EspPointTest, MultipleSetCalls)
 {
-    gmx::RVec coords = { 0.0, 0.0, 0.0 };
+    const gmx::RVec coords = { 0.0, 0.0, 0.0 };
     EspPoint   ep(coords, 0.0);
 
     // Set and override multiple times
@@ -139,7 +139,7 @@ TEST(EspPointTest, MultipleSetCalls)
 
 TEST(QgenRespTest, DefaultConstruction)
 {
-    QgenResp resp;
+    const QgenResp resp;
     EXPECT_EQ(ChargeDistributionType::Point, resp.chargeType());
     EXPECT_DOUBLE_EQ(0.0, resp.getMolecularCharge());
     EXPECT_EQ(0u, resp.nEsp());

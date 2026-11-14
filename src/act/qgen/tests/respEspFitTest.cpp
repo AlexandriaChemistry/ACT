@@ -110,7 +110,7 @@ protected:
         msghandler.setPrintLevel(ACTStatus::Warning);
         fit->pd = getForceField(ffName);
         std::vector<MolProp> mps;
-        auto mpFile = fileManager().getInputFilePath("molprop/molprop.xml");
+        const auto mpFile = fileManager().getInputFilePath("molprop/molprop.xml");
         MolPropRead(&msghandler, mpFile.c_str(), &mps);
         bool found = false;
         for(auto &mp : mps)
@@ -142,7 +142,7 @@ protected:
         {
             fit->epsilonr = 1;
         }
-        ForceComputer          forceComp(1e-8, 100, fit->epsilonr);
+        const ForceComputer    forceComp(1e-8, 100, fit->epsilonr);
         std::vector<gmx::RVec> coords = actmol.xOriginal();
         std::vector<gmx::RVec> forces(actmol.atomsConst().size());
         actmol.generateCharges(&msghandler, fit->pd, &forceComp, ChargeGenerationAlgorithm::ESP,

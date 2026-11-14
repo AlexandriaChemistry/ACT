@@ -76,7 +76,7 @@ class AcmTest : public gmx::test::CommandLineTestBase
         //! Init set tolerance
         AcmTest () : checker_(this->rootChecker())
         {
-            auto tolerance = gmx::test::relativeToleranceAsFloatingPoint(1.0, GMX_DOUBLE ? 1e-10 : 1e-5);
+            const auto tolerance = gmx::test::relativeToleranceAsFloatingPoint(1.0, GMX_DOUBLE ? 1e-10 : 1e-5);
             checker_.setDefaultTolerance(tolerance);
         }
 
@@ -104,7 +104,7 @@ class AcmTest : public gmx::test::CommandLineTestBase
             {
                 fileName.append(".sdf");
             }
-            std::string dataName = gmx::test::TestFileManager::getInputFilePath(fileName);
+            const std::string dataName = gmx::test::TestFileManager::getInputFilePath(fileName);
             
             // Compute total charge from input
             int myqtot = 0;
@@ -118,7 +118,7 @@ class AcmTest : public gmx::test::CommandLineTestBase
             double qtot_babel = myqtot;
             MsgHandler msghandler;
             msghandler.setPrintLevel(ACTStatus::Warning);
-            importFile(&msghandler, pd, dataName.c_str(), &molprops,
+            importFile(&msghandler, pd, dataName, &molprops,
                        conf, JobType::OPT, userqtot ,&qtot_babel,
                        true);
             EXPECT_TRUE(msghandler.ok());
@@ -189,7 +189,7 @@ class AcmTest : public gmx::test::CommandLineTestBase
                         {
                             qt += myatoms[atom].charge();
                         }
-                        auto label = gmx::formatString("Molecule %zu charge", f+1);
+                        const auto label = gmx::formatString("Molecule %zu charge", f+1);
                         checker_.checkReal(qt, label.c_str());
                     }
                 }
@@ -205,116 +205,116 @@ class AcmTest : public gmx::test::CommandLineTestBase
 
 TEST_F (AcmTest, WaterDimerACSg)
 {
-    std::vector<double> qcustom;
+    const std::vector<double> qcustom;
     testAcm("ACS-g4", inputFormat::PDB, "water_dimer", {0,0}, qcustom);
 }
 
 TEST_F (AcmTest, AXpgPDB)
 {
-    std::vector<double> qcustom;
+    const std::vector<double> qcustom;
     testAcm("ACM-pg2", inputFormat::PDB, "1-butanol", {0}, qcustom);
 }
 
 TEST_F (AcmTest, AXpgNoSymmPDB)
 {
-    std::vector<double> qcustom;
+    const std::vector<double> qcustom;
     testAcm("ACM-pg2", inputFormat::PDB, "1-butanol", {0}, qcustom);
 }
 
 TEST_F (AcmTest, AXgPDB)
 {
-    std::vector<double> qcustom;
+    const std::vector<double> qcustom;
     testAcm("ACM-g2", inputFormat::PDB, "1-butanol", {0}, qcustom);
 }
 
 TEST_F (AcmTest, AXgNoSymmPDB)
 {
-    std::vector<double> qcustom;
+    const std::vector<double> qcustom;
     testAcm("ACM-g2", inputFormat::PDB, "1-butanol", {0}, qcustom);
 }
 
 TEST_F (AcmTest, AXgPositive)
 {
-    std::vector<double> qcustom;
+    const std::vector<double> qcustom;
     testAcm("ACM-g2", inputFormat::SDF, "guanidinium", {1}, qcustom);
 }
 
 TEST_F (AcmTest, AXgPositive_FixedQ)
 {
-    std::vector<double> qcustom;
+    const std::vector<double> qcustom;
     // This call is expected to throw gmx::InvalidInputError due to invalid input.
     EXPECT_THROW(testAcm("ACM-g-fixed", inputFormat::SDF, "guanidinium", {1}, qcustom), gmx::InvalidInputError);
 }
 
 TEST_F (AcmTest, AXpgPositive)
 {
-    std::vector<double> qcustom;
+    const std::vector<double> qcustom;
     testAcm("ACM-pg2", inputFormat::SDF, "guanidinium", {1}, qcustom);
 }
 
 TEST_F (AcmTest, SQEgNeutral)
 {
-    std::vector<double> qcustom;
+    const std::vector<double> qcustom;
     testAcm("ACS-g4", inputFormat::PDB, "1-butanol", {0}, qcustom);
 }
 
 TEST_F (AcmTest, SQEgPositive)
 {
-    std::vector<double> qcustom;
+    const std::vector<double> qcustom;
     testAcm("ACS-g4", inputFormat::SDF, "guanidinium", {1}, qcustom);
 }
 
 TEST_F (AcmTest, SQEpgNeutral)
 {
-    std::vector<double> qcustom;
+    const std::vector<double> qcustom;
     testAcm("ACS-pg2", inputFormat::PDB, "1-butanol", {0}, qcustom);
 }
 
 TEST_F (AcmTest, SQEpgPositive)
 {
-    std::vector<double> qcustom;
+    const std::vector<double> qcustom;
     testAcm("ACS-pg2", inputFormat::SDF, "guanidinium", {1}, qcustom);
 }
 
 TEST_F (AcmTest, WaterDimerACSpg)
 {
-    std::vector<double> qcustom;
+    const std::vector<double> qcustom;
     testAcm("ACS-pg2", inputFormat::PDB, "water_dimer", {0,0}, qcustom);
 }
 
 TEST_F (AcmTest, CustomButanolPDB)
 {
-    std::vector<double> qcustom = { -0.18, 0.06, 0.06, 0.06, -0.12, 0.06, 0.06,  -0.12, 0.06, 0.06, -0.12, 0.06, 0.06, -0.4, 0.4};
+    const std::vector<double> qcustom = { -0.18, 0.06, 0.06, 0.06, -0.12, 0.06, 0.06,  -0.12, 0.06, 0.06, -0.12, 0.06, 0.06, -0.4, 0.4};
     testAcm("ACM-g2", inputFormat::PDB, "1-butanol", {0}, qcustom);
 }
 
 TEST_F (AcmTest, CustomGuanidiniumSDF)
 {
-    std::vector<double> qcustom = { -0.3, -0.3, -0.3, 0.1, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3 };
+    const std::vector<double> qcustom = { -0.3, -0.3, -0.3, 0.1, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3 };
     testAcm("ACM-g2", inputFormat::SDF, "guanidinium", {1}, qcustom);
 }
 
 TEST_F (AcmTest, MethanolWaterACSg)
 {
-    std::vector<double> qcustom;
+    const std::vector<double> qcustom;
     testAcm("ACS-g4", inputFormat::SDF, "methanol-water", {0,0}, qcustom);
 }
 
 TEST_F (AcmTest, MethanolWaterACSpg)
 {
-    std::vector<double> qcustom;
+    const std::vector<double> qcustom;
     testAcm("ACS-pg2", inputFormat::SDF, "methanol-water", {0,0}, qcustom);
 }
 
 TEST_F (AcmTest, AcetateWaterACSg)
 {
-    std::vector<double> qcustom;
+    const std::vector<double> qcustom;
     testAcm("ACS-g4", inputFormat::SDF, "acetate-water", {-1,0}, qcustom);
 }
 
 TEST_F (AcmTest, AcetateWaterACSpg)
 {
-    std::vector<double> qcustom;
+    const std::vector<double> qcustom;
     testAcm("ACS-pg2", inputFormat::SDF, "acetate-water", {-1,0}, qcustom);
 }
 
@@ -334,7 +334,7 @@ static std::vector<double> butanolSQE(ForceField *pd, bool ok)
     mol.GenerateTopology(&msghandler, pd, missingParameters::Ignore);
     EXPECT_TRUE(msghandler.ok());
     auto    atoms = mol.atomsConst();
-    auto    x     = mol.xOriginal();
+    const auto x     = mol.xOriginal();
     QgenAcm qgen(&msghandler, pd, atoms, mol.bondsConst(), 0);
     auto    eqgen = qgen.generateCharges(&msghandler, "1-butanol", pd, &atoms, x, mol.bondsConst());
     EXPECT_EQ(ok ? eQgen::OK : eQgen::NOSUPPORT, eqgen) << qgen.status();

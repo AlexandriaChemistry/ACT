@@ -117,7 +117,7 @@ class QtypeProps
     
  public:
     //! Empty constructor
-    QtypeProps() {}
+    QtypeProps() = default;
     /*! \brief Constructor
      * \param[in] qtype  My own identity
      * \param[in] atoms  The atoms in this compound

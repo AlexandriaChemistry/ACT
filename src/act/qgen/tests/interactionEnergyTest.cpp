@@ -77,7 +77,7 @@ protected:
     //! Init set tolerance
     InteractionEnergyTest () : checker_(this->rootChecker())
     {
-        auto tolerance = gmx::test::relativeToleranceAsFloatingPoint(1.0, GMX_DOUBLE ? 1e-10 : 1e-5);
+        const auto tolerance = gmx::test::relativeToleranceAsFloatingPoint(1.0, GMX_DOUBLE ? 1e-10 : 1e-5);
         checker_.setDefaultTolerance(tolerance);
     }
     
@@ -106,7 +106,7 @@ protected:
         {
             fileName.append(".sdf");
         }
-        std::string dataName = gmx::test::TestFileManager::getInputFilePath(fileName);
+        const std::string dataName = gmx::test::TestFileManager::getInputFilePath(fileName);
         
         // Compute total charge from input
         int myqtot = 0;
@@ -126,7 +126,7 @@ protected:
         double qtot_babel = myqtot;
         MsgHandler msghandler;
         msghandler.setPrintLevel(ACTStatus::Warning);
-        importFile(&msghandler, pd, dataName.c_str(), &molprops,
+        importFile(&msghandler, pd, dataName, &molprops,
                    conf, JobType::OPT, userqtot, &qtot_babel, oneH);
         EXPECT_TRUE(msghandler.ok());
         for(auto &molprop: molprops)
@@ -195,14 +195,14 @@ protected:
                         {
                             qt += myatoms[atom].charge();
                         }
-                        auto label = gmx::formatString("Molecule %zu charge", f+1);
+                        const auto label = gmx::formatString("Molecule %zu charge", f+1);
                         checker_.checkReal(qt, label.c_str());
                     }
                 }
             }
             // Now the energies
             double rmsToler = 0.00001;
-            ForceComputer fcomp(rmsToler, 25, epsilonr);
+            const ForceComputer fcomp(rmsToler, 25, epsilonr);
             if (mp_.fragmentHandler()->topologies().size() > 1)
             {
                 std::vector<std::vector<gmx::RVec>>            coords = { mp_.xOriginal() };
@@ -257,55 +257,55 @@ protected:
 
 TEST_F (InteractionEnergyTest, WaterDimerACSg)
 {
-    std::vector<double> qcustom;
+    const std::vector<double> qcustom;
     testAcm("ACS-g4", inputFormat::PDB, "water_dimer", {0,0}, qcustom);
 }
 
 TEST_F (InteractionEnergyTest, WaterIodideACSg)
 {
-    std::vector<double> qcustom;
+    const std::vector<double> qcustom;
     testAcm("ACS-g4", inputFormat::SDF, "water_I", {0,-1}, qcustom);
 }
 
 TEST_F (InteractionEnergyTest, WaterDimerACSpg)
 {
-    std::vector<double> qcustom;
+    const std::vector<double> qcustom;
     testAcm("ACS-pg2", inputFormat::PDB, "water_dimer", {0,0}, qcustom);
 }
 
 TEST_F (InteractionEnergyTest, WaterIodideACSpg)
 {
-    std::vector<double> qcustom;
+    const std::vector<double> qcustom;
     testAcm("ACS-pg2", inputFormat::SDF, "water_I", {0, -1}, qcustom);
 }
 
 TEST_F (InteractionEnergyTest, MethanolWaterACSg)
 {
-    std::vector<double> qcustom;
+    const std::vector<double> qcustom;
     testAcm("ACS-g4", inputFormat::SDF, "methanol-water", {0,0}, qcustom);
 }
 
 TEST_F (InteractionEnergyTest, MethanolWaterACSpg)
 {
-    std::vector<double> qcustom;
+    const std::vector<double> qcustom;
     testAcm("ACS-pg2", inputFormat::SDF, "methanol-water", {0,0}, qcustom);
 }
 
 TEST_F (InteractionEnergyTest, AcetateWaterACSg)
 {
-    std::vector<double> qcustom;
+    const std::vector<double> qcustom;
     testAcm("ACS-g4", inputFormat::SDF, "acetate-water", {-1,0}, qcustom);
 }
 
 TEST_F (InteractionEnergyTest, AcetateWaterACSpg)
 {
-    std::vector<double> qcustom;
+    const std::vector<double> qcustom;
     testAcm("ACS-pg2", inputFormat::SDF, "acetate-water", {-1,0}, qcustom);
 }
 
 TEST_F (InteractionEnergyTest, HydrogenFluorideDimerACSps)
 {
-    std::vector<double> qcustom;
+    const std::vector<double> qcustom;
     testAcm("ACS-ps", inputFormat::SDF, "hfdimer", {0,0}, qcustom, false);
 }
 

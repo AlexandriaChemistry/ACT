@@ -125,7 +125,7 @@ TEST(QPropertyTypeTest, RoundTripConversion)
 
 TEST(QtypePropsTest, EmptyConstructorDefaults)
 {
-    QtypeProps qp;
+    const QtypeProps qp;
     EXPECT_EQ(qPropertyType::ACM, qp.qtype());
     EXPECT_TRUE(qp.charge().empty());
     EXPECT_TRUE(qp.x().empty());
@@ -145,7 +145,7 @@ TEST(QtypePropsTest, SetQtype)
 
 TEST(QtypePropsTest, HasMultipoleReturnsFalseBeforeInit)
 {
-    QtypeProps qp;
+    const QtypeProps qp;
     EXPECT_FALSE(qp.hasMultipole(MolPropObservable::DIPOLE));
     EXPECT_FALSE(qp.hasMultipole(MolPropObservable::QUADRUPOLE));
     EXPECT_FALSE(qp.hasMultipole(MolPropObservable::OCTUPOLE));
@@ -165,14 +165,14 @@ TEST(QtypePropsTest, HasMultipoleReturnsTrueAfterInit)
 TEST(QtypePropsTest, GetMultipoleThrowsWhenNotPresent)
 {
     MsgHandler msghandler;
-    QtypeProps qp;
+    const QtypeProps qp;
     EXPECT_THROW(qp.getMultipole(&msghandler, MolPropObservable::DIPOLE), gmx::InvalidInputError);
 }
 
 TEST(QtypePropsTest, DipoleThrowsWhenNotPresent)
 {
     MsgHandler msghandler;
-    QtypeProps qp;
+    const QtypeProps qp;
     EXPECT_THROW(qp.dipole(&msghandler), gmx::InvalidInputError);
 }
 
@@ -180,7 +180,7 @@ TEST(QtypePropsTest, SetMultipole)
 {
     MsgHandler msghandler;
     QtypeProps qp;
-    std::vector<double> dipValues = { 1.0, 2.0, 3.0 };
+    const std::vector<double> dipValues = { 1.0, 2.0, 3.0 };
     qp.setMultipole(&msghandler, MolPropObservable::DIPOLE, dipValues);
     EXPECT_TRUE(qp.hasMultipole(MolPropObservable::DIPOLE));
     auto retrieved = qp.getMultipole(&msghandler, MolPropObservable::DIPOLE);
@@ -194,7 +194,7 @@ TEST(QtypePropsTest, SetMultipoleTwiceThrows)
 {
     MsgHandler msghandler;
     QtypeProps qp;
-    std::vector<double> dipValues = { 1.0, 2.0, 3.0 };
+    const std::vector<double> dipValues = { 1.0, 2.0, 3.0 };
     qp.setMultipole(&msghandler, MolPropObservable::DIPOLE, dipValues);
     EXPECT_THROW(qp.setMultipole(&msghandler, MolPropObservable::DIPOLE, dipValues), gmx::InvalidInputError);
 }
@@ -203,7 +203,7 @@ TEST(QtypePropsTest, DipoleComputation)
 {
     MsgHandler msghandler;
     QtypeProps qp;
-    std::vector<double> dipValues = { 3.0, 4.0, 0.0 };
+    const std::vector<double> dipValues = { 3.0, 4.0, 0.0 };
     qp.setMultipole(&msghandler, MolPropObservable::DIPOLE, dipValues);
     EXPECT_DOUBLE_EQ(5.0, qp.dipole(&msghandler));
 }
@@ -320,7 +320,7 @@ TEST(QtypePropsTest, AnisotropicPolarizabilityWithOffDiagonal)
 TEST(QtypePropsTest, SetCenterOfCharge)
 {
     QtypeProps qp;
-    rvec coc = { 1.0, 2.0, 3.0 };
+    const rvec coc = { 1.0, 2.0, 3.0 };
     // Should not throw
     qp.setCenterOfCharge(coc);
 }
@@ -332,7 +332,7 @@ TEST(QtypePropsTest, SetCenterOfCharge)
 TEST(QtypePropsTest, SetQVector)
 {
     QtypeProps qp;
-    std::vector<double> q = { 0.5, -0.25, -0.25 };
+    const std::vector<double> q = { 0.5, -0.25, -0.25 };
     qp.setQ(q);
     auto charges = qp.charge();
     EXPECT_EQ(3u, charges.size());
@@ -348,8 +348,8 @@ TEST(QtypePropsTest, SetQandXVectorRequiresAtomNumbers)
     // raises an error because atomNumber_.size() != x_.size().
     MsgHandler msghandler;
     QtypeProps qp;
-    std::vector<double> q = { 1.0, -0.5, -0.5 };
-    std::vector<gmx::RVec> x = {
+    const std::vector<double> q = { 1.0, -0.5, -0.5 };
+    const std::vector<gmx::RVec> x = {
         { 0.0, 0.0, 0.0 },
         { 1.0, 0.0, 0.0 },
         { 0.0, 1.0, 0.0 }
@@ -370,7 +370,7 @@ TEST(QtypePropsTest, InitializeMomentsCreatesAll)
     for (const auto &mpo : mpoMultiPoles)
     {
         EXPECT_TRUE(qp.hasMultipole(mpo));
-        auto values = qp.getMultipole(&msghandler, mpo);
+        const auto values = qp.getMultipole(&msghandler, mpo);
         // All values should be zero after initialization
         for (const auto &v : values)
         {
