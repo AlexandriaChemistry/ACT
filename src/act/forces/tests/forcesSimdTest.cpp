@@ -50,7 +50,6 @@
 
 #include "act/basics/act_particle.h"
 #include "act/coulombintegrals/gaussian_integrals.h"
-#include "act/forcefield/forcefield_parametername.h"
 #include "act/forcefield/potential.h"
 #include "act/forces/forces_explicit_simd.h"
 #include "act/forces/forces_gpu.h"

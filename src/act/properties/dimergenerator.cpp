@@ -43,7 +43,6 @@
 #include "act/molprop/molprop_xml.h"
 #include "act/properties/rotator.h"
 #include "act/utility/memory_check.h"
-#include "act/utility/stringutil.h"
 #include "external/quasirandom_sequences/sobol.h"
 #include "external/sobolowen/sobolowen.h"
 #include "gromacs/commandline/filenm.h"

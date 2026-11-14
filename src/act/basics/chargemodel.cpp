@@ -34,7 +34,6 @@
 
 #include "chargemodel.h"
 
-#include <algorithm>
 #include <map>
 #include <string>
 

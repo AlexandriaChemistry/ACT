@@ -38,7 +38,6 @@
 
 #include "gromacs/math/vectypes.h"
 
-#include "testutils/testasserts.h"
 
 namespace alexandria
 {

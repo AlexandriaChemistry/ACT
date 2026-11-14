@@ -36,10 +36,6 @@
 #include <cmath>
 #include <cstdlib>
 
-#include "act/utility/memory_check.h"
-#include "act/utility/stringutil.h"
-#include "gromacs/commandline/filenm.h"
-#include "gromacs/commandline/pargs.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/utility/futil.h"

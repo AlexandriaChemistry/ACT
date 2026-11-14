@@ -27,12 +27,10 @@
  */
 #include "mcmc.h"
 
-#include <algorithm>
 #include <ctime>
 #pragma GCC diagnostic ignored "-Wpragmas"
 #pragma GCC diagnostic ignored "-Wunknown-warning-option"
 #pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
-#include <regex>
 #pragma GCC diagnostic pop
 
 #include "act/basics/msg_handler.h"
@@ -40,7 +38,6 @@
 #include "act/ga/gene_pool.h"
 #include "act/utility/communicationrecord.h"
 #include "mcmcmutator.h"
-#include "train_ff.h"
 #include "act/utility/timings.h"
 
 namespace ga

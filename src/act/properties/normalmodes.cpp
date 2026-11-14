@@ -40,7 +40,6 @@
 #include "act/forcefield/forcefield_xml.h"
 #include "act/import/compound_reader.h"
 #include "act/import/import.h"
-#include "act/molprop/molprop_util.h"
 #include "act/molprop/molprop_xml.h"
 #include "act/properties/secondvirial.h"
 #include "act/topology/actmol.h"
@@ -48,10 +47,8 @@
 #include "act/utility/stringutil.h"
 #include "gromacs/commandline/filenm.h"
 #include "gromacs/commandline/pargs.h"
-#include "gromacs/fileio/confio.h"
 #include "gromacs/fileio/oenv.h"
 #include "gromacs/fileio/xvgr.h"
-#include "gromacs/utility/futil.h"
 
 namespace alexandria
 {

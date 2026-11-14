@@ -40,7 +40,6 @@
 #include <vector>
 
 #include "act/utility/communicationrecord.h"
-#include "act/utility/units.h"
 #include "gromacs/utility/stringutil.h"
 
 namespace alexandria

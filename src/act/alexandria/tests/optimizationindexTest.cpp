@@ -41,7 +41,6 @@
 #include "act/basics/identifier.h"
 #include "act/basics/interactiontype.h"
 
-#include "testutils/testasserts.h"
 
 namespace alexandria
 {

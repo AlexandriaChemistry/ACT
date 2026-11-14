@@ -39,7 +39,6 @@
 #include <map>
 
 #include "act/basics/msg_handler.h"
-#include "gromacs/math/units.h"
 #include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"

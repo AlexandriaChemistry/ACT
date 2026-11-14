@@ -30,7 +30,6 @@
  * \author Julian Ramon Marrades Furquet <julian@marrad.es>
  */
 
-#include <limits>
 #include <cmath>
 
 #include "penalizer.h"

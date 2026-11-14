@@ -49,7 +49,6 @@
 #include "act/qgen/qgen_acm.h"
 #include "act/topology/actmol.h"
 #include "act/utility/units.h"
-#include "gromacs/utility/fatalerror.h"
 
 #include "testutils/cmdlinetest.h"
 #include "testutils/refdata.h"

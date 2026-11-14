@@ -33,7 +33,6 @@
 
 #include "actpre.h"
 
-#include <cmath>
 #include <string>
 #include <vector>
 
@@ -43,7 +42,6 @@
 #include "act/basics/msg_handler.h"
 #include "gromacs/math/vec.h"
 
-#include "testutils/testasserts.h"
 
 namespace alexandria
 {

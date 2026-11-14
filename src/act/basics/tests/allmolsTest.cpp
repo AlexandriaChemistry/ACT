@@ -38,7 +38,6 @@
 
 #include "testutils/cmdlinetest.h"
 #include "testutils/refdata.h"
-#include "testutils/testasserts.h"
 #include "testutils/testfilemanager.h"
 
 namespace alexandria

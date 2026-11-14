@@ -36,15 +36,9 @@
 #include "act/alexandria/acmfitnesscomputer.h"
 #include "act/alexandria/acminitializer.h"
 #include "act/alexandria/loss_function.h"
-#include "act/alexandria/mcmcmutator.h"
 #include "act/alexandria/molselect.h"
-#include "act/alexandria/percentmutator.h"
 #include "act/basics/msg_handler.h"
 #include "act/forces/forcecomputer.h"
-#include "act/ga/fitness_computer.h"
-#include "act/ga/genetic_algorithm.h"
-#include "act/ga/sorter.h"
-#include "act/ga/terminator.h"
 #include "testutils/testfilemanager.h"
 
 namespace alexandria

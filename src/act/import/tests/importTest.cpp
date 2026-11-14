@@ -31,10 +31,8 @@
  * \author Mohammad Mehdi Ghahremanpour <mohammad.ghahremanpour@icm.uu.se>
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
-#include <cmath>
 
 #include <fstream>
-#include <map>
 #include <sstream>
 
 #include <gtest/gtest.h>
@@ -46,7 +44,6 @@
 
 #include "testutils/cmdlinetest.h"
 #include "testutils/refdata.h"
-#include "testutils/testasserts.h"
 #include "testutils/testfilemanager.h"
 
 namespace alexandria

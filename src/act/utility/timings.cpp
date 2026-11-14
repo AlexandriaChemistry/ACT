@@ -35,7 +35,6 @@
 
 #include <algorithm>
 #include <map>
-#include <numeric>
 
 #include "act/utility/communicationrecord.h"
 #include "act/utility/jsontree.h"

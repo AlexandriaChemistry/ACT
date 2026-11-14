@@ -34,11 +34,6 @@
 
 #include <cstdio>
 
-#include "crossover.h"
-#include "fitness_computer.h"
-#include "initializer.h"
-#include "mutator.h"
-#include "probability_computer.h"
 #include "terminator.h"
 
 #include "act/basics/dataset.h"

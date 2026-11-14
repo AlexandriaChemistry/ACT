@@ -35,7 +35,6 @@
 #include "act/basics/coordinate.h"
 
 #include <cmath>
-#include <limits>
 
 #include <gtest/gtest.h>
 

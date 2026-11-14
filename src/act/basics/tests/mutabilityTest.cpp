@@ -34,7 +34,6 @@
 
 #include "../mutability.h"
 
-#include "testutils/testasserts.h"
 
 namespace alexandria
 {

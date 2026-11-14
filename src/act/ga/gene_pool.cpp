@@ -28,7 +28,6 @@
 #include "gene_pool.h"
 
 #include <algorithm>
-#include <limits>
 #include <stdexcept>
 #include <vector>
 

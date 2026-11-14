@@ -33,14 +33,12 @@
 
 #include "units.h"
 
-#include <cmath>
 
 #include <map>
 #include <string>
 
 #include "gromacs/math/units.h"
 #include "gromacs/utility/exceptions.h"
-#include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/stringutil.h"
 
 namespace alexandria

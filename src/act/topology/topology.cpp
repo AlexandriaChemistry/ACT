@@ -45,9 +45,7 @@
 #include "act/forcefield/forcefield_parametername.h"
 #include "act/molprop/experiment.h"
 #include "act/molprop/topologyentry.h"
-#include "gromacs/gmxpreprocess/grompp-impl.h"
 #include "gromacs/math/vectypes.h"
-#include "gromacs/utility/fatalerror.h"
 
 namespace alexandria
 {

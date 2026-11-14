@@ -37,7 +37,6 @@
 #include <cmath>
 #include <functional>
 #include <limits>
-#include <map>
 #include <string>
 #include <vector>
 
@@ -45,14 +44,8 @@
 #include <nlohmann/json.hpp>
 
 #include "act/alexandria/sensitivity.h"
-#include "act/alexandria/acmfitnesscomputer.h"
-#include "act/alexandria/staticindividualinfo.h"
 #include "act/forcefield/forcefield_utils.h"
-#include "act/ga/genome.h"
-#include "act/basics/msg_handler.h"
-#include "act/utility/communicationrecord.h"
 
-#include "testutils/testfilemanager.h"
 
 namespace alexandria
 {

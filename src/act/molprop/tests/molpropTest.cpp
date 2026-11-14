@@ -42,7 +42,6 @@
 
 #include <gtest/gtest.h>
 
-#include "gromacs/utility/snprintf.h"
 #include "act/basics/msg_handler.h"
 #include "act/molprop/molprop.h"
 #include "act/molprop/molprop_util.h"

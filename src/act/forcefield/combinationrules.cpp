@@ -29,7 +29,6 @@
 
 #include <algorithm>
 #include <array>
-#include <cmath>
 #include <cstring>
 #include <string>
 #include <vector>
@@ -38,9 +37,7 @@
 #include "act/forcefield/forcefield_parametername.h"
 #include "act/forcefield/potential.h"
 #include "act/utility/units.h"
-#include "gromacs/math/functions.h"
 #include "gromacs/utility/fatalerror.h"
-#include "gromacs/utility/gmxassert.h"
 
 namespace alexandria
 {

@@ -42,7 +42,6 @@
 #include "gromacs/utility/stringutil.h"
 
 #include "act/utility/communicationrecord.h"
-#include "act/utility/stringutil.h"
 
 namespace alexandria
 {

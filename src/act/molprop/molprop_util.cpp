@@ -38,7 +38,6 @@
 #include <cstdio>
 
 #include "act/molprop/molprop_xml.h"
-#include "act/topology/actmol.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/textwriter.h"

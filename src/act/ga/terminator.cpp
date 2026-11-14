@@ -33,7 +33,6 @@
 
 #include "terminator.h"
 
-#include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/textwriter.h"
 
 #include "gene_pool.h"

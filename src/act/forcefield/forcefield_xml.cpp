@@ -51,7 +51,6 @@
 #include "act/forcefield/symcharges.h"
 #include "act/basics/msg_handler.h"
 #include "act/utility/xml_util.h"
-#include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/futil.h"
 
 namespace alexandria

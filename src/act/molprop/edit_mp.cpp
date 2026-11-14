@@ -53,14 +53,9 @@
 #include "act/molprop/topologyentry.h"
 #include "act/statistics/statistics.h"
 #include "act/topology/actmol.h"
-#include "act/utility/stringutil.h"
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/fileio/xvgr.h"
-#include "gromacs/math/units.h"
-#include "gromacs/math/vec.h"
 #include "gromacs/utility/exceptions.h"
-#include "gromacs/utility/fatalerror.h"
-#include "gromacs/utility/futil.h"
 
 namespace alexandria
 {

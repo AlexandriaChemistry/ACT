@@ -28,7 +28,6 @@
 #include "forcecomputer.h"
 
 #include <algorithm>
-#include <limits>
 #include <set>
 #include <utility>
 #include <vector>
@@ -46,7 +45,6 @@
 #include "act/topology/fragmenthandler.h"
 #include "act/topology/topology.h"
 #include "act/utility/timings.h"
-#include "gromacs/gmxpreprocess/grompp-impl.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/math/vectypes.h"
 #include "gromacs/utility/futil.h"

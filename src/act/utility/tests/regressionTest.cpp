@@ -35,7 +35,6 @@
  
 #include "../regression.h"
 
-#include <cmath>
 #include <cstdlib>
 #include <utility>
 
@@ -44,7 +43,6 @@
 #include "testutils/cmdlinetest.h"
 #include "testutils/refdata.h"
 #include "testutils/testasserts.h"
-#include "testutils/testfilemanager.h"
 
 //! Class to test the regression analysis code
 class RegressionTest : public gmx::test::CommandLineTestBase

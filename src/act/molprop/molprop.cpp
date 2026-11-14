@@ -45,8 +45,6 @@
 #include "act/basics/msg_handler.h"
 #include "act/molprop/composition.h"
 #include "act/utility/communicationrecord.h"
-#include "act/utility/units.h"
-#include "gromacs/math/utilities.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/textwriter.h"
 

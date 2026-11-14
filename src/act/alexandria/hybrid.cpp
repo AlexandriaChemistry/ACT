@@ -37,9 +37,7 @@
 
 #include "act/alexandria/acminitializer.h"
 #include "act/alexandria/actmiddleman.h"
-#include "act/alexandria/mcmcmutator.h"
 #include "act/alexandria/sensitivity_analysis.h"
-#include "act/alexandria/train_ff.h"
 #include "act/basics/msg_handler.h"
 #include "act/forces/forcecomputerstatistics.h"
 #include "act/ga/gene_pool.h"

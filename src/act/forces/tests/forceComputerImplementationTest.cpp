@@ -44,7 +44,6 @@
 
 #include <functional>
 #include <map>
-#include <memory>
 #include <string>
 #include <tuple>
 #include <vector>
@@ -55,9 +54,6 @@
 #include "act/forcefield/forcefield_utils.h"
 #include "act/molprop/topologyentry.h"
 #include "act/topology/coords_energy.h"
-#include "act/topology/topology.h"
-#include "gromacs/math/units.h"
-#include "gromacs/math/vec.h"
 #include "gromacs/utility/stringutil.h"
 
 #include "testutils/cmdlinetest.h"

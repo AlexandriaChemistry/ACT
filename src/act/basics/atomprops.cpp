@@ -34,8 +34,6 @@
 
 #include "act/basics/libraryfile.h"
 #include "act/utility/stringutil.h"
-#include "gromacs/utility/exceptions.h"
-#include "gromacs/utility/stringutil.h"
 #include "gromacs/utility/textreader.h"
 
 namespace alexandria

@@ -34,11 +34,8 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
 
-#include <cmath>
 
-#include <algorithm>
 
 #include "act/alexandria/alex_modules.h"
 #include "act/alexandria/allbondeds.h"
@@ -46,16 +43,11 @@
 #include "act/basics/identifier.h"
 #include "act/forcefield/forcefield_xml.h"
 #include "act/molprop/molprop_util.h"
-#include "act/statistics/statistics.h"
 #include "act/topology/actmol.h"
 #include "act/utility/communicationrecord.h"
 #include "act/utility/memory_check.h"
-#include "act/utility/stringutil.h"
 #include "gromacs/commandline/pargs.h"
-#include "gromacs/math/vec.h"
 #include "gromacs/utility/exceptions.h"
-#include "gromacs/utility/fatalerror.h"
-#include "gromacs/utility/futil.h"
 
 namespace alexandria
 {

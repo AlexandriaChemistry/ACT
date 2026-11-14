@@ -36,15 +36,11 @@
 
 #include "../forcecomputerutils.h"
 
-#include <cmath>
 
-#include <memory>
 #include <vector>
 
 #include <gtest/gtest.h>
 
-#include "gromacs/math/units.h"
-#include "gromacs/math/vec.h"
 
 #include "testutils/cmdlinetest.h"
 #include "testutils/refdata.h"

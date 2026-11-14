@@ -50,7 +50,6 @@
 #include "act/qgen/qgen_resp.h"
 #include "act/qgen/qtype.h"
 #include "act/utility/timings.h"
-#include "act/forces/simd_information.h"
 #include "act/molprop/molprop_xml.h"
 #include "act/topology/actmol.h"
 

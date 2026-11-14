@@ -29,7 +29,6 @@
 
 #include "velocityhandler.h"
 
-#include <algorithm>
 #include <cmath>
 #include <map>
 
@@ -41,7 +40,6 @@
 #include "gromacs/random/tabulatednormaldistribution.h"
 #include "gromacs/random/threefry.h"
 #include "gromacs/utility/exceptions.h"
-#include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/stringutil.h"
 #include "gromacs/utility/textwriter.h"

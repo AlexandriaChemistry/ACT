@@ -35,7 +35,6 @@
 
 #include "../chargemodel.h"
 
-#include "testutils/testasserts.h"
 
 #include "gromacs/utility/exceptions.h"
 

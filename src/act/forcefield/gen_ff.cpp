@@ -47,7 +47,6 @@
 #include "act/basics/mutability.h"
 #include "act/forces/forcecomputer.h"
 #include "act/forcefield/act_checksum.h"
-#include "act/forcefield/combinationrules.h"
 #include "act/forcefield/combruleutil.h"
 #include "act/forcefield/forcefield_parameter.h"
 #include "act/forcefield/forcefield_parametername.h"
@@ -55,8 +54,6 @@
 #include "act/forcefield/forcefield_xml.h"
 #include "act/utility/stringutil.h"
 #include "gromacs/commandline/pargs.h"
-#include "gromacs/gmxpreprocess/grompp-impl.h"
-#include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/utility/stringutil.h"
 #include "gromacs/utility/textreader.h"
 

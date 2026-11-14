@@ -40,10 +40,8 @@
 #include "act/qgen/qtype.h"
 #include "act/molprop/multipole_names.h"
 
-#include "gromacs/math/vec.h"
 #include "gromacs/utility/exceptions.h"
 
-#include "testutils/testasserts.h"
 
 namespace alexandria
 {

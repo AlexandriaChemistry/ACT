@@ -35,10 +35,8 @@
 
 #include "staticindividualinfo.h"
 
-#include <algorithm>
 #include <filesystem>
 
-#include "act/ga/genome.h"
 #include "act/utility/memory_check.h"
 #include "act/forcefield/forcefield_xml.h"
 #include "act/forcefield/generate_dependent.h"

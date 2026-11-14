@@ -40,7 +40,6 @@
 #include "act/basics/libraryfile.h"
 #include "act/basics/msg_handler.h"
 #include "act/utility/xml_util.h"
-#include "gromacs/utility/futil.h"
 #include "gromacs/utility/stringutil.h"
 
 namespace alexandria

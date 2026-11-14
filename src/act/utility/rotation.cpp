@@ -35,7 +35,6 @@
 
 #include "rotation.h"
 
-#include <cmath>
 
 #include <Eigen/Dense>
 

@@ -33,7 +33,6 @@
 #include "act/qgen/qgen_acm.h"
 #include "act/topology/symmetrize_charges.h"
 #include "act/topology/topology.h"
-#include "act/utility/stringutil.h"
 #include "gromacs/math/vec.h"
 
 namespace alexandria

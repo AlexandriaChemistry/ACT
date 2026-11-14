@@ -37,7 +37,6 @@
 #include <cctype>
 #include <numeric>
 
-#include "gromacs/fileio/confio.h"
 #include "gromacs/math/vec.h"
 
 #include "act/basics/msg_handler.h"

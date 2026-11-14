@@ -37,7 +37,6 @@
 
 #include "alex_modules.h"
 
-#include <cstdio>
 
 #include "gromacs/commandline/cmdlinemodule.h"
 #include "gromacs/commandline/cmdlinemodulemanager.h"
