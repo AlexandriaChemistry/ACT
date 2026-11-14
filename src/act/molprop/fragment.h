@@ -85,7 +85,7 @@ class Fragment
 
  public:
     //! Default constructor
-    Fragment() {}
+    Fragment() = default;
     
     /*! \brief Constructor with initiation
      */

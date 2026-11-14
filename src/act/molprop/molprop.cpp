@@ -90,7 +90,7 @@ void MolProp::generateComposition()
             for(const auto &ca : ex.calcAtomConst())
             {
                 auto elem = ca.getName().c_str();
-                auto cc   = composition_.find(elem);
+                const auto cc   = composition_.find(elem);
                 if (cc == composition_.end())
                 {
                     composition_.insert(std::pair<const char *, int>(elem, 1));
@@ -201,7 +201,7 @@ bool MolProp::validate(MsgHandler *msghandler)
     // the index of the atoms.
     if (ref)
     {
-        auto   refName = ref->getDatafile();
+        const auto refName = ref->getDatafile();
         size_t nexper  = exper_.size();
         std::vector<Experiment> kept;
         for (auto &ex : exper_)
@@ -320,8 +320,8 @@ bool MolProp::validate(MsgHandler *msghandler)
         }
         for (const auto &b : bond_)
         {
-            auto itI = atomToFrag.find(b.aI());
-            auto itJ = atomToFrag.find(b.aJ());
+            const auto itI = atomToFrag.find(b.aI());
+            const auto itJ = atomToFrag.find(b.aJ());
             if (itI != atomToFrag.end() && itJ != atomToFrag.end() &&
                 itI->second != itJ->second)
             {
@@ -443,8 +443,8 @@ static std::string strNum2aa(const std::string &elem, int n)
 static std::string comp2formula(std::map<std::string, int> &comp)
 {
     std::string form;
-    std::string C("C");
-    std::string H("H");
+    const std::string C("C");
+    const std::string H("H");
     if (comp.end() != comp.find(C))
     {
         // Treat any compound with C as organic
@@ -511,12 +511,12 @@ bool MolProp::renumberResidues()
             //! \todo: This ignore the possibility that there could be
             // more than one residue in a fragment, e.g. a protein.
             auto atoms_j = fragment_[j].atoms();
-            if (atoms_j.size() > 0)
+            if (!atoms_j.empty())
             {
                 size_t aj = atoms_j[0];
                 if (aj < calcAtom->size())
                 {
-                    auto res_j   = (*calcAtom)[aj].residueName();
+                    const auto res_j   = (*calcAtom)[aj].residueName();
                     for(int k : atoms_j)
                     {
                         (*calcAtom)[k].setResidue(res_j, j);
@@ -546,7 +546,7 @@ void MolProp::generateFragments(MsgHandler       *msg_handler,
     int  natom = catom.size();
     std::vector<int> fragIndex(natom, -1);
     int maxBond = 0;
-    for(auto b : bond_)
+    for(const auto &b : bond_)
     {
         int ai = b.aI();
         int aj = b.aJ();
@@ -603,7 +603,7 @@ void MolProp::generateFragments(MsgHandler       *msg_handler,
     for(int i = 0; i < natom; i++)
     {
         int  fragI = fragIndex[i];
-        auto fm    = fragMols.find(fragI);
+        const auto fm    = fragMols.find(fragI);
         if (fragMols.end() == fm)
         {
             // Add empty set
@@ -628,12 +628,12 @@ void MolProp::generateFragments(MsgHandler       *msg_handler,
         {
             atomIndices.push_back(i);
             // Extract element and mass from force field data
-            auto atype = catom[i].getObtype();
+            const auto atype = catom[i].getObtype();
             if (pd->hasParticleType(atype))
             {
                 auto ptype = pd->findParticleType(atype);
                 mass      += ptype->mass();
-                auto elem  = ptype->element();
+                const auto elem  = ptype->element();
                 if (comp.find(elem) == comp.end())
                 {
                     comp.insert({elem, 0});
@@ -646,8 +646,8 @@ void MolProp::generateFragments(MsgHandler       *msg_handler,
                                                                    atype.c_str(), pd->filename().c_str()).c_str()));;
             }
         }
-        auto formula  = comp2formula(comp);
-        auto fragName = gmx::formatString("%d", fi++);
+        const auto formula  = comp2formula(comp);
+        const auto fragName = gmx::formatString("%d", fi++);
         // Set charge to 0 and spin to 1 now, fix it later.
         int qtot = 0;
         int spin = 1;
@@ -727,27 +727,27 @@ std::vector<std::string> MolProp::Merge(MolProp *src)
     setIndex(src->getIndex());
 
     stmp = src->getMolname();
-    if ((getMolname().size() == 0) && (stmp.size() != 0))
+    if ((getMolname().empty()) && (!stmp.empty()))
     {
         SetMolname(stmp);
     }
     stmp = src->getIupac();
-    if ((getIupac().size() == 0) && (stmp.size() != 0))
+    if ((getIupac().empty()) && (!stmp.empty()))
     {
         SetIupac(stmp);
     }
     stmp = src->getCas();
-    if ((getCas().size() == 0) && (stmp.size() != 0))
+    if ((getCas().empty()) && (!stmp.empty()))
     {
         SetCas(stmp);
     }
     stmp = src->getCid();
-    if ((getCid().size() == 0) && (stmp.size() != 0))
+    if ((getCid().empty()) && (!stmp.empty()))
     {
         SetCid(stmp);
     }
     stmp = src->getInchi();
-    if ((getInchi().size() == 0) && (stmp.size() != 0))
+    if ((getInchi().empty()) && (!stmp.empty()))
     {
         SetInchi(stmp);
     }
@@ -761,8 +761,8 @@ std::vector<std::string> MolProp::Merge(MolProp *src)
     {
         for (auto &bi : src->bondsConst())
         {
-            alexandria::Bond bb1(bi.aI(), bi.aJ(), bi.bondOrder());
-            alexandria::Bond bb2(bi.aJ(), bi.aI(), bi.bondOrder());
+            const alexandria::Bond bb1(bi.aI(), bi.aJ(), bi.bondOrder());
+            const alexandria::Bond bb2(bi.aJ(), bi.aI(), bi.bondOrder());
             if (!BondExists(bb1) && !BondExists(bb2))
             {
                 warnings.push_back(gmx::formatString("WARNING bond %d-%d not present in %s.",

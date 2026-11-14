@@ -65,7 +65,7 @@ const std::string &phase2string(ePhase ep)
 
 ePhase string2phase(const std::string &phase)
 {
-    auto ss = stringToPhase.find(phase);
+    const auto ss = stringToPhase.find(phase);
     if (ss != stringToPhase.end())
     {
         return ss->second;

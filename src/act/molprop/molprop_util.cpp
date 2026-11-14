@@ -93,7 +93,7 @@ static void MergeDoubleMolprops(MsgHandler                       *msg_handler,
         {
             if (molname[prev] == molname[cur])
             {
-                auto warn = mmm[prev]->sameCompound(&(*mmm[cur]));
+                const auto warn = mmm[prev]->sameCompound(&(*mmm[cur]));
                 if (msg_handler && !warn.empty())
                 {
                     if (msg_handler)
@@ -106,7 +106,7 @@ static void MergeDoubleMolprops(MsgHandler                       *msg_handler,
                 }
                 else
                 {
-                    auto mergeWarn = mmm[prev]->Merge(&(*mmm[cur]));
+                    const auto mergeWarn = mmm[prev]->Merge(&(*mmm[cur]));
                     if (msg_handler && !mergeWarn.empty())
                     {
                         for (const auto &w : mergeWarn)
@@ -152,7 +152,7 @@ void merge_xml(MsgHandler                             *msg_handler,
     for (auto &fn : filens)
     {
         std::vector<alexandria::MolProp> mp;
-        if (!gmx_fexist(fn.c_str()))
+        if (!gmx_fexist(fn))
         {
             if (msg_handler)
             {

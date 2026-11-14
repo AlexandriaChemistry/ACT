@@ -140,7 +140,7 @@ const Identifier *sharedIdentifier(const Identifier *id)
     };
     static std::set<Identifier, Exact> shared;
     static std::mutex                   mutex;
-    std::lock_guard<std::mutex>         lock(mutex);
+    const std::lock_guard<std::mutex>   lock(mutex);
     return &*shared.insert(*id).first;
 }
 

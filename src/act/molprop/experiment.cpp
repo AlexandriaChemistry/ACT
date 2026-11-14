@@ -68,7 +68,7 @@ JobType string2jobType(const std::string &str)
                 return s2j.first;
             }
         }
-        auto buf = gmx::formatString("Invalid job type %s", str.c_str());
+        const auto buf = gmx::formatString("Invalid job type %s", str.c_str());
         GMX_THROW(gmx::InvalidInputError(buf.c_str()));
     }
     return JobType::UNKNOWN;
@@ -143,17 +143,17 @@ void Experiment::Dump(gmx::TextWriter *tw) const
 
 void Experiment::AddAtom(const CalcAtom &ca)
 {
-    CalcAtomIterator cai = searchAtom(ca);
+    const CalcAtomIterator cai = searchAtom(ca);
 
     if (cai == catom_.end())
     {
         gmx::RVec x, f;
-        auto      cunit = ca.coordUnit();
+        const auto&      cunit = ca.coordUnit();
         x[XX]           = convertToGromacs(ca.getX(), cunit);
         x[YY]           = convertToGromacs(ca.getY(), cunit);
         x[ZZ]           = convertToGromacs(ca.getZ(), cunit);
         coordinates_.push_back(x);
-        auto      funit = ca.forceUnit();
+        const auto&      funit = ca.forceUnit();
         if (!funit.empty())
         {
             double fd[DIM];
@@ -212,7 +212,7 @@ CommunicationStatus Experiment::BroadCast(const CommunicationRecord *cr,
         {
             for (auto &p : property_)
             {
-                std::string mpo_str(mpo_name(p.first));
+                const std::string mpo_str(mpo_name(p.first));
                 cr->mh()->writeDebug(gmx::formatString("Will broadcast mpo_name '%s'\n", mpo_str.c_str()));
             }
         }

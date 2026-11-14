@@ -484,7 +484,7 @@ void ElectrostaticPotential::addPoint(int    espid,
     double xfac = convertToGromacs(1.0, xyzInputUnit_);
     double Vfac = convertToGromacs(1.0, vInputUnit_);
     espID_.push_back(espid);
-    gmx::RVec xyz = { static_cast<real>(x*xfac), static_cast<real>(y*xfac), static_cast<real>(z*xfac) };
+    const gmx::RVec xyz = { static_cast<real>(x*xfac), static_cast<real>(y*xfac), static_cast<real>(z*xfac) };
     xyz_.push_back(xyz);
     V_.push_back(V*Vfac);
 }

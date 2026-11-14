@@ -91,7 +91,7 @@ static bool dump_molecule(MsgHandler        *msghandler,
         auto fhandler = actmol.fragmentHandler();
         if (fhandler->topologies().size() == 1)
         {
-            std::vector<double> dummy;
+            const std::vector<double> dummy;
             std::vector<gmx::RVec> forces(actmol.atomsConst().size());
             actmol.generateCharges(msghandler, &pd, forceComp,
                                    pd.chargeGenerationAlgorithm(), &coords, &forces);
@@ -121,7 +121,7 @@ static bool dump_molecule(MsgHandler        *msghandler,
             const auto &atype = atoms[i].ffType();
             tw->writeStringFormatted("atom: %2lu  %5s  %5s", i+1, 
                     atoms[i].name().c_str(), atype.c_str());
-            Identifier pid(atype);
+            const Identifier pid(atype);
             atomId.push_back(pid);
             if (pd.hasParticleType(pid))
             {
@@ -129,9 +129,9 @@ static bool dump_molecule(MsgHandler        *msghandler,
                 // Each particle type has its own charge distribution
                 if (pIter->hasParameter(zetaName))
                 {
-                    auto zid = pIter->id();
+                    const auto zid = pIter->id();
                     tw->writeStringFormatted("  %s", zid.id().c_str());
-                    auto atypeMap = atomTypeCount->find(zid.id());
+                    const auto atypeMap = atomTypeCount->find(zid.id());
                     if (atypeMap == atomTypeCount->end())
                     {
                         atomTypeCount->insert(std::pair<const std::string, int>(zid.id(), 1));
@@ -151,8 +151,8 @@ static bool dump_molecule(MsgHandler        *msghandler,
         const auto &mybonds = actmol.topology()->entry(InteractionType::BONDS);
         for (size_t i = 0; i < mybonds.size(); i++)
         {
-            auto mybond = static_cast<const Bond &>(*mybonds[i]->self());
-            auto aa = mybond.atomIndices();
+            const auto mybond = static_cast<const Bond &>(*mybonds[i]->self());
+            const auto &aa = mybond.atomIndices();
             if (aa.size() != 2)
             {
                 GMX_THROW(gmx::InternalError(gmx::formatString("Bond with %zu atoms", aa.size()).c_str()));
@@ -169,12 +169,12 @@ static bool dump_molecule(MsgHandler        *msghandler,
                 auto acmtype = InteractionType::ELECTRONEGATIVITYEQUALIZATION;
                 if (pidI->hasInteractionType(acmtype) && pidJ->hasInteractionType(acmtype))
                 {
-                    auto zidI = pidI->interactionTypeToIdentifier(acmtype);
-                    auto zidJ = pidJ->interactionTypeToIdentifier(acmtype);
+                    const auto zidI = pidI->interactionTypeToIdentifier(acmtype);
+                    const auto zidJ = pidJ->interactionTypeToIdentifier(acmtype);
                     Identifier mybond({ zidI.id(), zidJ.id()}, { bo }, CanSwap::No);
                     auto btypeMap   = bccTypeCount->find(mybond.id());
                     bool bondExists = false;
-                    auto fs         = pd.findForcesConst(bctype);
+                    const auto &fs         = pd.findForcesConst(bctype);
                     if (fs.parameterExists(mybond))
                     {
                         tw->writeStringFormatted("  %s", mybond.id().c_str());
@@ -182,10 +182,10 @@ static bool dump_molecule(MsgHandler        *msghandler,
                     }
                     else
                     {
-                        Identifier mybond2({ zidJ.id(), zidI.id()}, { bo }, CanSwap::No);
+                        const Identifier mybond2({ zidJ.id(), zidI.id()}, { bo }, CanSwap::No);
                         mybond = mybond2;
                         btypeMap   = bccTypeCount->find(mybond.id());
-                        auto fs = pd.findForcesConst(bctype);
+                        const auto &fs = pd.findForcesConst(bctype);
                         if (fs.parameterExists(mybond))
                         {
                             tw->writeStringFormatted("  %s", mybond.id().c_str());
@@ -259,7 +259,7 @@ static std::set<std::string> check_mp(MsgHandler           *msghandler,
                 int nH = 0, nC = 0;
                 for (auto &cai : ci.calcAtomConst())
                 {
-                    std::string name = cai.getName();
+                    const std::string &name = cai.getName();
                     if (name.compare("H") == 0)
                     {
                         nH++;
@@ -286,7 +286,7 @@ static std::set<std::string> check_mp(MsgHandler           *msghandler,
                     if (gp)
                     {
                         std::vector<double> mu = gp->getVector();
-                        name_mu nmu = { ci.getDatafile(), { static_cast<real>(mu[XX]), static_cast<real>(mu[YY]), static_cast<real>(mu[ZZ]) } };
+                        const name_mu nmu = { ci.getDatafile(), { static_cast<real>(mu[XX]), static_cast<real>(mu[YY]), static_cast<real>(mu[ZZ]) } };
                         mus.push_back(nmu);
                     }
                 }
@@ -299,7 +299,7 @@ static std::set<std::string> check_mp(MsgHandler           *msghandler,
                     if (xyz.size() >= Xcalc.size() && Xcalc.size() > 1)
                     {
                         double msd = 0;
-                        auto xunit = ep->getXYZunit();
+                        const auto xunit = ep->getXYZunit();
                         double fac = convertToGromacs(1.0, xunit);
                         for(size_t i = 0; i < Xcalc.size(); i++)
                         {
@@ -370,7 +370,7 @@ static void gen_ehist(MsgHandler                 *msghandler,
                       real                        ewarnLow,
                       real                        ewarnHi)
 {
-    std::set<MolPropObservable> mpset = { MolPropObservable::DELTAE0, MolPropObservable::INTERACTIONENERGY };
+    const std::set<MolPropObservable> mpset = { MolPropObservable::DELTAE0, MolPropObservable::INTERACTIONENERGY };
     auto tw = msghandler->tw();
     for(auto mp = mpt->begin(); mp < mpt->end(); ++mp)
     {
@@ -394,7 +394,7 @@ static void gen_ehist(MsgHandler                 *msghandler,
                 real binwidth = 1;
                 int  nbins    = 0;
                 histo[mps].make_histogram(binwidth, &nbins, eHisto::Y, false, &x, &y);
-                auto filename = gmx::formatString("%s-%s.xvg", mp->getMolname().c_str(), mpo_name(mps));
+                const auto filename = gmx::formatString("%s-%s.xvg", mp->getMolname().c_str(), mpo_name(mps));
                 FILE *fp     = xvgropen(filename.c_str(), "Energy distribution in molprop", "Energy (kJ/mol)", "(a.u.)", oenv);
                 bool warnLow = false;
                 bool warnHi  = false;
@@ -434,7 +434,7 @@ static void gen_ehist(MsgHandler                 *msghandler,
 static void updateMolInfo(MsgHandler           *msghandler,
                           std::vector<MolProp> *mpt)
 {
-    AlexandriaMols amols;
+    const AlexandriaMols amols;
     auto tw = msghandler->tw();
     for(auto mp = mpt->begin(); mp < mpt->end(); ++mp)
     {
@@ -508,7 +508,7 @@ int edit_mp(int argc, char *argv[])
           "Print a warning if energy is higher than this number (kJ/mol)" }
     };
     std::vector<MolProp>  mpt;
-    ForceField            pd;
+    const ForceField      pd;
     MsgHandler msghandler;
     gmx_output_env_t     *oenv;
     msghandler.addOptions(&pa, &fnm, "edit_mp.log");
@@ -528,7 +528,7 @@ int edit_mp(int argc, char *argv[])
     {
         return 0;
     }
-    auto fns = opt2fns("-mp", fnm.size(), fnm.data());
+    const auto fns = opt2fns("-mp", fnm.size(), fnm.data());
     merge_xml(&msghandler, fns, &mpt);
     int mptsize = mpt.size();
     if (msghandler.ok())

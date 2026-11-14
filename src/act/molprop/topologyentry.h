@@ -85,7 +85,7 @@ private:
     bool                                        swapped_     = false;
 public:
     //! Default empty constructor
-    TopologyEntry() {}
+    TopologyEntry() = default;
 
     //! \return a pointer to this object, which may be an inherited class
     TopologyEntry *self() { return this; }
@@ -181,7 +181,7 @@ public:
         if (ffParams_ == nullptr || ffList_ != &fs || ffVersion_ != fs.structureVersion())
         {
             const auto &parameters = fs.parametersConst();
-            auto        ffiter     = parameters.find(*id_);
+            const auto  ffiter     = parameters.find(*id_);
             ffParams_  = parameters.end() == ffiter ? nullptr : &ffiter->second;
             ffList_    = &fs;
             ffVersion_ = fs.structureVersion();
@@ -247,7 +247,7 @@ class SingleAtom : public TopologyEntry
 {
  public:
     //! Default constructor
-    SingleAtom() {}
+    SingleAtom() = default;
 
     /*! \brief Constructor setting the id of the atom
      * \param[in] ai The atom index
@@ -296,7 +296,7 @@ class AtomPair : public TopologyEntry
 {
  public:
     //! Default constructor
-    AtomPair() {}
+    AtomPair() = default;
 
     /*! \brief Constructor setting the ids of the atoms
      * \param[in] ai The first atom index
@@ -365,7 +365,7 @@ class Bond : public TopologyEntry
 {
  public:
     //! Default constructor
-    Bond() {}
+    Bond() = default;
 
     /*! \brief Constructor setting the ids of the atoms and the bondorder
      * \param[in] ai        The first atom index
@@ -434,7 +434,7 @@ class Angle : public TopologyEntry
     bool             isLinear_ = false;
  public:
     //! Default constructor
-    Angle() {}
+    Angle() = default;
 
     /*! Angle constructor with initial data
      * \param[in] bij  First bond
@@ -476,7 +476,7 @@ class Improper : public TopologyEntry
 {
  public:
     //! Default constructor
-    Improper() {}
+    Improper() = default;
 
     /*! Improper dihedral constructor with initial data
      * \param[in] bij  First bond
@@ -506,7 +506,7 @@ class Proper : public TopologyEntry
 {
  public:
     //! Default constructor
-    Proper() {}
+    Proper() = default;
 
     /*! Improper dihedral constructor with initial data
      * \param[in] bij  First bond
@@ -535,7 +535,7 @@ class Vsite1 : public TopologyEntry
 {
  public:
     //! Default constructor
-    Vsite1() {}
+    Vsite1() = default;
 
     /*! \brief Constructor setting the ids of the atom and the virtual site
      * \param[in] ai The atom index
@@ -582,7 +582,7 @@ class Vsite2 : public TopologyEntry
 {
  public:
     //! Default constructor
-    Vsite2() {}
+    Vsite2() = default;
 
     /*! \brief Constructor setting the ids of the atoms and the virtual site
      * \param[in] ai The first atom index
@@ -632,7 +632,7 @@ class Vsite3 : public TopologyEntry
 {
  public:
     //! Default constructor
-    Vsite3() {}
+    Vsite3() = default;
 
     /*! \brief Constructor setting the ids of the atoms and the virtual site
      * \param[in] ai The first atom index
@@ -691,7 +691,7 @@ class Vsite4 : public TopologyEntry
 {
 public:
     //! Default constructor
-    Vsite4() {}
+    Vsite4() = default;
 
     /*! \brief Constructor setting the ids of the atoms and the virtual site
      * \param[in] ai The first atom index
@@ -760,7 +760,7 @@ class Vsite3OUT : public TopologyEntry
 {
  public:
     //! Default constructor
-    Vsite3OUT() {}
+    Vsite3OUT() = default;
 
     /*! \brief Constructor setting the ids of the atoms, the virtual site and the sign
      * \param[in] ai   The first atom index

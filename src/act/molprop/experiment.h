@@ -97,7 +97,7 @@ class Experiment
 {
 public:
     //! Default constructor
-    Experiment() { }
+    Experiment() = default;
     
     //! Constructor initiating an Experiment with reference and conformation
     Experiment(const std::string &reference,
