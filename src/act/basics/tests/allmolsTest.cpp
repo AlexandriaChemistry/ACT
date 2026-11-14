@@ -176,7 +176,7 @@ TEST(AllmolsJsonTest, ReadJson)
         " \"author\": \"maaren\", \"timestamp\": \"2018-03-31 15:25:56\"}\n"
         "]\n";
     gmx::test::TestFileManager fileManager;
-    auto fileName = fileManager.getTemporaryFilePath("alexandria.json");
+    const auto fileName = fileManager.getTemporaryFilePath("alexandria.json");
     std::ofstream(fileName) << json;
     const AlexandriaMols amols(fileName);
 
