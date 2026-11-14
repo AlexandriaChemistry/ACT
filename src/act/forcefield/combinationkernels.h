@@ -91,6 +91,11 @@ inline T two(CombRule rule, T x1, T x2, bool *ok)
     case CombRule::Arithmetic:
         return 0.5 * (x1 + x2);
     case CombRule::HogervorstEpsilon:
+        // Zero, not 0/0, if both are zero
+        if (x1 + x2 == 0)
+        {
+            return 0;
+        }
         return (2.0 * x1 * x2)/( x1 + x2 );
     case CombRule::Yang:
         if (x1*x2 == 0)
@@ -123,8 +128,12 @@ inline T two(CombRule rule, T x1, T x2, bool *ok)
         return (x1*x1*x1+x2*x2*x2)/(x1*x1+x2*x2);
     case CombRule::HalgrenEpsilon:
     {
-        // Halgren1992a, Eqn. 14
+        // Halgren1992a, Eqn. 14, zero if both are zero
         T s = M::sqrt(x1) + M::sqrt(x2);
+        if (s == 0)
+        {
+            return 0;
+        }
         return 4*x1*x2/(s*s);
     }
     default:
@@ -205,11 +214,15 @@ inline T generalizedMean(T x1, T x2, T exponent)
 /*! \brief The gamma of Mason1955a
  * \tparam M The mathematical functions
  * \tparam T The type of the values
- * \return The combined gamma
+ * \return The combined gamma, zero if a sigma is zero
  */
 template <class M, typename T>
 inline T masonGamma(T g1, T g2, T s1, T s2)
 {
+    if (s1 == 0 || s2 == 0)
+    {
+        return 0;
+    }
     T sigmaIJ = M::sqrt(s1*s2);
     return sigmaIJ * (0.5*((g1/s1)+(g2/s2)));
 }
