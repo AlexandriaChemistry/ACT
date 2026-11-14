@@ -46,7 +46,6 @@
 #include "act/forcefield/potential.h"
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/utility/exceptions.h"
-#include "gromacs/utility/stringutil.h"
 
 #include "testutils/cmdlinetest.h"
 #include "testutils/refdata.h"

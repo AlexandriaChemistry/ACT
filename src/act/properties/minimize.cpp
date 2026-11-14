@@ -49,7 +49,6 @@
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/fileio/oenv.h"
 #include "gromacs/topology/index.h"
-#include "gromacs/utility/futil.h"
 
 namespace alexandria
 {

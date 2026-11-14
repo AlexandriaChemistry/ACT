@@ -34,7 +34,6 @@
 
 #include "../version.h"
 
-#include "testutils/testasserts.h"
 
 namespace
 {

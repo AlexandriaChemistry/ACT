@@ -37,7 +37,6 @@
 #include <cstdio>
 
 #include "act/utility/communicationrecord.h"
-#include "act/utility/stringutil.h"
 #include "gromacs/utility/fatalerror.h"
 
 namespace alexandria

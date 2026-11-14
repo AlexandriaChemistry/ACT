@@ -36,7 +36,6 @@
 #include <map>
 
 #include "gromacs/topology/ifunc.h"
-#include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
 

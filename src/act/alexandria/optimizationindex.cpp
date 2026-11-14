@@ -34,7 +34,6 @@
 
 #include "optimizationindex.h"
 #include "act/forcefield/forcefield.h"
-#include "act/forcefield/forcefield_parameter.h"
 #include "gromacs/utility/stringutil.h"
 
 namespace alexandria

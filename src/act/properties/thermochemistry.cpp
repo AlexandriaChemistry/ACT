@@ -49,10 +49,7 @@
 #include "act/topology/actmol.h"
 #include "act/topology/topology.h"
 #include "act/utility/units.h"
-#include "gromacs/gmxpreprocess/grompp-impl.h"
 #include "gromacs/math/units.h"
-#include "gromacs/utility/arrayref.h"
-#include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxassert.h"
 
 #define universalGasConstant RGAS

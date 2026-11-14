@@ -42,7 +42,6 @@
 #include "act/forcefield/forcefield_parametername.h"
 #include "act/gpu/pairrows.h"
 #include "act/utility/timings.h"
-#include "gromacs/math/functions.h"
 #include "gromacs/math/units.h"
 #include "gromacs/utility/gmxassert.h"
 

@@ -35,17 +35,14 @@
 
 #include <cstring>
 
-#include <map>
 #include <set>
 #include <string>
 #include <vector>
 
 #include "act/basics/interactiontype.h"
 #include "act/forcefield/combinationrules.h"
-#include "act/forcefield/forcefield_parametername.h"
 #include "act/utility/stringutil.h"
 #include "gromacs/commandline/pargs.h"
-#include "gromacs/utility/fatalerror.h"
 
 namespace alexandria
 {

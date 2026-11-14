@@ -39,9 +39,7 @@
 #include <tuple>
 #include <vector>
 
-#include "act/basics/interactiontype.h"
 #include "act/basics/msg_handler.h"
-#include "act/forcefield/forcefield_parametername.h"
 
 namespace alexandria
 {

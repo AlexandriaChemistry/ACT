@@ -34,7 +34,6 @@
 #include "actpre.h"
 
 #include <cmath>
-#include <string>
 
 #include <gtest/gtest.h>
 

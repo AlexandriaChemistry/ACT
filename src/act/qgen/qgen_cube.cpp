@@ -40,10 +40,7 @@
 #include <cstdio>
 #include <cstdlib>
 
-#include <map>
 
-#include "act/forcefield/forcefield.h"
-#include "act/forcefield/forcefield_parameter.h"
 #include "act/statistics/statistics.h"
 #include "act/topology/topology.h"
 #include "act/utility/units.h"

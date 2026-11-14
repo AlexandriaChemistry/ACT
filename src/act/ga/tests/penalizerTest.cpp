@@ -32,7 +32,6 @@
  */
 #include <cmath>
 
-#include <map>
 
 #include <gtest/gtest.h>
 
@@ -42,10 +41,8 @@
 #include "act/ga/ga_test_helper.h"
 
 #include "testutils/cmdlinetest.h"
-#include "testutils/mpitest.h"
 #include "testutils/refdata.h"
 #include "testutils/testasserts.h"
-#include "testutils/testfilemanager.h"
 
 
 namespace ga

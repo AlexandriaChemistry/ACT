@@ -45,9 +45,7 @@
 
 #include <cstdio>
 
-#include <algorithm>
 #include <array>
-#include <set>
 #include <vector>
 
 #include "act/forcefield/forcefield_parametername.h"
@@ -55,7 +53,6 @@
 #include "act/utility/timings.h"
 #include "gromacs/math/functions.h"
 #include "gromacs/math/vec.h"
-#include "gromacs/topology/topology.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
 

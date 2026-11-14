@@ -28,9 +28,7 @@
  
 #include "polinfo.h"
 
-#include "act/basics/identifier.h"
 #include "act/forcefield/forcefield.h"
-#include "act/forcefield/forcefield_parametername.h"
 #include "act/topology/topology.h"
 
 namespace alexandria

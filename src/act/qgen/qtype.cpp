@@ -35,13 +35,11 @@
 #include "qtype.h"
 
 #include <map>
-#include <random>
 
 #include "act/basics/msg_handler.h"
 #include "act/forces/forcecomputer.h"
 #include "act/molprop/multipole_names.h"
 #include "act/topology/topology.h"
-#include "act/utility/units.h"
 #include "gromacs/utility/stringutil.h"
 
 #include "qgen_resp.h"

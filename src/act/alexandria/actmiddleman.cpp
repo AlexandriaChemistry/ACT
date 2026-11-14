@@ -28,7 +28,6 @@
 #include "act/utility/portable_random.h"
 #include "act/utility/communicationrecord.h"
 #include "gromacs/utility/gmxassert.h"
-#include "gromacs/utility/textwriter.h"
 #include "act/utility/timings.h"
 
 namespace alexandria

@@ -44,7 +44,6 @@
 #include "act/basics/interactiontype.h"
 #include "act/forcefield/forcefield.h"
 #include "act/forcefield/forcefield_xml.h"
-#include "act/forcefield/forcefield_parametername.h"
 #include "act/forcefield/potential.h"
 #include "gromacs/utility/exceptions.h"
 

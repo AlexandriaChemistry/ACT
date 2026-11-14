@@ -40,7 +40,6 @@
 #include "act/alexandria/molselect.h"
 #include "act/basics/dataset.h"
 
-#include "testutils/testasserts.h"
 
 namespace alexandria
 {

@@ -34,10 +34,7 @@
 
 #include "regression.h"
 
-#include <cmath>
-#include <cstdio>
 #include <cstring>
-#include <iostream>
 #include <utility>
 
 #include <vector>
@@ -48,12 +45,9 @@
 #pragma GCC diagnostic ignored "-Wdeprecated-redundant-constexpr-static-def"
 #pragma GCC diagnostic ignored "-Wdeprecated-copy-with-dtor"
 #include <Eigen/Dense>
-#include <Eigen/SVD> 
 #pragma GCC diagnostic pop
 
 #include "gromacs/math/matrix.h"
-#include "gromacs/math/vec.h"
-#include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/stringutil.h"
 
 /*! \brief Linear regression with many columns

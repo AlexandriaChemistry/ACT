@@ -34,8 +34,6 @@
 
 #include "../act_particle.h"
 
-#include "testutils/cmdlinetest.h"
-#include "testutils/testasserts.h"
 
 namespace alexandria
 {

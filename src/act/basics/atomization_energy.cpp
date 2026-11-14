@@ -35,13 +35,11 @@
 #include <algorithm>
 #include <cmath>
 #include <cstdlib>
-#include <stdexcept>
 
 #include "act/basics/libraryfile.h"
 #include "act/basics/msg_handler.h"
 #include "act/utility/stringutil.h"
 #include "gromacs/utility/exceptions.h"
-#include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/stringutil.h"
 #include "gromacs/utility/textreader.h"
 #include "gromacs/utility/textwriter.h"

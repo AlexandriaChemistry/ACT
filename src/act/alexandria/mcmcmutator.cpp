@@ -35,14 +35,11 @@
 #include "mcmcmutator.h"
 
 #include <filesystem>
-#include <sys/types.h>
-#include <sys/stat.h>
 
 #include "gromacs/utility/basedefinitions.h"
 
 #include "act/alexandria/sensitivity.h"
 #include "act/utility/memory_check.h"
-#include "act/utility/jsontree.h"
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/utility/textwriter.h"
 #include "act/utility/timings.h"

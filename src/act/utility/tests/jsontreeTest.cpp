@@ -34,7 +34,6 @@
 #include "../jsontree.h"
 
 #include <fstream>
-#include <sstream>
 #include <string>
 
 #include <gtest/gtest.h>

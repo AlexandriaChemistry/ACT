@@ -39,30 +39,21 @@
 #include <cmath>
 
 #include <algorithm>
-#include <iostream>
-#include <list>
 #include <map>
 #include <set>
 
-#include <libxml/parser.h>
 #include <libxml/tree.h>
 
 #include "act/alexandria/pdbwriter.h"
 #include "act/basics/allmols.h"
 #include "act/basics/msg_handler.h"
 #include "act/forcefield/forcefield.h"
-#include "act/forcefield/symcharges.h"
 #include "act/forcefield/forcefield_parameter.h"
 #include "act/forcefield/forcefield_parameterlist.h"
 #include "act/forcefield/forcefield_parametername.h"
 #include "act/forcefield/potential.h"
-#include "act/molprop/molprop_util.h"
 #include "act/topology/actmol.h"
-#include "act/utility/stringutil.h"
 #include "act/utility/xml_util.h"
-#include "gromacs/gmxpreprocess/grompp-impl.h"
-#include "gromacs/utility/cstringutil.h"
-#include "gromacs/utility/futil.h"
 
 namespace alexandria
 {

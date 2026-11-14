@@ -48,9 +48,6 @@
 #include <string>
 #include <vector>
 
-#include "gromacs/fileio/md5.h"
-#include "gromacs/mdtypes/md_enums.h"
-#include "gromacs/utility/textreader.h"
 
 #include "act/forcefield/act_checksum.h"
 #include "act/forcefield/forcefield_xml.h"

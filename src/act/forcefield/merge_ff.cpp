@@ -39,7 +39,6 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
 
 #include "act/alexandria/alex_modules.h"
 #include "act/basics/identifier.h"
@@ -48,12 +47,7 @@
 #include "act/forcefield/forcefield_xml.h"
 #include "act/statistics/statistics.h"
 #include "gromacs/commandline/pargs.h"
-#include "gromacs/math/units.h"
-#include "gromacs/math/vec.h"
-#include "gromacs/utility/exceptions.h"
-#include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
-#include "gromacs/utility/smalloc.h"
 
 namespace alexandria
 {

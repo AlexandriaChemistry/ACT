@@ -34,18 +34,9 @@
 
 #include "forcefield_tables.h"
 
-#include <cinttypes>
-#include <cstdio>
 #include <cstdlib>
 
-#include "gromacs/fileio/xvgr.h"
-#include "gromacs/math/utilities.h"
-#include "gromacs/math/vec.h"
-#include "gromacs/utility/cstringutil.h"
 
-#include "act/basics/chargemodel.h"
-#include "act/forcefield/symcharges.h"
-#include "act/statistics/statistics.h"
 #include "act/utility/latex_util.h"
 
 namespace alexandria

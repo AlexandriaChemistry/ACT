@@ -46,19 +46,14 @@
 
 #include "act/alexandria/mcmcmutator.h"
 #include "act/alexandria/confighandler.h"
-#include "act/alexandria/acmfitnesscomputer.h"
-#include "act/alexandria/acmindividual.h"
 #include "act/alexandria/staticindividualinfo.h"
 #include "act/ga/genome.h"
 #include "act/ga/ga_test_helper.h"
 #include "gromacs/utility/stringutil.h"
-#include "act/basics/msg_handler.h"
 
-#include "gromacs/utility/exceptions.h"
 #include "testutils/cmdlinetest.h"
 #include "testutils/refdata.h"
 #include "testutils/testasserts.h"
-#include "testutils/testfilemanager.h"
 
 namespace alexandria
 {

@@ -50,13 +50,9 @@
 #include <string>
 
 #include "act/topology/topology.h"
-#include "gromacs/fileio/gmxfio.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/pbcutil/pbc.h"
-#include "gromacs/utility/cstringutil.h"
-#include "gromacs/utility/fatalerror.h"
-#include "gromacs/utility/futil.h"
 
 typedef struct {
     //! Indices of the two atoms in a CONECT record

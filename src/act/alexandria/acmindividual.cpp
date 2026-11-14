@@ -36,8 +36,6 @@
 
 #include "acmindividual.h"
 
-#include "gromacs/fileio/xvgr.h"
-#include "act/forcefield/forcefield_xml.h"
 
 namespace alexandria
 {

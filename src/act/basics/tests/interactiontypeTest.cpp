@@ -34,12 +34,7 @@
 
 #include "../interactiontype.h"
 
-#include "testutils/cmdlinetest.h"
-#include "testutils/refdata.h"
-#include "testutils/testasserts.h"
-#include "testutils/testfilemanager.h"
 
-#include "gromacs/utility/exceptions.h"
 
 namespace alexandria
 {

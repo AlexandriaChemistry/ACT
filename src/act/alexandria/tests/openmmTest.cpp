@@ -30,7 +30,6 @@
  * Implements part of the alexandria program.
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
-#include <cmath>
 
 #include <cstring>
 #include <fstream>

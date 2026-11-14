@@ -33,7 +33,6 @@
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
 
-#include <cmath>
 #include <map>
 #include <string>
 #include <vector>

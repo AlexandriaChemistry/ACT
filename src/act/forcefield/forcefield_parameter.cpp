@@ -33,9 +33,7 @@
 
 #include "forcefield_parameter.h"
 
-#include <map>
 
-#include <inttypes.h>
 
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"

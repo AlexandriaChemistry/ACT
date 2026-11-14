@@ -36,7 +36,6 @@
 
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/utility/exceptions.h"
-#include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/stringutil.h"
 #include "act/utility/timings.h"
 

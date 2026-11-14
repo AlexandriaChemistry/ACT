@@ -43,9 +43,7 @@
 #include "gromacs/commandline/cmdlinemodulemanager.h"
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/mdtypes/commrec.h"
-#include "gromacs/utility/binaryinformation.h"
 #include "gromacs/utility/exceptions.h"
-#include "gromacs/utility/init.h"
 #include "gromacs/utility/smalloc.h"
 
 int

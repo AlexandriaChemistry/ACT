@@ -61,7 +61,6 @@
 #include "act/import/import_utils.h"
 #include "act/molprop/molprop.h"
 #include "act/utility/units.h"
-#include "gromacs/math/vec.h"
 #include "gromacs/utility/stringutil.h"
 
 namespace alexandria

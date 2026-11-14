@@ -40,13 +40,8 @@
 #include <string>
 #include <vector>
 
-#include "act/basics/identifier.h"
-#include "act/forcefield/forcefield_parametername.h"
 #include "act/forces/forces_simd.h" 
-#include "act/utility/communicationrecord.h"
 #include "act/utility/units.h"
-#include "gromacs/math/vecdump.h"
-#include "gromacs/utility/textwriter.h"
 
 // Precompute max argument for exp function at compile time.
 static const double DOUBLE_MAX_LOG = std::log(GMX_DOUBLE_MAX);

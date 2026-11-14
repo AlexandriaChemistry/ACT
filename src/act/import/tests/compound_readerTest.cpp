@@ -33,7 +33,6 @@
 
 #include "actpre.h"
 
-#include <cmath>
 
 #include <cstdlib>
 

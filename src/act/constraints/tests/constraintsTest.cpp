@@ -33,7 +33,6 @@
 #include <algorithm>
 #include <cmath>
 
-#include <map>
 
 #include <gtest/gtest.h>
 
@@ -46,9 +45,7 @@
 #include "act/topology/actmol.h"
 #include "act/topology/actmol_util.h"
 #include "act/topology/topology.h"
-#include "gromacs/math/units.h"
 #include "gromacs/utility/exceptions.h"
-#include "gromacs/utility/stringutil.h"
 
 #include "testutils/cmdlinetest.h"
 #include "testutils/refdata.h"

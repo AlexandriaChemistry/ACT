@@ -36,11 +36,7 @@
 #include <cstdlib>
 #include <map>
 #include <string>
-#include <vector>
 
-#include "act/utility/jsontree.h"
-#include "act/utility/regression.h"
-#include "act/utility/stringutil.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/stringutil.h"
 

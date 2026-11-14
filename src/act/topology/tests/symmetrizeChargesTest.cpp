@@ -40,7 +40,6 @@
 #include "act/topology/symmetrize_charges.h"
 #include "gromacs/utility/exceptions.h"
 
-#include "testutils/testasserts.h"
 
 namespace alexandria
 {

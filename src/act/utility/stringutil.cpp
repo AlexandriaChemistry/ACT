@@ -34,12 +34,10 @@
  
 #include "stringutil.h"
 
-#include <inttypes.h>
 #include <math.h>
 #include <stdio.h>
 #include <string.h>
 
-#include <map>
 #include <sstream>
 #include <string>
 
