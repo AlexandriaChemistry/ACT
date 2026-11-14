@@ -127,15 +127,15 @@ void Topology::addShells(MsgHandler       *msghandler,
     {
         if (iter->atom().pType() == ActParticle::Atom || iter->atom().pType() == ActParticle::Vsite)
         {
-            std::string atomtype(iter->atom().ffType());
+            const std::string atomtype(iter->atom().ffType());
             if (pd->hasParticleType(atomtype))
             {
                 //! \todo Allow adding multiple shells
                 auto fa = pd->findParticleType(atomtype);
                 if (fa->hasInteractionType(InteractionType::POLARIZATION))
                 {
-                    auto ptype = fa->interactionTypeToIdentifier(InteractionType::POLARIZATION);
-                    auto param  = fs.findParameterTypeConst(ptype, pol_name[polALPHA]);
+                    const auto ptype = fa->interactionTypeToIdentifier(InteractionType::POLARIZATION);
+                    const auto param  = fs.findParameterTypeConst(ptype, pol_name[polALPHA]);
                     auto fp     = pd->findParticleType(ptype);
                     auto charge = fp->charge();
                     auto pol    = convertToGromacs(param.value(), param.unit());
@@ -150,15 +150,15 @@ void Topology::addShells(MsgHandler       *msghandler,
                     pp.addAtom(core);
                     pp.addAtom(shell);
                     pp.addBondOrder(1.0);
-                    pols.push_back(std::move(pp));
+                    pols.emplace_back(std::move(pp));
 
                     // Insert shell atom
-                    auto shellName = iter->atom().name() + "s";
+                    const auto shellName = iter->atom().name() + "s";
                     ActAtom newshell(shellName, "EP", ptype.id(), ActParticle::Shell,
                                      0, 0, charge, fa->row());
                     newshell.setZeta(fp->zeta());
                     newshell.setResidueNumber(iter->atom().residueNumber());
-                    auto olditer = iter;
+                    const auto olditer = iter;
                     iter = atomList->insert(std::next(iter), ActAtomListItem(newshell, shell, olditer->x()));
                     // Create link between shell and atom
                     olditer->atomPtr()->addShell(shell);
@@ -193,7 +193,7 @@ void Topology::addBond(const Bond &bond)
     {
         entries_.insert({ itb, TopologyEntryVector{} });
     }
-    entries_[itb].push_back(std::any_cast<Bond>(std::move(bond)));
+    entries_[itb].emplace_back(std::any_cast<Bond>(std::move(bond)));
 }
 
 double Topology::mass() const
@@ -208,8 +208,8 @@ double Topology::mass() const
 
 Bond Topology::findBond(int ai, int aj) const
 {
-    Bond b(ai, aj, 1.0);
-    auto bondsptr = entries_.find(InteractionType::BONDS);
+    const Bond b(ai, aj, 1.0);
+    const auto bondsptr = entries_.find(InteractionType::BONDS);
     TopologyEntryVector::const_iterator bptr;
     if (entries_.end() == bondsptr)
     {
@@ -310,7 +310,7 @@ void Topology::makeAngles(MsgHandler                   *msghandler,
     TopologyEntryVector linangles{};
     for(size_t i = 0; i < bonds.size(); i++)
     {
-        auto b1  = static_cast<const Bond &>(*bonds[i]->self());
+        const auto b1  = static_cast<const Bond &>(*bonds[i]->self());
         int  ai1 = bonds[i]->atomIndex(0);
         int  aj1 = bonds[i]->atomIndex(1);
         for(size_t j = 0; j < bonds.size(); j++)
@@ -319,7 +319,7 @@ void Topology::makeAngles(MsgHandler                   *msghandler,
             {
                 continue;
             }
-            auto b2  = static_cast<const Bond &>(*bonds[j]->self());
+            const auto b2  = static_cast<const Bond &>(*bonds[j]->self());
             int  ai2 = bonds[j]->atomIndex(0);
             int  aj2 = bonds[j]->atomIndex(1);
             Angle angle{};
@@ -349,7 +349,7 @@ void Topology::makeAngles(MsgHandler                   *msghandler,
                                                      angle.bondOrders(), CanSwap::Yes))
                     {
                         angle.setLinear(true);
-                        linangles.push_back(std::move(angle));
+                        linangles.emplace_back(std::move(angle));
                     }
                 }
                 else
@@ -357,7 +357,7 @@ void Topology::makeAngles(MsgHandler                   *msghandler,
                     if (nullptr == findTopologyEntry(angles, angle.atomIndices(),
                                                      angle.bondOrders(), CanSwap::Yes))
                     {
-                        angles.push_back(std::move(angle));
+                        angles.emplace_back(std::move(angle));
                     }
                 }
             }
@@ -396,7 +396,7 @@ void Topology::orderImproper(const ForceField  *pd,
         auto atype = pd->findParticleType(atoms_[a].ffType());
         return atype->hasInteractionType(ib) ? atype->interactionTypeToIdentifier(ib).id() : std::string();
     };
-    std::string center = bondType((*bonds)[0].atomIndex(0));
+    const std::string center = bondType((*bonds)[0].atomIndex(0));
     // The neighbours ordered by bond order and bond type, which do not
     // depend on the numbering of the atoms. Neighbours that are the same
     // stay in their order, which does not change the identifier.
@@ -404,7 +404,7 @@ void Topology::orderImproper(const ForceField  *pd,
     {
         return std::make_pair(b.bondOrders()[0], bondType(b.atomIndex(1)));
     };
-    auto less = [&key](const Bond &a, const Bond &b) { return key(a) < key(b); };
+    const auto less = [&key](const Bond &a, const Bond &b) { return key(a) < key(b); };
     std::stable_sort(bonds->begin(), bonds->end(), less);
     if (center.empty())
     {
@@ -414,10 +414,10 @@ void Topology::orderImproper(const ForceField  *pd,
     // of the neighbours, all with the same parameters. The first order that
     // the force field has is used, the sorted one if it has none.
     auto  &fs     = pd->findForcesConst(itype);
-    auto   sorted = *bonds;
+    const auto sorted = *bonds;
     do
     {
-        Improper                 imp((*bonds)[0], (*bonds)[1], (*bonds)[2]);
+        const Improper           imp((*bonds)[0], (*bonds)[1], (*bonds)[2]);
         std::vector<std::string> btype = { center };
         for(const auto &b : *bonds)
         {
@@ -485,7 +485,7 @@ void Topology::makeImpropers(MsgHandler                   *msghandler,
                 std::vector<Bond> bjkl(3);
                 for(int m = 0; m < 3; m++)
                 {
-                    auto bbb = findBond(i, jkl[m]);
+                    const auto bbb = findBond(i, jkl[m]);
                     if (bbb.atomIndex(0) != static_cast<int>(i))
                     {
                         bjkl[m] = bbb.swap();
@@ -496,7 +496,7 @@ void Topology::makeImpropers(MsgHandler                   *msghandler,
                     }
                 }
                 orderImproper(pd, &bjkl);
-                impropers.push_back(Improper(bjkl[0], bjkl[1], bjkl[2]));
+                impropers.emplace_back(Improper(bjkl[0], bjkl[1], bjkl[2]));
             }
         }
     }
@@ -527,8 +527,8 @@ void Topology::makePropers(MsgHandler       *msghandler,
         {
             continue;
         }
-        auto bij1 = a1->bij();
-        auto bjk1 = a1->bjk();
+        const auto bij1 = a1->bij();
+        const auto bjk1 = a1->bjk();
         for(size_t j = i+1; j < angles.size(); j++)
         {
             auto a2 = static_cast<const Angle *>(angles[j]->self());
@@ -536,29 +536,29 @@ void Topology::makePropers(MsgHandler       *msghandler,
             {
                 continue;
             }
-            auto bij2 = a2->bij();
-            auto bjk2 = a2->bjk();
+            const auto bij2 = a2->bij();
+            const auto bjk2 = a2->bjk();
             // We are looking for linear dihedrals with order
             // i-j-k-l, and there are four possibilities:
             // 1) the first angle is i-j-k and the second j-k-l
             if (bjk1.aI() == bij2.aI() && bjk1.aJ() == bij2.aJ())
             {
-                propers.push_back(Proper(bij1, bjk1, bjk2));
+                propers.emplace_back(Proper(bij1, bjk1, bjk2));
             }
             // 2) the first angle is k-j-i and the second j-k-l
             else if (bij1.aI() == bij2.aJ() && bij1.aJ() == bij2.aI())
             {
-                propers.push_back(Proper(bjk1.swap(), bij2, bjk2));
+                propers.emplace_back(Proper(bjk1.swap(), bij2, bjk2));
             }
             // 2) the first angle is k-j-i and the second l-k-j
             else if (bij1.aI() == bij2.aJ() && bij1.aJ() == bjk2.aJ() )
             {
-                propers.push_back(Proper(bjk1.swap(), bij1.swap(), bij2.swap()));
+                propers.emplace_back(Proper(bjk1.swap(), bij1.swap(), bij2.swap()));
             }
             // 4) the first angle is i-j-k and the second l-k-j
             else if (bij1.aJ() == bjk2.aJ() && bjk1.aJ() == bij2.aJ())
             {
-                propers.push_back(Proper(bij1, bjk1, bij2.swap()));
+                propers.emplace_back(Proper(bij1, bjk1, bij2.swap()));
             }
         }
     }
@@ -594,7 +594,7 @@ std::map<InteractionType, size_t> Topology::makeVsite1s(MsgHandler       *msghan
     TopologyEntryVector v1top;
     for(auto atom = atomList->begin(); atom != atomList->end(); atom++)
     {
-        auto aa = atom->atom();
+        const auto aa = atom->atom();
         // First find the bond type for this atom
         const auto ptype1 = pd->findParticleType(aa.ffType());
         for(const auto &mm : fs.parametersConst())
@@ -610,7 +610,7 @@ std::map<InteractionType, size_t> Topology::makeVsite1s(MsgHandler       *msghan
                 {
                     msghandler->fatal(gmx::formatString("Force field inconsistency. Particle %s should have type VSite", ptype->id().id().c_str()));
                 }
-                std::string vstype;
+                const std::string vstype;
                 ActAtom newatom(ptype->id().id(), vstype, ptype->id().id(),
                                 ptype->apType(),
                                 0, ptype->mass(), ptype->charge(),
@@ -621,7 +621,7 @@ std::map<InteractionType, size_t> Topology::makeVsite1s(MsgHandler       *msghan
                 newatom.addCore(atom->index());
                 // Residue number
                 newatom.setResidueNumber(aa.residueNumber());
-                gmx::RVec vzero = { 0, 0, 0 };
+                const gmx::RVec vzero = { 0, 0, 0 };
                 atomList->insert(std::next(atom), ActAtomListItem(newatom, vs1, vzero));
                 // Create new topology entry
                 Vsite1 vsnew(atom->index(), vs1);
@@ -629,7 +629,7 @@ std::map<InteractionType, size_t> Topology::makeVsite1s(MsgHandler       *msghan
                                                          aa.element().c_str(), atom->index(), vs1));
                 // Special bond order for vsites
                 vsnew.addBondOrder(9);
-                v1top.push_back(std::any_cast<Vsite1>(std::move(vsnew)));
+                v1top.emplace_back(std::any_cast<Vsite1>(std::move(vsnew)));
             }
         }
     }
@@ -655,7 +655,7 @@ std::map<InteractionType, size_t> Topology::makeVsite2s(MsgHandler       *msghan
         GMX_THROW(gmx::InternalError("Why did you call makeVsites2 without a force field?"));
         return {};
     }
-    std::vector<InteractionType> v2s = { InteractionType::VSITE2,
+    const std::vector<InteractionType> v2s = { InteractionType::VSITE2,
                                          InteractionType::VSITE2FD };
     std::map<InteractionType, ForceFieldParameterList> ffvs;
     for (const auto itype : v2s)
@@ -696,20 +696,19 @@ std::map<InteractionType, size_t> Topology::makeVsite2s(MsgHandler       *msghan
         for (const auto &fvs : myffvs.second.parametersConst())
         {
             // Force field info for vsites2 type
-            auto ff_vs2  = pd->findForcesConst(myffvs.first);
-            auto vsatoms = fvs.first.atoms();
+                       auto vsatoms = fvs.first.atoms();
             auto vsbo    = fvs.first.bondOrders();
 
             // Loop over bonds to see if there are any pairs of atoms
             // that should be augmented with a virtual site.
             // Since we insert atoms and coordinates, the bonds array needs to be
             // interpreted with care.
-            std::string bondtype("bondtype");
+            const std::string bondtype("bondtype");
             for(size_t i = 0; i < bonds.size(); i++)
             {
                 auto mybond = static_cast<const Bond *>(bonds[i]->self());
                 mybond->check(2);
-                auto bid    = mybond->id();
+                const auto bid    = mybond->id();
                 auto border = bid.bondOrders();
                 int  ai     = mybond->aI();
                 int  aj     = mybond->aJ();
@@ -719,16 +718,16 @@ std::map<InteractionType, size_t> Topology::makeVsite2s(MsgHandler       *msghan
                 {
                     msghandler->fatal(gmx::formatString("Particle type %s has no bondtype option but is bonded to %s",
                                                         atoms_[ai].ffType().c_str(),
-                                                        atoms_[aj].ffType().c_str()).c_str());
+                                                        atoms_[aj].ffType().c_str()));
                 }
                 else if (!ptj->hasOption(bondtype))
                 {
                     msghandler->fatal(gmx::formatString("Particle type %s has no bondtype option but is bonded to %s",
                                                         atoms_[aj].ffType().c_str(),
-                                                        atoms_[ai].ffType().c_str()).c_str());
+                                                        atoms_[ai].ffType().c_str()));
                 }
-                auto bai    = pti->optionValue("bondtype");
-                auto baj    = ptj->optionValue("bondtype");
+                const auto bai    = pti->optionValue("bondtype");
+                const auto baj    = ptj->optionValue("bondtype");
                 
                 msghandler->writeDebug(gmx::formatString("Found bond %s %s", bai.c_str(), baj.c_str()));
 
@@ -748,7 +747,7 @@ std::map<InteractionType, size_t> Topology::makeVsite2s(MsgHandler       *msghan
                 // Make dummmy bond identifier using just the two atoms and the real bond order.
                 if (found)
                 {
-                    auto vsname = vsatoms[vsatoms.size()-1];
+                    const auto &vsname = vsatoms[vsatoms.size()-1];
                     if (!pd->hasParticleType(vsname))
                     {
                         msghandler->msg(ACTStatus::Warning,
@@ -760,7 +759,7 @@ std::map<InteractionType, size_t> Topology::makeVsite2s(MsgHandler       *msghan
                         auto ptype = pd->findParticleType(vsname);
                         if (!ptype->hasOption(bondtype))
                         {
-                            msghandler->fatal(gmx::formatString("particle type %s has no bondtype option", vsname.c_str()).c_str());
+                            msghandler->fatal(gmx::formatString("particle type %s has no bondtype option", vsname.c_str()));
                             
                         }
                         // Check whether the particle is vsite
@@ -768,7 +767,7 @@ std::map<InteractionType, size_t> Topology::makeVsite2s(MsgHandler       *msghan
                         {
                             msghandler->fatal(gmx::formatString("Force field inconsistency. Particle %s should have type VSite", ptype->id().id().c_str()));
                         }
-                        std::string vstype = ptype->optionValue(bondtype);
+                        const std::string vstype = ptype->optionValue(bondtype);
                         ActAtom newatom(ptype->id().id(), vstype, ptype->id().id(),
                                         ptype->apType(),
                                         0, ptype->mass(), ptype->charge(),
@@ -783,9 +782,9 @@ std::map<InteractionType, size_t> Topology::makeVsite2s(MsgHandler       *msghan
                         atoms_[aj].addVsite(vs2);
                         // Residue number
                         newatom.setResidueNumber(atoms_[ai].residueNumber());
-                        gmx::RVec vzero = { 0, 0, 0 };
+                        const gmx::RVec vzero = { 0, 0, 0 };
                         size_t after = std::max(ai, aj);
-                        auto iter = std::find(atomList->begin(), atomList->end(), after);
+                        const auto iter = std::find(atomList->begin(), atomList->end(), after);
                         atomList->insert(std::next(iter), ActAtomListItem(newatom, vs2, vzero));
                         // Create new topology entry
                         Vsite2 vsnew(ai, aj, vs2);
@@ -801,7 +800,7 @@ std::map<InteractionType, size_t> Topology::makeVsite2s(MsgHandler       *msghan
                         }
                         // Special bond order for vsites
                         vsnew.addBondOrder(9);
-                        v2top.push_back(std::any_cast<Vsite2>(std::move(vsnew)));
+                        v2top.emplace_back(std::any_cast<Vsite2>(std::move(vsnew)));
                     }
                 }
             }
@@ -828,7 +827,7 @@ std::map<InteractionType, size_t> Topology::makeVsite3s(MsgHandler       *msghan
         GMX_THROW(gmx::InternalError("Why did you call makeVsites3 without a force field?"));
         return {};
     }
-    std::vector<InteractionType> v3s = { InteractionType::VSITE3,
+    const std::vector<InteractionType> v3s = { InteractionType::VSITE3,
                                          InteractionType::VSITE3S,
                                          InteractionType::VSITE3FD,
                                          InteractionType::VSITE3OUT,
@@ -877,15 +876,15 @@ std::map<InteractionType, size_t> Topology::makeVsite3s(MsgHandler       *msghan
                 auto mybond = static_cast<const Angle *>(angles[i]->self());
 
                 mybond->check(3);
-                auto bid    = mybond->id();
+                const auto bid    = mybond->id();
                 auto border = bid.bondOrders();
                 int  ai     = mybond->atomIndex(0);
                 int  aj     = mybond->atomIndex(1);
                 int  ak     = mybond->atomIndex(2);
 
-                auto bai    = pd->findParticleType(atoms_[ai].ffType())->optionValue("bondtype");
-                auto baj    = pd->findParticleType(atoms_[aj].ffType())->optionValue("bondtype");
-                auto bak    = pd->findParticleType(atoms_[ak].ffType())->optionValue("bondtype");
+                const auto bai    = pd->findParticleType(atoms_[ai].ffType())->optionValue("bondtype");
+                const auto baj    = pd->findParticleType(atoms_[aj].ffType())->optionValue("bondtype");
+                const auto bak    = pd->findParticleType(atoms_[ak].ffType())->optionValue("bondtype");
                 msghandler->writeDebug(gmx::formatString("Found angle %s %s %s", bai.c_str(), baj.c_str(), bak.c_str()));
 
 
@@ -906,7 +905,7 @@ std::map<InteractionType, size_t> Topology::makeVsite3s(MsgHandler       *msghan
                     continue;
                 }
 
-                auto vsname = vsatoms[vsatoms.size() - 1];
+                const auto &vsname = vsatoms[vsatoms.size() - 1];
                 if (!pd->hasParticleType(vsname))
                 {
                     msghandler->msg(ACTStatus::Warning,
@@ -916,7 +915,7 @@ std::map<InteractionType, size_t> Topology::makeVsite3s(MsgHandler       *msghan
                 else
                 {
                     auto ptype = pd->findParticleType(vsname);
-                    std::string vstype = ptype->optionValue("bondtype");
+                    const std::string vstype = ptype->optionValue("bondtype");
                     // Check whether the particle is vsite
                     if (ptype->apType() != ActParticle::Vsite)
                     {
@@ -947,9 +946,9 @@ std::map<InteractionType, size_t> Topology::makeVsite3s(MsgHandler       *msghan
                                                                  atoms_[aj].element().c_str(), aj,
                                                                  atoms_[ak].element().c_str(), ak, vs3));
 
-                        gmx::RVec vzero = {0, 0, 0};
+                        const gmx::RVec vzero = {0, 0, 0};
                         size_t after = std::max({ai, aj, ak});
-                        auto iter = std::find(atomList->begin(), atomList->end(), after);
+                        const auto iter = std::find(atomList->begin(), atomList->end(), after);
                         atomList->insert(std::next(iter), ActAtomListItem(newatom, vs3, vzero));
 
                         // Create new topology entry
@@ -968,7 +967,7 @@ std::map<InteractionType, size_t> Topology::makeVsite3s(MsgHandler       *msghan
 
                                 // Special bond order for vsites
                                 vsnew.addBondOrder(9);
-                                v3top.push_back(std::any_cast<Vsite3>(std::move(vsnew)));
+                                v3top.emplace_back(std::any_cast<Vsite3>(std::move(vsnew)));
                             }
                             break;
                         case InteractionType::VSITE3OUT:
@@ -985,7 +984,7 @@ std::map<InteractionType, size_t> Topology::makeVsite3s(MsgHandler       *msghan
 
                                 // Special bond order for vsites
                                 vsnew.addBondOrder(9);
-                                v3top.push_back(std::any_cast<Vsite3OUT>(std::move(vsnew)));
+                                v3top.emplace_back(std::any_cast<Vsite3OUT>(std::move(vsnew)));
                             }
                             break;
                         default: // This is ok?
@@ -1014,7 +1013,7 @@ std::map<InteractionType, size_t> Topology::makeVsite4s(MsgHandler       *msghan
         GMX_THROW(gmx::InternalError("Why did you call makeVsites4 without a force field?"));
         return {};
     }
-    std::vector<InteractionType> v4s = { InteractionType::VSITE4,
+    const std::vector<InteractionType> v4s = { InteractionType::VSITE4,
                                          InteractionType::VSITE4S,
                                          InteractionType::VSITE4S3 };
     std::map<InteractionType, ForceFieldParameterList> ffvs;
@@ -1055,23 +1054,23 @@ std::map<InteractionType, size_t> Topology::makeVsite4s(MsgHandler       *msghan
             msghandler->writeDebug(gmx::formatString("Checking for vsite %s",
                                                      fvs.first.id().c_str()));
             auto vsatoms = fvs.first.atoms();
-            auto vsbo    = fvs.first.bondOrders();
+            const auto vsbo    = fvs.first.bondOrders();
             // Loop over atoms
             for(auto aaa = atomList->begin(); aaa != atomList->end(); ++aaa)
             {
                 // Shortcut
-                auto atom = aaa->atom();
+                const auto atom = aaa->atom();
                 if (atom.pType() != ActParticle::Atom)
                 {
                     continue;
                 }
-                std::string btype("bondtype");
+                const std::string btype("bondtype");
                 auto ptype = pd->findParticleType(atom.ffType());
                 if (!ptype->hasOption(btype))
                 {
                     continue;
                 }
-                auto atom_b = ptype->optionValue(btype);
+                const auto atom_b = ptype->optionValue(btype);
                 if (atom_b != vsatoms[0])
                 {
                     continue;
@@ -1105,7 +1104,7 @@ std::map<InteractionType, size_t> Topology::makeVsite4s(MsgHandler       *msghan
                             {
                                 continue;
                             }
-                            auto a2_b = ptype->optionValue(btype);
+                            const auto a2_b = ptype->optionValue(btype);
                             for (size_t i = 1; i < vsatoms.size(); i++)
                             {
                                 if (a2_b == vsatoms[i])
@@ -1135,7 +1134,7 @@ std::map<InteractionType, size_t> Topology::makeVsite4s(MsgHandler       *msghan
                     msghandler->writeDebug(gmx::formatString("Found vsite4 %d %d %d %d",
                                                              vsbond[0], vsbond[1],
                                                              vsbond[2], vsbond[3]));
-                    auto vsname = vsatoms[vsatoms.size() - 1];
+                    const auto &vsname = vsatoms[vsatoms.size() - 1];
                     if (!pd->hasParticleType(vsname))
                     {
                         msghandler->msg(ACTStatus::Warning,
@@ -1150,7 +1149,7 @@ std::map<InteractionType, size_t> Topology::makeVsite4s(MsgHandler       *msghan
                         {
                             msghandler->fatal(gmx::formatString("Force field inconsistency. Particle %s should have type VSite", ptype->id().id().c_str()));
                         }
-                        std::string vstype = ptype->optionValue("bondtype");
+                        const std::string vstype = ptype->optionValue("bondtype");
                         // Add one particle
                         ActAtom newatom(ptype->id().id(), vstype, ptype->id().id(),
                                         ptype->apType(),
@@ -1172,9 +1171,9 @@ std::map<InteractionType, size_t> Topology::makeVsite4s(MsgHandler       *msghan
                                                                  atoms_[vsbond[3]].element().c_str(), vsbond[3],
                                                                  vs4));
 
-                        gmx::RVec vzero = {0, 0, 0};
+                        const gmx::RVec vzero = {0, 0, 0};
                         size_t after = std::max({vsbond[0], vsbond[1], vsbond[2], vsbond[3]});
-                        auto iter = std::find(atomList->begin(), atomList->end(), after);
+                        const auto iter = std::find(atomList->begin(), atomList->end(), after);
                         atomList->insert(std::next(iter), ActAtomListItem(newatom, vs4, vzero));
 
                         // Create new topology entry
@@ -1185,7 +1184,7 @@ std::map<InteractionType, size_t> Topology::makeVsite4s(MsgHandler       *msghan
                             {
                                 vsnew.addBondOrder(b);
                             }
-                            v4top.push_back(std::any_cast<Vsite4>(std::move(vsnew)));
+                            v4top.emplace_back(std::any_cast<Vsite4>(std::move(vsnew)));
                         }
                     }
                 }
@@ -1259,7 +1258,7 @@ void Topology::GenerateAtoms(MsgHandler             *msghandler,
     if (!ci)
     {
         msghandler->msg(ACTStatus::Error, ACTMessage::Topology,
-                        gmx::formatString("No molecule %s", mol->getMolname().c_str()).c_str());
+                        gmx::formatString("No molecule %s", mol->getMolname().c_str()));
         return;
     }
     if (ci)
@@ -1274,7 +1273,7 @@ void Topology::GenerateAtoms(MsgHandler             *msghandler,
         int natom = 0;
         for (auto &cai : ci->calcAtomConst())
         {
-            auto myunit = cai.coordUnit();
+            const auto &myunit = cai.coordUnit();
             double    xx, yy, zz;
             cai.coords(&xx, &yy, &zz);
             int resnr = cai.residueNumber();
@@ -1284,7 +1283,7 @@ void Topology::GenerateAtoms(MsgHandler             *msghandler,
                 addResidue(nres, cai.residueName());
                 nres += 1;
             }
-            gmx::RVec xxx = { static_cast<real>(convertToGromacs(xx, myunit)),
+            const gmx::RVec xxx = { static_cast<real>(convertToGromacs(xx, myunit)),
                               static_cast<real>(convertToGromacs(yy, myunit)),
                               static_cast<real>(convertToGromacs(zz, myunit)) };
             x->push_back(xxx);
@@ -1306,7 +1305,7 @@ void Topology::GenerateAtoms(MsgHandler             *msghandler,
                 msghandler->msg(ACTStatus::Error,
                                 ACTMessage::AtomTypes,
                                 gmx::formatString("Cannot find atomtype %s (atom %zu) in forcefield, there are %d atomtypes.",
-                                                  cai.getObtype().c_str(), atoms_.size(), pd->nParticleTypes()).c_str());
+                                                  cai.getObtype().c_str(), atoms_.size(), pd->nParticleTypes()));
 
                 return;
             }
@@ -1321,7 +1320,7 @@ void Topology::GenerateAtoms(MsgHandler             *msghandler,
                                              mol->getMolname().c_str(),
                                              ci->getMethod().c_str(),
                                              ci->getBasisset().c_str(), atoms_.size(),
-                                             actMessage(imm).c_str()).c_str());
+                                             actMessage(imm).c_str()));
 }
 
 void Topology::build(MsgHandler             *msghandler,
@@ -1348,15 +1347,15 @@ void Topology::build(MsgHandler             *msghandler,
     setEntryIdentifiers(msghandler, pd, InteractionType::BONDS);
 
     // Check whether we have virtual sites in the force field.
-    auto nv1 = makeVsite1s(msghandler, pd, &atomList);
-    auto nv2 = makeVsite2s(msghandler, pd, &atomList);
+    const auto nv1 = makeVsite1s(msghandler, pd, &atomList);
+    const auto nv2 = makeVsite2s(msghandler, pd, &atomList);
 
     // Before we can make three-particle vsites, we need to create
     // angles, but only temporarily.
     makeAngles(msghandler, pd, *x, LinearAngleMin);
-    auto nv3 = makeVsite3s(msghandler, pd, &atomList);
-    auto nv4 = makeVsite4s(msghandler, pd, &atomList);
-    if (msghandler->debug() && (nv2.size() > 0 || nv3.size() > 0 || nv4.size() > 0) )
+    const auto nv3 = makeVsite3s(msghandler, pd, &atomList);
+    const auto nv4 = makeVsite4s(msghandler, pd, &atomList);
+    if (msghandler->debug() && (!nv2.empty() || !nv3.empty() || !nv4.empty()) )
     {
         std::string str = "Added";
         for(const auto &mm : { nv1, nv2, nv3, nv4 })
@@ -1501,7 +1500,7 @@ void Topology::build(MsgHandler             *msghandler,
             {
                 continue;
             }
-            auto fixedZero = [](const ForceFieldParameter &p)
+            const auto fixedZero = [](const ForceFieldParameter &p)
             {
                 return p.mutability() == Mutability::Fixed && p.value() == 0;
             };
@@ -1601,9 +1600,9 @@ void Topology::separateIntermolecular(size_t natom0)
     for(auto &entry : entries_)
     {
         auto &vec  = entry.second;
-        auto  last = std::stable_partition(vec.begin(), vec.end(),
-                                           [natom0](const BaseContainer<TopologyEntry> &b)
-                                           {
+        const auto last = std::stable_partition(vec.begin(), vec.end(),
+                                                [natom0](const BaseContainer<TopologyEntry> &b)
+                                                {
                                                bool first = false, second = false;
                                                for(auto a : b->atomIndices())
                                                {
@@ -1639,9 +1638,9 @@ void Topology::separateShells()
     for(auto &entry : entries_)
     {
         auto &vec  = entry.second;
-        auto  last = std::stable_partition(vec.begin(), vec.end(),
-                                           [&isShell](const BaseContainer<TopologyEntry> &b)
-                                           {
+        const auto last = std::stable_partition(vec.begin(), vec.end(),
+                                                [&isShell](const BaseContainer<TopologyEntry> &b)
+                                                {
                                                for(auto a : b->atomIndices())
                                                {
                                                    if (isShell[a])
@@ -1689,7 +1688,7 @@ void Topology::addEntry(InteractionType            itype,
         GMX_THROW(gmx::InternalError(gmx::formatString("InteractionType %s already present",
                                                        interactionTypeToString(itype).c_str()).c_str()));
     }
-    if (entry.size() > 0)
+    if (!entry.empty())
     {
         // Make a copy first.
         TopologyEntryVector newv;
@@ -1743,7 +1742,7 @@ std::vector<std::set<size_t>> Topology::generateExclusions(MsgHandler *msghandle
             }
         }
     }
-    auto bonds = entries_.find(InteractionType::BONDS);
+    const auto bonds = entries_.find(InteractionType::BONDS);
     if (bonds != entries_.end() && nrexcl > 0)
     {
         // The bond graph, such that the exclusions do not depend on
@@ -1894,7 +1893,7 @@ void Topology::addFBPR(MsgHandler                   *msghandler,
     TopologyEntryVector top{};
     for(size_t a = 0; a < atoms_.size(); a++)
     {
-        top.push_back(SingleAtom(a));
+        top.emplace_back(SingleAtom(a));
         std::vector<double> params(fbprNR);
         params[fbprK]  = kFBPR;
         params[fbprR0] = r0FBPR;
@@ -1941,7 +1940,7 @@ static void fillParams(MsgHandler                      *msghandler,
     int found = 0;
     for (size_t i = 0; i < param_names.size(); i++)
     {
-        auto fp      = ff.find(param_names[i]);
+        const auto fp      = ff.find(param_names[i]);
         double value = 0;
         if (ff.end() != fp)
         {
@@ -1952,9 +1951,9 @@ static void fillParams(MsgHandler                      *msghandler,
     }
     if (found != independent)
     {
-        auto msg = gmx::formatString("%s %s found %d, expected %d independent parameters",
-                                     potentialToString(fs.potential()).c_str(), btype.id().c_str(),
-                                     found, independent);
+        const auto msg = gmx::formatString("%s %s found %d, expected %d independent parameters",
+                                           potentialToString(fs.potential()).c_str(), btype.id().c_str(),
+                                           found, independent);
         msghandler->msg(ACTStatus::Warning, ACTMessage::MissingFFParameter, msg);
     }
 }
@@ -1974,7 +1973,7 @@ void Topology::fillParameters(MsgHandler                      *msghandler,
             continue;
         }
         auto &fs = pd->findForcesConst(entry.first);
-        auto  pp = potprops.find(fs.potential());
+        const auto pp = potprops.find(fs.potential());
         if (potprops.end() == pp)
         {
             GMX_THROW(gmx::InternalError(gmx::formatString("Missing case %s when filling the topology structure.",
@@ -2039,8 +2038,8 @@ void Topology::setEntryIdentifiers(MsgHandler       *msghandler,
     {
         return;
     }
-    auto fs     = pd->findForcesConst(itype);
-    auto iEntry = entries_.find(itype);
+    const auto &fs     = pd->findForcesConst(itype);
+    const auto iEntry = entries_.find(itype);
     if (entries_.end() == iEntry)
     {
         GMX_THROW(gmx::InternalError(gmx::formatString("Cannot find entry %s in topology",
@@ -2056,7 +2055,7 @@ void Topology::setEntryIdentifiers(MsgHandler       *msghandler,
             {
                 msghandler->fatal(gmx::formatString("Atom index %zu should be less than %zu for %s",
                                                     jj, atoms_.size(),
-                                                    interactionTypeToString(itype).c_str()).c_str());
+                                                    interactionTypeToString(itype).c_str()));
             }
             auto atype = pd->findParticleType(atoms_[jj].ffType());
             if (!atypes.empty())
@@ -2104,7 +2103,7 @@ void Topology::setEntryIdentifiers(MsgHandler       *msghandler,
             }
             else
             {
-                Identifier id(btype, (*topentry)->bondOrders(), fs.canSwap());
+                const Identifier id(btype, (*topentry)->bondOrders(), fs.canSwap());
                 (*topentry)->setSwapped(id.atoms() != btype);
                 (*topentry)->setId(id);
             }
@@ -2119,7 +2118,7 @@ void Topology::setEntryIdentifiers(MsgHandler       *msghandler,
 
 const std::vector<std::vector<int>> &Topology::exclusions(InteractionType itype) const
 {
-    auto exclptr = exclusions_.find(itype);
+    const auto exclptr = exclusions_.find(itype);
     if (exclusions_.end() != exclptr)
     {
         return exclptr->second;

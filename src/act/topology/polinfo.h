@@ -51,7 +51,7 @@ private:
     std::size_t                    nShell_ = 0;
 public:
     //! Constructor
-    PolInfo() {}
+    PolInfo() = default;
     /*! \brief Store polarization information
      * The force constants of the shells are not stored, since they change
      * when the polarizabilities or the shell charges are trained.

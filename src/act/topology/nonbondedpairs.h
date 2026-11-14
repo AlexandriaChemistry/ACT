@@ -120,7 +120,7 @@ class PairRange
 {
 public:
     //! An empty range
-    PairRange() {}
+    PairRange() = default;
 
     /*! \brief Constructor
      * \param[in] pairs All pairs of the topology

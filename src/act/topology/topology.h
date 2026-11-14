@@ -197,9 +197,7 @@ private:
 
  public:
     //! Empty constructor, see init to fill it
-    Topology()
-    {
-    }
+    Topology() = default;
 
     /*! \brief This code copies relevant structures from the outside world
      * \param[in] bonds The bonds connecting this molecule.
@@ -296,7 +294,7 @@ private:
      */
     size_t parameterVersion(InteractionType itype) const
     {
-        auto pv = parameterVersion_.find(itype);
+        const auto pv = parameterVersion_.find(itype);
         return parameterVersion_.end() == pv ? initialVersion_.value() : pv->second.value();
     }
 
@@ -419,7 +417,7 @@ private:
         {
             return TopologyEntryRange(entries);
         }
-        auto it = intermolecularStart_.find(itype);
+        const auto it = intermolecularStart_.find(itype);
         if (it == intermolecularStart_.end() || it->second > entries.size())
         {
             GMX_THROW(gmx::InternalError("Entries were added after separating the intermolecular ones"));
@@ -439,7 +437,7 @@ private:
      */
     bool hasInteractions(InteractionType itype) const
     {
-        auto e = entries_.find(itype);
+        const auto e = entries_.find(itype);
         return ((e != entries_.end() && !e->second.empty()) ||
                 (nonBonded_.hasType(itype) && !nonBonded_.range(itype).empty()));
     }
@@ -489,7 +487,7 @@ private:
                                     const TopologyEntryVector &entries,
                                     bool                       shells) const
     {
-        auto   it    = shellStart_.find(itype);
+        const auto it    = shellStart_.find(itype);
         size_t start = (it == shellStart_.end() || it->second > entries.size()) ? 0 : it->second;
         return shells ? TopologyEntryRange(entries).subspan(start) : TopologyEntryRange(entries).first(start);
     }

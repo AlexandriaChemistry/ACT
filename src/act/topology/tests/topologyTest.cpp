@@ -217,7 +217,7 @@ protected:
 };
 
 TEST_F (TopologyTest, OneBond){
-    Bond b(2, 3, 2.0);
+    const Bond b(2, 3, 2.0);
     EXPECT_TRUE(b.aI() == 2);
     EXPECT_FALSE(b.aJ() == 2);
     EXPECT_TRUE(b.bondOrder() == 2.0);
@@ -228,7 +228,7 @@ TEST_F (TopologyTest, FindBond){
     top.init(bonds_);
     for(const auto &b : bonds_)
     {
-        auto bb = top.findBond(b.aI(), b.aJ());
+        const auto bb = top.findBond(b.aI(), b.aJ());
         EXPECT_TRUE(bb.bondOrder() == b.bondOrder());
     }
 }
@@ -240,10 +240,10 @@ TEST_F (TopologyTest, DontFindBond){
 }
 
 TEST_F (TopologyTest, OneAngle) {
-    Bond bij(1, 2, 1);
-    Bond bjk(2, 3, 2);
-    Bond bkl(3, 4, 3);
-    Angle a(bij, bjk);
+    const Bond bij(1, 2, 1);
+    const Bond bjk(2, 3, 2);
+    const Bond bkl(3, 4, 3);
+    const Angle a(bij, bjk);
     EXPECT_FALSE(a.isLinear());
     EXPECT_THROW(Angle(bij, bkl), gmx::InvalidInputError);
 }
@@ -269,7 +269,7 @@ TEST_F (TopologyTest, MakePropersLinearAngles){
 }
 
 TEST_F (TopologyTest, AddPolarization){
-    TopologyEntryVector pols = {
+    const TopologyEntryVector pols = {
         Bond(1, 2, 1.0),
         Bond(3, 4, 1.0)
     };
@@ -277,21 +277,21 @@ TEST_F (TopologyTest, AddPolarization){
 }
 
 TEST_F (TopologyTest, AddVsite2){
-    TopologyEntryVector vs2 = {
+    const TopologyEntryVector vs2 = {
         Vsite2(1, 2, 0),
     };
     testInteraction(InteractionType::VSITE2, vs2); 
 }
 
 TEST_F (TopologyTest, AddVsite3out){
-    TopologyEntryVector vs3 = {
+    const TopologyEntryVector vs3 = {
         Vsite3(1, 2, 3, 0),
     };
     testInteraction(InteractionType::VSITE3OUT, vs3); 
 }
 
 TEST_F (TopologyTest, AddVsite3fad){
-    TopologyEntryVector vs3 = {
+    const TopologyEntryVector vs3 = {
         Vsite3(1, 3, 5, 0),
     };
     testInteraction(InteractionType::VSITE3FAD, vs3); 

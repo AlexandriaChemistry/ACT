@@ -118,7 +118,7 @@ void NonBondedPairs::addType(const ForceField           *pd,
                 }
                 found = typeIndex.insert({ key, tp.types.ids.size() }).first;
                 tp.types.ids.push_back(id);
-                tp.types.params.push_back({});
+                tp.types.params.emplace_back();
             }
             tp.type.push_back(found->second);
         }
@@ -166,19 +166,19 @@ static bool fixedZeroEpsilon(const ForceFieldParameterList &fs,
     const auto &params = fs.parametersConst();
     for (const auto &atom : pair.atoms())
     {
-        auto single = params.find(Identifier(atom));
+        const auto single = params.find(Identifier(atom));
         if (params.end() == single)
         {
             return false;
         }
-        auto eps = single->second.find(name);
+        const auto eps = single->second.find(name);
         if (single->second.end() == eps || eps->second.mutability() != Mutability::Fixed)
         {
             return false;
         }
     }
     const auto &rules = fs.combinationRules();
-    auto        rule  = rules.find(name);
+    const auto  rule  = rules.find(name);
     return !(rules.end() != rule && CombRule::GeneralizedMean == rule->second.rule() &&
              rule->second.ffplConst().mutability() != Mutability::Fixed);
 }
@@ -188,14 +188,14 @@ bool NonBondedPairs::fillParameters(MsgHandler       *msghandler,
                                     InteractionType   itype,
                                     missingParameters missing)
 {
-    auto it = types_.find(itype);
+    const auto it = types_.find(itype);
     if (it == types_.end() || !it->second.hasTypes || !pd->interactionPresent(itype))
     {
         return false;
     }
     auto       &tp  = it->second;
     const auto &fs  = pd->findForcesConst(itype);
-    auto        pp  = potprops.find(fs.potential());
+    const auto  pp  = potprops.find(fs.potential());
     if (potprops.end() == pp)
     {
         GMX_THROW(gmx::InternalError(gmx::formatString("Missing case %s when filling the non-bonded pairs.",
@@ -229,7 +229,7 @@ bool NonBondedPairs::fillParameters(MsgHandler       *msghandler,
         auto &entry = tp.entries[t];
         if (nullptr == entry)
         {
-            auto ffiter = ffparams.find(tp.types.ids[t]);
+            const auto ffiter = ffparams.find(tp.types.ids[t]);
             if (ffparams.end() != ffiter)
             {
                 entry = &ffiter->second;
@@ -257,7 +257,7 @@ bool NonBondedPairs::fillParameters(MsgHandler       *msghandler,
         for (size_t i = 0; i < names.size(); i++)
         {
             double value = 0;
-            auto   fp    = entry->find(names[i]);
+            const auto fp    = entry->find(names[i]);
             if (entry->end() != fp)
             {
                 value  = fp->second.internalValue();
@@ -321,7 +321,7 @@ bool NonBondedPairs::fillParameters(MsgHandler       *msghandler,
 
 void NonBondedPairs::leaveOut(InteractionType itype, const std::vector<char> &particles)
 {
-    auto it = types_.find(itype);
+    const auto it = types_.find(itype);
     if (it == types_.end())
     {
         return;
@@ -360,8 +360,8 @@ void NonBondedPairs::separate(const std::function<bool(const std::array<int, 2> 
     // The new position of each pair
     std::vector<uint32_t> order(pairs_.size());
     std::iota(order.begin(), order.end(), 0);
-    auto last   = std::stable_partition(order.begin(), order.end(),
-                                        [this, &keepFirst](uint32_t k) { return keepFirst(pairs_[k]); });
+    const auto last   = std::stable_partition(order.begin(), order.end(),
+                                              [this, &keepFirst](uint32_t k) { return keepFirst(pairs_[k]); });
     size_t nfirst = last - order.begin();
     std::vector<uint32_t>           newPos(pairs_.size());
     std::vector<std::array<int, 2>> pairs(pairs_.size());
@@ -415,7 +415,7 @@ void NonBondedPairs::separate(const std::function<bool(const std::array<int, 2> 
 
 void NonBondedPairs::setParameters(InteractionType itype, const std::vector<double> &params)
 {
-    auto it = types_.find(itype);
+    const auto it = types_.find(itype);
     if (it == types_.end() || !it->second.hasTypes)
     {
         GMX_THROW(gmx::InternalError(gmx::formatString("No type pairs of %s",
@@ -445,7 +445,7 @@ PairRange NonBondedPairs::makeRange(const TypePairs &tp, size_t begin, size_t en
 
 PairRange NonBondedPairs::range(InteractionType itype) const
 {
-    auto it = types_.find(itype);
+    const auto it = types_.find(itype);
     if (it == types_.end())
     {
         return PairRange();
@@ -455,7 +455,7 @@ PairRange NonBondedPairs::range(InteractionType itype) const
 
 PairRange NonBondedPairs::intermolecular(InteractionType itype) const
 {
-    auto it = types_.find(itype);
+    const auto it = types_.find(itype);
     if (it == types_.end())
     {
         return PairRange();
@@ -466,7 +466,7 @@ PairRange NonBondedPairs::intermolecular(InteractionType itype) const
 
 PairRange NonBondedPairs::shellEntries(InteractionType itype, bool shells) const
 {
-    auto it = types_.find(itype);
+    const auto it = types_.find(itype);
     if (it == types_.end())
     {
         return PairRange();
@@ -479,7 +479,7 @@ PairRange NonBondedPairs::shellEntries(InteractionType itype, bool shells) const
 
 const PairTypes *NonBondedPairs::pairTypes(InteractionType itype) const
 {
-    auto it = types_.find(itype);
+    const auto it = types_.find(itype);
     if (it == types_.end() || !it->second.hasTypes)
     {
         return nullptr;

@@ -79,7 +79,7 @@ private:
     const std::vector<const ParticleType *> &particleTypes(const ForceField *pd, size_t ff);
 public:
     //! Constructor does nothing
-    FragmentHandler() {}
+    FragmentHandler() = default;
     /*! Initialize stuff
      * \param[in] msghandler    Message handler
      * \param[in] pd            Force field data
