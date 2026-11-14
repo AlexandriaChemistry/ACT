@@ -37,4 +37,6 @@
   <Int64 Name="Minimization failed">1</Int64>
   <Int64 Name="Inconsistent atom order across experiments">1</Int64>
   <Int64 Name="Bond between atoms in different fragments">1</Int64>
+  <Int64 Name="Compound with its atoms in different orders">1</Int64>
+  <Int64 Name="Dimer with its monomers in both orders">1</Int64>
 </ReferenceData>

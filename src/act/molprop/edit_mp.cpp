@@ -55,6 +55,7 @@
 #include "act/topology/actmol.h"
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/fileio/xvgr.h"
+#include "gromacs/utility/stringutil.h"
 #include "gromacs/utility/exceptions.h"
 
 namespace alexandria
@@ -468,7 +469,14 @@ int edit_mp(int argc, char *argv[])
         "an MPI connection to one or more other processors to write. In this manner the MPI transfer",
         "software in ACT can be tested.[PAR]",
         "edit_mp can check calculations for missing hydrogens and inconsistent dipoles if a force field file is given.", 
-        "It also can try to make a topology and reports errors doing this. Output is to a log file.[PAR]"
+        "It also can try to make a topology and reports errors doing this. Output is to a log file.[PAR]",
+        "With [TT]-validate[tt] the molecules are checked for consistency: all experiments",
+        "of a molecule need the atoms in the same order, those that differ are removed;",
+        "each compound (a fragment, identified by its InChI) needs its atoms in the same",
+        "order in all molecules; the atoms of each fragment have to match its formula; the",
+        "fragments of a dimer may not be bonded to each other; and a dimer A#B may not occur",
+        "as B#A as well, nor have its fragments in the order of B#A. The problems are",
+        "printed and written to the log file.[PAR]"
 
     };
     std::vector<t_filenm> fnm =
@@ -485,6 +493,7 @@ int edit_mp(int argc, char *argv[])
     int      maxwarn     = 0;
     real     ewarnLow    = -20;
     real     ewarnHi     = 100;
+    bool     validate    = false;
     std::vector<t_pargs> pa =
     {
         { "-compress", FALSE, etBOOL, {&compress},
@@ -500,7 +509,9 @@ int edit_mp(int argc, char *argv[])
         { "-ewarnLow", FALSE, etREAL, {&ewarnLow},
           "Print a warning if energy is lower than this number (kJ/mol)" },
         { "-ewarnHi", FALSE, etREAL, {&ewarnHi},
-          "Print a warning if energy is higher than this number (kJ/mol)" }
+          "Print a warning if energy is higher than this number (kJ/mol)" },
+        { "-validate", FALSE, etBOOL, {&validate},
+          "Check the order of the molecules and atoms in all experiments and compounds, see above." }
     };
     std::vector<MolProp>  mpt;
     const ForceField      pd;
@@ -557,6 +568,14 @@ int edit_mp(int argc, char *argv[])
         mpt.erase(std::remove_if(mpt.begin(), mpt.end(),
                                  [&failed](const MolProp &mp) { return failed.count(mp.getMolname()) > 0; }),
                   mpt.end());
+    }
+    if (validate)
+    {
+        // The problems are errors of the message handler, but the molecules
+        // are written anyway, without the experiments that were removed
+        auto nproblem = validateMolProps(&msghandler, &mpt);
+        printf("Validation of %zu molecules: %zu problem(s)%s\n", mpt.size(), nproblem,
+               nproblem > 0 ? gmx::formatString(", see %s", msghandler.filename().c_str()).c_str() : "");
     }
     if (energyHisto)
     {

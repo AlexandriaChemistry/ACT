@@ -36,10 +36,15 @@
 
 #include <algorithm>
 #include <cstdio>
+#include <map>
+#include <set>
+#include <string>
+#include <utility>
 
 #include "act/molprop/molprop_xml.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/futil.h"
+#include "gromacs/utility/stringutil.h"
 #include "gromacs/utility/textwriter.h"
 
 namespace alexandria
@@ -183,6 +188,126 @@ void merge_xml(MsgHandler                             *msg_handler,
     MergeDoubleMolprops(msg_handler, mpout);
     printf("There were %zu molecule entries before merging, %zu after.\n",
            mpBefore, mpout->size());
+}
+
+/*! \brief The atoms of the first experiment of a molecule that has atoms
+ * After MolProp::validate all experiments have their atoms in this order.
+ * \param[in] mp The molecule
+ * \return The atoms, empty if none
+ */
+static const std::vector<CalcAtom> *referenceAtoms(const MolProp &mp)
+{
+    for (const auto &ex : mp.experimentConst())
+    {
+        if (ex.NAtom() > 0)
+        {
+            return &ex.calcAtomConst();
+        }
+    }
+    return nullptr;
+}
+
+/*! \brief The order of the atoms of a fragment, as names and types
+ * \param[in] atoms The atoms of the molecule
+ * \param[in] frag  The fragment
+ * \return The atoms of the fragment in their order, empty if an atom is out of range
+ */
+static std::string fragmentOrder(const std::vector<CalcAtom> &atoms, const Fragment &frag)
+{
+    std::string order;
+    for (int a : frag.atoms())
+    {
+        if (a < 0 || static_cast<size_t>(a) >= atoms.size())
+        {
+            return "";
+        }
+        order += gmx::formatString("%s%s:%s", order.empty() ? "" : " ",
+                                   atoms[a].getName().c_str(), atoms[a].getObtype().c_str());
+    }
+    return order;
+}
+
+size_t validateMolProps(MsgHandler *msghandler, std::vector<MolProp> *mps)
+{
+    size_t nproblem = 0;
+    for (auto &mp : *mps)
+    {
+        if (!mp.validate(msghandler))
+        {
+            nproblem += 1;
+        }
+    }
+    // The order of the atoms of each compound, by InChI, where it occurs first
+    std::map<std::string, std::pair<std::string, std::string>> compounds;
+    for (const auto &mp : *mps)
+    {
+        const auto atoms = referenceAtoms(mp);
+        if (!atoms)
+        {
+            continue;
+        }
+        for (const auto &frag : mp.fragments())
+        {
+            if (frag.inchi().empty())
+            {
+                continue;
+            }
+            const auto order = fragmentOrder(*atoms, frag);
+            if (order.empty())
+            {
+                continue;
+            }
+            const auto first = compounds.find(frag.inchi());
+            if (first == compounds.end())
+            {
+                compounds.insert({ frag.inchi(), { mp.getMolname(), order } });
+            }
+            else if (first->second.second != order)
+            {
+                nproblem += 1;
+                msghandler->msg(ACTStatus::Error, ACTMessage::InconsistentCompoundOrder,
+                                gmx::formatString("Molecule %s: compound %s has its atoms in the order %s, "
+                                                  "but in molecule %s in the order %s.",
+                                                  mp.getMolname().c_str(),
+                                                  frag.iupac().empty() ? frag.inchi().c_str() : frag.iupac().c_str(),
+                                                  order.c_str(), first->second.first.c_str(),
+                                                  first->second.second.c_str()));
+            }
+        }
+    }
+    // Dimers A#B that occur as B#A too, and fragments in the order B, A
+    std::set<std::string> names;
+    for (const auto &mp : *mps)
+    {
+        names.insert(mp.getMolname());
+    }
+    for (const auto &mp : *mps)
+    {
+        const auto &name = mp.getMolname();
+        const auto  hash = name.find('#');
+        if (hash == std::string::npos || name.find('#', hash + 1) != std::string::npos)
+        {
+            continue;
+        }
+        const auto a = name.substr(0, hash);
+        const auto b = name.substr(hash + 1);
+        if (a != b && a < b && names.count(b + "#" + a) > 0)
+        {
+            nproblem += 1;
+            msghandler->msg(ACTStatus::Error, ACTMessage::SwappedDimer,
+                            gmx::formatString("Dimer %s occurs as %s#%s as well.",
+                                              name.c_str(), b.c_str(), a.c_str()));
+        }
+        const auto &frags = mp.fragments();
+        if (a != b && frags.size() == 2 && frags[0].iupac() == b && frags[1].iupac() == a)
+        {
+            nproblem += 1;
+            msghandler->msg(ACTStatus::Error, ACTMessage::SwappedDimer,
+                            gmx::formatString("Dimer %s has its fragments in the order %s, %s.",
+                                              name.c_str(), b.c_str(), a.c_str()));
+        }
+    }
+    return nproblem;
 }
 
 } // namespace alexandria

@@ -57,6 +57,22 @@ void merge_xml(MsgHandler                             *msg_handler,
                const gmx::ArrayRef<const std::string> &infiles,
                std::vector<alexandria::MolProp>       *mp);
 
+/*! \brief Check that a set of molecules is consistent, as edit_mp -validate
+ * First each molecule is checked with MolProp::validate, which removes the
+ * experiments with the atoms in another order than the reference
+ * experiment. Then all molecules are checked together:
+ * - each compound, a fragment identified by its InChI, has its atoms in the
+ *   same order (names and types) in all molecules, the first one it occurs in
+ *   is the reference, such that it can be treated as one compound, and
+ * - no dimer A#B also occurs as B#A, and the fragments of a dimer A#B are
+ *   in the order of A and B, if their names are those of the dimer.
+ * Each problem is an error of msghandler.
+ * \param[in]    msghandler For the problems
+ * \param[inout] mps        The molecules
+ * \return The number of problems
+ */
+size_t validateMolProps(MsgHandler *msghandler, std::vector<MolProp> *mps);
+
 } // namespace alexandria
 
 #endif

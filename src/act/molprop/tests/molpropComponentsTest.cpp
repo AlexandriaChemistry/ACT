@@ -50,6 +50,7 @@
 #include "act/molprop/fragment.h"
 #include "act/molprop/molprop.h"
 #include "act/molprop/molpropobservable.h"
+#include "act/molprop/molprop_util.h"
 #include "act/molprop/multipole_names.h"
 #include "act/molprop/phase.h"
 #include "act/molprop/topologyentry.h"
@@ -1503,6 +1504,111 @@ TEST(MolPropValidateTest, NullMsgHandlerIsNoop)
     mp.AddExperiment(makeExperimentWithAtoms(2));
     // Should not crash
     mp.validate(nullptr);
+}
+
+// ============================================================
+// validateMolProps tests, see edit_mp -validate
+// ============================================================
+
+//! A fragment of makeMolecule: its InChI, its name and its atoms
+struct TestFragment
+{
+    std::string              inchi;
+    std::string              iupac;
+    std::vector<std::string> atoms;
+};
+
+/*! \brief A molecule with one experiment made of fragments, one after the other
+ * The atoms have their element as name and type.
+ */
+static MolProp makeMolecule(const std::string &name, const std::vector<TestFragment> &frags)
+{
+    MolProp    mp;
+    mp.SetMolname(name);
+    Experiment exp("ref", "min");
+    int        natom = 0;
+    for (const auto &f : frags)
+    {
+        std::vector<int> atoms;
+        for (const auto &a : f.atoms)
+        {
+            atoms.push_back(natom);
+            natom += 1;
+            exp.AddAtom(CalcAtom(a, a, natom));
+        }
+        Fragment frag(f.inchi, 1.0, 0, 1, 1, "", atoms);
+        frag.setIupac(f.iupac);
+        mp.addFragment(frag);
+    }
+    mp.AddExperiment(std::move(exp));
+    return mp;
+}
+
+/*! \brief Molecules made by makeMolecule, which cannot be copied
+ * \param[in] molecules The name and the fragments of each
+ */
+static std::vector<MolProp> makeMolecules(const std::vector<std::pair<std::string, std::vector<TestFragment>>> &molecules)
+{
+    std::vector<MolProp> mps;
+    for (const auto &m : molecules)
+    {
+        mps.push_back(makeMolecule(m.first, m.second));
+    }
+    return mps;
+}
+
+//! The fragments of a test
+static const TestFragment water    = { "InChI=1S/H2O/h1H2", "water", { "O", "H", "H" } };
+static const TestFragment waterHOH = { "InChI=1S/H2O/h1H2", "water", { "H", "O", "H" } };
+static const TestFragment methanol = { "InChI=1S/CH4O/c1-2/h2H,1H3", "methanol", { "C", "O", "H", "H", "H", "H" } };
+
+// Test: Compounds with their atoms in the same order in all molecules
+TEST(ValidateMolPropsTest, SameOrderIsOk)
+{
+    auto mps = makeMolecules({ { "water", { water } },
+                                 { "water#methanol", { water, methanol } },
+                                 { "water#water", { water, water } } });
+    MsgHandler msghandler;
+    msghandler.setPrintLevel(ACTStatus::Fatal);
+    EXPECT_EQ(0u, validateMolProps(&msghandler, &mps));
+    EXPECT_TRUE(msghandler.ok());
+    EXPECT_EQ(0u, msghandler.warningCount(ACTMessage::InconsistentCompoundOrder));
+    EXPECT_EQ(0u, msghandler.warningCount(ACTMessage::SwappedDimer));
+}
+
+// Test: Water with its atoms as H, O, H in one molecule and O, H, H in the others
+TEST(ValidateMolPropsTest, CompoundOrderDiffers)
+{
+    auto mps = makeMolecules({ { "water", { water } },
+                                 { "water#methanol", { waterHOH, methanol } },
+                                 { "water#water", { water, waterHOH } } });
+    MsgHandler msghandler;
+    msghandler.setPrintLevel(ACTStatus::Fatal);
+    EXPECT_EQ(2u, validateMolProps(&msghandler, &mps));
+    EXPECT_FALSE(msghandler.ok());
+    EXPECT_EQ(2u, msghandler.warningCount(ACTMessage::InconsistentCompoundOrder));
+}
+
+// Test: A dimer that occurs as A#B and as B#A
+TEST(ValidateMolPropsTest, DimerInBothOrders)
+{
+    auto mps = makeMolecules({ { "water#methanol", { water, methanol } },
+                                 { "methanol#water", { methanol, water } } });
+    MsgHandler msghandler;
+    msghandler.setPrintLevel(ACTStatus::Fatal);
+    EXPECT_EQ(1u, validateMolProps(&msghandler, &mps));
+    EXPECT_EQ(1u, msghandler.warningCount(ACTMessage::SwappedDimer));
+    EXPECT_EQ(0u, msghandler.warningCount(ACTMessage::InconsistentCompoundOrder));
+}
+
+// Test: A dimer water#methanol with the fragments of methanol#water
+TEST(ValidateMolPropsTest, FragmentsInSwappedOrder)
+{
+    auto mps = makeMolecules({ { "water#methanol", { methanol, water } } });
+    MsgHandler msghandler;
+    msghandler.setPrintLevel(ACTStatus::Fatal);
+    EXPECT_EQ(1u, validateMolProps(&msghandler, &mps));
+    EXPECT_EQ(1u, msghandler.warningCount(ACTMessage::SwappedDimer));
 }
 
 } // namespace
