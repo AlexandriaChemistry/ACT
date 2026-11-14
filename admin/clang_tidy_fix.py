@@ -277,6 +277,24 @@ def emplace(text, replacements):
                 offset -= 1
                 length += 1
         fix.append((offset, length, new))
+    # The arguments on the lines that continue the call are aligned with the
+    # first one, which moves by what changes before it on the first line
+    first = min(offset for offset, _, _ in fix)
+    first_line_end = text.find(b"\n", first)
+    end = statement_end(text, first)
+    if first_line_end < 0 or end is None or end < first_line_end:
+        return fix
+    delta = sum(len(new) - length for offset, length, new in fix if offset < first_line_end)
+    call_column = first - line_start(text, first)
+    if delta != 0:
+        for line in continuation_lines(text, first, end):
+            spaces = len(indentation(text, line))
+            if text[line:line + 1] in (b"\n", b"") or spaces <= call_column:
+                continue
+            if delta > 0:
+                fix.append((line, 0, b" " * delta))
+            else:
+                fix.append((line, min(-delta, spaces - call_column - 1), b""))
     return fix
 
 
