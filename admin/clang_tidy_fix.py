@@ -12,7 +12,7 @@ database of a build directory (compile_commands.json) with the checks of
 admin/clang-tidy-fix.yaml. The fixes of all files are collected and
 applied here, in the layout of the ACT code:
 - const is written in front of the type (const auto x, not auto const x),
-  and the padding of aligned declarations is kept,
+  and the padding of aligned declarations takes up the const where it can,
 - braces added around statements are placed on lines of their own,
   indented by 4 spaces as the rest of the code,
 - "= default" follows the parameter list on the same line.
@@ -112,7 +112,8 @@ def indentation(text, offset):
 
 def west_const(text, diag_offset, replacements):
     """Move the const that clang-tidy inserts before the variable name to the front
-    of the declaration, keeping aligned declarations aligned. None if not possible."""
+    of the declaration, keeping aligned declarations aligned where the padding
+    allows it. None if not possible."""
     if len(replacements) != 1:
         return None
     (offset, length, new), = replacements
@@ -125,22 +126,30 @@ def west_const(text, diag_offset, replacements):
     if declaration.lstrip().startswith(b"const "):
         return None
     fix = [(start, 0, b"const ")]
-    # The padding between the type and the name of aligned declarations
+    # The padding between the type and the name of aligned declarations takes
+    # up what it can of the const, keeping at least one space
     padding = len(declaration) - len(declaration.rstrip(b" "))
-    if padding > CONST_WIDTH:
-        fix.append((offset - CONST_WIDTH, CONST_WIDTH, b""))
-    else:
+    removed = min(max(padding - 1, 0), CONST_WIDTH)
+    if removed > 0:
+        fix.append((offset - removed, removed, b""))
+    shift = CONST_WIDTH - removed
+    if shift > 0:
         # The rest of the declaration moves to the right, and so must the lines
-        # that continue it, since they are aligned with it
+        # that continue it if they are aligned with it, i.e. start to the right
+        # of the name, as arguments under an opening parenthesis. Lines that are
+        # indented relative to the statement, as the body of a lambda or the
+        # elements of a list in braces, stay where they are.
         end = statement_end(text, offset)
         if end is None:
             return None
+        name_column = offset - line_start(text, offset)
         line = text.find(b"\n", offset)
-        while 0 <= line < end:
-            line += 1
-            if text[line:line + 1] not in (b"\n", b""):
-                fix.append((line, 0, b" " * CONST_WIDTH))
-            line = text.find(b"\n", line)
+        if 0 <= line < end and len(indentation(text, line + 1)) > name_column:
+            while 0 <= line < end:
+                line += 1
+                if text[line:line + 1] not in (b"\n", b""):
+                    fix.append((line, 0, b" " * shift))
+                line = text.find(b"\n", line)
     return fix
 
 
