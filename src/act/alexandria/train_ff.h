@@ -149,12 +149,12 @@ public:
      * \param[inout] pargs   Flags
      * \param[inout] fnms  File names
      */
-    virtual void add_options(std::vector<t_pargs>  *pargs,
-                             std::vector<t_filenm> *fnms);
+    void add_options(std::vector<t_pargs>  *pargs,
+                     std::vector<t_filenm> *fnms) override;
     
     /*! \brief Evaluate arguments after parsing.
      */
-    void check_pargs(MsgHandler *msghandler);
+    void check_pargs(MsgHandler *msghandler) override;
 
     /*! \brief Routine to be called after processing options
      * \param[in] filenames The file names

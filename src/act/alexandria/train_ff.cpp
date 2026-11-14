@@ -89,57 +89,24 @@ void my_fclose(FILE *fp)
 
 OptACM::~OptACM()
 {
-    if (ga_)
-    {
-        delete ga_;
-    }
-    if (forceComp_)
-    {
-        delete forceComp_;
-    }
-    if (fitComp_)
-    {
-        delete fitComp_;
-    }
-    if (mutator_)
-    {
-        delete mutator_;
-    }
-    if (probComputer_)
-    {
-        delete probComputer_;
-    }
-    if (initializer_)
-    {
-        delete initializer_;
-    }
-    if (crossover_)
-    {
-        delete crossover_;
-    }
-    if (sii_)
-    {
-        delete sii_;
-    }
-    if (selector_)
-    {
-        delete selector_;
-    }
+    delete ga_;
+    delete forceComp_;
+    delete fitComp_;
+    delete mutator_;
+    delete probComputer_;
+    delete initializer_;
+    delete crossover_;
+    delete sii_;
+    delete selector_;
     // Delete the penalizers
     for (auto x : penalizers_)
     {
-        if (x)
-        {
-            delete x;
-        }
+        delete x;
     }
     // Delete the terminators
     for (auto x : terminators_)
     {
-        if (x)
-        {
-            delete x;
-        }
+        delete x;
     }
     if (oenv_)
     {
@@ -174,7 +141,7 @@ void OptACM::add_options(std::vector<t_pargs>  *pargs,
 
     bch_.add_options(pargs, fnms);
     gach_.add_options(pargs, fnms);
-    static std::string defname("train_ff");
+    static const std::string defname("train_ff");
     msghandler_.addOptions(pargs, fnms, defname);
 }
 
@@ -217,7 +184,7 @@ void OptACM::optionsFinished(const std::vector<t_filenm> &filenames)
 
 void OptACM::balanceQueue(gmx::TextWriter *tw)
 {
-    auto note = [tw](const std::string &text)
+    const auto note = [tw](const std::string &text)
     {
         if (tw)
         {
@@ -237,10 +204,10 @@ void OptACM::balanceQueue(gmx::TextWriter *tw)
         gach_.setLockstep(1);
     }
     size_t nmiddlemen = sii_->commRec()->middlemen().size();
-    auto   qb         = queueBalance(gach_.popSize(), gach_.lockstep(), nmiddlemen);
+    const auto qb         = queueBalance(gach_.popSize(), gach_.lockstep(), nmiddlemen);
     if (qb.idle >= 0.05)
     {
-        std::string group = gach_.lockstep() > 1 ?
+        const std::string group = gach_.lockstep() > 1 ?
             gmx::formatString("%zu groups of %d individuals", qb.groups, gach_.lockstep()) :
             gmx::formatString("%zu individuals", qb.groups);
         std::string text = gmx::formatString("Note: the %zu middlemen share the %s of each generation unevenly: some\n"
@@ -274,7 +241,7 @@ void OptACM::initForceComputer()
         // evaluation. With many processes on one GPU this may take seconds,
         // which is then not counted as part of an evaluation.
         static const size_t timer = Timings::instance().index("GPU initialization");
-        ScopedTimer         scoped(timer);
+        const ScopedTimer   scoped(timer);
         (void) gpu::useGpu();
     }
 }
@@ -284,7 +251,7 @@ void OptACM::initForceComputer()
 void OptACM::initChargeGeneration(iMolSelect ims)
 {
     std::string method, basis, conf, type, myref, mylot;
-    std::vector<double> vec;
+    const std::vector<double> vec;
     auto mymols = mg_.actmolsPtr();
     for (auto actmol = mymols->begin(); actmol < mymols->end(); ++actmol)
     {
@@ -610,7 +577,7 @@ void OptACM::printGenomeTable(const std::map<iMolSelect, ga::Genome> &genome,
     sizes.insert(sizes.end(), tmpSizes.begin(), tmpSizes.end());
     // Adjust size for class field
     const auto paramClass = sii_->paramClass();
-    for (auto pClass : paramClass)
+    for (const auto &pClass : paramClass)
     {
         if (static_cast<int>(pClass.size()) > sizes[0])
         {
@@ -620,7 +587,7 @@ void OptACM::printGenomeTable(const std::map<iMolSelect, ga::Genome> &genome,
     // Adjust size for name field
     const auto paramClassIndex = sii_->paramClassIndex();
     const auto paramNames = sii_->paramNamesWOClass();
-    for (auto pName : paramNames)
+    for (const auto &pName : paramNames)
     {
         if (static_cast<int>(pName.size()) > sizes[1])
         {
@@ -857,11 +824,11 @@ bool OptACM::runMaster(bool               optimize,
         }
         // Save force field of best individual(s)
         {
-            std::set<int> changed;
+            const std::set<int> changed;
             for (const auto &pair : bestGenome)
             {
                 sii_->updateForceField(&msghandler_, changed, pair.second.bases());
-                auto myfilenm = outputFileName_[pair.first];
+                const auto myfilenm = outputFileName_[pair.first];
                 tw->writeStringFormatted("Will save best %s force field to %s\n",
                                          iMolSelectName(pair.first).c_str(),
                                          myfilenm.c_str());
@@ -888,9 +855,9 @@ bool OptACM::runMaster(bool               optimize,
     //! \todo parallellize this. There is no need to do this I believe, it's done above, and parallel!
     if (!bestGenome.empty() && msghandler_.ok())
     {
-        std::set<int> changed;
+        const std::set<int> changed;
         auto ims = iMolSelect::Train;
-        auto bbb = bestGenome.find(ims);
+        const auto bbb = bestGenome.find(ims);
         if (bestGenome.end() != bbb)
         {
             sii_->updateForceField(&msghandler_, changed, bbb->second.bases());
@@ -1083,7 +1050,7 @@ int train_ff(int argc, char *argv[])
 
     // Read forcefield in StaticIndividualInfo sii_
     {
-        auto fns = opt2fns("-ff", filenms.size(), filenms.data());
+        const auto fns = opt2fns("-ff", filenms.size(), filenms.data());
         GMX_RELEASE_ASSERT(fns.size() == 1 || fns.size() == opt.gach()->popSize(),
                            gmx::formatString("Please pass exactly one or %d (popSize) force field file names", opt.gach()->popSize()).c_str());
 
@@ -1205,7 +1172,7 @@ int train_ff(int argc, char *argv[])
                                      &jtree);
             if (bOptimize)
             {
-                auto msg = gmx::formatString("Training finished %s.", bMinimum ? "succesfully" : "without finding a better force field");
+                const auto msg = gmx::formatString("Training finished %s.", bMinimum ? "succesfully" : "without finding a better force field");
                 opt.msgHandler()->msg(ACTStatus::Info, msg);
             }
         }
@@ -1267,7 +1234,7 @@ int train_ff(int argc, char *argv[])
     }
     phase.stop();
     auto json_file = opt.commRec()->isMaster() ? opt2fn_null("-json", filenms.size(), filenms.data()) : nullptr;
-    auto peak      = theoreticalPeakPerCore();
+    const auto peak      = theoreticalPeakPerCore();
     printTimings(opt.commRec(), opt.commRec()->isMaster() ? opt.msgHandler()->tw() : nullptr,
                  phase.wallTime(), json_file ? &jtree : nullptr, &peak);
     if (json_file)

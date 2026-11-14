@@ -73,7 +73,7 @@ static const ForceFieldParameterMap *bond(const ForceField &pd, const std::strin
 // of harmonic bonds are negative
 TEST_F(GeometryFFTest, AlcoholAndAcetone)
 {
-    auto output = fileManager().getTemporaryFilePath("geometry.xml");
+    const auto output = fileManager().getTemporaryFilePath("geometry.xml");
     gmx::test::CommandLine cmd;
     cmd.append("geometry_ff");
     cmd.addOption("-mp", fileManager().getInputFilePath("molprop/molprop.xml"));

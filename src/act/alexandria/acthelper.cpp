@@ -57,7 +57,7 @@ ACTHelper::ACTHelper(MsgHandler                *msghandler,
 void ACTHelper::run(MsgHandler *msghandler)
 {
     static const size_t timer = Timings::instance().index("Helper loop");
-    ScopedTimer         scoped(timer);
+    const ScopedTimer   scoped(timer);
     // H E L P E R   N O D E
     CalcDev cd = CalcDev::Compute;
     cd = fitComp_.distributeTasks(cd);
@@ -73,8 +73,8 @@ void ACTHelper::run(MsgHandler *msghandler)
             {
                 // All variables are set by the master or middlemen, but
                 // we have to pass something.
-                std::vector<double> dummy;
-                std::set<int>       changed;
+                const std::vector<double> dummy;
+                const std::set<int> changed;
                 // Get the new parameters to evaluate
                 fitComp_.distributeParameters(msghandler, &dummy, changed);
             }

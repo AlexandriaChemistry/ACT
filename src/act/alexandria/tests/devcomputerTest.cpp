@@ -108,7 +108,7 @@ static void expectSameResults(const DevResults &a, const DevResults &b)
     EXPECT_EQ(a.size(), b.size());
     for(const auto &ra : a)
     {
-        auto rb = b.find(ra.first);
+        const auto rb = b.find(ra.first);
         ASSERT_TRUE(b.end() != rb) << ra.first;
         EXPECT_DOUBLE_EQ(ra.second.first, rb->second.first) << ra.first << " weight";
         EXPECT_DOUBLE_EQ(ra.second.second, rb->second.second) << ra.first << " chi2";
@@ -184,7 +184,7 @@ protected:
                      const DevOptions  &opts)
     {
         gmx::test::TestReferenceChecker checker_(this->rootChecker());
-        auto tolerance = gmx::test::relativeToleranceAsFloatingPoint(1.0, opts.tolerance);
+        const auto tolerance = gmx::test::relativeToleranceAsFloatingPoint(1.0, opts.tolerance);
         checker_.setDefaultTolerance(tolerance);
         computeDev(mpFile, ffFile, opts, &checker_);
     }
@@ -202,7 +202,7 @@ protected:
                           const DevOptions                &opts,
                           gmx::test::TestReferenceChecker *checker)
     {
-        ForceComputer           forceComputer;
+        const ForceComputer     forceComputer;
         MsgHandler              msghandler;
         // Use next statement for debugging only
         // msghandler.setPrintLevel(ACTStatus::Debug);
@@ -271,11 +271,11 @@ protected:
                     { t.second.totalWeight(), t.second.chiSquared() };
                 if (checker)
                 {
-                    std::string weight = gmx::formatString("%s-%s-weight",
-                                                           actmols[0].getMolname().c_str(), rmsName(t.first));
+                    const std::string weight = gmx::formatString("%s-%s-weight",
+                                                                 actmols[0].getMolname().c_str(), rmsName(t.first));
                     checker->checkDouble(t.second.totalWeight(), weight.c_str());
-                    std::string chi2 = gmx::formatString("%s-%s-chi2",
-                                                         actmols[0].getMolname().c_str(), rmsName(t.first));
+                    const std::string chi2 = gmx::formatString("%s-%s-chi2",
+                                                               actmols[0].getMolname().c_str(), rmsName(t.first));
                     // The deviations are differences of energies or forces
                     // that are much larger, with errors relative to those.
                     // The interaction energies of dimers have errors of up
@@ -303,8 +303,8 @@ protected:
             const auto &ca = after.confs[c];
             EXPECT_EQ(cb.dataFile, ca.dataFile) << "conformation " << c;
             EXPECT_EQ(cb.eMin, ca.eMin) << "conformation " << c;
-            auto xb = before.x(c);
-            auto xa = after.x(c);
+            const auto xb = before.x(c);
+            const auto xa = after.x(c);
             ASSERT_EQ(xb.size(), xa.size()) << "conformation " << c;
             for(size_t i = 0; i < xb.size(); i++)
             {
@@ -316,7 +316,7 @@ protected:
             ASSERT_EQ(cb.eMap.size(), ca.eMap.size()) << "conformation " << c;
             for(const auto &e : cb.eMap)
             {
-                auto a = ca.eMap.find(e.first);
+                const auto a = ca.eMap.find(e.first);
                 ASSERT_TRUE(a != ca.eMap.end()) << "conformation " << c;
                 EXPECT_EQ(e.second.haveQM(), a->second.haveQM()) << "conformation " << c;
                 if (e.second.haveQM())
@@ -334,7 +334,7 @@ protected:
      */
     int checkInductionQM(const std::string &mpFile, bool sepIndCorr)
     {
-        ForceComputer forceComputer;
+        const ForceComputer forceComputer;
         MsgHandler    msghandler;
         auto          pd = getForceField("ACS-pol");
         std::vector<alexandria::MolProp> mps;
@@ -373,7 +373,7 @@ protected:
             ACTEnergyMapVector                                                interactionEnergyMap;
             std::vector<std::pair<double, std::map<InteractionType, double>>> energyComponentMap;
             // The conformations hold the reference data for training
-            auto before = *actmol.conformationData(2);
+            const auto before = *actmol.conformationData(2);
             EXPECT_GT(before.nconf(), 0u);
             actmol.forceEnergyMaps(&msghandler, pd, &forceComputer, &forceMap, &energyMap,
                                    &interactionEnergyMap, &energyComponentMap, sepIndCorr);
@@ -381,13 +381,13 @@ protected:
             EXPECT_EQ(qmInduction.size(), interactionEnergyMap.size());
             for(const auto &iem : interactionEnergyMap)
             {
-                auto ind = iem.find(InteractionType::INDUCTION);
+                const auto ind = iem.find(InteractionType::INDUCTION);
                 if (iem.end() == ind || !ind->second.haveQM())
                 {
                     ADD_FAILURE() << "No QM induction for " << actmol.getMolname();
                     continue;
                 }
-                auto qm = qmInduction.find(ind->second.id());
+                const auto qm = qmInduction.find(ind->second.id());
                 if (qmInduction.end() == qm)
                 {
                     ADD_FAILURE() << "No experiment " << ind->second.id() << " for " << actmol.getMolname();
@@ -399,7 +399,7 @@ protected:
                 {
                     nonZeroDHF += 1;
                 }
-                auto icorr = iem.find(InteractionType::INDUCTIONCORRECTION);
+                const auto icorr = iem.find(InteractionType::INDUCTIONCORRECTION);
                 if (sepIndCorr)
                 {
                     // Induction correction is a separate term
@@ -458,14 +458,14 @@ protected:
         for(size_t i = 0; i < cdata->nconf(); i++)
         {
             auto        ener  = cdata->energies.energies(i);
-            auto        label = gmx::formatString("%s-conf%zu", actmol.getMolname().c_str(), i);
+            const auto  label = gmx::formatString("%s-conf%zu", actmol.getMolname().c_str(), i);
             // In single precision relative to the largest energy and force
             double emax = 0;
             for(const auto itype : { InteractionType::EXCHANGE,
                                      InteractionType::DISPERSION,
                                      InteractionType::EPOT })
             {
-                auto ee = ener.find(itype);
+                const auto ee = ener.find(itype);
                 if (ener.end() != ee)
                 {
                     emax = std::max(emax, std::abs(ee->second));
@@ -476,7 +476,7 @@ protected:
                                      InteractionType::DISPERSION,
                                      InteractionType::EPOT })
             {
-                auto ee = ener.find(itype);
+                const auto ee = ener.find(itype);
                 ASSERT_TRUE(ener.end() != ee)
                     << label << " " << interactionTypeToString(itype);
                 checker->checkDouble(ee->second,
@@ -511,7 +511,7 @@ protected:
     void testLossFunction(LossFunction lf)
     {
         gmx::test::TestReferenceChecker checker_(this->rootChecker());
-        auto tolerance = gmx::test::relativeToleranceAsFloatingPoint(1.0, 1e-11);
+        const auto tolerance = gmx::test::relativeToleranceAsFloatingPoint(1.0, 1e-11);
         checker_.setDefaultTolerance(tolerance);
         DevOptions mono;
         mono.weights      = unitWeights(monomerTargets);
@@ -528,7 +528,7 @@ protected:
 TEST_F(ForceEnergyDevComputerTest, ConstructorSetsCorrectName)
 {
     std::map<eRMS, double> boltzmann;
-    ForceEnergyDevComputer computer(boltzmann);
+    const ForceEnergyDevComputer computer(boltzmann);
     EXPECT_EQ("ForceEnergy", computer.name());
 }
 
@@ -536,7 +536,7 @@ TEST_F(ForceEnergyDevComputerTest, ConstructorSetsCorrectName)
 TEST_F(ForceEnergyDevComputerTest, ConstructorWithEmptyBoltzmannMap)
 {
     std::map<eRMS, double> boltzmann;
-    ForceEnergyDevComputer computer(boltzmann);
+    const ForceEnergyDevComputer computer(boltzmann);
     EXPECT_TRUE(computer.separateInductionCorrection());
 }
 
@@ -547,7 +547,7 @@ TEST_F(ForceEnergyDevComputerTest, ConstructorWithNonEmptyBoltzmannMap)
     boltzmann[eRMS::EPOT] = 298.15;
     boltzmann[eRMS::Force2] = 0.0;
     
-    ForceEnergyDevComputer computer(boltzmann);
+    const ForceEnergyDevComputer computer(boltzmann);
     EXPECT_EQ("ForceEnergy", computer.name());
     EXPECT_TRUE(computer.separateInductionCorrection());
 }
@@ -592,7 +592,7 @@ TEST_F(ForceEnergyDevComputerTest, BoltzmannTemperatureEPOT)
     std::map<eRMS, double> boltzmann;
     boltzmann[eRMS::EPOT] = 298.15;
     
-    ForceEnergyDevComputer computer(boltzmann);
+    const ForceEnergyDevComputer computer(boltzmann);
     EXPECT_EQ("ForceEnergy", computer.name());
 }
 
@@ -602,7 +602,7 @@ TEST_F(ForceEnergyDevComputerTest, BoltzmannTemperatureForce2)
     std::map<eRMS, double> boltzmann;
     boltzmann[eRMS::Force2] = 300.0;
     
-    ForceEnergyDevComputer computer(boltzmann);
+    const ForceEnergyDevComputer computer(boltzmann);
     EXPECT_EQ("ForceEnergy", computer.name());
 }
 
@@ -614,7 +614,7 @@ TEST_F(ForceEnergyDevComputerTest, BoltzmannTemperatureMultipleTerms)
     boltzmann[eRMS::Force2] = 0.0;
     boltzmann[eRMS::Interaction] = 500.0;
     
-    ForceEnergyDevComputer computer(boltzmann);
+    const ForceEnergyDevComputer computer(boltzmann);
     EXPECT_EQ("ForceEnergy", computer.name());
     EXPECT_TRUE(computer.separateInductionCorrection());
 }
@@ -623,7 +623,7 @@ TEST_F(ForceEnergyDevComputerTest, BoltzmannTemperatureMultipleTerms)
 TEST_F(ForceEnergyDevComputerTest, InheritsFromDevComputer)
 {
     std::map<eRMS, double> boltzmann;
-    ForceEnergyDevComputer computer(boltzmann);
+    const ForceEnergyDevComputer computer(boltzmann);
     
     // Verify that DevComputer interface is accessible
     const std::string& name = computer.name();
@@ -636,7 +636,7 @@ TEST_F(ForceEnergyDevComputerTest, ZeroBoltzmannTemperature)
     std::map<eRMS, double> boltzmann;
     boltzmann[eRMS::EPOT] = 0.0;
     
-    ForceEnergyDevComputer computer(boltzmann);
+    const ForceEnergyDevComputer computer(boltzmann);
     EXPECT_EQ("ForceEnergy", computer.name());
 }
 
@@ -647,7 +647,7 @@ TEST_F(ForceEnergyDevComputerTest, LargeBoltzmannTemperatureValues)
     boltzmann[eRMS::EPOT] = 1e6;
     boltzmann[eRMS::Force2] = 1e10;
     
-    ForceEnergyDevComputer computer(boltzmann);
+    const ForceEnergyDevComputer computer(boltzmann);
     EXPECT_EQ("ForceEnergy", computer.name());
 }
 
@@ -657,7 +657,7 @@ TEST_F(ForceEnergyDevComputerTest, NegativeBoltzmannTemperature)
     std::map<eRMS, double> boltzmann;
     boltzmann[eRMS::EPOT] = -100.0;
     
-    ForceEnergyDevComputer computer(boltzmann);
+    const ForceEnergyDevComputer computer(boltzmann);
     EXPECT_EQ("ForceEnergy", computer.name());
 }
 
@@ -670,7 +670,7 @@ TEST_F(ForceEnergyDevComputerTest, CalcDevMonomerNoBoltz)
     {
         boltzmann.insert({erms, 0.0});
     }
-    std::string mpFile = fileManager().getInputFilePath("molprop/molprop.xml");
+    const std::string mpFile = fileManager().getInputFilePath("molprop/molprop.xml");
     testCalcDev(mpFile, "ACS-g2", boltzmann);
 }
 
@@ -712,7 +712,7 @@ TEST_F(ForceEnergyDevComputerTest, CalcDevDimerNoBoltz)
     {
         boltzmann.insert({erms, 0.0});
     }
-    std::string mpFile = fileManager().getInputFilePath("molprop/mpdimer.xml");
+    const std::string mpFile = fileManager().getInputFilePath("molprop/mpdimer.xml");
     testCalcDev(mpFile, "ACS-g2", boltzmann);
 }
 
@@ -725,7 +725,7 @@ TEST_F(ForceEnergyDevComputerTest, CalcDevMonomerBoltz)
     {
         boltzmann.insert({erms, 500.0});
     }
-    std::string mpFile = fileManager().getInputFilePath("molprop/molprop.xml");
+    const std::string mpFile = fileManager().getInputFilePath("molprop/molprop.xml");
     testCalcDev(mpFile, "ACS-g2", boltzmann);
 }
 
@@ -740,7 +740,7 @@ TEST_F(ForceEnergyDevComputerTest, CalcDevDimerBoltz)
     {
         boltzmann.insert({erms, 500.0});
     }
-    std::string mpFile = fileManager().getInputFilePath("molprop/mpdimer.xml");
+    const std::string mpFile = fileManager().getInputFilePath("molprop/mpdimer.xml");
     testCalcDev(mpFile, "ACS-g2", boltzmann);
 }
 
@@ -755,7 +755,7 @@ TEST_F(ForceEnergyDevComputerTest, CalcDevDimerBoltzPol)
     {
         boltzmann.insert({erms, 500.0});
     }
-    std::string mpFile = fileManager().getInputFilePath("molprop/mpdimer.xml");
+    const std::string mpFile = fileManager().getInputFilePath("molprop/mpdimer.xml");
     testCalcDev(mpFile, "ACS-pol", boltzmann);
 }
 
@@ -770,7 +770,7 @@ TEST_F(ForceEnergyDevComputerTest, CalcDevDimerNoBoltzPol)
     {
         boltzmann.insert({erms, 0.0});
     }
-    std::string mpFile = fileManager().getInputFilePath("molprop/mpdimer.xml");
+    const std::string mpFile = fileManager().getInputFilePath("molprop/mpdimer.xml");
     testCalcDev(mpFile, "ACS-pol", boltzmann);
 }
 
@@ -787,7 +787,7 @@ TEST_F(ForceEnergyDevComputerTest, CalcDevDimerBoltzInductionCorrection)
     {
         boltzmann.insert({erms, 500.0});
     }
-    std::string mpFile = fileManager().getInputFilePath("molprop/methanol-ethane-deltaHF.xml");
+    const std::string mpFile = fileManager().getInputFilePath("molprop/methanol-ethane-deltaHF.xml");
     testCalcDev(mpFile, "ACS-pol", boltzmann);
 }
 
@@ -804,7 +804,7 @@ TEST_F(ForceEnergyDevComputerTest, CalcDevDimerNoBoltzInductionCorrection)
     {
         boltzmann.insert({erms, 0.0});
     }
-    std::string mpFile = fileManager().getInputFilePath("molprop/methanol-ethane-deltaHF.xml");
+    const std::string mpFile = fileManager().getInputFilePath("molprop/methanol-ethane-deltaHF.xml");
     testCalcDev(mpFile, "ACS-pol", boltzmann);
 }
 
@@ -911,7 +911,7 @@ TEST_F(ForceEnergyDevComputerTest, ZeroWeightTargetIgnoredMonomer)
     auto rboth   = computeDev(monomerFile(), "ACS-g2", both, nullptr);
     DevOptions epot;
     epot.weights = { { eRMS::EPOT, 1.0 } };
-    auto repot   = computeDev(monomerFile(), "ACS-g2", epot, nullptr);
+    const auto repot   = computeDev(monomerFile(), "ACS-g2", epot, nullptr);
     DevResults rforce;
     for(const auto &r : rboth)
     {
@@ -938,7 +938,7 @@ TEST_F(ForceEnergyDevComputerTest, ZeroWeightTargetIgnoredDimer)
     auto rboth   = computeDev(dimerFile(), "ACS-g2", both, nullptr);
     DevOptions inter;
     inter.weights = { { eRMS::Interaction, 1.0 } };
-    auto rinter   = computeDev(dimerFile(), "ACS-g2", inter, nullptr);
+    const auto rinter   = computeDev(dimerFile(), "ACS-g2", inter, nullptr);
     DevResults relec;
     for(const auto &r : rboth)
     {
@@ -964,7 +964,7 @@ TEST_F(ForceEnergyDevComputerTest, NoForceEnergyTargets)
     opts.weights = unitWeights({ eRMS::ESP, eRMS::MU });
     for(const auto &mpFile : { monomerFile(), dimerFile() })
     {
-        auto results = computeDev(mpFile, "ACS-g2", opts, nullptr);
+        const auto results = computeDev(mpFile, "ACS-g2", opts, nullptr);
         EXPECT_FALSE(results.empty());
         for(const auto &r : results)
         {
@@ -1014,7 +1014,7 @@ TEST_F(ForceEnergyDevComputerTest, VeryLowTemperatureMonomer)
     cold.weights   = noBoltz.weights;
     cold.boltzmann = sameTemperature({ eRMS::EPOT }, 1.0);
     auto rref  = computeDev(monomerFile(), "ACS-g2", noBoltz, nullptr);
-    auto rcold = computeDev(monomerFile(), "ACS-g2", cold, nullptr);
+    const auto rcold = computeDev(monomerFile(), "ACS-g2", cold, nullptr);
     ASSERT_EQ(rref.size(), rcold.size());
     for(const auto &r : rcold)
     {
@@ -1035,7 +1035,7 @@ TEST_F(ForceEnergyDevComputerTest, VeryLowTemperatureDimer)
     cold.weights   = noBoltz.weights;
     cold.boltzmann = sameTemperature({ eRMS::Interaction }, 1.0);
     auto rref  = computeDev(dimerFile(), "ACS-g2", noBoltz, nullptr);
-    auto rcold = computeDev(dimerFile(), "ACS-g2", cold, nullptr);
+    const auto rcold = computeDev(dimerFile(), "ACS-g2", cold, nullptr);
     ASSERT_EQ(rref.size(), rcold.size());
     for(const auto &r : rcold)
     {
@@ -1051,7 +1051,7 @@ TEST_F(ForceEnergyDevComputerTest, InteractionTargetsOnMonomers)
 {
     DevOptions opts;
     opts.weights = unitWeights(dimerTargets);
-    auto results = computeDev(monomerFile(), "ACS-g2", opts, nullptr);
+    const auto results = computeDev(monomerFile(), "ACS-g2", opts, nullptr);
     EXPECT_FALSE(results.empty());
     for(const auto &r : results)
     {
@@ -1071,7 +1071,7 @@ static void compareVeryHighTemperature(const DevResults &rref,
     ASSERT_EQ(rref.size(), rhot.size());
     for(const auto &r : rhot)
     {
-        auto ref = rref.find(r.first);
+        const auto ref = rref.find(r.first);
         ASSERT_TRUE(rref.end() != ref) << r.first;
         EXPECT_NEAR(ref->second.first, r.second.first, 1e-6*std::abs(ref->second.first)) << r.first;
         EXPECT_NEAR(ref->second.second, r.second.second, 1e-6*std::abs(ref->second.second)) << r.first;
@@ -1124,7 +1124,7 @@ static std::vector<double> allEnergies(std::vector<ACTMol> *mols)
             auto &ener = mol.conformationData(what)->energies;
             for(auto t : ener.types())
             {
-                auto term = ener.find(t);
+                const auto term = ener.find(t);
                 for(size_t c = 0; c < ener.nconf(); c++)
                 {
                     e.push_back(term.has(c) ? term.act[c] : 0.0);
@@ -1303,7 +1303,7 @@ protected:
             for(const auto &a : alphas)
             {
                 auto params = pd->findForces(InteractionType::POLARIZATION)->parametersNoRemoval();
-                auto pp     = params->find(Identifier(a.first));
+                const auto pp     = params->find(Identifier(a.first));
                 ASSERT_TRUE(params->end() != pp) << a.first;
                 pp->second.find("alpha")->second.forceSetValue(a.second);
             }
@@ -1312,7 +1312,7 @@ protected:
         ASSERT_FALSE(pdCharge.hasParticleType(vsiteType));
         ASSERT_TRUE(pdCharge.findParticleType(atomType)->hasChargeVS());
         ASSERT_EQ(polarizable, pdCharge.polarizable());
-        ForceComputer forceComputer;
+        const ForceComputer forceComputer;
         MsgHandler    msghandler;
         auto molsV  = prepareMolecules(&msghandler, &pdVsite, &forceComputer, {},
                                        fileManager().getInputFilePath(mpFile));
@@ -1347,15 +1347,15 @@ protected:
         };
         // Compare forces of the other particles only, the forces on virtual
         // sites have been spread over the atoms.
-        auto compareForces = [&replaced, tolerance](const std::vector<ActAtom> &atomsV,
-                                const ConformationData     &coordsV,
-                                const ConformationData     &coordsC)
+        const auto compareForces = [&replaced, tolerance](const std::vector<ActAtom> &atomsV,
+                                      const ConformationData     &coordsV,
+                                      const ConformationData     &coordsC)
         {
             ASSERT_EQ(coordsV.nconf(), coordsC.nconf());
             for(size_t c = 0; c < coordsV.nconf(); c++)
             {
-                auto fV = coordsV.f(c);
-                auto fC = coordsC.f(c);
+                const auto fV = coordsV.f(c);
+                const auto fC = coordsC.f(c);
                 // In single precision the errors are relative to the
                 // largest force, since the terms of the forces cancel
                 double fmax = 0;
@@ -1423,8 +1423,8 @@ protected:
                 ASSERT_EQ(eV.nconf(), eC.nconf());
                 for(auto t : eV.types())
                 {
-                    auto tV = eV.find(t);
-                    auto tC = eC.find(t);
+                    const auto tV = eV.find(t);
+                    const auto tC = eC.find(t);
                     for(size_t c = 0; c < eV.nconf(); c++)
                     {
                         ASSERT_EQ(tV.has(c), tC.has(c));
@@ -1488,7 +1488,7 @@ protected:
             EXPECT_FALSE(pt.second.hasChargeVS()) << pt.first.id();
         }
         ASSERT_TRUE(pdExpand.interactionPresent(InteractionType::VSITE1));
-        ForceComputer forceComputer;
+        const ForceComputer forceComputer;
         auto molsE = prepareMolecules(&msghandler, &pdExpand, &forceComputer, {},
                                       fileManager().getInputFilePath(mpFile));
         ASSERT_EQ(molsV->size(), molsE.size());
@@ -1514,8 +1514,8 @@ protected:
                 ASSERT_EQ(eV.types(), eE.types());
                 for(auto t : eV.types())
                 {
-                    auto tV = eV.find(t);
-                    auto tE = eE.find(t);
+                    const auto tV = eV.find(t);
+                    const auto tE = eE.find(t);
                     for(size_t c = 0; c < eV.nconf(); c++)
                     {
                         ASSERT_EQ(tV.has(c), tE.has(c));
@@ -1647,7 +1647,7 @@ protected:
                                const std::set<std::string>   &molecules,
                                bool                           vsite)
     {
-        ForceComputer forceComputer;
+        const ForceComputer forceComputer;
         MsgHandler    msghandler;
         // A copy, since the parameters are changed
         ForceField    pd   = *getForceField(ffName);
@@ -1656,7 +1656,7 @@ protected:
         ASSERT_FALSE(mols.empty());
         auto &timings = Timings::instance();
         auto  reused  = timings.index("Energies used again");
-        auto  e0      = computeAll(&forceComputer, &pd, &mols, false);
+        const auto e0      = computeAll(&forceComputer, &pd, &mols, false);
         // Nothing changed, all energies are used again
         double ncalls = timings.calls()[reused];
         EXPECT_EQ(e0, computeAll(&forceComputer, &pd, &mols, false));
@@ -1664,11 +1664,11 @@ protected:
         // Van der Waals parameters
         changeParameters(&pd, InteractionType::VDW, 1.1, true);
         fillAll(&pd, &mols);
-        auto e1 = computeAll(&forceComputer, &pd, &mols, false);
+        const auto e1 = computeAll(&forceComputer, &pd, &mols, false);
         EXPECT_NE(e0, e1);
         EXPECT_EQ(e1, computeAll(&forceComputer, &pd, &mols, true));
         // Charges, virtual sites get a charge such that their position matters
-        auto newCharge = [](ActAtom *atom)
+        const auto newCharge = [](ActAtom *atom)
         {
             atom->setCharge(0.9*atom->charge() + (atom->pType() == ActParticle::Vsite ? 0.1 : 0.0));
         };
@@ -1686,7 +1686,7 @@ protected:
                 }
             }
         }
-        auto e2 = computeAll(&forceComputer, &pd, &mols, false);
+        const auto e2 = computeAll(&forceComputer, &pd, &mols, false);
         EXPECT_NE(e1, e2);
         EXPECT_EQ(e2, computeAll(&forceComputer, &pd, &mols, true));
         if (vsite)
@@ -1694,7 +1694,7 @@ protected:
             // Virtual sites move, and with them the coordinates
             changeParameters(&pd, InteractionType::VSITE3FD, 1.2, false);
             fillAll(&pd, &mols);
-            auto e3 = computeAll(&forceComputer, &pd, &mols, false);
+            const auto e3 = computeAll(&forceComputer, &pd, &mols, false);
             EXPECT_NE(e2, e3);
             EXPECT_EQ(e3, computeAll(&forceComputer, &pd, &mols, true));
         }
@@ -1730,9 +1730,9 @@ protected:
                                    double             qmax)
     {
         gmx::test::TestReferenceChecker checker_(this->rootChecker());
-        auto tolerance = gmx::test::relativeToleranceAsFloatingPoint(1.0, 1e-11);
+        const auto tolerance = gmx::test::relativeToleranceAsFloatingPoint(1.0, 1e-11);
         checker_.setDefaultTolerance(tolerance);
-        ForceComputer forceComputer;
+        const ForceComputer forceComputer;
         MsgHandler    msghandler;
         auto          pd   = getForceField(ffFile);
         auto          mols = prepareMolecules(&msghandler, pd, &forceComputer);
@@ -1744,7 +1744,7 @@ protected:
         }
         BoundsDevComputer   computer(nullptr);
         EXPECT_EQ("Bounds", computer.name());
-        auto newTargets = []()
+        const auto newTargets = []()
         {
             std::map<eRMS, FittingTarget> targets;
             targets.insert({eRMS::BOUNDS, FittingTarget(eRMS::BOUNDS, iMolSelect::Train)});
@@ -1755,7 +1755,7 @@ protected:
         std::vector<double> chi2;
         for(auto &mol : mols)
         {
-            std::vector<ACTMol *> one = { &mol };
+            const std::vector<ACTMol *> one = { &mol };
             auto targets = newTargets();
             computer.calcDeviation(&msghandler, &forceComputer, one,
                                    &targets, &pdBounds, LossFunction::MSE);
@@ -1780,15 +1780,15 @@ protected:
     void testMultipole(MolPropObservable mpo, eRMS erms, const std::string &ffFile)
     {
         gmx::test::TestReferenceChecker checker_(this->rootChecker());
-        auto tolerance = gmx::test::relativeToleranceAsFloatingPoint(1.0, 1e-8);
+        const auto tolerance = gmx::test::relativeToleranceAsFloatingPoint(1.0, 1e-8);
         checker_.setDefaultTolerance(tolerance);
-        ForceComputer forceComputer;
+        const ForceComputer forceComputer;
         MsgHandler    msghandler;
         auto          pd   = getForceField(ffFile);
         auto          mols = prepareMolecules(&msghandler, pd, &forceComputer);
         MultiPoleDevComputer computer(mpo);
         EXPECT_EQ(mpo_name(mpo), computer.name());
-        auto newTargets = [erms]()
+        const auto newTargets = [erms]()
         {
             std::map<eRMS, FittingTarget> targets;
             targets.insert({erms, FittingTarget(erms, iMolSelect::Train)});
@@ -1810,7 +1810,7 @@ protected:
         double weightSum = 0, chi2Sum = 0;
         for(auto &mol : mols)
         {
-            std::vector<ACTMol *> one = { &mol };
+            const std::vector<ACTMol *> one = { &mol };
             auto targets = newTargets();
             computer.calcDeviation(&msghandler, &forceComputer, one,
                                    &targets, pd, LossFunction::MSE);
@@ -1841,7 +1841,7 @@ protected:
      */
     void testDimerForces(const std::string &ffFile)
     {
-        ForceComputer forceComputer;
+        const ForceComputer forceComputer;
         MsgHandler    msghandler;
         auto          pd   = getForceField(ffFile);
         auto          mols = prepareMolecules(&msghandler, pd, &forceComputer, {},
@@ -1900,7 +1900,7 @@ protected:
      */
     void testEsp(const std::string &ffFile)
     {
-        ForceComputer forceComputer;
+        const ForceComputer forceComputer;
         MsgHandler    msghandler;
         auto          pd   = getForceField(ffFile);
         auto          mols = prepareMolecules(&msghandler, pd, &forceComputer);
@@ -1908,7 +1908,7 @@ protected:
         double weightSum = 0, chi2Sum = 0;
         for(auto &mol : mols)
         {
-            std::vector<ACTMol *> one = { &mol };
+            const std::vector<ACTMol *> one = { &mol };
             std::map<eRMS, FittingTarget> targets;
             targets.insert({eRMS::ESP, FittingTarget(eRMS::ESP, iMolSelect::Train)});
             targets.find(eRMS::ESP)->second.setWeight(1);
@@ -1951,15 +1951,15 @@ protected:
      */
     void testHarmonics(MolPropObservable mpo, eRMS erms)
     {
-        ForceComputer forceComputer;
+        const ForceComputer forceComputer;
         MsgHandler    msghandler;
         auto          pd   = getForceField("ACS-g2");
         auto          mols = prepareMolecules(&msghandler, pd, &forceComputer, { "water" });
         ASSERT_EQ(1u, mols.size());
         ASSERT_EQ(JobType::OPT, mols[0].jobType());
         // The frequencies and intensities as HarmonicsDevComputer computes them
-        MolHandler              handler;
-        SimulationConfigHandler simConfig;
+        const MolHandler        handler;
+        const SimulationConfigHandler simConfig;
         auto coords = mols[0].xOriginal();
         ASSERT_EQ(eMinimizeStatus::OK,
                   handler.minimizeCoordinates(&msghandler, pd, mols[0].topology(), &forceComputer,
@@ -1972,7 +1972,7 @@ protected:
         double      shift = 2;
         for(size_t nref : { values.size(), values.size() - 1 })
         {
-            auto addHarmonics = [&](MolProp *mp)
+            const auto addHarmonics = [&](MolProp *mp)
             {
                 auto harm = std::make_unique<Harmonics>(unit, 0, mpo);
                 for(size_t k = 0; k < nref; k++)
@@ -2047,20 +2047,20 @@ TEST_F(PropertyDevComputerTest, SecondChargesAsVsitesPolarizableIons)
 // force constants, giving the same energies as molecules made with them.
 TEST_F(PropertyDevComputerTest, ShellsRelaxedAfterChangingAlpha)
 {
-    ForceComputer forceComputer;
+    const ForceComputer forceComputer;
     MsgHandler    msghandler;
     ForceField    pd;
     readForceField(fileManager().getInputFilePath("forcefields/PG-pol-ions.xml"), &pd);
     ASSERT_TRUE(pd.polarizable());
-    auto mpFile  = fileManager().getInputFilePath("molprop/ion-water.xml");
+    const auto mpFile  = fileManager().getInputFilePath("molprop/ion-water.xml");
     auto mols    = prepareMolecules(&msghandler, &pd, &forceComputer, {}, mpFile);
     ASSERT_FALSE(mols.empty());
-    auto before  = computeAll(&forceComputer, &pd, &mols, false);
+    const auto before  = computeAll(&forceComputer, &pd, &mols, false);
     // Polarizable ions, as in training
     for(const auto &a : std::map<std::string, double>{ { "Na+_s", 0.18 }, { "Cl-_s", 3.4 } })
     {
         auto params = pd.findForces(InteractionType::POLARIZATION)->parametersNoRemoval();
-        auto pp     = params->find(Identifier(a.first));
+        const auto pp     = params->find(Identifier(a.first));
         ASSERT_TRUE(params->end() != pp) << a.first;
         pp->second.find("alpha")->second.forceSetValue(a.second);
     }
@@ -2162,8 +2162,8 @@ static bool compareShellKeep(ForceField                                         
         return false;
     }
     // The first time both start from the cores
-    auto first     = computeAll(&fromCores, pd, &molsCores, false);
-    auto firstKept = computeAll(&kept, pd, &molsKept, false);
+    const auto first     = computeAll(&fromCores, pd, &molsCores, false);
+    const auto firstKept = computeAll(&kept, pd, &molsKept, false);
     EXPECT_EQ(first, firstKept);
     EXPECT_EQ(fromCores.numShellIterations(), kept.numShellIterations());
     if (!resident)
@@ -2202,12 +2202,12 @@ static bool compareShellKeep(ForceField                                         
 // processor.
 TEST_F(PropertyDevComputerTest, StiffShellsStopAtCoordinateResolution)
 {
-    ProcessorOnly cpu;
+    const ProcessorOnly cpu;
     MsgHandler    msghandler;
     ForceField    pd;
     readForceField(fileManager().getInputFilePath("forcefields/PG-pol-ions.xml"), &pd);
     const int     maxiter = 100;
-    ForceComputer forceComputer(1e-8, maxiter, pd.epsilonr());
+    const ForceComputer forceComputer(1e-8, maxiter, pd.epsilonr());
     auto mols = prepareMolecules(&msghandler, &pd, &forceComputer, { "water#chloride" },
                                  fileManager().getInputFilePath("molprop/ion-water.xml"));
     ASSERT_EQ(1u, mols.size());
@@ -2233,12 +2233,12 @@ TEST_F(PropertyDevComputerTest, StiffShellsStopAtCoordinateResolution)
 // cores, with fewer iterations, and keeps the shells that converged
 TEST_F(PropertyDevComputerTest, ShellKeepSameEnergies)
 {
-    ProcessorOnly cpu;
+    const ProcessorOnly cpu;
     ForceField    pd;
     readForceField(fileManager().getInputFilePath("forcefields/PG-pol-ions.xml"), &pd);
     ASSERT_TRUE(pd.polarizable());
     auto mpFile = fileManager().getInputFilePath("molprop/ion-water.xml");
-    auto make   = [this, &pd, &mpFile](const ForceComputer *fc)
+    const auto make   = [this, &pd, &mpFile](const ForceComputer *fc)
     {
         MsgHandler msghandler;
         return prepareMolecules(&msghandler, &pd, fc, {}, mpFile);
@@ -2258,7 +2258,7 @@ TEST_F(PropertyDevComputerTest, ShellKeepSameEnergiesGpu)
     readForceField(fileManager().getInputFilePath("forcefields/PG-pol-ions.xml"), &pd);
     ASSERT_TRUE(pd.polarizable());
     auto mpFile = fileManager().getInputFilePath("molprop/ion-water.xml");
-    auto make   = [this, &pd, &mpFile](const ForceComputer *fc)
+    const auto make   = [this, &pd, &mpFile](const ForceComputer *fc)
     {
         MsgHandler msghandler;
         return prepareMolecules(&msghandler, &pd, fc, {}, mpFile);
@@ -2279,13 +2279,13 @@ TEST_F(PropertyDevComputerTest, GpuResidentFallsBackToProcessor)
     ForceComputer resident;
     resident.setGpuResident(true);
     resident.setKeepShells(false);
-    ForceComputer processor;
-    auto mpFile = fileManager().getInputFilePath("molprop/ion-water.xml");
+    const ForceComputer processor;
+    const auto mpFile = fileManager().getInputFilePath("molprop/ion-water.xml");
     auto mols   = prepareMolecules(&msghandler, &pd, &processor, {}, mpFile);
     ASSERT_FALSE(mols.empty());
     std::vector<double> energies, reference;
     {
-        ProcessorOnly cpu;
+        const ProcessorOnly cpu;
         EXPECT_FALSE(resident.gpuCharges(&pd));
         EXPECT_FALSE(resident.prepareGpuResident(&pd, pointers(&mols)));
         energies  = computeAll(&resident, &pd, &mols, true);
@@ -2327,7 +2327,7 @@ TEST_F(PropertyDevComputerTest, ReplicasAsSeparateEvaluationsGpu)
     ForceField    pd;
     readForceField(fileManager().getInputFilePath("forcefields/PG-pol-ions.xml"), &pd);
     ASSERT_TRUE(pd.polarizable());
-    auto mpFile = fileManager().getInputFilePath("molprop/ion-water.xml");
+    const auto mpFile = fileManager().getInputFilePath("molprop/ion-water.xml");
     auto mols   = prepareMolecules(&msghandler, &pd, &forceComputer, {}, mpFile);
     ASSERT_FALSE(mols.empty());
     ASSERT_TRUE(forceComputer.prepareGpuResident(&pd, pointers(&mols))) << "The GPU cannot compute these molecules";
@@ -2340,7 +2340,7 @@ TEST_F(PropertyDevComputerTest, ReplicasAsSeparateEvaluationsGpu)
             {
                 if (pp.first == "alpha" || pp.first == "chi")
                 {
-                    original.push_back({ &pp.second, pp.second.value() });
+                    original.emplace_back(&pp.second, pp.second.value());
                 }
             }
         }
@@ -2355,7 +2355,7 @@ TEST_F(PropertyDevComputerTest, ReplicasAsSeparateEvaluationsGpu)
         }
         fillAll(&pd, &mols);
     };
-    auto allCharges = [&mols]()
+    const auto allCharges = [&mols]()
     {
         std::vector<double> q;
         for(const auto &mol : mols)
@@ -2418,7 +2418,7 @@ TEST_F(PropertyDevComputerTest, CompactDeviationsAsCalcDeviationGpu)
     MsgHandler    msghandler;
     ForceField    pd;
     readForceField(fileManager().getInputFilePath("forcefields/PG-pol-ions.xml"), &pd);
-    auto mpFile = fileManager().getInputFilePath("molprop/ion-water.xml");
+    const auto mpFile = fileManager().getInputFilePath("molprop/ion-water.xml");
     auto mols   = prepareMolecules(&msghandler, &pd, &forceComputer, {}, mpFile);
     ASSERT_FALSE(mols.empty());
     ASSERT_TRUE(forceComputer.prepareGpuResident(&pd, pointers(&mols))) << "The GPU cannot compute these molecules";
@@ -2492,7 +2492,7 @@ TEST_F(PropertyDevComputerTest, CompactDeviationsAsCalcDeviationGpu)
 static void compareIntermolecular(const ForceField *pd, std::vector<ACTMol> *mols)
 {
     ASSERT_FALSE(pd->polarizable());
-    ForceComputer forceComputer;
+    const ForceComputer forceComputer;
     std::vector<std::vector<std::map<InteractionType, std::vector<double>>>> energies;
     for(bool forces : { true, false })
     {
@@ -2509,7 +2509,7 @@ static void compareIntermolecular(const ForceField *pd, std::vector<ACTMol> *mol
                 auto &ener = mol.conformationData(2)->energies;
                 for(auto t : ener.types())
                 {
-                    auto term = ener.find(t);
+                    const auto term = ener.find(t);
                     for(size_t c = 0; c < ener.nconf(); c++)
                     {
                         emol[t].push_back(term.has(c) ? term.act[c] : 0.0);
@@ -2529,7 +2529,7 @@ static void compareIntermolecular(const ForceField *pd, std::vector<ACTMol> *mol
         ndimer += full.empty() ? 0 : 1;
         for(const auto &f : full)
         {
-            auto i = inter.find(f.first);
+            const auto i = inter.find(f.first);
             ASSERT_TRUE(inter.end() != i) << interactionTypeToString(f.first);
             ASSERT_EQ(f.second.size(), i->second.size());
             for(size_t c = 0; c < f.second.size(); c++)
@@ -2552,7 +2552,7 @@ TEST_F(PropertyDevComputerTest, IntermolecularEnergies)
 {
     ForceField    pd;
     readForceField(fileManager().getInputFilePath("forcefields/PC+GV-elec.xml"), &pd);
-    ForceComputer forceComputer;
+    const ForceComputer forceComputer;
     MsgHandler    msghandler;
     auto mols = prepareMolecules(&msghandler, &pd, &forceComputer, {},
                                  fileManager().getInputFilePath("molprop/mpdimer.xml"));
@@ -2562,7 +2562,7 @@ TEST_F(PropertyDevComputerTest, IntermolecularEnergies)
 TEST_F(PropertyDevComputerTest, IntermolecularEnergiesACSg2)
 {
     ForceField    pd = *getForceField("ACS-g2");
-    ForceComputer forceComputer;
+    const ForceComputer forceComputer;
     MsgHandler    msghandler;
     auto mols = prepareMolecules(&msghandler, &pd, &forceComputer, {},
                                  fileManager().getInputFilePath("molprop/mpdimer.xml"));
@@ -2573,7 +2573,7 @@ TEST_F(PropertyDevComputerTest, IntermolecularEnergiesACSg2)
 TEST_F(PropertyDevComputerTest, IntermolecularEnergiesVsite)
 {
     ForceField    pd = *getForceField("ACS-v3fds");
-    ForceComputer forceComputer;
+    const ForceComputer forceComputer;
     MsgHandler    msghandler;
     auto mols = prepareMolecules(&msghandler, &pd, &forceComputer, { "water#1-butanol" },
                                  fileManager().getInputFilePath("molprop/water-butanol.xml"));
@@ -2597,7 +2597,7 @@ TEST_F(PropertyDevComputerTest, EnergiesUsedAgainVsite)
 // Test: Without a BOUNDS target nothing is computed
 TEST_F(PropertyDevComputerTest, BoundsNoTarget)
 {
-    ForceComputer forceComputer;
+    const ForceComputer forceComputer;
     MsgHandler    msghandler;
     auto          pd   = getForceField("ACS-g2");
     auto          mols = prepareMolecules(&msghandler, pd, &forceComputer);
@@ -2709,7 +2709,7 @@ TEST_F(PropertyDevComputerTest, MultipoleHexadecapolePol)
 // Test: An observable that is not a multipole throws
 TEST_F(PropertyDevComputerTest, MultipoleUnsupportedThrows)
 {
-    ForceComputer forceComputer;
+    const ForceComputer forceComputer;
     MsgHandler    msghandler;
     auto          pd   = getForceField("ACS-g2");
     auto          mols = prepareMolecules(&msghandler, pd, &forceComputer);
@@ -2717,7 +2717,7 @@ TEST_F(PropertyDevComputerTest, MultipoleUnsupportedThrows)
     MultiPoleDevComputer computer(MolPropObservable::POLARIZABILITY);
     std::map<eRMS, FittingTarget> targets;
     targets.insert({eRMS::Polar, FittingTarget(eRMS::Polar, iMolSelect::Train)});
-    std::vector<gmx::RVec> coords = mols[0].xOriginal();
+    const std::vector<gmx::RVec> coords = mols[0].xOriginal();
     EXPECT_THROW(computer.calcDeviation(&msghandler, &forceComputer, pointers(&mols),
                                         &targets, pd, LossFunction::MSE),
                  gmx::InvalidInputError);
@@ -2739,7 +2739,7 @@ TEST_F(PropertyDevComputerTest, ForceDeviationDimerPol)
 // the same contribution, also when the reference data is used again
 TEST_F(PropertyDevComputerTest, ForceEnergyAccumulates)
 {
-    ForceComputer forceComputer;
+    const ForceComputer forceComputer;
     MsgHandler    msghandler;
     auto          pd   = getForceField("ACS-pol");
     auto          mols = prepareMolecules(&msghandler, pd, &forceComputer, {},
@@ -2761,7 +2761,7 @@ TEST_F(PropertyDevComputerTest, ForceEnergyAccumulates)
     computer.calcDeviation(&msghandler, &forceComputer, pointers(&mols), &targets, pd, LossFunction::MSE);
     for(const auto &t : targets)
     {
-        auto o = once[t.first];
+        const auto o = once[t.first];
         EXPECT_NEAR(2*o.first, t.second.totalWeight(), 1e-12*o.first) << rmsName(t.first);
         EXPECT_NEAR(2*o.second, t.second.chiSquared(), 1e-10*std::abs(o.second)) << rmsName(t.first);
     }
@@ -2771,7 +2771,7 @@ TEST_F(PropertyDevComputerTest, ForceEnergyAccumulates)
 // that are not finite
 TEST_F(PropertyDevComputerTest, NonFiniteEnergiesIgnored)
 {
-    ForceComputer forceComputer;
+    const ForceComputer forceComputer;
     MsgHandler    msghandler;
     auto          pd   = getForceField("ACS-g2");
     auto          mols = prepareMolecules(&msghandler, pd, &forceComputer, {},
@@ -2780,7 +2780,7 @@ TEST_F(PropertyDevComputerTest, NonFiniteEnergiesIgnored)
     // Van der Waals parameters that give no finite energies
     auto itype = InteractionType::VDW;
     auto nparam = potprops.find(pd->potential(itype))->second.param.size();
-    std::vector<double> nan(nparam, std::numeric_limits<double>::quiet_NaN());
+    const std::vector<double> nan(nparam, std::numeric_limits<double>::quiet_NaN());
     for(auto &mol : mols)
     {
         std::vector<Topology *> tops = { mol.topologyPtr() };
@@ -2818,7 +2818,7 @@ TEST_F(PropertyDevComputerTest, NonFiniteEnergiesIgnored)
 // once those of another individual.
 TEST_F(PropertyDevComputerTest, BoundsShellsAndSecondCharge)
 {
-    ForceComputer forceComputer;
+    const ForceComputer forceComputer;
     MsgHandler    msghandler;
     ForceField    pd;
     readForceField(fileManager().getInputFilePath("forcefields/ACS-pol.xml"), &pd);
@@ -2853,7 +2853,7 @@ TEST_F(PropertyDevComputerTest, BoundsShellsAndSecondCharge)
             a.setCharge(0.5*(p.minimum() + p.maximum()));
         }
     }
-    auto bound = [&mol, &pd](LossFunction lf)
+    const auto bound = [&mol, &pd](LossFunction lf)
     {
         return BoundsDevComputer::moleculeBound(&mol, &pd, lf);
     };
@@ -2910,9 +2910,9 @@ TEST_F(PropertyDevComputerTest, EspCloudWidthsStayCurrent)
                 const char *widthName = converted ? "zetaVS" : "zeta";
                 auto width = cloud->parameter(widthName);
                 width->forceSetValue(10);
-                ForceComputer forceComputer;
+                const ForceComputer forceComputer;
                 MsgHandler msghandler;
-                auto waterTypes = [](MolProp *mp)
+                const auto waterTypes = [](MolProp *mp)
                 {
                     for(auto &experiment : *mp->experiment())
                     {
@@ -2936,7 +2936,7 @@ TEST_F(PropertyDevComputerTest, EspCloudWidthsStayCurrent)
                 mol.qProps()->push_back(std::move(grid));
                 EspDevComputer computer;
                 std::vector<double> initial;
-                auto initialAtoms = mol.atomsConst();
+                const auto initialAtoms = mol.atomsConst();
                 for(double value : { 10.0, 20.0, 10.0 })
                 {
                     width->forceSetValue(value);
@@ -2987,9 +2987,9 @@ TEST_F(PropertyDevComputerTest, EspCloudWidthsStayCurrent)
                         width->forceSetValue(10);
                         cached->updateZeta(initialAtoms, &pd);
                         width->forceSetValue(value);
-                        auto cubeFile = fileManager().getTemporaryFilePath(
-                            "width-" + std::to_string(static_cast<int>(distribution)) + "-" +
-                            std::to_string(row) + "-" + std::to_string(converted) + ".cube");
+                        const auto cubeFile = fileManager().getTemporaryFilePath(
+                                  "width-" + std::to_string(static_cast<int>(distribution)) + "-" +
+                                  std::to_string(row) + "-" + std::to_string(converted) + ".cube");
                         mol.GenerateCube(&msghandler, &pd, mol.xOriginal(), &forceComputer,
                                            0.15, 0.25, nullptr, nullptr, nullptr, cubeFile.c_str(),
                                            nullptr, nullptr, nullptr, nullptr, nullptr);
@@ -3029,7 +3029,7 @@ TEST_F(PropertyDevComputerTest, EspPolarizable)
 // number of reference tensors
 TEST_F(PropertyDevComputerTest, Polarizability)
 {
-    ForceComputer forceComputer;
+    const ForceComputer forceComputer;
     MsgHandler    msghandler;
     auto          pd   = getForceField("ACS-pg1");
     ASSERT_TRUE(pd->polarizable());
@@ -3039,7 +3039,7 @@ TEST_F(PropertyDevComputerTest, Polarizability)
     EXPECT_NE(1, convert);
     for(auto &mol : mols)
     {
-        std::vector<ACTMol *> one = { &mol };
+        const std::vector<ACTMol *> one = { &mol };
         std::map<eRMS, FittingTarget> targets;
         targets.insert({eRMS::Polar, FittingTarget(eRMS::Polar, iMolSelect::Train)});
         targets.find(eRMS::Polar)->second.setWeight(1);
@@ -3091,7 +3091,7 @@ TEST_F(PropertyDevComputerTest, HarmonicsIntensities)
 // scale of the Huber loss is not changed by the weight.
 TEST_F(PropertyDevComputerTest, EpotBoltzmannHuber)
 {
-    ForceComputer forceComputer;
+    const ForceComputer forceComputer;
     MsgHandler    msghandler;
     auto          pd   = getForceField("ACS-g2");
     auto          mols = prepareMolecules(&msghandler, pd, &forceComputer);
@@ -3107,10 +3107,10 @@ TEST_F(PropertyDevComputerTest, EpotBoltzmannHuber)
     for(auto &mol : mols)
     {
         const auto &coords = *mol.monomerCoords(0);
-        auto        epot   = mol.conformationData(0)->energies.find(InteractionType::EPOT);
+        const auto  epot   = mol.conformationData(0)->energies.find(InteractionType::EPOT);
         for(size_t i = 0; i < coords.size(); i++)
         {
-            auto ee = coords[i].eMap.find(InteractionType::EPOT);
+            const auto ee = coords[i].eMap.find(InteractionType::EPOT);
             if (coords[i].eMap.end() == ee || !ee->second.haveQM() || !epot.has(i))
             {
                 continue;
@@ -3132,11 +3132,11 @@ TEST_F(PropertyDevComputerTest, EpotBoltzmannHuber)
 // frequencies of the following molecules are used
 TEST_F(PropertyDevComputerTest, HarmonicsAfterFailedMinimization)
 {
-    ForceComputer forceComputer;
+    const ForceComputer forceComputer;
     MsgHandler    msghandler;
     auto          pd = getForceField("ACS-g2");
     // Reference frequencies, as many as each molecule has
-    auto addHarmonics = [](MolProp *mp)
+    const auto addHarmonics = [](MolProp *mp)
     {
         size_t natom = (*mp->experiment())[0].NAtom();
         auto   mpo   = MolPropObservable::FREQUENCY;
@@ -3155,7 +3155,7 @@ TEST_F(PropertyDevComputerTest, HarmonicsAfterFailedMinimization)
         std::swap(mols[0], mols[1]);
     }
     auto entries = mols[0].topologyPtr()->entriesPtr();
-    auto bonds   = entries->find(InteractionType::BONDS);
+    const auto bonds   = entries->find(InteractionType::BONDS);
     ASSERT_TRUE(entries->end() != bonds);
     for(auto &e : bonds->second)
     {

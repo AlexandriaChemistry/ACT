@@ -203,10 +203,10 @@ public:
                               iMolSelect                           ims);
 
     //! \brief Constructor
-    ACMFitnessComputer() {}
+    ACMFitnessComputer() = default;
 
     //! \brief Destructor
-    virtual ~ACMFitnessComputer();
+    ~ACMFitnessComputer() override;
 
     /*! Initalize stuff
      * \param[in] msghandler   Message Handler
@@ -249,7 +249,7 @@ public:
      */
     void compute(MsgHandler                *msghandler,
                  ga::Genome                *genome,
-                 iMolSelect                 trgtFit);
+                 iMolSelect                 trgtFit) override;
 
     /*! \brief Distributes the parameters from middlemen to helpers
      * \param[in] msghandler Message Handler

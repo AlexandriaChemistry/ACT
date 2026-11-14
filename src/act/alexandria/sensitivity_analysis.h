@@ -98,7 +98,7 @@ private:
     nlohmann::ordered_json json_;
 public:
     //! Constructor
-    SensitivityAnalysis() {}
+    SensitivityAnalysis() = default;
     /*!
      * \brief Perform a sensitivity analysis by systematically changing all parameters and
      * re-evaluating the \f$ \chi^2 \f$.

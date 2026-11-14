@@ -142,7 +142,7 @@ void HybridGAMC::runQueue(GenePool                     *pool,
     std::map<int, std::vector<size_t>> busy;
     size_t                             next = 0;
     const size_t                       nAtOnce = std::max(1, gach_->lockstep());
-    auto give = [&](int dest)
+    const auto give = [&](int dest)
     {
         std::vector<const ga::Genome *> genomes;
         std::vector<int>                taskSeeds;
@@ -167,7 +167,7 @@ void HybridGAMC::runQueue(GenePool                     *pool,
     {
         // IV. The first middleman that is done gets the next task
         int  src = cr->probeAny();
-        auto bt  = busy.find(src);
+        const auto bt  = busy.find(src);
         if (bt == busy.end())
         {
             GMX_THROW(gmx::InternalError(gmx::formatString("Message from %d, which has no task", src).c_str()));
@@ -200,7 +200,7 @@ bool HybridGAMC::evolve(alexandria::MsgHandler       *msghandler,
                         std::map<iMolSelect, Genome> *bestGenome)
 {
     static const size_t timer = alexandria::Timings::instance().index("Genetic algorithm");
-    alexandria::ScopedTimer scoped(timer);
+    const alexandria::ScopedTimer scoped(timer);
     auto cr = sii_->commRec();
     //! \todo have we already checked that the number of processors is the correct one?
     if (cr->nmiddlemen() < 2)
@@ -390,7 +390,7 @@ bool HybridGAMC::evolve(alexandria::MsgHandler       *msghandler,
     bool         bestPoolWritten = true;
 
     // When random initialization, assume a better minimum has been found no matter what
-    bool bMinimum = gach_->randomInit() ? true : false;
+    bool bMinimum = gach_->randomInit();
     msghandler->write(gmx::formatString("Starting %d generations of force field training.\n",
                                         gach_->maxGenerations()));
 
@@ -627,10 +627,10 @@ bool HybridGAMC::evolve(alexandria::MsgHandler       *msghandler,
             time_t diff_time   = my_time - start_time;
             time_t finish_time = my_time + ((diff_time / generation) *
                                             (gach_->maxGenerations() - generation));
-            std::string t_now(std::ctime(&my_time));
-            std::string t_finish(std::ctime(&finish_time));
+            const std::string t_now(std::ctime(&my_time));
+            const std::string t_finish(std::ctime(&finish_time));
             // regex code from https://www.systutorials.com/how-to-remove-newline-characters-from-a-string-in-c/
-            std::regex newlines_re("\n+");
+            const std::regex newlines_re("\n+");
             msg_start = gmx::formatString("Generation %d/%d. Time: %s, expect to finish at %s",
                                           generation, gach_->maxGenerations(),
                                           std::regex_replace(t_now, newlines_re, "").c_str(),
@@ -641,7 +641,7 @@ bool HybridGAMC::evolve(alexandria::MsgHandler       *msghandler,
         const auto oldBest     = (*bestGenome)[iMolSelect::Train];
         if (tmpGenome.fitness(iMolSelect::Train) < oldBest.fitness(iMolSelect::Train))
         {
-            auto mess = gmx::formatString("\n%s. New best individual for train", msg_start.c_str());
+            const auto mess = gmx::formatString("\n%s. New best individual for train", msg_start.c_str());
             msghandler->write(tmpGenome.print(mess.c_str()));
             (*bestGenome)[iMolSelect::Train] = tmpGenome;
             bMinimum = true;
@@ -663,7 +663,7 @@ bool HybridGAMC::evolve(alexandria::MsgHandler       *msghandler,
             const auto oldBestTest = (*bestGenome)[iMolSelect::Test];
             if (tmpGenome.fitness(iMolSelect::Test) < oldBestTest.fitness(iMolSelect::Test))
             {
-                auto mess = gmx::formatString("%s. New best individual for test", msg_start.c_str());
+                const auto mess = gmx::formatString("%s. New best individual for test", msg_start.c_str());
                 (*bestGenome)[iMolSelect::Test] = tmpGenome;
                 msghandler->write(tmpGenome.print(mess.c_str()));
             }
@@ -731,11 +731,11 @@ bool HybridGAMC::evolve(alexandria::MsgHandler       *msghandler,
                 {
                     pairs = gmx::formatString(" and %zu/%zu pairs", res.nPairsConverged, res.nPairs);
                 }
-                auto msg = gmx::formatString("Generation %d/%d. Curvature analysis (%s): %zu/%zu parameters%s converged, %sin a local minimum",
-                                             generation, gach_->maxGenerations(),
-                                             alexandria::sensitivityModeToString(mode).c_str(),
-                                             res.nParametersConverged, res.nParameters,
-                                             pairs.c_str(), minimum ? "" : "not ");
+                const auto msg = gmx::formatString("Generation %d/%d. Curvature analysis (%s): %zu/%zu parameters%s converged, %sin a local minimum",
+                                                   generation, gach_->maxGenerations(),
+                                                   alexandria::sensitivityModeToString(mode).c_str(),
+                                                   res.nParametersConverged, res.nParameters,
+                                                   pairs.c_str(), minimum ? "" : "not ");
                 msghandler->write(msg);
             }
         }

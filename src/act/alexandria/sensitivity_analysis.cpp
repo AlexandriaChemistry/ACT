@@ -178,7 +178,7 @@ bool SensitivityAnalysis::run(MsgHandler           *msghandler,
                               bool                  useMiddlemen)
 {
     static const size_t timer = Timings::instance().index("Sensitivity analysis");
-    ScopedTimer         scoped(timer);
+    const ScopedTimer   scoped(timer);
     std::vector<double> *param = genome->basesPtr();
     const auto upperBound      = sii->upperBound();
     const auto lowerBound      = sii->lowerBound();
@@ -188,14 +188,14 @@ bool SensitivityAnalysis::run(MsgHandler           *msghandler,
     forceConstant_.clear();
     result_ = SensitivityResult();
     json_   = nlohmann::ordered_json();
-    if (param->size() == 0 || mode == SensitivityMode::No)
+    if (param->empty() || mode == SensitivityMode::No)
     {
         return true;
     }
     bool   twoD   = mode == SensitivityMode::TwoD;
     size_t np     = param->size();
     size_t npairs = twoD ? np*(np - 1)/2 : 0;
-    std::set<int> changed;
+    const std::set<int> changed;
     sii->updateForceField(msghandler, changed, genome->bases());
     auto cdc    = CalcDev::Compute;
     fitComp->distributeTasks(cdc);
@@ -413,7 +413,7 @@ bool SensitivityAnalysis::run(MsgHandler           *msghandler,
 
 void SensitivityAnalysis::write(const std::string &fileName) const
 {
-    FILE *fp = gmx_ffopen(fileName.c_str(), "w");
+    FILE *fp = gmx_ffopen(fileName, "w");
     fprintf(fp, "%s\n", json_.dump(2).c_str());
     gmx_ffclose(fp);
 }

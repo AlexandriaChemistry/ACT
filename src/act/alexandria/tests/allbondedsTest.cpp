@@ -68,7 +68,7 @@ class AllBondedsTest : public gmx::test::CommandLineTestBase
  
         AllBondedsTest () : checker_(this->rootChecker())
         {
-            auto tolerance = gmx::test::relativeToleranceAsFloatingPoint(1.0, GMX_DOUBLE ? 1e-10 : 5e-2);
+            const auto tolerance = gmx::test::relativeToleranceAsFloatingPoint(1.0, GMX_DOUBLE ? 1e-10 : 5e-2);
             checker_.setDefaultTolerance(tolerance);
         }
 
@@ -80,7 +80,7 @@ class AllBondedsTest : public gmx::test::CommandLineTestBase
 
         void runOBstats(const std::vector<double> &xx)
         {
-            Identifier atom("h");
+            const Identifier atom("h");
             OneBonded ob(atom);
             for(const auto &x : xx)
             {
@@ -108,12 +108,12 @@ class AllBondedsTest : public gmx::test::CommandLineTestBase
 };
 
 TEST_F (AllBondedsTest, OneBondedStats){
-    std::vector<double> xx = { 103, 104, 105, 106.5, 107, 109, 106, 104, 107 };
+    const std::vector<double> xx = { 103, 104, 105, 106.5, 107, 109, 106, 104, 107 };
     runOBstats(xx);
 }
 
 TEST_F (AllBondedsTest, OneBondedStatsEmpty){
-    std::vector<double> xx;
+    const std::vector<double> xx;
     runOBstats(xx);
 }
 
@@ -133,7 +133,7 @@ TEST(AllBondedsVsiteTest, ExtractGeometries)
     pd.setPolarizable(false);
     std::vector<MolProp> mps;
     MolPropRead(&msghandler, fileManager.getInputFilePath("molprop/molprop.xml").c_str(), &mps);
-    auto  selName = fileManager.getTemporaryFilePath("selection.dat");
+    const auto selName = fileManager.getTemporaryFilePath("selection.dat");
     FILE *fp      = fopen(selName.c_str(), "w");
     for(const char *mol : { "1-butanol", "acetone", "water" })
     {
@@ -193,7 +193,7 @@ TEST(AllBondedsVsiteTest, ExtractGeometries)
     gmx::StringOutputStream stream;
     gmx::TextWriter         tw(&stream);
     bondeds.writeSummary(&tw);
-    auto summary = stream.toString();
+    const auto summary = stream.toString();
     EXPECT_NE(std::string::npos, summary.find("BONDS")) << summary;
     EXPECT_NE(std::string::npos, summary.find("ANGLES")) << summary;
 }
@@ -228,7 +228,7 @@ void updateBondeds(const std::string              &ffName,
         // The compound is named after its file
         mps.back().SetMolname(s.substr(0, s.find('.')));
     }
-    auto  selName = fileManager.getTemporaryFilePath("selection.dat");
+    const auto selName = fileManager.getTemporaryFilePath("selection.dat");
     FILE *fp      = fopen(selName.c_str(), "w");
     for (const auto &mp : mps)
     {
@@ -251,7 +251,7 @@ void updateBondeds(const std::string              &ffName,
 //! \return The value of a parameter
 double value(const ForceFieldParameterMap &params, const std::string &name)
 {
-    auto p = params.find(name);
+    const auto p = params.find(name);
     if (p == params.end())
     {
         ADD_FAILURE() << "No parameter " << name;
@@ -317,8 +317,8 @@ TEST(AllBondedsUpdateTest, UreyBradleyFourier)
     {
         auto atoms = a.first.atoms();
         auto bo    = a.first.bondOrders();
-        Identifier bij({ atoms[0], atoms[1] }, { bo[0] }, CanSwap::Yes);
-        Identifier bkj({ atoms[2], atoms[1] }, { bo[1] }, CanSwap::Yes);
+        const Identifier bij({ atoms[0], atoms[1] }, { bo[0] }, CanSwap::Yes);
+        const Identifier bkj({ atoms[2], atoms[1] }, { bo[1] }, CanSwap::Yes);
         double r12   = bonds.findParameterTypeConst(bij, "bondlength").value();
         double r23   = bonds.findParameterTypeConst(bkj, "bondlength").value();
         double theta = value(a.second, "ub_angle")*M_PI/180;
@@ -355,8 +355,8 @@ TEST(AllBondedsUpdateTest, LinearAngles)
     {
         auto atoms = a.first.atoms();
         auto bo    = a.first.bondOrders();
-        Identifier bij({ atoms[0], atoms[1] }, { bo[0] }, CanSwap::Yes);
-        Identifier bjk({ atoms[1], atoms[2] }, { bo[1] }, CanSwap::Yes);
+        const Identifier bij({ atoms[0], atoms[1] }, { bo[0] }, CanSwap::Yes);
+        const Identifier bjk({ atoms[1], atoms[2] }, { bo[1] }, CanSwap::Yes);
         double rij = bonds.findParameterTypeConst(bij, "bondlength").value();
         double rjk = bonds.findParameterTypeConst(bjk, "bondlength").value();
         EXPECT_NEAR(rjk/(rij+rjk), value(a.second, "a"), 1e-6) << a.first.id();

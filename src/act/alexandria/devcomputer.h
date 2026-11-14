@@ -144,12 +144,12 @@ public:
      * \param[in]    forcefield    The force field containing the newest parameters
      * \param[in]    lossFunction  Functional form of the loss function
      */
-    virtual void calcDeviation(MsgHandler                    *msghandler,
-                               const ForceComputer           *forceComputer,
-                               const std::vector<ACTMol *>   &actmols,
-                               std::map<eRMS, FittingTarget> *targets,
-                               const ForceField              *forcefield,
-                               LossFunction                   lossFunction);
+    void calcDeviation(MsgHandler                    *msghandler,
+                       const ForceComputer           *forceComputer,
+                       const std::vector<ACTMol *>   &actmols,
+                       std::map<eRMS, FittingTarget> *targets,
+                       const ForceField              *forcefield,
+                       LossFunction                   lossFunction) override;
 
     /*! \brief The penalty of one molecule, as calcDeviation adds it
      * \param[in] mol          The molecule, with its charges
@@ -221,12 +221,12 @@ public:
      * \param[in]    forcefield    The force field containing the newest parameters
      * \param[in]    lossFunction  Functional form of the loss function
      */
-    virtual void calcDeviation(MsgHandler                    *msghandler,
-                               const ForceComputer           *forceComputer,
-                               const std::vector<ACTMol *>   &actmols,
-                               std::map<eRMS, FittingTarget> *targets,
-                               const ForceField              *forcefield,
-                               LossFunction                   lossFunction);
+    void calcDeviation(MsgHandler                    *msghandler,
+                       const ForceComputer           *forceComputer,
+                       const std::vector<ACTMol *>   &actmols,
+                       std::map<eRMS, FittingTarget> *targets,
+                       const ForceField              *forcefield,
+                       LossFunction                   lossFunction) override;
 };
 
 /*!
@@ -265,12 +265,12 @@ public:
      * \param[in]    forcefield    The force field containing the newest parameters
      * \param[in]    lossFunction  Not used
      */
-    virtual void calcDeviation(MsgHandler                    *msghandler,
-                               const ForceComputer           *forceComputer,
-                               const std::vector<ACTMol *>   &actmols,
-                               std::map<eRMS, FittingTarget> *targets,
-                               const ForceField              *forcefield,
-                               LossFunction                   lossFunction);
+    void calcDeviation(MsgHandler                    *msghandler,
+                       const ForceComputer           *forceComputer,
+                       const std::vector<ACTMol *>   &actmols,
+                       std::map<eRMS, FittingTarget> *targets,
+                       const ForceField              *forcefield,
+                       LossFunction                   lossFunction) override;
 
 };
 
@@ -298,12 +298,12 @@ public:
      * \param[in]    forcefield    The force field containing the newest parameters
      * \param[in]    lossFunction  Functional form of the loss function
      */
-    virtual void calcDeviation(MsgHandler                    *msghandler,
-                               const ForceComputer           *forceComputer,
-                               const std::vector<ACTMol *>   &actmols,
-                               std::map<eRMS, FittingTarget> *targets,
-                               const ForceField              *forcefield,
-                               LossFunction                   lossFunction);
+    void calcDeviation(MsgHandler                    *msghandler,
+                       const ForceComputer           *forceComputer,
+                       const std::vector<ACTMol *>   &actmols,
+                       std::map<eRMS, FittingTarget> *targets,
+                       const ForceField              *forcefield,
+                       LossFunction                   lossFunction) override;
 
 };
 
@@ -336,12 +336,12 @@ public:
      * \param[in]    forcefield    The force field containing the newest parameters
      * \param[in]    lossFunction  Functional form of the loss function
      */
-    virtual void calcDeviation(MsgHandler                    *msghandler,
-                               const ForceComputer           *forceComputer,
-                               const std::vector<ACTMol *>   &actmols,
-                               std::map<eRMS, FittingTarget> *targets,
-                               const ForceField              *forcefield,
-                               LossFunction                   lossFunction);
+    void calcDeviation(MsgHandler                    *msghandler,
+                       const ForceComputer           *forceComputer,
+                       const std::vector<ACTMol *>   &actmols,
+                       std::map<eRMS, FittingTarget> *targets,
+                       const ForceField              *forcefield,
+                       LossFunction                   lossFunction) override;
 
 
     //! \return The multipole
@@ -484,12 +484,12 @@ public:
      * \param[in]    forcefield    The force field containing the newest parameters
      * \param[in]    lossFunction  Functional form of the loss function
      */
-    virtual void calcDeviation(MsgHandler                    *msghandler,
-                               const ForceComputer           *forceComputer,
-                               const std::vector<ACTMol *>   &actmols,
-                               std::map<eRMS, FittingTarget> *targets,
-                               const ForceField              *forcefield,
-                               LossFunction                   lossFunction);
+    void calcDeviation(MsgHandler                    *msghandler,
+                       const ForceComputer           *forceComputer,
+                       const std::vector<ACTMol *>   &actmols,
+                       std::map<eRMS, FittingTarget> *targets,
+                       const ForceField              *forcefield,
+                       LossFunction                   lossFunction) override;
 
 };
 

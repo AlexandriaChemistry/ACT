@@ -85,7 +85,7 @@ public:
     /*! \brief Copy the genome to this individual
      * \param[in] genome Complete input genome
      */
-    virtual void copyGenome(const ga::Genome &genome);
+    void copyGenome(const ga::Genome &genome) override;
 
     /* * * * * * * * * * * * * * * * * * * * * *
     * END: Cloning                             *

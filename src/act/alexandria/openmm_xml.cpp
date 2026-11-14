@@ -434,7 +434,7 @@ void OpenMMWriter::addXmlElemMass(xmlNodePtr          parent,
                                   const ForceField   *pd,
                                   const ParticleType *aType)
 {
-    std::string poltype("poltype");
+    const std::string poltype("poltype");
     switch (aType->apType())
     {
     case ActParticle::Atom:
@@ -511,8 +511,7 @@ void OpenMMWriter::addXmlResidueBonds(xmlNodePtr        residuePtr,
     auto itbonds = InteractionType::BONDS;
     if (pd->interactionPresent(itbonds))
     {
-        auto fs = pd->findForcesConst(itbonds);
-        
+
         if (topol->hasEntry(itbonds))
         {
             auto names = particleNames(topol->atoms());
@@ -614,11 +613,11 @@ static void add_potential(xmlNodePtr       parent,
 static void add_combrules(xmlNodePtr                     parent,
                           const ForceFieldParameterList &fs)
 {
-    const auto crules = fs.combinationRules();
+    const auto &crules = fs.combinationRules();
     for(const auto &cr : crules)
     {
         // \todo Check GeneralizedMean implementation here and in act_openmm.py
-        std::string name = "cr-" + cr.first + "_" + combinationRuleName(cr.second.rule());
+        const std::string name = "cr-" + cr.first + "_" + combinationRuleName(cr.second.rule());
         add_global(parent, name, 1);
         if (CombRule::GeneralizedMean == cr.second.rule())
         {
@@ -648,14 +647,14 @@ void OpenMMWriter::addXmlSpecial(xmlNodePtr                       parent,
         {
             continue;
         }
-        auto fs      = pd->findForcesConst(itype);
+        const auto &fs      = pd->findForcesConst(itype);
         if (fs.parametersConst().empty())
         {
             continue;
         }
         auto specPtr = add_xml_child(parent, exml_names(xmlEntryOpenMM::CUSTOMNONBONDEDFORCE));
         add_potential(specPtr, fs.potential());
-        std::string nnn("nexcl");
+        const std::string nnn("nexcl");
         if (fs.optionExists(nnn))
         {
             setNexcl(std::stoi(fs.optionValue(nnn)));
@@ -665,7 +664,7 @@ void OpenMMWriter::addXmlSpecial(xmlNodePtr                       parent,
         // Bondcutoff should be the same for all NonBonded and CustomNobonded forces
         // even though  we determine exclusions ourselves in the Python interface.
         add_xml_int(specPtr, "bondCutoff", nexcl());
-        auto energy = potentialToEnergy(fs.potential());
+        const auto energy = potentialToEnergy(fs.potential());
         add_xml_char(specPtr, "energy", energy.c_str());
         std::string prefactor("prefactor-");
         prefactor += potentialToPreFactor(fs.potential());
@@ -691,14 +690,14 @@ void OpenMMWriter::addXmlSpecial(xmlNodePtr                       parent,
             auto aType = pd->findParticleType(fft.first);
             for(int ii = 1; ii <= fft.second; ii++)
             {
-                std::string mytype(it.second);
+                const std::string mytype(it.second);
                 if (!aType->hasOption(mytype))
                 {
                     fprintf(stderr, "Incomplete force field. No option %s for %s.\n",
                             mytype.c_str(), fft.first.c_str());
                     continue;
                 }
-                auto myId  = Identifier(aType->optionValue(mytype));
+                const auto myId  = Identifier(aType->optionValue(mytype));
                 std::string type1 = fft.first;
                 if (addNumbersToAtomTypes_)
                 {
@@ -747,7 +746,7 @@ void OpenMMWriter::addXmlNonbonded(MsgHandler                      *msghandler,
                                    const std::map<std::string, int> &ffTypeMap)
 {
     // Fetch number of exclusions. 3 is the default in OpenMM.
-    auto fs     = pd->findForcesConst(InteractionType::VDW);
+    const auto &fs     = pd->findForcesConst(InteractionType::VDW);
     if (pd->nexcl() >= 0)
     {
         setNexcl(pd->nexcl());
@@ -766,11 +765,11 @@ void OpenMMWriter::addXmlNonbonded(MsgHandler                      *msghandler,
         };
         for(const auto &cr_e : cr_expect)
         {
-            auto ccrr = cr.find(cr_e.first);
+            const auto ccrr = cr.find(cr_e.first);
             if (ccrr == cr.end())
             {
                 msghandler->msg(ACTStatus::Warning,
-                                gmx::formatString("No combination rule for %s", cr_e.first.c_str()).c_str());
+                                gmx::formatString("No combination rule for %s", cr_e.first.c_str()));
             }
             else if (combinationRuleName(ccrr->second.rule()) != cr_e.second)
             {
@@ -782,7 +781,7 @@ void OpenMMWriter::addXmlNonbonded(MsgHandler                      *msghandler,
     else
     {
         customNBPtr  = add_xml_child(parent, exml_names(xmlEntryOpenMM::CUSTOMNONBONDEDFORCE));
-        auto energy = potentialToEnergy(fs.potential());
+        const auto energy = potentialToEnergy(fs.potential());
         add_xml_char(customNBPtr, "energy", energy.c_str());
         // Bondcutoff should be zero for CustomNobondedForce since we determine exclusions
         // ourselves in the Python interface.
@@ -830,13 +829,13 @@ void OpenMMWriter::addXmlNonbonded(MsgHandler                      *msghandler,
         auto aType = pd->findParticleType(fft.first);
         for(int i = 1; i <= fft.second; i++)
         {
-            std::string vdwtype("vdwtype");
+            const std::string vdwtype("vdwtype");
             if (!aType->hasOption(vdwtype))
             {
                 gmx_fatal(FARGS, "Incorrect force field. No option %s for %s.\n",
                           vdwtype.c_str(), fft.first.c_str());
             }
-            auto vdwId = Identifier(aType->optionValue(vdwtype));
+            const auto vdwId = Identifier(aType->optionValue(vdwtype));
             auto param = fs.findParameterMapConst(Identifier(vdwId));
             if (minTrain(param) < ntrain_)
             {
@@ -989,7 +988,7 @@ void OpenMMWriter::addXmlPolarization(xmlNodePtr                         parent,
     // !!! Shell particle has to be type1, core particle has to be type2 !!!
     // OpenMM finds the parent of a shell from its type, hence each shell
     // type has one parent type, see addXmlForceField.
-    auto fs             = pd->findForcesConst(InteractionType::POLARIZATION);
+    const auto &fs             = pd->findForcesConst(InteractionType::POLARIZATION);
     auto pol_name       = potentialToParameterName(fs.potential());
     auto polPtr         = add_xml_child(parent, exml_names(xmlEntryOpenMM::DRUDEFORCE));
     std::vector<t_hyper_stuff> stuff;
@@ -1000,12 +999,12 @@ void OpenMMWriter::addXmlPolarization(xmlNodePtr                         parent,
         {
             continue;
         }
-        std::string poltype = aType->optionValue("poltype");
+        const std::string poltype = aType->optionValue("poltype");
         auto param          = fs.findParameterMapConst(Identifier(poltype));
         if (minTrain(param) >= ntrain_)
         {
-            auto idType1 = Identifier({poltype});
-            auto alpha   = fs.findParameterTypeConst(idType1, pol_name[polALPHA]);
+            const auto idType1 = Identifier({poltype});
+            const auto alpha   = fs.findParameterTypeConst(idType1, pol_name[polALPHA]);
             // Now check for hyper polarizability, which force fields may leave out
             double fchyper = 0, rhyper = 0;
             if (param.count(pol_name[polFCHYPER]) > 0 && param.count(pol_name[polRHYPER]) > 0)
@@ -1058,7 +1057,7 @@ void OpenMMWriter::makeXmlMap(xmlNodePtr        parent,
             continue;
         }
         xmlNodePtr fsPtr = nullptr;
-        auto energy = potentialToEnergy(fs.second.potential());
+        const auto energy = potentialToEnergy(fs.second.potential());
         auto pname  = potentialToParameterName(fs.second.potential());
         switch (fs.second.potential())
         {
@@ -1157,7 +1156,7 @@ void OpenMMWriter::addTopologyEntries(MsgHandler                                
         {
             continue;
         }
-        auto pname = potentialToParameterName(fs.second.potential());
+        const auto pname = potentialToParameterName(fs.second.potential());
         if (BondClassUsed->end() == BondClassUsed->find(fs.first))
         {
             // Add empty set
@@ -1182,7 +1181,7 @@ void OpenMMWriter::addTopologyEntries(MsgHandler                                
                 {
                 case Potential::HARMONIC_BONDS:
                     {
-                        std::vector<const char *> omm_bonds = { "k", "length", nullptr };
+                        const std::vector<const char *> omm_bonds = { "k", "length", nullptr };
                         addXmlBond(xmlMap_[fs.first], xmlEntryOpenMM::BOND_RES,
                                    atoms, omm_bonds, entry->params());
                     }
@@ -1195,7 +1194,7 @@ void OpenMMWriter::addTopologyEntries(MsgHandler                                
                     break;
                 case Potential::HARMONIC_ANGLES:
                     {
-                        std::vector<const char *> omm_angles = { "k", "angle" };
+                        const std::vector<const char *> omm_angles = { "k", "angle" };
                         addXmlBond(xmlMap_[fs.first], xmlEntryOpenMM::ANGLE_CLASS,
                                    atoms, omm_angles, entry->params());
                     }
@@ -1254,7 +1253,7 @@ static void add_xml_weight(xmlNodePtr  parent,
                            const char *wname,
                            double      w)
 {
-    auto w1 = gmx::formatString("%.8f", w);
+    const auto w1 = gmx::formatString("%.8f", w);
     add_xml_char(parent, wname, w1.c_str());
 }
 
@@ -1316,7 +1315,7 @@ void OpenMMWriter::addXmlForceField(MsgHandler                *msghandler,
         xmlNodePtr residuePtr  = nullptr;
         const auto &topologies = fragmentHandler->topologies();
         // The atoms that are part of the present residue
-        std::set<int>         AtomsInResidue;
+        const std::set<int>   AtomsInResidue;
         for(size_t fff = 0; fff < topologies.size(); fff++)
         {
             if (InchiUsed.find(fragIds[fff]) != InchiUsed.end())
@@ -1333,7 +1332,7 @@ void OpenMMWriter::addXmlForceField(MsgHandler                *msghandler,
                     
             // Check whether we have to terminate the residue by defining bonds
             residuePtr = add_xml_child(xmlResiduePtr, exml_names(xmlEntryOpenMM::RESIDUE));
-            auto resname = residueNames_.find(fragIds[fff]);
+            const auto resname = residueNames_.find(fragIds[fff]);
             if (residueNames_.end() == resname)
             {
                 GMX_THROW(gmx::InternalError(gmx::formatString("No residue name for %s", fragIds[fff].c_str()).c_str()));
@@ -1355,10 +1354,10 @@ void OpenMMWriter::addXmlForceField(MsgHandler                *msghandler,
                     continue;
                 }
                 // First do atom type stuff
-                auto ffType            = myatoms[i].ffType();
+                const auto ffType            = myatoms[i].ffType();
                 // Local index, default 1
                 int localIndex         = 1;
-                auto ffLocalPtr        = fftypeLocalMap.find(ffType);
+                const auto ffLocalPtr        = fftypeLocalMap.find(ffType);
                 if (fftypeLocalMap.end() != ffLocalPtr)
                 {
                     // Increase localPtr if needed and store it in variable
@@ -1400,7 +1399,7 @@ void OpenMMWriter::addXmlForceField(MsgHandler                *msghandler,
                     auto aType = pd->findParticleType(ffType);
                     // Make OpenMM class, that does not need the numbering.
                     std::string openMMclass = ffType;
-                    std::string btype("bondtype");
+                    const std::string btype("bondtype");
                     if (aType->hasOption(btype))
                     {
                         openMMclass = aType->optionValue(btype);
@@ -1435,8 +1434,8 @@ void OpenMMWriter::addXmlForceField(MsgHandler                *msghandler,
                         }
                         // The same OpenMM type for all shells with the same
                         // OpenMM type of their parent
-                        auto shellFfType = myatoms[shell].ffType();
-                        auto key         = openMMtype + shellExt;
+                        const auto shellFfType = myatoms[shell].ffType();
+                        const auto key         = openMMtype + shellExt;
                         auto known       = shellOpenMMType.find(key);
                         if (shellOpenMMType.end() == known)
                         {
@@ -1450,7 +1449,7 @@ void OpenMMWriter::addXmlForceField(MsgHandler                *msghandler,
                             }
                             else
                             {
-                                auto pt = shellParentType.find(shellFfType);
+                                const auto pt = shellParentType.find(shellFfType);
                                 if (shellParentType.end() != pt && pt->second != ffType)
                                 {
                                     msghandler->msg(ACTStatus::Error,
@@ -1469,7 +1468,7 @@ void OpenMMWriter::addXmlForceField(MsgHandler                *msghandler,
                             {
                                 auto shellAType = pd->findParticleType(shellFfType);
                                 std::string openMMclass = shellFfType;
-                                std::string btype("bondtype");
+                                const std::string btype("bondtype");
                                 if (shellAType->hasOption(btype))
                                 {
                                     openMMclass = shellAType->optionValue(btype);
@@ -1533,10 +1532,10 @@ void OpenMMWriter::addXmlForceField(MsgHandler                *msghandler,
                                     int ppp = 1;
                                     for(const auto &parent : cores)
                                     {
-                                        auto an = gmx::formatString("atomName%d", ppp);
+                                        const auto an = gmx::formatString("atomName%d", ppp);
                                         if (static_cast<size_t>(parent) < inames.size())
                                         {
-                                            add_xml_char(baby, an.c_str(), inames[parent].c_str());
+                                            add_xml_char(baby, an, inames[parent].c_str());
                                             // Add an (artificial) bond such that OpenMM will generate
                                             // exclusions for this. See
                                             // https://github.com/openmm/openmm/issues/811
@@ -1545,12 +1544,12 @@ void OpenMMWriter::addXmlForceField(MsgHandler                *msghandler,
                                             if (ppp == 1 || itp.first !=  InteractionType::VSITE1)
                                             {
                                                 addXmlResidueBond(residuePtr,
-                                                                  inames[i].c_str(), inames[parent].c_str());
+                                                                  inames[i], inames[parent]);
                                             }
                                         }
                                         else
                                         {
-                                            add_xml_char(baby, an.c_str(), myatoms[parent].name().c_str());
+                                            add_xml_char(baby, an, myatoms[parent].name().c_str());
                                         }
                                         ppp += 1;
                                     }
@@ -1609,7 +1608,7 @@ void OpenMMWriter::addXmlForceField(MsgHandler                *msghandler,
                                     default:
                                         msghandler->msg(ACTStatus::Warning,
                                                         gmx::formatString("InteractionType %s not supported yet.",
-                                                                          interactionTypeToString(itp.first).c_str()).c_str());
+                                                                          interactionTypeToString(itp.first).c_str()));
                                     }
                                 }
                             }
@@ -1774,7 +1773,7 @@ std::map<std::string, std::string> openMMResidueNames(MsgHandler                
     AlexandriaMols                     amols;
     std::map<std::string, std::string> names;
     std::set<std::string>              used;
-    auto addName = [&](const std::string &compound, const std::string &name)
+    const auto addName = [&](const std::string &compound, const std::string &name)
     {
         if (!validResidueName(name))
         {
@@ -1809,9 +1808,9 @@ std::map<std::string, std::string> openMMResidueNames(MsgHandler                
         }
         auto key  = entry.substr(0, eq);
         auto amol = amols.findMol(key);
-        auto cptr = std::find_if(compounds.begin(), compounds.end(),
-                                 [&](const std::string &id)
-                                 {
+        const auto cptr = std::find_if(compounds.begin(), compounds.end(),
+                                       [&](const std::string &id)
+                                       {
                                      auto known = amols.findInChi(id);
                                      return (id == key ||
                                              (amol && amol->inchi == id) ||
@@ -1848,7 +1847,7 @@ std::map<std::string, std::string> openMMResidueNames(MsgHandler                
         if (names.find(compound) == names.end())
         {
             auto        amol = amols.findInChi(compound);
-            std::string name = generateResidueName(amol ? amol->iupac : "", used);
+            const std::string name = generateResidueName(amol ? amol->iupac : "", used);
             used.insert(name);
             names.insert({ compound, name });
         }

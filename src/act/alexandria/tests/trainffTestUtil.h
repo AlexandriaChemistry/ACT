@@ -214,8 +214,8 @@ inline TrainOutput runTrainFF(gmx::test::TestFileManager                        
     }
     TrainOutput output;
     {
-        std::filesystem::path dir = std::filesystem::path(out["-g"]).parent_path();
-        ScopedWorkingDirectory cwd(dir);
+        const std::filesystem::path dir = std::filesystem::path(out["-g"]).parent_path();
+        const ScopedWorkingDirectory cwd(dir);
         output.status = train_ff(cmd.argc(), cmd.argv());
     }
     if (gmx_node_rank() == 0)
@@ -234,9 +234,9 @@ inline TrainOutput runTrainFF(gmx::test::TestFileManager                        
         output.log = readLines(out["-g"]);
         readChi2(output.log, &output);
         // The fitness files are named after the data set
-        auto fitness = out["-fitness"];
+        const auto fitness = out["-fitness"];
         output.fitness = readLines(fitness.substr(0, fitness.rfind(".")) + "_Train.dat");
-        std::ifstream ff(out["-o"]);
+        const std::ifstream ff(out["-o"]);
         std::stringstream buffer;
         buffer << ff.rdbuf();
         output.forceField = buffer.str();
@@ -258,7 +258,7 @@ inline void checkOutput(gmx::test::TestReferenceChecker *checker,
     auto params = checker->checkCompound("Parameters", "Best");
     for (const auto &p : tff["parameters"])
     {
-        auto name = p["class"].get<std::string>() + " " + p["name"].get<std::string>();
+        const auto name = p["class"].get<std::string>() + " " + p["name"].get<std::string>();
         params.checkReal(jsonNumber(p["best"]), name.c_str());
     }
     ASSERT_TRUE(tff.contains("statistics"));
@@ -307,7 +307,7 @@ inline void checkSensitivity2D(gmx::test::TestReferenceChecker *checker,
     }
     for (const auto &pair : sens["pairs"])
     {
-        auto label = pair["names"][0].get<std::string>() + " / " + pair["names"][1].get<std::string>();
+        const auto label = pair["names"][0].get<std::string>() + " / " + pair["names"][1].get<std::string>();
         ASSERT_EQ(3u, pair["grid"]["chi2"].size()) << label;
         for (const auto &row : pair["grid"]["chi2"])
         {
@@ -317,7 +317,7 @@ inline void checkSensitivity2D(gmx::test::TestReferenceChecker *checker,
                 EXPECT_TRUE(value.is_number()) << label;
             }
         }
-        auto shape = pair["shape"].get<std::string>();
+        const auto shape = pair["shape"].get<std::string>();
         EXPECT_TRUE(shape == "minimum" || shape == "saddle" || shape == "maximum" ||
                     shape == "degenerate") << label;
         bool conv = pair["converged"].get<bool>();
@@ -347,7 +347,7 @@ inline void checkSensitivity2D(gmx::test::TestReferenceChecker *checker,
     {
         auto i     = pair["i"].get<size_t>();
         auto j     = pair["j"].get<size_t>();
-        auto label = pair["names"][0].get<std::string>() + " / " + pair["names"][1].get<std::string>();
+        const auto label = pair["names"][0].get<std::string>() + " / " + pair["names"][1].get<std::string>();
         compound.checkReal(pair["a_ij"].get<double>()*delta[i]*delta[j], label.c_str());
     }
 }

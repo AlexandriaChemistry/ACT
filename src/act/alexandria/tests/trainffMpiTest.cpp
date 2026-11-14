@@ -124,7 +124,7 @@ protected:
                      const Options     &options,
                      size_t             nFitness)
     {
-        auto output = trainfftest::runTrainFF(&fileManager(), "train", ffName, molName, options);
+        const auto output = trainfftest::runTrainFF(&fileManager(), "train", ffName, molName, options);
         EXPECT_EQ(0, output.status);
         if (gmx_node_rank() == 0)
         {
@@ -158,12 +158,12 @@ protected:
 TEST_F(TrainFFMpiTest, HybridHydrogenFluoride)
 {
     auto options = combine(gaOptions("HYBRID", 3), mcmcOptions(2));
-    options.push_back({ "-fit", "charge eta chi zeta vs2a sigma epsilon gamma delta" });
-    options.push_back({ "-fc_allelec", "1" });
-    options.push_back({ "-fc_exch", "1" });
-    options.push_back({ "-fc_disp", "1" });
-    options.push_back({ "-fc_mu", "1" });
-    options.push_back({ "-fc_quad", "1" });
+    options.emplace_back("-fit", "charge eta chi zeta vs2a sigma epsilon gamma delta");
+    options.emplace_back("-fc_allelec", "1");
+    options.emplace_back("-fc_exch", "1");
+    options.emplace_back("-fc_disp", "1");
+    options.emplace_back("-fc_mu", "1");
+    options.emplace_back("-fc_quad", "1");
     // The initial population and one line per generation
     runAndCheck("4S-lj14-7-pg-hvdw.xml", "hf-hf", options, 4);
 }
@@ -172,10 +172,10 @@ TEST_F(TrainFFMpiTest, HybridHydrogenFluoride)
 TEST_F(TrainFFMpiTest, GAInterBooze)
 {
     auto options = gaOptions("GA", 5);
-    options.push_back({ "-fit", "sigma epsilon" });
-    options.push_back({ "-fc_allelec", "1" });
-    options.push_back({ "-fc_exch", "1" });
-    options.push_back({ "-fc_disp", "1" });
+    options.emplace_back("-fit", "sigma epsilon");
+    options.emplace_back("-fc_allelec", "1");
+    options.emplace_back("-fc_exch", "1");
+    options.emplace_back("-fc_disp", "1");
     // The initial population and one line per generation
     runAndCheck("lj-pc.xml", "booze-inter", options, 6);
 }
@@ -185,16 +185,16 @@ TEST_F(TrainFFMpiTest, GAInterBooze)
 TEST_F(TrainFFMpiTest, GAGenePool)
 {
     auto options = gaOptions("GA", 2);
-    options.push_back({ "-fit", "sigma epsilon" });
-    options.push_back({ "-fc_allelec", "1" });
-    options.push_back({ "-fc_exch", "1" });
-    options.push_back({ "-fc_disp", "1" });
-    auto first = trainfftest::runTrainFF(&fileManager(), "first", "lj-pc.xml", "booze-inter", options);
+    options.emplace_back("-fit", "sigma epsilon");
+    options.emplace_back("-fc_allelec", "1");
+    options.emplace_back("-fc_exch", "1");
+    options.emplace_back("-fc_disp", "1");
+    const auto first = trainfftest::runTrainFF(&fileManager(), "first", "lj-pc.xml", "booze-inter", options);
     EXPECT_EQ(0, first.status);
     // The pool is written by the master when there is a new best individual
-    auto pool = fileManager().getTemporaryFilePath("first-pool.csv");
+    const auto pool = fileManager().getTemporaryFilePath("first-pool.csv");
     auto continued = options;
-    continued.push_back({ "-gpin", pool });
+    continued.emplace_back("-gpin", pool);
     auto second = trainfftest::runTrainFF(&fileManager(), "second", "lj-pc.xml", "booze-inter", continued);
     EXPECT_EQ(0, second.status);
     if (gmx_node_rank() == 0)
@@ -236,11 +236,11 @@ TEST_F(TrainFFMpiTest, IdleProcess)
             o.second = std::to_string(popSize - 1);
         }
     }
-    options.push_back({ "-fit", "sigma epsilon" });
-    options.push_back({ "-fc_allelec", "1" });
-    options.push_back({ "-fc_exch", "1" });
-    options.push_back({ "-fc_disp", "1" });
-    auto output = trainfftest::runTrainFF(&fileManager(), "idle", "lj-pc.xml", "booze-inter", options);
+    options.emplace_back("-fit", "sigma epsilon");
+    options.emplace_back("-fc_allelec", "1");
+    options.emplace_back("-fc_exch", "1");
+    options.emplace_back("-fc_disp", "1");
+    const auto output = trainfftest::runTrainFF(&fileManager(), "idle", "lj-pc.xml", "booze-inter", options);
     EXPECT_EQ(0, output.status);
     if (gmx_node_rank() == 0)
     {
@@ -260,7 +260,7 @@ TEST_F(TrainFFMpiTest, IdleProcess)
 //! \return the contents of a file
 static std::string fileContents(const std::string &fileName)
 {
-    std::ifstream      in(fileName);
+    const std::ifstream in(fileName);
     std::ostringstream ss;
     ss << in.rdbuf();
     return ss.str();
@@ -273,22 +273,22 @@ static std::string fileContents(const std::string &fileName)
 TEST_F(TrainFFMpiTest, GenePoolInterval)
 {
     auto options = combine(gaOptions("HYBRID", 7), mcmcOptions(2));
-    options.push_back({ "-fit", "sigma epsilon" });
-    options.push_back({ "-fc_allelec", "1" });
-    options.push_back({ "-fc_exch", "1" });
-    options.push_back({ "-fc_disp", "1" });
+    options.emplace_back("-fit", "sigma epsilon");
+    options.emplace_back("-fc_allelec", "1");
+    options.emplace_back("-fc_exch", "1");
+    options.emplace_back("-fc_disp", "1");
     auto each = options;
-    each.push_back({ "-gpout_interval", "1" });
+    each.emplace_back("-gpout_interval", "1");
     auto five = options;
-    five.push_back({ "-gpout_interval", "5" });
-    auto first  = trainfftest::runTrainFF(&fileManager(), "each", "lj-pc.xml", "booze-inter", each);
-    auto second = trainfftest::runTrainFF(&fileManager(), "five", "lj-pc.xml", "booze-inter", five);
+    five.emplace_back("-gpout_interval", "5");
+    const auto first  = trainfftest::runTrainFF(&fileManager(), "each", "lj-pc.xml", "booze-inter", each);
+    const auto second = trainfftest::runTrainFF(&fileManager(), "five", "lj-pc.xml", "booze-inter", five);
     EXPECT_EQ(0, first.status);
     EXPECT_EQ(0, second.status);
     if (gmx_node_rank() == 0)
     {
-        auto poolEach = fileContents(fileManager().getTemporaryFilePath("each-pool.csv"));
-        auto poolFive = fileContents(fileManager().getTemporaryFilePath("five-pool.csv"));
+        const auto poolEach = fileContents(fileManager().getTemporaryFilePath("each-pool.csv"));
+        const auto poolFive = fileContents(fileManager().getTemporaryFilePath("five-pool.csv"));
         EXPECT_FALSE(poolEach.empty());
         EXPECT_EQ(poolEach, poolFive);
         EXPECT_EQ(first.finalChi2, second.finalChi2);
@@ -300,9 +300,9 @@ TEST_F(TrainFFMpiTest, GenePoolInterval)
 TEST_F(TrainFFMpiTest, MCMCIntraBooze)
 {
     auto options = combine(gaOptions("MCMC", 1), mcmcOptions(2));
-    options.push_back({ "-fit", "De b c bondenergy kb bondlength angle kt c1 c2 c3 c4 c5" });
-    options.push_back({ "-fc_epot", "1" });
-    options.push_back({ "-fc_force", "0.1" });
+    options.emplace_back("-fit", "De b c bondenergy kb bondlength angle kt c1 c2 c3 c4 c5");
+    options.emplace_back("-fc_epot", "1");
+    options.emplace_back("-fc_force", "0.1");
     // MCMC does not write fitness files
     runAndCheck("halgren-PG.xml", "booze-mono", options, 0);
 }
@@ -320,9 +320,9 @@ TEST_F(TrainFFMpiTest, MCMCHelpers)
             o.second = "2";
         }
     }
-    options.push_back({ "-fit", "De b c bondenergy kb bondlength angle kt c1 c2 c3 c4 c5" });
-    options.push_back({ "-fc_epot", "1" });
-    options.push_back({ "-fc_force", "0.1" });
+    options.emplace_back("-fit", "De b c bondenergy kb bondlength angle kt c1 c2 c3 c4 c5");
+    options.emplace_back("-fc_epot", "1");
+    options.emplace_back("-fc_force", "0.1");
     runAndCheck("halgren-PG.xml", "booze-mono", options, 0);
 }
 
@@ -332,7 +332,7 @@ TEST_F(TrainFFMpiTest, MCMCHelpers)
 // distributed analysis has to give the same result as on a single core.
 TEST_F(TrainFFMpiTest, Sensitivity2DMiddlemen)
 {
-    Options options = {
+    const Options options = {
         { "-seed", "219463979" },
         { "-v", "3" },
         { "-optimizer", "MCMC" },
@@ -348,8 +348,8 @@ TEST_F(TrainFFMpiTest, Sensitivity2DMiddlemen)
         { "-fc_exch", "1" },
         { "-fc_disp", "1" }
     };
-    auto output = trainfftest::runTrainFF(&fileManager(), "sens2d", "lj-pc-trained.xml",
-                                          "booze-inter", options);
+    const auto output = trainfftest::runTrainFF(&fileManager(), "sens2d", "lj-pc-trained.xml",
+                                                "booze-inter", options);
     EXPECT_EQ(0, output.status);
     if (gmx_node_rank() == 0)
     {
@@ -364,14 +364,14 @@ TEST_F(TrainFFMpiTest, Sensitivity2DMiddlemen)
 TEST_F(TrainFFMpiTest, HybridCurvature2D)
 {
     auto options = combine(gaOptions("HYBRID", 3), mcmcOptions(2));
-    options.push_back({ "-fit", "charge eta chi zeta vs2a sigma epsilon gamma delta" });
-    options.push_back({ "-fc_allelec", "1" });
-    options.push_back({ "-fc_exch", "1" });
-    options.push_back({ "-fc_disp", "1" });
-    options.push_back({ "-fc_mu", "1" });
-    options.push_back({ "-fc_quad", "1" });
-    options.push_back({ "-sensitivity", "2D" });
-    options.push_back({ "-max_local_minimum_generations", "1" });
+    options.emplace_back("-fit", "charge eta chi zeta vs2a sigma epsilon gamma delta");
+    options.emplace_back("-fc_allelec", "1");
+    options.emplace_back("-fc_exch", "1");
+    options.emplace_back("-fc_disp", "1");
+    options.emplace_back("-fc_mu", "1");
+    options.emplace_back("-fc_quad", "1");
+    options.emplace_back("-sensitivity", "2D");
+    options.emplace_back("-max_local_minimum_generations", "1");
     auto output = trainfftest::runTrainFF(&fileManager(), "curv2d", "4S-lj14-7-pg-hvdw.xml",
                                           "hf-hf", options);
     EXPECT_EQ(0, output.status);
@@ -481,10 +481,10 @@ TEST_F(TrainFFMpiTest, LockstepChargesGpu)
     }
     // Four individuals on each of the three middlemen
     auto options = polarizableOptions(12, 2, "charge");
-    options.push_back({ "-noshell_keep", "" });
+    options.emplace_back("-noshell_keep", "");
     auto together = options, oneByOne = options;
-    together.push_back({ "-lockstep", "4" });
-    oneByOne.push_back({ "-lockstep", "1" });
+    together.emplace_back("-lockstep", "4");
+    oneByOne.emplace_back("-lockstep", "1");
     compareGpuTrainings(&fileManager(), "lockstep", together, oneByOne);
 }
 
@@ -499,7 +499,7 @@ TEST_F(TrainFFMpiTest, SkippedMoleculesGpu)
     }
     // Two individuals on each middleman, one after the other
     auto options = polarizableOptions(6, 6, "zeta charge alpha eta chi sigma epsilon gamma");
-    options.push_back({ "-noshell_keep", "" });
+    options.emplace_back("-noshell_keep", "");
     compareGpuTrainings(&fileManager(), "skipped", options, options, "ACT_NO_GPU_SKIP");
 }
 

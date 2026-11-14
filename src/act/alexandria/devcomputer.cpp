@@ -65,7 +65,7 @@ void BoundsDevComputer::calcDeviation(MsgHandler                    *,
                                       const ForceField              *forcefield,
                                       LossFunction                   lossFunction)
 {
-    auto   mytarget = targets->find(eRMS::BOUNDS);
+    const auto mytarget = targets->find(eRMS::BOUNDS);
     if (targets->end() == mytarget)
     {
         return;
@@ -225,27 +225,7 @@ void EspDevComputer::dumpQX(gmx::TextWriter              *tw,
                             const ACTMol                 *mol,
                             const std::string            &info)
 {
-    if (false && tw)
-    {
-        std::string label = mol->getMolname() + "-" + info;
-        tw->writeStringFormatted("%s q:", label.c_str());
-        auto myatoms = mol->topology()->atoms();
-        for (size_t i = 0; i < myatoms.size(); i++)
-        {
-            tw->writeStringFormatted(" %g", myatoms[i].charge());
-        }
-        tw->writeStringFormatted("\n");
-        auto top = mol->topology();
-        if (top->hasEntry(InteractionType::POLARIZATION))
-        {
-            tw->writeStringFormatted("%s alpha", label.c_str());
-            for(auto &topentry : top->entry(InteractionType::POLARIZATION))
-            {
-                tw->writeStringFormatted(" %g", topentry->params()[polALPHA]);
-            }
-            tw->writeStringFormatted("\n");
-        }
-    }
+
 }
 
 /* * * * * * * * * * * * * * * * * * * * * *
@@ -325,7 +305,7 @@ void MultiPoleDevComputer::calcDeviation(MsgHandler                    *msghandl
         bool doForce    = forcefield->polarizable() || topology->hasVsites();
         for(auto qp = qProps->begin(); qp < qProps->end(); ++qp)
         {
-            auto qqm  = qp->qPqmConst();
+            const auto qqm  = qp->qPqmConst();
             auto qact = qp->qPactConst();
             if (qqm.hasMultipole(mpo_) && qact.hasMultipole(mpo_))
             {
@@ -366,7 +346,7 @@ void MultiPoleDevComputer::calcDeviation(MsgHandler                    *msghandl
             rms = eRMS::HEXADEC;
             break;
         default: // throws
-            msghandler->fatal(gmx::formatString("Not support MolPropObservable %s", mpo_name(mpo_)).c_str());
+            msghandler->fatal(gmx::formatString("Not support MolPropObservable %s", mpo_name(mpo_)));
         }
         (*targets).find(rms)->second.increase(ndiff, delta);
     }
@@ -520,7 +500,7 @@ static void calc_force_loss(MsgHandler                      *msghandler,
     for(size_t ix = 0; ix < cdata->nconf(); ix++)
     {
         auto &x  = cdata->confs[ix];
-        auto  fx = cdata->f(ix);
+        const auto fx = cdata->f(ix);
         // Not all conformations need to have reference forces
         if (x.fobs.empty())
         {
@@ -538,7 +518,7 @@ static void calc_force_loss(MsgHandler                      *msghandler,
         double lss = 0;
         for(size_t i = 0; i < atomIndex.size(); i++)
         {
-            auto  fc = fx[atomIndex[i]];
+            const auto fc = fx[atomIndex[i]];
 #pragma unroll
             for(int m = 0; m < DIM; m++)
             {
@@ -600,7 +580,7 @@ static bool qmReference(const ACTEnergyMap &eMap,
     size_t found = 0;
     for(auto t : terms)
     {
-        auto ee = eMap.find(t);
+        const auto ee = eMap.find(t);
         if (eMap.end() != ee && ee->second.haveQM())
         {
             *eqm  += ee->second.eqm();
@@ -664,7 +644,7 @@ static const DeviationReference &interactionReference(ConformationData          
     for(size_t i = 0; i < coords.size(); i++)
     {
         const auto &eMap = coords[i].eMap;
-        auto        dd   = eMap.find(InteractionType::EPOT);
+        const auto  dd   = eMap.find(InteractionType::EPOT);
         if (dd != eMap.end() && beta > 0)
         {
             double earg = beta*(dd->second.eqm() - coords[i].eMin);
@@ -705,7 +685,7 @@ static const DeviationReference &epotReference(ConformationData *cdata,
     for(size_t i = 0; i < coords.size(); i++)
     {
         const auto &eMap = coords[i].eMap;
-        auto        dd   = eMap.find(InteractionType::EPOT);
+        const auto  dd   = eMap.find(InteractionType::EPOT);
         if (dd != eMap.end() && dd->second.haveQM())
         {
             double eqm = dd->second.eqm();
@@ -785,15 +765,15 @@ static void addLosses(LossFunction lf, size_t nconf, const double *w, const doub
 ForceEnergyDevComputer::EnergyTask ForceEnergyDevComputer::energyTask(const std::map<eRMS, FittingTarget> &targets) const
 {
     EnergyTask task;
-    auto       te = targets.find(eRMS::EPOT);
-    auto       tf = targets.find(eRMS::Force2);
+    const auto te = targets.find(eRMS::EPOT);
+    const auto tf = targets.find(eRMS::Force2);
     bool       doEpot = (te != targets.end() && te->second.weight() > 0);
     task.forces       = (tf != targets.end() && tf->second.weight() > 0);
     bool       doInter = false;
     for (auto rms : { eRMS::Interaction, eRMS::Electrostatics, eRMS::Dispersion, eRMS::Exchange,
                       eRMS::Induction, eRMS::DeltaHF, eRMS::ExchInd, eRMS::AllElec })
     {
-        auto t = targets.find(rms);
+        const auto t = targets.find(rms);
         doInter = doInter || (t != targets.end() && t->second.weight() > 0);
     }
     task.compute                     = doEpot || task.forces || doInter;
@@ -810,9 +790,9 @@ void ForceEnergyDevComputer::calcDeviation(MsgHandler                     *msgha
 {
     // Check what we need to do first!
     auto ermse    = eRMS::EPOT;
-    auto te       = targets->find(ermse);
+    const auto te       = targets->find(ermse);
     bool doEpot   = (te != targets->end() && te->second.weight() > 0);
-    auto tf       = targets->find(eRMS::Force2);
+    const auto tf       = targets->find(eRMS::Force2);
     bool doForce2 = (tf != targets->end() && tf->second.weight() > 0);
     bool doInter  = false;
     typedef struct {
@@ -835,7 +815,7 @@ void ForceEnergyDevComputer::calcDeviation(MsgHandler                     *msgha
     rmsE.erase(std::remove_if(rmsE.begin(), rmsE.end(),
                               [targets](const rmsInter &r)
                               {
-                                  auto ttt = targets->find(r.rms);
+                                  const auto ttt = targets->find(r.rms);
                                   return ttt == targets->end() || ttt->second.weight() <= 0;
                               }), rmsE.end());
     doInter = !rmsE.empty();
@@ -892,7 +872,7 @@ void ForceEnergyDevComputer::calcDeviation(MsgHandler                     *msgha
                 for (size_t j = 0; j < rmsE.size(); j++)
                 {
                     auto &rms  = rmsE[j];
-                    auto  eact = ener.find(rms.itype);
+                    const auto eact = ener.find(rms.itype);
                     if (eact.have)
                     {
                         addLosses(lossFunction, nconf, ref.weight.data(), ref.energy[j].data(),
@@ -911,7 +891,7 @@ void ForceEnergyDevComputer::calcDeviation(MsgHandler                     *msgha
                 double     beta   = computeBeta(eRMS::EPOT);
                 auto      *cdata  = actmol->conformationData(0);
                 auto      &ener   = cdata->energies;
-                auto       epot   = ener.find(InteractionType::EPOT);
+                const auto epot   = ener.find(InteractionType::EPOT);
                 const auto &ref   = epotReference(cdata, beta);
                 const auto &eqm   = ref.energy[0];
                 const auto &have  = ref.have[0];
@@ -999,7 +979,7 @@ static std::map<InteractionType, CompactTerm> compactInteraction(const std::vect
         }
     }
     // calcInduction, the terms in increasing order of type
-    auto isElec = [](InteractionType t)
+    const auto isElec = [](InteractionType t)
     {
         return (InteractionType::ELECTROSTATICS == t || InteractionType::POLARIZATION == t ||
                 InteractionType::CHARGETRANSFER == t);
@@ -1009,7 +989,7 @@ static std::map<InteractionType, CompactTerm> compactInteraction(const std::vect
     {
         if (isElec(t.first) || InteractionType::EXCHANGE == t.first)
         {
-            terms.push_back({ t.first, &t.second });
+            terms.emplace_back(t.first, &t.second);
         }
     }
     bool         haveInductionTerm = inter.count(InteractionType::INDUCTION) > 0;
@@ -1076,7 +1056,7 @@ static std::map<InteractionType, CompactTerm> compactInteraction(const std::vect
         exchInd.act[c] = eExchInd;
     }
     // potentialCorrection and addCorrection, to the induction
-    auto icorr = inter.find(InteractionType::INDUCTIONCORRECTION);
+    const auto icorr = inter.find(InteractionType::INDUCTIONCORRECTION);
     if (icorr != inter.end())
     {
         std::vector<double> correction(nconf, 0.0);
@@ -1141,9 +1121,9 @@ struct EnergyTargets
 static EnergyTargets energyTargets(const std::map<eRMS, FittingTarget> &targets)
 {
     EnergyTargets et;
-    auto te   = targets.find(eRMS::EPOT);
+    const auto te   = targets.find(eRMS::EPOT);
     et.epot   = (te != targets.end() && te->second.weight() > 0);
-    auto tf   = targets.find(eRMS::Force2);
+    const auto tf   = targets.find(eRMS::Force2);
     et.force2 = (tf != targets.end() && tf->second.weight() > 0);
     const std::vector<std::pair<eRMS, InteractionType>> all = {
         { eRMS::Interaction,    InteractionType::EPOT                },
@@ -1157,7 +1137,7 @@ static EnergyTargets energyTargets(const std::map<eRMS, FittingTarget> &targets)
     };
     for (const auto &r : all)
     {
-        auto t = targets.find(r.first);
+        const auto t = targets.find(r.first);
         if (t != targets.end() && t->second.weight() > 0)
         {
             et.rms.push_back(r.first);
@@ -1172,7 +1152,7 @@ bool ForceEnergyDevComputer::setupGpuDeviations(const ForceComputer             
                                                 const std::map<eRMS, FittingTarget> &targets,
                                                 LossFunction                         lossFunction)
 {
-    auto et = energyTargets(targets);
+    const auto et = energyTargets(targets);
     if (et.force2 || separateInductionCorrection_)
     {
         return false;
@@ -1234,7 +1214,7 @@ void ForceEnergyDevComputer::gpuTargets(const std::map<eRMS, FittingTarget> &tar
                                         std::vector<eRMS>                   *rms,
                                         bool                                *epot)
 {
-    auto et = energyTargets(targets);
+    const auto et = energyTargets(targets);
     *rms    = et.rms;
     *epot   = et.epot;
 }
@@ -1278,9 +1258,9 @@ bool ForceEnergyDevComputer::calcDeviationCompact(const ForceComputer           
                                                   LossFunction                   lossFunction)
 {
     // The same targets as calcDeviation
-    auto te       = targets->find(eRMS::EPOT);
+    const auto te       = targets->find(eRMS::EPOT);
     bool doEpot   = (te != targets->end() && te->second.weight() > 0);
-    auto tf       = targets->find(eRMS::Force2);
+    const auto tf       = targets->find(eRMS::Force2);
     bool doForce2 = (tf != targets->end() && tf->second.weight() > 0);
     struct RmsInter
     {
@@ -1300,7 +1280,7 @@ bool ForceEnergyDevComputer::calcDeviationCompact(const ForceComputer           
     rmsE.erase(std::remove_if(rmsE.begin(), rmsE.end(),
                               [targets](const RmsInter &r)
                               {
-                                  auto ttt = targets->find(r.rms);
+                                  const auto ttt = targets->find(r.rms);
                                   return ttt == targets->end() || ttt->second.weight() <= 0;
                               }), rmsE.end());
     bool doInter = !rmsE.empty();
@@ -1338,7 +1318,7 @@ bool ForceEnergyDevComputer::calcDeviationCompact(const ForceComputer           
                 size_t      nconf = std::min(cdata->confs.size(), dimer.empty() ? 0 : dimer[0].act.size());
                 for (size_t j = 0; j < rmsE.size(); j++)
                 {
-                    auto eact = inter.find(rmsE[j].itype);
+                    const auto eact = inter.find(rmsE[j].itype);
                     if (eact != inter.end())
                     {
                         addLosses(lossFunction, nconf, ref.weight.data(), ref.energy[j].data(),

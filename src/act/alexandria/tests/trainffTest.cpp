@@ -145,7 +145,7 @@ Options setOption(Options options, const std::string &name, const std::string &v
             return options;
         }
     }
-    options.push_back({ name, value });
+    options.emplace_back(name, value);
     return options;
 }
 
@@ -159,8 +159,8 @@ Options setOption(Options options, const std::string &name, const std::string &v
 Options analyseOnly(const std::string &mode)
 {
     auto options = setOption(combine(mcmcOptions(1), interOptions()), "-sensitivity", mode);
-    options.push_back({ "-nooptimize", "" });
-    options.push_back({ "-norandom_init", "" });
+    options.emplace_back("-nooptimize", "");
+    options.emplace_back("-norandom_init", "");
     return options;
 }
 
@@ -195,7 +195,7 @@ protected:
                      const std::string &molName,
                      const Options     &options)
     {
-        auto output = trainfftest::runTrainFF(&fileManager(), "train", ffName, molName, options);
+        const auto output = trainfftest::runTrainFF(&fileManager(), "train", ffName, molName, options);
         ASSERT_EQ(0, output.status);
         // MCMC never accepts a worse best parameter vector
         ASSERT_GT(output.initialChi2, 0);
@@ -274,7 +274,7 @@ static const ForceFieldParameter *findParameter(const ForceField  &pd,
     {
         for (const auto &p : fs.second.parametersConst())
         {
-            auto pp = p.second.find(type);
+            const auto pp = p.second.find(type);
             if (p.first.id() == id && p.second.end() != pp)
             {
                 return &pp->second;
@@ -301,7 +301,7 @@ static void expectTrained(gmx::test::TestFileManager                          *f
     EXPECT_EQ(expected, trainedParameters(output));
     ForceField input, trained;
     readForceField(ffFile, &input);
-    auto trainedFile = fileManager->getTemporaryFilePath("trained.xml");
+    const auto trainedFile = fileManager->getTemporaryFilePath("trained.xml");
     {
         std::ofstream out(trainedFile);
         out << output.forceField;
@@ -379,12 +379,12 @@ static bool hasInitialComponent(const TrainOutput &output, const std::string &co
 // particle types, are trained, also those of shells, and reach the atoms
 TEST_F(TrainFFTest, ParticleZeta)
 {
-    auto ffFile = fileManager().getInputFilePath("forcefields/ACS-pol.xml");
-    auto output = trainfftest::runTrainFF(&fileManager(), "zeta", "", "booze-inter",
-                                          combine(mcmcOptions(10),
-                                                  { { "-fit", "zeta" }, { "-fc_allelec", "1" },
+    const auto ffFile = fileManager().getInputFilePath("forcefields/ACS-pol.xml");
+    const auto output = trainfftest::runTrainFF(&fileManager(), "zeta", "", "booze-inter",
+                                                combine(mcmcOptions(10),
+                                                        { { "-fit", "zeta" }, { "-fc_allelec", "1" },
                                                     { "-fc_exch", "1" }, { "-fc_disp", "1" } }),
-                                          "", "", ffFile);
+                                                "", "", ffFile);
     expectTrained(&fileManager(), output, ffFile,
                   { { "c3_s", "zeta" }, { "h1", "zeta" }, { "ho", "zeta" },
                     { "hw", "zeta" }, { "o3_s", "zeta" }, { "ow_s", "zeta" } });
@@ -394,14 +394,14 @@ TEST_F(TrainFFTest, ParticleZeta)
 // trained on the induction and its correction
 TEST_F(TrainFFTest, PolarizabilityAndInductionCorrection)
 {
-    auto ffFile = fileManager().getInputFilePath("forcefields/ACS-pol.xml");
-    auto output = trainfftest::runTrainFF(&fileManager(), "induction", "", "",
-                                          combine(mcmcOptions(10),
-                                                  { { "-fit", "alpha a1dexp a2dexp bdexp" },
+    const auto ffFile = fileManager().getInputFilePath("forcefields/ACS-pol.xml");
+    const auto output = trainfftest::runTrainFF(&fileManager(), "induction", "", "",
+                                                combine(mcmcOptions(10),
+                                                        { { "-fit", "alpha a1dexp a2dexp bdexp" },
                                                     { "-fc_induc", "1" }, { "-fc_deltahf", "1" } }),
-                                          fileManager().getInputFilePath("molprop/methanol-ethane-deltaHF.xml"),
-                                          trainSelection(&fileManager(), "induction", { "methanol#ethane" }),
-                                          ffFile);
+                                                fileManager().getInputFilePath("molprop/methanol-ethane-deltaHF.xml"),
+                                                trainSelection(&fileManager(), "induction", { "methanol#ethane" }),
+                                                ffFile);
     std::set<std::pair<std::string, std::string>> expected = { { "c3_s", "alpha" }, { "o3_s", "alpha" } };
     for (const char *atype : { "c3", "h1", "hc", "ho", "o3" })
     {
@@ -419,15 +419,15 @@ TEST_F(TrainFFTest, PolarizabilityAndInductionCorrection)
 // and induction together, and the total are training targets
 TEST_F(TrainFFTest, InteractionComponents)
 {
-    auto ffFile = fileManager().getInputFilePath("forcefields/ACS-pol.xml");
-    auto output = trainfftest::runTrainFF(&fileManager(), "components", "", "",
-                                          combine(mcmcOptions(5),
-                                                  { { "-fit", "zeta" }, { "-fc_elec", "1" },
+    const auto ffFile = fileManager().getInputFilePath("forcefields/ACS-pol.xml");
+    const auto output = trainfftest::runTrainFF(&fileManager(), "components", "", "",
+                                                combine(mcmcOptions(5),
+                                                        { { "-fit", "zeta" }, { "-fc_elec", "1" },
                                                     { "-fc_exchind", "1" }, { "-fc_inter", "1" } }),
-                                          fileManager().getInputFilePath("molprop/mpdimer.xml"),
-                                          trainSelection(&fileManager(), "components",
-                                                         { "1-propanol#ethane", "water#1-butanol", "guanidinium#water" }),
-                                          ffFile);
+                                                fileManager().getInputFilePath("molprop/mpdimer.xml"),
+                                                trainSelection(&fileManager(), "components",
+                                                               { "1-propanol#ethane", "water#1-butanol", "guanidinium#water" }),
+                                                ffFile);
     ASSERT_EQ(0, output.status);
     for (const char *component : { "Electrostatics", "ExchInd", "Interaction" })
     {
@@ -446,9 +446,9 @@ TEST_F(TrainFFTest, LossFunctions)
     for (const char *lf : { "MSE", "MAE", "Huber", "Asinh" })
     {
         SCOPED_TRACE(lf);
-        auto output = trainfftest::runTrainFF(&fileManager(), std::string("loss") + lf, "lj-pc.xml", "booze-inter",
-                                              combine(combine(mcmcOptions(5), interOptions()),
-                                                      { { "-loss_function", lf } }));
+        const auto output = trainfftest::runTrainFF(&fileManager(), std::string("loss") + lf, "lj-pc.xml", "booze-inter",
+                                                    combine(combine(mcmcOptions(5), interOptions()),
+                                                            { { "-loss_function", lf } }));
         ASSERT_EQ(0, output.status);
         ASSERT_GT(output.initialChi2, 0);
         EXPECT_LE(output.finalChi2, output.initialChi2);
@@ -464,9 +464,9 @@ TEST_F(TrainFFTest, LossFunctions)
 // harmonic frequencies and intensities
 TEST_F(TrainFFTest, FrequenciesAndIntensities)
 {
-    auto output = trainfftest::runTrainFF(&fileManager(), "hhfreq", "hh-intra.xml", "hh-freq",
-                                          combine(mcmcOptions(10),
-                                                  { { "-fit", "De bondlength b c" },
+    const auto output = trainfftest::runTrainFF(&fileManager(), "hhfreq", "hh-intra.xml", "hh-freq",
+                                                combine(mcmcOptions(10),
+                                                        { { "-fit", "De bondlength b c" },
                                                     { "-fc_freq", "1" }, { "-fc_inten", "1" } }));
     std::set<std::pair<std::string, std::string>> expected;
     for (const char *bond : { "br_b~hbr_b", "cl_b~hcl_b", "f_b~hf_b", "hi_b~i_b" })
@@ -487,9 +487,9 @@ TEST_F(TrainFFTest, FrequenciesAndIntensities)
 // decrease
 TEST_F(TrainFFTest, ElectrostaticsAndFrequencies)
 {
-    auto output = trainfftest::runTrainFF(&fileManager(), "hhelec", "hh-intra.xml", "hh-freq",
-                                          combine(mcmcOptions(10),
-                                                  { { "-fit", "De bondlength b c eta chi chargeVS zeta zetaVS charge vs2a" },
+    const auto output = trainfftest::runTrainFF(&fileManager(), "hhelec", "hh-intra.xml", "hh-freq",
+                                                combine(mcmcOptions(10),
+                                                        { { "-fit", "De bondlength b c eta chi chargeVS zeta zetaVS charge vs2a" },
                                                     { "-fc_mu", "1" }, { "-fc_quad", "5" },
                                                     { "-fc_freq", "1" }, { "-fc_inten", "1" } }));
     std::set<std::pair<std::string, std::string>> expected;
@@ -540,7 +540,7 @@ TEST_F(TrainFFTest, SecondCharges)
     // The input force field has virtual sites, which become second charges
     ForceField input, trained;
     readForceField(fileManager().getInputFilePath("forcefields/4S-lj14-7-pg-hvdw.xml"), &input);
-    auto trainedFile = fileManager().getTemporaryFilePath("chargevs-trained.xml");
+    const auto trainedFile = fileManager().getTemporaryFilePath("chargevs-trained.xml");
     {
         std::ofstream out(trainedFile);
         out << output.forceField;
@@ -602,10 +602,10 @@ TEST_F(TrainFFTest, SecondChargesWithCharges)
 // prefix given with -compound_file
 TEST_F(TrainFFTest, CompoundFilePrefix)
 {
-    auto prefix  = fileManager().getTemporaryFilePath("hf-");
+    const auto prefix  = fileManager().getTemporaryFilePath("hf-");
     auto options = combine(mcmcOptions(1), hfOptions());
-    options.push_back({ "-compound_file", prefix });
-    auto output = trainfftest::runTrainFF(&fileManager(), "prefix", "4S-lj14-7-pg-hvdw.xml", "hf-hf", options);
+    options.emplace_back("-compound_file", prefix);
+    const auto output = trainfftest::runTrainFF(&fileManager(), "prefix", "4S-lj14-7-pg-hvdw.xml", "hf-hf", options);
     ASSERT_EQ(0, output.status);
     for (const std::string term : { "ALLELEC", "DISPERSION", "EXCHANGE" })
     {
@@ -625,13 +625,13 @@ TEST_F(TrainFFTest, ConvergenceFiles)
             o.second = "4";
         }
     }
-    auto output = trainfftest::runTrainFF(&fileManager(), "conv", "halgren-PG.xml", "booze-mono", options);
+    const auto output = trainfftest::runTrainFF(&fileManager(), "conv", "halgren-PG.xml", "booze-mono", options);
     ASSERT_EQ(0, output.status);
     // The files are in the directory of the individual, named after the
     // file names given
-    auto dir = std::filesystem::path(fileManager().getTemporaryFilePath("conv.log")).parent_path() / "inds";
-    auto convName = std::filesystem::path(fileManager().getTemporaryFilePath("conv-conv.xvg")).filename().string();
-    auto chi2Name = std::filesystem::path(fileManager().getTemporaryFilePath("conv-chi2.xvg")).filename().string();
+    const auto dir = std::filesystem::path(fileManager().getTemporaryFilePath("conv.log")).parent_path() / "inds";
+    const auto convName = std::filesystem::path(fileManager().getTemporaryFilePath("conv-conv.xvg")).filename().string();
+    const auto chi2Name = std::filesystem::path(fileManager().getTemporaryFilePath("conv-chi2.xvg")).filename().string();
     // The parameters of halgren-PG.xml that are trained
     std::vector<std::string> files = { "ind0-" + chi2Name };
     for (const char *pclass : { "De", "b", "c", "bondlength", "angle", "kt", "c1", "c2", "c3", "c4", "c5" })
@@ -667,13 +667,13 @@ TEST_F(TrainFFTest, ConvergenceFiles)
 TEST_F(TrainFFTest, Checkpoint)
 {
     auto options = combine(mcmcOptions(3), intraOptions());
-    options.push_back({ "-checkpoint", "" });
-    auto output = trainfftest::runTrainFF(&fileManager(), "checkpoint", "halgren-PG.xml", "booze-mono", options);
+    options.emplace_back("-checkpoint", "");
+    const auto output = trainfftest::runTrainFF(&fileManager(), "checkpoint", "halgren-PG.xml", "booze-mono", options);
     ASSERT_EQ(0, output.status);
-    auto dir  = std::filesystem::path(fileManager().getTemporaryFilePath("checkpoint.log")).parent_path() / "inds";
-    auto name = std::filesystem::path(fileManager().getTemporaryFilePath("checkpoint-ff.xml")).filename().string();
-    auto file = dir / ("ind0-" + name);
-    std::ifstream in(file);
+    const auto dir  = std::filesystem::path(fileManager().getTemporaryFilePath("checkpoint.log")).parent_path() / "inds";
+    const auto name = std::filesystem::path(fileManager().getTemporaryFilePath("checkpoint-ff.xml")).filename().string();
+    const auto file = dir / ("ind0-" + name);
+    const std::ifstream in(file);
     ASSERT_TRUE(in.good()) << file;
     std::stringstream ff;
     ff << in.rdbuf();
@@ -685,8 +685,8 @@ TEST_F(TrainFFTest, Checkpoint)
 // to the smallest deviation
 TEST_F(TrainFFTest, OutlierOverview)
 {
-    auto output = trainfftest::runTrainFF(&fileManager(), "outliers", "lj-pc.xml", "booze-inter",
-                                          combine(mcmcOptions(1), interOptions()));
+    const auto output = trainfftest::runTrainFF(&fileManager(), "outliers", "lj-pc.xml", "booze-inter",
+                                                combine(mcmcOptions(1), interOptions()));
     ASSERT_EQ(0, output.status);
     int  noutlier = 0;
     bool inTable  = false;
@@ -725,7 +725,7 @@ TEST_F(TrainFFTest, Reproducible)
     int                         run = 0;
     for (const std::string seed : { "1993", "1993", "1997" })
     {
-        auto options = combine(mcmcOptions(3, seed), hfOptions());
+        const auto options = combine(mcmcOptions(3, seed), hfOptions());
         auto output = trainfftest::runTrainFF(&fileManager(), "seed" + std::to_string(run++),
                                               "4S-lj14-7-pg-hvdw.xml", "hf-hf", options);
         ASSERT_EQ(0, output.status);
@@ -769,10 +769,10 @@ TEST_F(TrainFFTest, FrequenciesAndForces)
                                             { "-freqcorr", freq }, { "-forcecorr", force } });
     ASSERT_EQ(0, output.status);
     // The 12 vibrations of methanol
-    auto freqSets = xvgSets(freq);
+    const auto freqSets = xvgSets(freq);
     EXPECT_EQ(12, freqSets.first);
     EXPECT_EQ(std::vector<std::string>({ "Train" }), freqSets.second);
-    auto forceSets = xvgSets(force);
+    const auto forceSets = xvgSets(force);
     EXPECT_GT(forceSets.first, 0);
     EXPECT_EQ(std::vector<std::string>({ "Train", "Test" }), forceSets.second);
     // Each molecule has a frequency analysis
@@ -789,13 +789,13 @@ TEST_F(TrainFFTest, FrequenciesAndForces)
 // apart.
 TEST_F(TrainFFTest, MinimizedStructures)
 {
-    auto output = trainfftest::runTrainFF(&fileManager(), "minimized", "halgren-PG.xml", "booze-mono",
-                                          { { "-nooptimize", "" }, { "-calc_frequencies", "" },
+    const auto output = trainfftest::runTrainFF(&fileManager(), "minimized", "halgren-PG.xml", "booze-mono",
+                                                { { "-nooptimize", "" }, { "-calc_frequencies", "" },
                                             { "-fit", "kb" }, { "-fc_epot", "1" } });
     ASSERT_EQ(0, output.status);
     // The structures are written in the working directory of train_ff
-    auto dir = std::filesystem::path(fileManager().getTemporaryFilePath("minimized.log")).parent_path() / "inds";
-    auto pdb = dir / "methanol-original-minimized.pdb";
+    const auto dir = std::filesystem::path(fileManager().getTemporaryFilePath("minimized.log")).parent_path() / "inds";
+    const auto pdb = dir / "methanol-original-minimized.pdb";
     EXPECT_TRUE(std::filesystem::exists(pdb)) << pdb;
     std::filesystem::remove_all(dir);
 }
@@ -810,7 +810,7 @@ TEST_F(TrainFFTest, MinimumData)
                                           combine(combine(mcmcOptions(1), interOptions()),
                                                   { { "-mindata", "2" } }));
     ASSERT_EQ(0, output.status);
-    auto hasLine = [&output](const std::string &text)
+    const auto hasLine = [&output](const std::string &text)
     {
         return std::any_of(output.log.begin(), output.log.end(),
                            [&text](const std::string &line) { return line.find(text) != std::string::npos; });
@@ -833,14 +833,14 @@ TEST_F(TrainFFTest, MinimumDataTooLarge)
 // point for each structure
 TEST_F(TrainFFTest, Diatomics)
 {
-    auto output = trainfftest::runTrainFF(&fileManager(), "diatomics", "4S-lj14-7-pg-hvdw.xml", "hf-hf",
-                                          { { "-nooptimize", "" }, { "-diatomics", "" },
+    const auto output = trainfftest::runTrainFF(&fileManager(), "diatomics", "4S-lj14-7-pg-hvdw.xml", "hf-hf",
+                                                { { "-nooptimize", "" }, { "-diatomics", "" },
                                             { "-fit", "sigma epsilon" }, { "-fc_epot", "1" } });
     ASSERT_EQ(0, output.status);
     // The file is named after the compound, in the working directory
-    auto fileName = (std::filesystem::path(fileManager().getTemporaryFilePath("x")).parent_path() /
-                     "hydrogen-fluoride.xvg").string();
-    auto lines    = trainfftest::readLines(fileName);
+    const auto fileName = (std::filesystem::path(fileManager().getTemporaryFilePath("x")).parent_path() /
+                           "hydrogen-fluoride.xvg").string();
+    const auto lines    = trainfftest::readLines(fileName);
     int  npoints  = 0;
     for (const auto &line : lines)
     {
@@ -867,7 +867,7 @@ TEST_F(TrainFFTest, Diatomics)
 // even though their data files include a directory
 TEST_F(TrainFFTest, ChargesEspPolarizability)
 {
-    auto selFile = fileManager().getTemporaryFilePath("acm.dat");
+    const auto selFile = fileManager().getTemporaryFilePath("acm.dat");
     {
         std::ofstream sel(selFile);
         sel << "1-butanol|Train\nacetone|Train\nwater|Test\n";
@@ -883,11 +883,11 @@ TEST_F(TrainFFTest, ChargesEspPolarizability)
     for (auto &f : files)
     {
         f.second = fileManager().getTemporaryFilePath(f.second);
-        options.push_back(f);
+        options.emplace_back(f);
     }
-    auto output = trainfftest::runTrainFF(&fileManager(), "acm", "ACS-pg1.xml", "acm", options,
-                                          fileManager().getInputFilePath("molprop/molprop.xml"),
-                                          selFile);
+    const auto output = trainfftest::runTrainFF(&fileManager(), "acm", "ACS-pg1.xml", "acm", options,
+                                                fileManager().getInputFilePath("molprop/molprop.xml"),
+                                                selFile);
     ASSERT_EQ(0, output.status);
     for (const auto &f : files)
     {
@@ -908,11 +908,11 @@ TEST_F(TrainFFTest, ChargesEspPolarizability)
     EXPECT_EQ(3, std::count_if(mpout.begin(), mpout.end(),
                                [](const std::string &l) { return l.find("<molecule ") != std::string::npos; }));
     // One structure for each energy, with the atoms
-    auto dir    = std::filesystem::path(files["-mpout"]).parent_path();
+    const auto dir    = std::filesystem::path(files["-mpout"]).parent_path();
     int  nxyz   = 0;
     for (const auto &entry : std::filesystem::directory_iterator(dir))
     {
-        auto name = entry.path().filename().string();
+        const auto name = entry.path().filename().string();
         if (entry.path().extension() == ".xyz" && name.find("-EPOT-") != std::string::npos)
         {
             auto xyz = trainfftest::readLines(entry.path().string());
@@ -956,7 +956,7 @@ TEST_F(TrainFFTest, Sensitivity1DJson)
     size_t nconv = 0;
     for (const auto &p : sens["parameters"])
     {
-        auto name = p["name"].get<std::string>();
+        const auto name = p["name"].get<std::string>();
         EXPECT_EQ(3u, p["points"].size()) << name;
         EXPECT_GE(p["p_orig"].get<double>(), p["lower"].get<double>()) << name;
         EXPECT_LE(p["p_orig"].get<double>(), p["upper"].get<double>()) << name;
@@ -1012,14 +1012,14 @@ TEST_F(TrainFFTest, Sensitivity2DJson)
 TEST_F(TrainFFTest, SensitivityFlatParameters)
 {
     auto options = setOption(combine(mcmcOptions(1), hfOptions()), "-sensitivity", "2D");
-    options.push_back({ "-nooptimize", "" });
-    options.push_back({ "-norandom_init", "" });
+    options.emplace_back("-nooptimize", "");
+    options.emplace_back("-norandom_init", "");
     auto output = trainfftest::runTrainFF(&fileManager(), "sensflat", "4S-lj14-7-pg-hvdw.xml",
                                           "hf-hf", options);
     ASSERT_EQ(0, output.status);
     ASSERT_TRUE(output.sensitivity.contains("sensitivity"));
     const auto &sens = output.sensitivity["sensitivity"];
-    std::set<std::string> expected = {
+    const std::set<std::string> expected = {
         "f delta", "f epsilon", "f gamma", "f sigma",
         "hf delta", "hf epsilon", "hf gamma", "hf sigma",
         "f_b~hf_b!v2f1 vs2a", "f_b~hf_b!v2f2 vs2a"

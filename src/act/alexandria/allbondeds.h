@@ -170,7 +170,7 @@ namespace alexandria
 
     public:
         //! Constructor
-        AllBondeds() {}
+        AllBondeds() = default;
     
         /*! \brief Add command line options for class variables
          * \param[inout] pargs The command line parameters

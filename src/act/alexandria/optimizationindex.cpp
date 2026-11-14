@@ -86,7 +86,7 @@ CommunicationStatus OptimizationIndex::send(const CommunicationRecord *cr,
                                             int                        dest)
 {
     cr->send(dest, particleType_);
-    std::string itype = interactionTypeToString(iType_);
+    const std::string itype = interactionTypeToString(iType_);
     cr->send(dest, itype);
     parameterId_.Send(cr, dest);
     cr->send(dest, parameterType_);

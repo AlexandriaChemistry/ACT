@@ -122,7 +122,7 @@ private:
     bool   converged_ = false;
 public:
     //! \brief Constructor
-    Sensitivity() {}
+    Sensitivity() = default;
 
     /*! \brief
      * Add a point

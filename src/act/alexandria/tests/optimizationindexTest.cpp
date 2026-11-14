@@ -51,7 +51,7 @@ namespace
 
 TEST(OptimizationIndexTest, DefaultConstructor)
 {
-    OptimizationIndex oi;
+    const OptimizationIndex oi;
     // Default interaction type is CHARGE
     EXPECT_EQ(oi.iType(), InteractionType::CHARGE);
     EXPECT_TRUE(oi.particleType().empty());
@@ -60,8 +60,8 @@ TEST(OptimizationIndexTest, DefaultConstructor)
 
 TEST(OptimizationIndexTest, InteractionTypeConstructor)
 {
-    Identifier id("h");
-    OptimizationIndex oi(InteractionType::BONDS, id, "bondlength");
+    const Identifier id("h");
+    const OptimizationIndex oi(InteractionType::BONDS, id, "bondlength");
     EXPECT_EQ(oi.iType(), InteractionType::BONDS);
     EXPECT_EQ(oi.id().id(), "h");
     EXPECT_EQ(oi.parameterType(), "bondlength");
@@ -70,7 +70,7 @@ TEST(OptimizationIndexTest, InteractionTypeConstructor)
 
 TEST(OptimizationIndexTest, ParticleTypeConstructor)
 {
-    OptimizationIndex oi("opls_116", "charge");
+    const OptimizationIndex oi("opls_116", "charge");
     EXPECT_EQ(oi.particleType(), "opls_116");
     EXPECT_EQ(oi.parameterType(), "charge");
     // Default iType should be CHARGE since not set by this constructor
@@ -79,25 +79,25 @@ TEST(OptimizationIndexTest, ParticleTypeConstructor)
 
 TEST(OptimizationIndexTest, NameForChargeType)
 {
-    OptimizationIndex oi("opls_116", "charge");
-    std::string name = oi.name();
+    const OptimizationIndex oi("opls_116", "charge");
+    const std::string name = oi.name();
     // For CHARGE type: "particleType parameterType"
     EXPECT_EQ(name, "opls_116 charge");
 }
 
 TEST(OptimizationIndexTest, NameForInteractionType)
 {
-    Identifier id("h");
-    OptimizationIndex oi(InteractionType::BONDS, id, "bondlength");
-    std::string name = oi.name();
+    const Identifier id("h");
+    const OptimizationIndex oi(InteractionType::BONDS, id, "bondlength");
+    const std::string name = oi.name();
     // For non-CHARGE: "parameterId parameterType"
     EXPECT_EQ(name, "h bondlength");
 }
 
 TEST(OptimizationIndexTest, ParameterName)
 {
-    Identifier id("c-o");
-    OptimizationIndex oi(InteractionType::BONDS, id, "force_constant");
+    const Identifier id("c-o");
+    const OptimizationIndex oi(InteractionType::BONDS, id, "force_constant");
     EXPECT_EQ(oi.parameterName(), "c-o");
 }
 
@@ -109,28 +109,28 @@ TEST(OptimizationIndexTest, ForceFieldParameterInitiallyNull)
 
 TEST(OptimizationIndexTest, MultiAtomIdentifier)
 {
-    std::vector<std::string> atoms = {"C", "O"};
-    std::vector<double> bondorders = {2.0};
-    Identifier id(atoms, bondorders, CanSwap::Yes);
-    OptimizationIndex oi(InteractionType::BONDS, id, "bondlength");
+    const std::vector<std::string> atoms = {"C", "O"};
+    const std::vector<double> bondorders = {2.0};
+    const Identifier id(atoms, bondorders, CanSwap::Yes);
+    const OptimizationIndex oi(InteractionType::BONDS, id, "bondlength");
 
     EXPECT_EQ(oi.iType(), InteractionType::BONDS);
     EXPECT_EQ(oi.parameterType(), "bondlength");
     // The name should include the identifier
-    std::string name = oi.name();
+    const std::string name = oi.name();
     EXPECT_FALSE(name.empty());
 }
 
 TEST(OptimizationIndexTest, DifferentInteractionTypes)
 {
-    Identifier id("c");
-    OptimizationIndex oiBonds(InteractionType::BONDS, id, "bondlength");
+    const Identifier id("c");
+    const OptimizationIndex oiBonds(InteractionType::BONDS, id, "bondlength");
     EXPECT_EQ(oiBonds.iType(), InteractionType::BONDS);
 
-    OptimizationIndex oiAngles(InteractionType::ANGLES, id, "angle");
+    const OptimizationIndex oiAngles(InteractionType::ANGLES, id, "angle");
     EXPECT_EQ(oiAngles.iType(), InteractionType::ANGLES);
 
-    OptimizationIndex oiVdw(InteractionType::VDW, id, "sigma");
+    const OptimizationIndex oiVdw(InteractionType::VDW, id, "sigma");
     EXPECT_EQ(oiVdw.iType(), InteractionType::VDW);
 }
 

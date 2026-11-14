@@ -245,7 +245,7 @@ private:
      */
     size_t nTargetSize(iMolSelect ims) const
     {
-        auto ts = targetSize_.find(ims);
+        const auto ts = targetSize_.find(ims);
         if (ts != targetSize_.end())
         {
             return ts->second;
@@ -274,7 +274,7 @@ private:
 public:
     
     //! Default constructor
-    MolGen() {}
+    MolGen() = default;
 
     /*! \brief 
      * Constructor of MolGen class.
@@ -331,7 +331,7 @@ public:
      */
     size_t iMolSelectSize(iMolSelect ims) const
     {
-        auto ts = targetSize_.find(ims);
+        const auto ts = targetSize_.find(ims);
         if (targetSize_.end() == ts)
         {
             return 0;

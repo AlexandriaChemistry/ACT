@@ -59,7 +59,7 @@ void MolSelect::addOne(const std::string &iupac,
                        int                index,
                        iMolSelect         ims)
 {
-    ims_.push_back(IMolSelect(iupac, ims, index));
+    ims_.emplace_back(iupac, ims, index);
 }
 
 void MolSelect::read(const char *fn)

@@ -74,7 +74,7 @@ protected:
     {
         // Setup code for tests if needed
         checker_ = new gmx::test::TestReferenceChecker(this->rootChecker());
-        auto tolerance = gmx::test::relativeToleranceAsFloatingPoint(1.0, 5e-2);
+        const auto tolerance = gmx::test::relativeToleranceAsFloatingPoint(1.0, 5e-2);
         checker_->setDefaultTolerance(tolerance);
     }
 
@@ -138,8 +138,8 @@ TEST_F(MCMCMutatorTest, MutateCharges10)
     // Train on the dipole
     std::vector<alexandria::eRMS> eRms = { eRMS::MU };
     // Bases correspond to chi eta chi eta chi eta
-    std::vector<double> bases = {4.5, 12, 3.3, 10, 5, 13 };
-    FitnessMap          fm    = { {iMolSelect::Train, 10.0} };
+    const std::vector<double> bases = {4.5, 12, 3.3, 10, 5, 13 };
+    const FitnessMap    fm    = { {iMolSelect::Train, 10.0} };
     ga::Genome before(bases, fm);
     int maxiter = 2;
     doMutate(before, maxiter, fitstrings, eRms);
@@ -152,8 +152,8 @@ TEST_F(MCMCMutatorTest, MutateChargesESP50)
     // Train on the electrostatic potential
     std::vector<alexandria::eRMS> eRms = { eRMS::ESP };
     // Bases correspond to chi eta chi eta chi eta
-    std::vector<double> bases = {4.5, 12, 3.3, 10, 5, 13 };
-    FitnessMap          fm    = { {iMolSelect::Train, 10000.0} };
+    const std::vector<double> bases = {4.5, 12, 3.3, 10, 5, 13 };
+    const FitnessMap    fm    = { {iMolSelect::Train, 10000.0} };
     ga::Genome before(bases, fm);
     int maxiter = 5;
     doMutate(before, maxiter, fitstrings, eRms);
@@ -166,8 +166,8 @@ TEST_F(MCMCMutatorTest, MutateBonds10)
     // Train on internal energy
     std::vector<alexandria::eRMS> eRms = { eRMS::EPOT };
     // Bases correspond to bondenergy bondlength kb for each bond
-    std::vector<double> bases = { -250, 130, 3e5,  -200, 100, 3.2e5,  -300, 120, 3e5, -400, 100, 3.7e5 };
-    FitnessMap          fm    = { {iMolSelect::Train, 1e8} };
+    const std::vector<double> bases = { -250, 130, 3e5,  -200, 100, 3.2e5,  -300, 120, 3e5, -400, 100, 3.7e5 };
+    const FitnessMap    fm    = { {iMolSelect::Train, 1e8} };
     ga::Genome before(bases, fm);
     int maxiter = 2;
     doMutate(before, maxiter, fitstrings, eRms);
@@ -180,8 +180,8 @@ TEST_F(MCMCMutatorTest, MutateBonds100)
     // Train on internal energy
     std::vector<alexandria::eRMS> eRms = { eRMS::EPOT };
     // Bases correspond to bondenergy bondlength kb for each bond
-    std::vector<double> bases = { -250, 130, 3e5,  -200, 100, 3.2e5,  -300, 120, 3e5, -400, 100, 3.7e5 };
-    FitnessMap          fm    = { {iMolSelect::Train, 1e8} };
+    const std::vector<double> bases = { -250, 130, 3e5,  -200, 100, 3.2e5,  -300, 120, 3e5, -400, 100, 3.7e5 };
+    const FitnessMap    fm    = { {iMolSelect::Train, 1e8} };
     ga::Genome before(bases, fm);
     int maxiter = 10;
     doMutate(before, maxiter, fitstrings, eRms);
@@ -193,8 +193,8 @@ TEST_F(MCMCMutatorTest, MutateAngles)
     // Train on internal energy
     std::vector<alexandria::eRMS> eRms = { eRMS::EPOT };
     // Bases correspond to angle kt for each angle
-    std::vector<double> bases = { 105, 320, 111, 290, 103, 300, 120, 280, 107, 300, 108, 340 };
-    FitnessMap          fm    = { {iMolSelect::Train, 1e8} };
+    const std::vector<double> bases = { 105, 320, 111, 290, 103, 300, 120, 280, 107, 300, 108, 340 };
+    const FitnessMap    fm    = { {iMolSelect::Train, 1e8} };
     ga::Genome before(bases, fm);
     int maxiter = 10;
     doMutate(before, maxiter, fitstrings, eRms);
@@ -206,8 +206,8 @@ TEST_F(MCMCMutatorTest, MutateDihedrals)
     // Train on internal energy
     std::vector<alexandria::eRMS> eRms = { eRMS::EPOT };
     // Bases correspond to kp phi0 for each dihedral
-    std::vector<double> bases = { 6.5, 180, 5, 320, 6, 290, 7, 300, 10, 280, 8, 300, 4, 340 };
-    FitnessMap          fm    = { {iMolSelect::Train, 1e8} };
+    const std::vector<double> bases = { 6.5, 180, 5, 320, 6, 290, 7, 300, 10, 280, 8, 300, 4, 340 };
+    const FitnessMap    fm    = { {iMolSelect::Train, 1e8} };
     ga::Genome before(bases, fm);
     int maxiter = 10;
     doMutate(before, maxiter, fitstrings, eRms);
@@ -220,8 +220,8 @@ TEST_F(MCMCMutatorTest, MutateLennardJones)
     // Train on internal energy
     std::vector<alexandria::eRMS> eRms = { eRMS::EPOT };
     // Bases correspond to epsilon sigma for each atom type
-    std::vector<double> bases = { 0.5, 0.45, 0.09, 0.4, 0.52, 0.3 };
-    FitnessMap          fm    = { {iMolSelect::Train, 1e8} };
+    const std::vector<double> bases = { 0.5, 0.45, 0.09, 0.4, 0.52, 0.3 };
+    const FitnessMap    fm    = { {iMolSelect::Train, 1e8} };
     ga::Genome before(bases, fm);
     int maxiter = 10;
     doMutate(before, maxiter, fitstrings, eRms);
@@ -262,7 +262,7 @@ TEST(MCMCMutatorIndexTest, IndexOfRandomUniform)
 TEST_F(MCMCMutatorTest, RandomNumbersIndependentOfFitness)
 {
     const std::vector<std::string> fitstrings = { "eta", "chi" };
-    std::vector<double>            bases      = { 4.5, 12, 3.3, 10, 5, 13 };
+    const std::vector<double>      bases      = { 4.5, 12, 3.3, 10, 5, 13 };
     const int                      maxiter    = 3;
     std::vector<std::vector<double>> numbers;
     std::vector<std::vector<int>>    indices;
@@ -271,7 +271,7 @@ TEST_F(MCMCMutatorTest, RandomNumbersIndependentOfFitness)
     // objective function, and therefore other steps that are accepted
     for (auto erms : { eRMS::MU, eRMS::ESP })
     {
-        std::vector<alexandria::eRMS> eRms = { erms };
+        const std::vector<alexandria::eRMS> eRms = { erms };
         BayesConfigHandler bch;
         bch.setMaxIter(maxiter);
         auto gth   = new GaTestHelper(1, fitstrings, eRms);

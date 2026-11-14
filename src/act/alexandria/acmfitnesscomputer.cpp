@@ -100,7 +100,7 @@ void ACMFitnessComputer::compute(MsgHandler                *msghandler,
     }
     // First send around parameters. This code is run on master only.
     distributeTasks(CalcDev::Parameters);
-    std::set<int> changed;
+    const std::set<int> changed;
     distributeParameters(msghandler, genome->basesPtr(), changed);
     // Then do the computation
     auto cd = distributeTasks(CalcDev::Compute);
@@ -113,16 +113,16 @@ void ACMFitnessComputer::compute(MsgHandler                *msghandler,
         {
             GMX_THROW(gmx::InternalError("No targets whatsoever!"));
         }
-        auto ttt = targets.find(trgtFit);
+        const auto ttt = targets.find(trgtFit);
         if (targets.end() != ttt)
         {
-            auto fts = ttt->second;
+            const auto fts = ttt->second;
             if (!fts.empty())
             {
                 msghandler->tw()->writeLineFormatted("Components of training function for %s set\n", iMolSelectName(trgtFit).c_str());
                 for (const auto &ft : fts)
                 {
-                    auto p = ft.second.info();
+                    const auto p = ft.second.info();
                     if (!p.empty())
                     {
                         msghandler->tw()->writeLine(p);
@@ -160,7 +160,7 @@ void ACMFitnessComputer::distributeParameters(MsgHandler                *msghand
                                               const std::set<int>       &changed)
 {
     static const size_t timer = Timings::instance().index("Parameter distribution");
-    ScopedTimer         scoped(timer);
+    const ScopedTimer   scoped(timer);
     if (msghandler && msghandler->debug())
     {
         msghandler->writeDebug("Starting to distribute parameters\n");
@@ -270,7 +270,7 @@ std::vector<double> ACMFitnessComputer::calcDeviations(MsgHandler               
                 }
             }
         };
-        auto et = energyTask(first);
+        const auto et = energyTask(first);
         setupGpuDeviations(first);
         // Only the deviations if the GPU can compute them
         bool onlyDeviations = useGpuDeviations(first);
@@ -356,7 +356,7 @@ void ACMFitnessComputer::updateMolecule(MsgHandler                      *msghand
         // Now update the topology, only the interaction types of
         // which parameters changed since the last time.
         static const size_t timer = Timings::instance().index("Topology parameter update");
-        ScopedTimer         scoped(timer);
+        const ScopedTimer   scoped(timer);
         auto                &filled = filledVersion_[imol];
         std::set<InteractionType> itFill;
         for(auto itype : itUpdate)
@@ -365,7 +365,7 @@ void ACMFitnessComputer::updateMolecule(MsgHandler                      *msghand
             {
                 continue;
             }
-            auto fv = filled.find(itype);
+            const auto fv = filled.find(itype);
             if (filled.end() == fv || fv->second != sii_->parameterVersion(itype))
             {
                 itFill.insert(itype);
@@ -398,7 +398,7 @@ void ACMFitnessComputer::updateMolecule(MsgHandler                      *msghand
         // Run charge generation including shell minimization,
         // only if parameters changed that the charges depend on.
         static const size_t timer = Timings::instance().index("Charge generation");
-        ScopedTimer         scoped(timer);
+        const ScopedTimer   scoped(timer);
         if (gpuSqe)
         {
             // The charges of the processor stay outdated, the next
@@ -434,7 +434,7 @@ bool ACMFitnessComputer::needChargeProperties(MsgHandler                        
     bool  need = false;
     for (auto erms : { eRMS::ESP, eRMS::MU, eRMS::QUAD, eRMS::OCT, eRMS::HEXADEC })
     {
-        auto t = targets.find(erms);
+        const auto t = targets.find(erms);
         if (t == targets.end() || t->second.weight() <= 0)
         {
             continue;
@@ -505,10 +505,10 @@ void ACMFitnessComputer::buildDependencies(MsgHandler                      *msgh
                                            bool                             needQProps)
 {
     static const size_t timer = Timings::instance().index("Parameter dependencies");
-    ScopedTimer         scoped(timer);
+    const ScopedTimer   scoped(timer);
     auto pd      = sii_->forcefield();
     auto mymols  = molgen_->actmolsPtr();
-    auto refresh = [&]()
+    const auto refresh = [&]()
     {
         for (auto molptr : selected)
         {
@@ -518,7 +518,7 @@ void ACMFitnessComputer::buildDependencies(MsgHandler                      *msgh
     // All parameters must be in the force field for updateForceField
     std::vector<double> values;
     {
-        std::set<int> all;
+        const std::set<int> all;
         values = parameterValues();
         sii_->updateForceField(msghandler, all, values);
         refresh();
@@ -588,7 +588,7 @@ bool ACMFitnessComputer::prepareDeviation(MsgHandler    *msghandler,
                                           DeviationTask *dt)
 {
     static const size_t timer = Timings::instance().index("Fitness computation overhead");
-    ScopedTimer         scoped(timer);
+    const ScopedTimer   scoped(timer);
     msghandler->writeDebug("CalcDev starting");
 
     auto cr = sii_->commRec();
@@ -637,7 +637,7 @@ bool ACMFitnessComputer::prepareDeviation(MsgHandler    *msghandler,
     {
         DeviationTask tmp;
         tmp.targets = targets;
-        auto et     = energyTask(tmp);
+        const auto et     = energyTask(tmp);
         gpuCharges  = (!needQProps && et.compute && !et.forces &&
                        forceComp_->gpuChargesOnly(sii_->forcefield()));
     }
@@ -741,7 +741,7 @@ bool ACMFitnessComputer::prepareDeviation(MsgHandler    *msghandler,
 
             computeMultipoles(targets, &(*actmol));
 
-            if (devComputers_.size() == 0)
+            if (devComputers_.empty())
             {
                 msghandler->msg(ACTStatus::Warning,
                                 "No devComputers: no deviation from reference values will be computed.");
@@ -763,7 +763,7 @@ bool ACMFitnessComputer::prepareDeviation(MsgHandler    *msghandler,
     // dependencies, otherwise they are updated after all
     bool consistent = (haveDeps && selected.size() == depsMols_.size() &&
                        std::equal(selected.begin(), selected.end(), depsMols_.begin()));
-    auto updateSkipped = [&]()
+    const auto updateSkipped = [&]()
     {
         for (auto molptr : skipped)
         {
@@ -786,7 +786,7 @@ bool ACMFitnessComputer::prepareDeviation(MsgHandler    *msghandler,
         gpuOk = false;
         updateSkipped();
         static const size_t timer = Timings::instance().index("Charge generation");
-        ScopedTimer         scoped(timer);
+        const ScopedTimer   scoped(timer);
         std::vector<ACTMol *> kept;
         for (auto molptr : selected)
         {
@@ -898,7 +898,7 @@ bool ACMFitnessComputer::setupChain(const DeviationTask &dt)
     {
         gpu::ChainTerm term;
         term.weight = ft.second.weight();
-        auto j      = std::find(rms.begin(), rms.end(), ft.first);
+        const auto j      = std::find(rms.begin(), rms.end(), ft.first);
         if (j != rms.end())
         {
             term.kind  = gpu::chainTermDimer;
@@ -976,7 +976,7 @@ bool ACMFitnessComputer::chainAllowed(const DeviationTask &dt, size_t nreplica)
     // For developers, why the chain does not run, once for each reason
     static const bool          why = std::getenv("ACT_GPU_CHAIN_WHY") != nullptr;
     static std::set<std::string> told;
-    auto no = [](const std::string &reason)
+    const auto no = [](const std::string &reason)
     {
         if (why && told.insert(reason).second)
         {
@@ -1059,7 +1059,7 @@ void ACMFitnessComputer::runChains(MsgHandler                                   
                                    std::vector<gpu::ChainResults>                 *results)
 {
     static const size_t timer = Timings::instance().index("GPU chain");
-    ScopedTimer         scoped(timer);
+    const ScopedTimer   scoped(timer);
     auto   gs   = forceComp_->gpuTrainingSystem();
     size_t nset = params.size();
     GMX_RELEASE_ASSERT(gs && nset > 0 && steps.size() == nset && chi2.size() == nset &&
@@ -1162,7 +1162,7 @@ void ACMFitnessComputer::checkMultipoles(MsgHandler *msghandler, const Deviation
                     {
                         if (qp.qPqmConst().hasMultipole(MolPropObservable::DIPOLE))
                         {
-                            auto qact = qp.qPactConst();
+                            const auto &qact = qp.qPactConst();
                             hx        = qact.x();
                             std::vector<gmx::RVec>            forces(hx.size());
                             std::map<InteractionType, double> energies;
@@ -1199,7 +1199,7 @@ void ACMFitnessComputer::chainCacheTo(size_t replica, const std::vector<double> 
     {
         size_t size  = gs->chainEntrySize(m);
         size_t ndimer = 0, nepot = 0, nmultipole = 0;
-        auto   have  = gs->chainLayout(m, &ndimer, &nepot, &nmultipole);
+        const auto have  = gs->chainLayout(m, &ndimer, &nepot, &nmultipole);
         size_t ndep  = molDeps_[m].size();
         for (int e = 0; e < 2; e++, off += size)
         {
@@ -1413,7 +1413,7 @@ bool ACMFitnessComputer::useGpuDeviations(const DeviationTask &dt)
 
 void ACMFitnessComputer::computeEnergies(MsgHandler *msghandler, DeviationTask *dt)
 {
-    auto et = energyTask(*dt);
+    const auto et = energyTask(*dt);
     setupGpuDeviations(*dt);
     dt->gpuDeviations = false;
     if (et.compute)
@@ -1442,7 +1442,7 @@ void ACMFitnessComputer::computeEnergies(MsgHandler *msghandler, DeviationTask *
 double ACMFitnessComputer::finishDeviation(MsgHandler *msghandler, DeviationTask *dt)
 {
     static const size_t timer = Timings::instance().index("Fitness computation overhead");
-    ScopedTimer         scoped(timer);
+    const ScopedTimer   scoped(timer);
     if (!gpuWhyNotReported_ && !forceComp_->gpuResidentWhyNot().empty())
     {
         // Once, such that it is clear why the processor computes everything
@@ -1498,10 +1498,10 @@ double ACMFitnessComputer::finishDeviation(MsgHandler *msghandler, DeviationTask
     for (size_t d = 0; d < devComputers_.size(); d++)
     {
         DevComputer *mydev = devComputers_[d];
-        ScopedTimer timer(devTimers_[d]);
+        const ScopedTimer timer(devTimers_[d]);
         if (!molBound.empty() && dynamic_cast<BoundsDevComputer *>(mydev))
         {
-            auto bounds = targets->find(eRMS::BOUNDS);
+            const auto bounds = targets->find(eRMS::BOUNDS);
             for (auto b : molBound)
             {
                 bounds->second.increase(1, b);
@@ -1607,7 +1607,7 @@ double ACMFitnessComputer::finishDeviation(MsgHandler *msghandler, DeviationTask
         mydev->calcDeviation(msghandler, forceComp_, selected, targets,
                              sii_->forcefield(), lossFunction_);
         // Whether the energy targets are the same as those of calcDeviation
-        auto compare = [targets](const std::map<eRMS, FittingTarget> &other, const char *what, int *differ)
+        const auto compare = [targets](const std::map<eRMS, FittingTarget> &other, const char *what, int *differ)
         {
             bool same = true;
             for (const auto &t : other)
@@ -1650,12 +1650,12 @@ double ACMFitnessComputer::finishDeviation(MsgHandler *msghandler, DeviationTask
     // for all the molecules.
     sii_->sumChiSquared(msghandler, task == CalcDev::Compute, ims);
     auto erms = eRMS::TOT;
-    auto etot = targets->find(erms);
+    const auto etot = targets->find(erms);
     if (targets->end() == etot)
     {
         msghandler->msg(ACTStatus::Error, 
                         gmx::formatString("Cannot find %s in targets.",
-                                          rmsName(erms)).c_str());
+                                          rmsName(erms)));
     }
     numberCalcDevCalled_ += 1;
     checkChain(msghandler, dt, etot->second.chiSquared());
@@ -1778,8 +1778,8 @@ void ACMFitnessComputer::fillDevComputers(MsgHandler *msghandler,
         double dhfWeight   = sii_->target(iMolSelect::Train, eRMS::DeltaHF)->weight();
         if (dhfWeight > 0 && !haveInductionCorrectionData)
         {
-            std::string msg = gmx::formatString("Inconstent input. No induction correction energies present but -fc_deltaHF is %g",
-                                                dhfWeight);
+            const std::string msg = gmx::formatString("Inconstent input. No induction correction energies present but -fc_deltaHF is %g",
+                                                      dhfWeight);
             msghandler->msg(ACTStatus::Error, msg);
         }
         auto devcomp     = new ForceEnergyDevComputer(boltzmann);

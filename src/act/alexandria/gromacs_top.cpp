@@ -158,7 +158,7 @@ static void print_bondeds(MsgHandler                *msg_handler,
                     interaction_function[ftype].name);
             msg_handler->msg(ACTStatus::Warning,
                              gmx::formatString("Unsupported function type %s for writing GROMACS topology",
-                                               interaction_function[ftype].name).c_str());
+                                               interaction_function[ftype].name));
         }
     }
     fprintf(out, "\n");
@@ -293,7 +293,7 @@ void write_top(MsgHandler       *msg_handler,
         { F_VSITE4FD,     d_vsites4 },
         { F_VSITE4FDN,    d_vsites4 }
     };
-    auto myAtoms = topology->atoms();
+    const auto &myAtoms = topology->atoms();
     if (!myAtoms.empty())
     {
         std::vector<int> cgnr;
@@ -392,7 +392,7 @@ void print_top_header(MsgHandler                     *msg_handler,
     fprintf(fp, "%-8d  %-9d  %-9s  %7g  %7g\n\n", 1, 3, "no", 1.0, 1.0);
 
     // The sigma and epsilon of a van der Waals type, or of a pair of them
-    auto sigmaEpsilon = [&vdw, lj](const Identifier &id, double *sigma, double *epsilon)
+    const auto sigmaEpsilon = [&vdw, lj](const Identifier &id, double *sigma, double *epsilon)
     {
         *sigma   = 0;
         *epsilon = 0;
@@ -432,8 +432,8 @@ void print_top_header(MsgHandler                     *msg_handler,
     {
         for (auto tj = ti; tj != types.end(); ++tj)
         {
-            auto vi = pd->findParticleType(*ti)->interactionTypeToIdentifier(InteractionType::VDW);
-            auto vj = pd->findParticleType(*tj)->interactionTypeToIdentifier(InteractionType::VDW);
+            const auto vi = pd->findParticleType(*ti)->interactionTypeToIdentifier(InteractionType::VDW);
+            const auto vj = pd->findParticleType(*tj)->interactionTypeToIdentifier(InteractionType::VDW);
             double sigma, epsilon;
             sigmaEpsilon(Identifier({ vi.id(), vj.id() }, { 1 }, CanSwap::Yes), &sigma, &epsilon);
             fprintf(fp, "%-8s  %-8s  %4d  %12.6g  %12.6g\n", ti->c_str(), tj->c_str(), 1, sigma, epsilon);

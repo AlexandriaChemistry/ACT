@@ -162,7 +162,7 @@ void MCMCMutator::mutate(MsgHandler                *msghandler,
                          gmx_unused double          prMut)
 {
     static const size_t timer = Timings::instance().index("MCMC steps");
-    ScopedTimer         scoped(timer);
+    const ScopedTimer   scoped(timer);
     MutateState state;
     if (!checkMutate(msghandler, genome, &state))
     {
@@ -170,7 +170,7 @@ void MCMCMutator::mutate(MsgHandler                *msghandler,
     }
     // Gather initial chi2 evaluations for training and test sets
     // Update all parameters in forcefield
-    std::set<int> changed;
+    const std::set<int> changed;
     auto cd = CalcDev::Parameters;
     fitComp_->distributeTasks(cd);
     fitComp_->distributeParameters(msghandler, genome->basesPtr(), changed);
@@ -203,8 +203,8 @@ void MCMCMutator::mutate(MsgHandler                *msghandler,
     {
         for (size_t pp = 0; pp < nParam; pp++)
         {
-            auto proposal = proposeStep(genome);
-            std::set<int> changedOne = { static_cast<int>(proposal.paramIndex) };
+            const auto proposal = proposeStep(genome);
+            const std::set<int> changedOne = { static_cast<int>(proposal.paramIndex) };
             // Update FF parameter data structure with
             // the new value of parameter j
             (void) fitComp_->distributeTasks(CalcDev::Parameters);
@@ -319,7 +319,7 @@ void MCMCMutator::mutateLockstep(MsgHandler                       *msghandler,
                                  const std::vector<ga::Genome *>  &bestGenomes)
 {
     static const size_t timer = Timings::instance().index("MCMC steps");
-    ScopedTimer         scoped(timer);
+    const ScopedTimer   scoped(timer);
     size_t n = mutators.size();
     if (n == 0)
     {
@@ -520,7 +520,10 @@ void MCMCMutator::computeMeanSigma(const std::vector<double>    &sum,
                                    const int                     nsum,
                                          std::vector<double>    *sum_of_sq)
 {
-    if (nsum <= 0) return;
+    if (nsum <= 0)
+    {
+        return;
+    }
     double ps2 = 0.0;
     for (size_t k = 0; k < sii_->nParam(); k++)
     {
@@ -626,14 +629,14 @@ void MCMCMutator::printParameterStep(ga::Genome *genome,
 {
     const auto &paramClassIndex = sii_->paramClassIndex();
 
-    auto bases = genome->bases();
+    const auto &bases = genome->bases();
     if (fpc_.size() == sii_->paramClass().size())
     {
         // Write iteration number to each parameter convergence 
         // surveillance file
         for (auto &fp: fpc_) 
         {
-            if (fp.get())
+            if (fp)
             {
                 fprintf(fp.get(), "%8f", xiter);
             }
@@ -648,7 +651,7 @@ void MCMCMutator::printParameterStep(ga::Genome *genome,
         }
         for (auto &fp: fpc_)
         {
-            if (fp.get())
+            if (fp)
             {
                 fprintf(fp.get(), "\n");
             }
@@ -684,10 +687,10 @@ void MCMCMutator::openParamConvFiles(const gmx_output_env_t *oenv)
     for (size_t i = 0; i < pClass.size(); i++)
     {
         // The files of each individual are in its directory
-        auto fileName = gmx::formatString("%sind%d-%s-%s",
-                                          sii_->prefix().c_str(), sii_->id(),
-                                          pClass[i].c_str(),
-                                          std::filesystem::path(sii_->xvgConv()).filename().c_str());
+        const auto fileName = gmx::formatString("%sind%d-%s-%s",
+                                                sii_->prefix().c_str(), sii_->id(),
+                                                pClass[i].c_str(),
+                                                std::filesystem::path(sii_->xvgConv()).filename().c_str());
         gmx::FilePtr fp(xvgropen(fileName.c_str(), "Parameter convergence",
                                  "iteration", "", oenv));
         fpc_.push_back(std::move(fp));
@@ -707,8 +710,8 @@ void MCMCMutator::openParamConvFiles(const gmx_output_env_t *oenv)
 
 void MCMCMutator::openChi2ConvFile(const gmx_output_env_t *oenv)
 {
-    auto fileName = gmx::formatString("%sind%d-%s", sii_->prefix().c_str(), sii_->id(),
-                                      std::filesystem::path(sii_->xvgEpot()).filename().c_str());
+    const auto fileName = gmx::formatString("%sind%d-%s", sii_->prefix().c_str(), sii_->id(),
+                                            std::filesystem::path(sii_->xvgEpot()).filename().c_str());
     fpe_.reset(xvgropen(fileName.c_str(),
                         "Chi squared",
                         "Iteration",

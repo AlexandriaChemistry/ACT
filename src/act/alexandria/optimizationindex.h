@@ -66,7 +66,7 @@ private:
     ForceFieldParameter *ffp_ = nullptr;
 public:
     //! Default constructor
-    OptimizationIndex() {}
+    OptimizationIndex() = default;
 
     /*! \brief Constructor
      * \param[in] iType         The interaction type
@@ -112,7 +112,7 @@ public:
     //! \return a compound string representing the atomindex
     std::string parameterName() const
     {
-        return parameterId_.id().c_str();
+        return parameterId_.id();
     }
 
     /*! \brief Send an OptimizationIndex

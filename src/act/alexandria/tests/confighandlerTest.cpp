@@ -58,9 +58,9 @@ namespace
 TEST(ConfigHandlerTest, OptimizerAlgRoundTrip)
 {
     // All enum values should round-trip through string conversion
-    auto check = [](OptimizerAlg alg)
+    const auto check = [](OptimizerAlg alg)
     {
-        std::string str = optimizerAlgToString(alg);
+        const std::string str = optimizerAlgToString(alg);
         EXPECT_EQ(stringToOptimizerAlg(str), alg);
     };
     check(OptimizerAlg::MCMC);
@@ -109,9 +109,9 @@ TEST(ConfigHandlerTest, StringToSensitivityModeInvalid)
 
 TEST(ConfigHandlerTest, ProbabilityComputerAlgRoundTrip)
 {
-    auto check = [](ProbabilityComputerAlg alg)
+    const auto check = [](ProbabilityComputerAlg alg)
     {
-        std::string str = probabilityComputerAlgToString(alg);
+        const std::string str = probabilityComputerAlgToString(alg);
         EXPECT_EQ(stringToProbabilityComputerAlg(str), alg);
     };
     check(ProbabilityComputerAlg::pcRANK);
@@ -135,9 +135,9 @@ TEST(ConfigHandlerTest, StringToProbabilityComputerAlgInvalid)
 
 TEST(ConfigHandlerTest, EMinimizeAlgorithmRoundTrip)
 {
-    auto check = [](eMinimizeAlgorithm alg)
+    const auto check = [](eMinimizeAlgorithm alg)
     {
-        std::string str = eMinimizeAlgorithmToString(alg);
+        const std::string str = eMinimizeAlgorithmToString(alg);
         EXPECT_EQ(stringToEMinimizeAlgorithm(str), alg);
     };
     check(eMinimizeAlgorithm::LBFGS);
@@ -207,7 +207,7 @@ TEST(ConfigHandlerTest, SensitivitySetter)
 
 TEST(ConfigHandlerTest, GAConfigHandlerDefaults)
 {
-    GAConfigHandler gaCfg;
+    const GAConfigHandler gaCfg;
     EXPECT_EQ(gaCfg.optimizer(), OptimizerAlg::GA);
     EXPECT_EQ(gaCfg.popSize(), 1);
     EXPECT_EQ(gaCfg.nElites(), 0);
@@ -246,7 +246,7 @@ TEST(ConfigHandlerTest, GAConfigHandlerSetters)
 
 TEST(ConfigHandlerTest, BayesConfigHandlerDefaults)
 {
-    BayesConfigHandler bayesCfg;
+    const BayesConfigHandler bayesCfg;
     EXPECT_EQ(bayesCfg.maxIter(), 100);
     EXPECT_EQ(bayesCfg.seed(), 0);
     EXPECT_NEAR(bayesCfg.step(), 0.02, gmx::test::precisionTolerance(1e-10, 1e-7));
@@ -351,7 +351,7 @@ TEST(ConfigHandlerTest, BayesComputeBeta)
 
 TEST(ConfigHandlerTest, SimulationConfigHandlerDefaults)
 {
-    SimulationConfigHandler simCfg;
+    const SimulationConfigHandler simCfg;
     EXPECT_EQ(simCfg.nsteps(), 0);
     EXPECT_FALSE(simCfg.minimize());
     EXPECT_FALSE(simCfg.singlePoint());
