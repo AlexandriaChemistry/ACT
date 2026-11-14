@@ -41,7 +41,7 @@ namespace alexandria
 
 int32_t ParameterRecipes::slot(const ForceFieldParameter *p)
 {
-    auto s = slots_.find(p);
+    const auto s = slots_.find(p);
     if (s != slots_.end())
     {
         return s->second;
@@ -57,14 +57,14 @@ int32_t ParameterRecipes::slot(const ForceFieldParameter *p)
 
 int32_t ParameterRecipes::findSlot(const ForceFieldParameter *p) const
 {
-    auto s = slots_.find(p);
+    const auto s = slots_.find(p);
     return s == slots_.end() ? -1 : s->second;
 }
 
 int ParameterRecipes::directSet(const ForceField *pd, InteractionType itype, const Identifier &id)
 {
-    auto key = std::make_pair(itype, id);
-    auto d   = direct_.find(key);
+    const auto key = std::make_pair(itype, id);
+    const auto d   = direct_.find(key);
     if (d != direct_.end())
     {
         return d->second;
@@ -75,7 +75,7 @@ int ParameterRecipes::directSet(const ForceField *pd, InteractionType itype, con
     }
     const auto &fs     = pd->findForcesConst(itype);
     const auto &params = fs.parametersConst();
-    auto        entry  = params.find(id);
+    const auto  entry  = params.find(id);
     if (params.end() == entry)
     {
         return -1;
@@ -88,7 +88,7 @@ int ParameterRecipes::directSet(const ForceField *pd, InteractionType itype, con
     recipe.n    = static_cast<uint8_t>(names.size());
     for (size_t k = 0; k < names.size(); k++)
     {
-        auto p           = entry->second.find(names[k]);
+        const auto p           = entry->second.find(names[k]);
         recipe.slotI[k]  = entry->second.end() == p ? -1 : slot(&p->second);
     }
     recipes_.push_back(recipe);
@@ -99,8 +99,8 @@ int ParameterRecipes::directSet(const ForceField *pd, InteractionType itype, con
 
 int ParameterRecipes::pairSet(const ForceField *pd, InteractionType itype, const Identifier &pair)
 {
-    auto key = std::make_pair(itype, pair);
-    auto d   = pairs_.find(key);
+    const auto key = std::make_pair(itype, pair);
+    const auto d   = pairs_.find(key);
     if (d != pairs_.end())
     {
         return d->second;
@@ -112,8 +112,8 @@ int ParameterRecipes::pairSet(const ForceField *pd, InteractionType itype, const
     }
     const auto &fs     = pd->findForcesConst(itype);
     const auto &params = fs.parametersConst();
-    auto        ti     = params.find(Identifier(atoms[0]));
-    auto        tj     = params.find(Identifier(atoms[1]));
+    const auto  ti     = params.find(Identifier(atoms[0]));
+    const auto  tj     = params.find(Identifier(atoms[1]));
     if (params.end() == ti || params.end() == tj)
     {
         return -1;
@@ -126,8 +126,8 @@ int ParameterRecipes::pairSet(const ForceField *pd, InteractionType itype, const
     const auto              &rules = fs.combinationRules();
     for (const auto &value : ti->second)
     {
-        auto vj   = tj->second.find(value.first);
-        auto rule = rules.find(value.first);
+        const auto vj   = tj->second.find(value.first);
+        const auto rule = rules.find(value.first);
         if (tj->second.end() == vj || rules.end() == rule)
         {
             GMX_THROW(gmx::InvalidInputError(gmx::formatString("Cannot combine %s of %s and %s",
@@ -146,7 +146,7 @@ int ParameterRecipes::pairSet(const ForceField *pd, InteractionType itype, const
     // The positions of sigma, epsilon and gamma among the values
     auto pc        = pairCombination(fs.potential());
     auto potnames  = potentialToParameterName(fs.potential());
-    auto where     = [&names, &potnames](int index)
+    const auto where     = [&names, &potnames](int index)
     {
         if (index < 0)
         {

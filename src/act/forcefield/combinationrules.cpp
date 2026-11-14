@@ -203,13 +203,13 @@ CombinationPlan::CombinationPlan(Potential                     ftype,
     if (!pc_.simple)
     {
         auto vdwname = potentialToParameterName(ftype);
-        auto where   = [this, &vdwname](int index)
+        const auto where   = [this, &vdwname](int index)
         {
             if (index < 0)
             {
                 return -1;
             }
-            auto found = std::find(names_.begin(), names_.end(), vdwname[index]);
+            const auto found = std::find(names_.begin(), names_.end(), vdwname[index]);
             return found == names_.end() ? -1 : static_cast<int>(found - names_.begin());
         };
         int dist = where(pc_.dist);
@@ -356,7 +356,7 @@ void evalCombinationRule(Potential                     ftype,
             GMX_THROW(gmx::InternalError("Van der Waals parameters of different types cannot be combined"));
         }
     }
-    CombinationPlan     plan(ftype, combrule, ivdw);
+    const CombinationPlan plan(ftype, combrule, ivdw);
     size_t              n = ivdw.size();
     std::vector<double> vi, vj, out(n, 0.0);
     for(const auto &param : ivdw)
