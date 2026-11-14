@@ -10,10 +10,13 @@ env:
   TIDY_DIRS: >-
     src/act/alexandria
     src/act/basics
+    src/act/constraints
     src/act/coulombintegrals
     src/act/forcefield
     src/act/forces
+    src/act/ga
     src/act/gpu
+    src/act/import
     src/act/molprop
     src/act/properties
     src/act/qgen
