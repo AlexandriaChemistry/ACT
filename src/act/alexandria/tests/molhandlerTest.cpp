@@ -63,12 +63,11 @@ namespace
 {
 
 //! \brief Add energies to a checker
-static void add_energies(const ForceField                        *pd,
-                         gmx::test::TestReferenceChecker         *checker,
+static void add_energies(gmx::test::TestReferenceChecker         *checker,
                          const std::map<InteractionType, double> &energies,
                          const char                              *label)
 {
-       for(auto &imf : energies)
+    for(auto &imf : energies)
     {
         const std::string fname   = interactionTypeToString(imf.first);
         const std::string mylabel = gmx::formatString("%s %s", fname.c_str(), label);
@@ -141,7 +140,7 @@ protected:
             std::vector<gmx::RVec> coords = mp.xOriginal();
             std::map<InteractionType, double> eBefore;
             forceComp->compute(&msghandler, pd, mp.topology(), &coords, &forces, &eBefore);
-            add_energies(pd, &checker_, eBefore, "before");
+            add_energies(&checker_, eBefore, "before");
             
             const MolHandler mh;
             
@@ -167,7 +166,7 @@ protected:
             checker_.checkString(eMinimizeAlgorithmToString(simConfig.minAlg()), "algorithm");
             rmsd = mh.coordinateRmsd(mp.atomsConst(), coords, &xmin);
             checker_.checkReal(rmsd, "Coordinate RMSD after minimizing");
-            add_energies(pd, &checker_, eAfter, "after");
+            add_energies(&checker_, eAfter, "after");
             
             // Verify that the energy has gone down, not up.
             EXPECT_TRUE(eAfter[InteractionType::EPOT] <= eBefore[InteractionType::EPOT]);

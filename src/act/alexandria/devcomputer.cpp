@@ -197,10 +197,6 @@ void EspDevComputer::calcDeviation(MsgHandler                    *msghandler,
                                        &forces, &energies);
                 qgr->updateAtomCoords(coords);
             }
-            if (msghandler->debug())
-            {
-                dumpQX(msghandler->tw(), &(*actmol), "ESP");
-            }
             double epsilonr;
             epsilonr = forcefield->epsilonr();
             // Refresh both ordinary and second-charge widths, independently of the fit selection.
@@ -219,13 +215,6 @@ void EspDevComputer::calcDeviation(MsgHandler                    *msghandler,
             }
         }
     }
-}
-
-void EspDevComputer::dumpQX(gmx::TextWriter              *tw,
-                            const ACTMol                 *mol,
-                            const std::string            &info)
-{
-
 }
 
 /* * * * * * * * * * * * * * * * * * * * * *
