@@ -132,6 +132,8 @@ A force field consists many parameters and typically only a subset is trained at
    
 
 
+.. _sec-boundspenalty:
+
 --------------
 Bounds Penalty
 --------------
@@ -150,3 +152,5 @@ Importantly, if a point+distributed model is used :cite:p:`Spoel2025a`, then the
   </particletype>
 
 and the hw atom type is equiped with a distributed charge v1hw at the same position, it is the sum of these charges that will be penalized if it is outside the interval 0.3 - 0.7.
+
+For polarizable force fields the same target, BOUNDS, also contains a penalty of 1 for each conformation of which the shells did not converge in the evaluation, see :ref:`sec-shelltraining`.
