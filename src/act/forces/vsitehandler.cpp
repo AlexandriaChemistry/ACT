@@ -745,7 +745,7 @@ static void constructStrided(const Topology *top,
                              size_t          nconf)
 {
     static const size_t timer = Timings::instance().index("Virtual sites");
-    ScopedTimer         scoped(timer);
+    const ScopedTimer   scoped(timer);
     Timings::instance().addFlops(nconf*topologyVsiteFlops(top, false));
     for (const auto &entry: top->entries())
     {
@@ -844,7 +844,7 @@ static void distributeStrided(const Topology *top,
                               size_t          nconf)
 {
     static const size_t timer = Timings::instance().index("Virtual sites");
-    ScopedTimer         scoped(timer);
+    const ScopedTimer   scoped(timer);
     Timings::instance().addFlops(nconf*topologyVsiteFlops(top, true));
     for (const auto &entry: top->entries())
     {

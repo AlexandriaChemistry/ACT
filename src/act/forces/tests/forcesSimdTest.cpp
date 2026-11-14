@@ -104,7 +104,7 @@ protected:
 #endif
         // A chain of four atoms, two atoms nearby for non-bonded
         // interactions and a shell close to atom 4.
-        std::vector<gmx::RVec> x0 = {
+        const std::vector<gmx::RVec> x0 = {
             { 0.000,  0.000,  0.000 },
             { 0.150,  0.000,  0.000 },
             { 0.200,  0.140,  0.000 },
@@ -117,8 +117,8 @@ protected:
         std::vector<int>    row = { 1, 2, 2, 3, 1, 2, 2 };
         for (size_t i = 0; i < x0.size(); i++)
         {
-            atoms_.push_back(ActAtom("A", "C", "c", ActParticle::Atom,
-                                     6, 12.0, q[i], row[i]));
+            atoms_.emplace_back("A", "C", "c", ActParticle::Atom,
+                                6, 12.0, q[i], row[i]);
         }
         // Deterministic perturbations of up to 0.01 nm
         unsigned int seed = 1993;
@@ -156,7 +156,7 @@ protected:
                 te.addAtom(a);
             }
             te.setParams(i.params);
-            entries.push_back(BaseContainer<TopologyEntry>(std::move(te)));
+            entries.emplace_back(std::move(te));
         }
         return entries;
     }
@@ -175,7 +175,7 @@ protected:
             ASSERT_EQ(2u, i.params.size());
             for (int k = 0; k < 2; k++)
             {
-                auto z = zeta.find(i.atoms[k]);
+                const auto z = zeta.find(i.atoms[k]);
                 if (zeta.end() != z)
                 {
                     ASSERT_EQ(z->second, i.params[k]) << "atom " << i.atoms[k];
@@ -262,8 +262,8 @@ protected:
                 {
                     const auto &o   = original[k];
                     bool        vs  = (first.count(k) && a == 1) || (second.count(k) && c == 1);
-                    atoms.push_back(ActAtom(o.name(), o.element(), o.ffType(), o.pType(), o.atomicNumber(),
-                                            o.mass(), vs ? qvs[k] : o.charge(), vs ? rowvs[k] : o.row()));
+                    atoms.emplace_back(o.name(), o.element(), o.ffType(), o.pType(), o.atomicNumber(),
+                                       o.mass(), vs ? qvs[k] : o.charge(), vs ? rowvs[k] : o.row());
                     atoms.back().setZeta(vs ? zvs[k] : o.zeta());
                 }
                 auto e = energies(mypot, inter, atoms);
@@ -418,7 +418,7 @@ protected:
             // The energies for charges of one, all four terms of each interaction
             std::vector<double>        kd;
             std::vector<float>         kf;
-            std::vector<unsigned char> terms(entries.size(), 0xf);
+            const std::vector<unsigned char> terms(entries.size(), 0xf);
             coulombKernels(entries, terms, &sd, &kd);
             coulombKernels(entries, terms, &sf, &kf);
             for (size_t row = 0; row < 4*entries.size(); row++)
@@ -542,12 +542,12 @@ protected:
             const auto &withForces = useExplicit ? cExplicit : cCompiler;
             for (size_t c = 0; c < nMany_; c++)
             {
-                auto eWith = withForces.energies.energies(c);
+                const auto eWith = withForces.energies.energies(c);
                 auto eNo   = cNoForces.energies.energies(c);
                 ASSERT_EQ(eWith.size(), eNo.size());
                 for (const auto &e : eWith)
                 {
-                    auto ei = eNo.find(e.first);
+                    const auto ei = eNo.find(e.first);
                     ASSERT_TRUE(ei != eNo.end());
                     EXPECT_REAL_EQ_TOL(e.second, ei->second, tolSame)
                         << interactionTypeToString(e.first) << " without forces, conformation " << c
@@ -562,16 +562,16 @@ protected:
             {
                 SCOPED_TRACE(gmx::formatString("conformation %zu, %s", c,
                                                other == &cCompiler ? "vectorized by the compiler" : "explicit SIMD"));
-                auto eOne   = cOne.energies.energies(c);
+                const auto eOne   = cOne.energies.energies(c);
                 auto eOther = other->energies.energies(c);
                 ASSERT_EQ(eOne.size(), eOther.size());
                 for (const auto &e : eOne)
                 {
-                    auto ei = eOther.find(e.first);
+                    const auto ei = eOther.find(e.first);
                     ASSERT_TRUE(ei != eOther.end());
                     EXPECT_REAL_EQ_TOL(e.second, ei->second, tolSame);
                 }
-                auto tolForce = forceTolerance(cOne.f(c).toRVec(), tolSame);
+                const auto tolForce = forceTolerance(cOne.f(c).toRVec(), tolSame);
                 for (size_t a = 0; a < atoms_.size(); a++)
                 {
                     for (int m = 0; m < DIM; m++)
@@ -584,7 +584,7 @@ protected:
     }
     void test(Potential mypot, const std::vector<Interaction> &inter)
     {
-        auto   entries  = makeEntries(inter);
+        const auto entries  = makeEntries(inter);
         double epsilonr = 1;
         // Conformations in the outer loop
         auto   cOuter   = makeCoords(x_);
@@ -598,7 +598,7 @@ protected:
         double h        = 1e-6;
         double tolFD    = 1e-5;
 #else
-        auto   tolSame  = gmx::test::relativeToleranceAsFloatingPoint(1, 1e-5);
+        const auto tolSame  = gmx::test::relativeToleranceAsFloatingPoint(1, 1e-5);
         double h        = 1e-3;
         double tolFD    = 1e-2;
 #endif
@@ -606,16 +606,16 @@ protected:
         compareSinglePrecision(mypot, entries, epsilonr);
         for (size_t c = 0; c < nconf_; c++)
         {
-            auto eOuter = cOuter.energies.energies(c);
+            const auto eOuter = cOuter.energies.energies(c);
             auto eInner = cInner.energies.energies(c);
             ASSERT_EQ(eOuter.size(), eInner.size());
             for (const auto &e : eOuter)
             {
-                auto ei = eInner.find(e.first);
+                const auto ei = eInner.find(e.first);
                 ASSERT_TRUE(ei != eInner.end());
                 EXPECT_REAL_EQ_TOL(e.second, ei->second, tolSame);
             }
-            auto tolForce = forceTolerance(cOuter.f(c).toRVec(), tolSame);
+            const auto tolForce = forceTolerance(cOuter.f(c).toRVec(), tolSame);
             for (size_t a = 0; a < atoms_.size(); a++)
             {
                 for (int m = 0; m < DIM; m++)
@@ -665,8 +665,8 @@ protected:
         {
             for (const auto &e : cInner.energies.energies(c))
             {
-                std::string label = gmx::formatString("%s-%zu",
-                                                      interactionTypeToString(e.first).c_str(), c);
+                const std::string label = gmx::formatString("%s-%zu",
+                                                            interactionTypeToString(e.first).c_str(), c);
                 checker_.checkReal(e.second, label.c_str());
             }
         }
@@ -819,7 +819,7 @@ TEST_F(ForcesSimdTest, CoulombGaussianShortDistance)
     const double zeta = 12.0*9.0/std::sqrt(12.0*12.0 + 9.0*9.0);
     const double qq   = ONE_4PI_EPS0*atoms_[0].charge()*atoms_[1].charge();
     setWidths({ { { 0, 1 }, { 12, 9 } } });
-    auto         entries = makeEntries({ { { 0, 1 }, { 12, 9 } } });
+    const auto   entries = makeEntries({ { { 0, 1 }, { 12, 9 } } });
     const std::vector<double> dist = { 1e-5, 1e-4, 1e-3, 1e-2, 0.03, 0.1 };
     std::vector<std::vector<gmx::RVec>> x;
     for (auto r : dist)

@@ -213,7 +213,7 @@ static inline S erfAndExp(S x, S *expmx2)
                          9.75708501743205489753E2, 1.82390916687909736289E3, 2.24633760818710981792E3,
                          1.65666309194161350182E3, 5.57535340817727675546E2 };
     S          ax    = abs(x);
-    auto       small = ax < 1.0;
+    const auto small = ax < 1.0;
     S          x2    = x*x;
     // Beyond 8 erfc is zero in double precision
     S          a     = min(ax, 8.0);
@@ -272,7 +272,7 @@ static inline S asin(S x)
     const double pio4    = 7.85398163397448309616E-1;
     const double lowPio2 = 6.123233995736765886130E-17;
     S            ax      = abs(x);
-    auto         big     = ax > 0.625;
+    const auto   big     = ax > 0.625;
     S            z       = select(big, 1.0 - ax, ax*ax);
     S            num     = select(big, polynomial(z, R), polynomial(z, asinP));
     S            den     = select(big, polynomial(z, Sc), polynomial(z, asinQ));
@@ -299,7 +299,7 @@ static inline S acos(S x)
     const double lowPio2  = 6.123233995736765886130E-17;
     const double lowPi    = 1.2246467991473531772E-16;
     S            ax       = abs(x);
-    auto         big      = ax > 0.5;
+    const auto   big      = ax > 0.5;
     S            a        = asinSmall(select(big, sqrt(0.5 - 0.5*ax), x));
     S            twoa     = a + a;
     S            small    = ((pio4 - a) + lowPio2) + pio4;
@@ -335,8 +335,8 @@ static inline S atan2(S y, S x)
     const double lowPi    = 1.2246467991473531772E-16;
     S            ax       = abs(x);
     S            ay       = abs(y);
-    auto         big      = ay > tan3pio8*ax;
-    auto         mid      = ay > 0.66*ax;
+    const auto   big      = ay > tan3pio8*ax;
+    const auto   mid      = ay > 0.66*ax;
     S            num      = select(big, -ax, select(mid, ay - ax, ay));
     // The denominator is only zero if x and y both are
     S            den      = select(big, ay, select(mid, ay + ax, select(ax > 0.0, ax, 1.0)));

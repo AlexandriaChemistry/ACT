@@ -317,7 +317,7 @@ public:
     void copyCoordinates(const ConformationArrays<U> &src)
     {
         static const size_t timer = Timings::instance().index("Copy coordinates to arrays");
-        ScopedTimer         scoped(timer);
+        const ScopedTimer   scoped(timer);
         if (src.nconf != nconf || src.natom != natom)
         {
             slot_.clear();
@@ -346,7 +346,7 @@ public:
     void storeForces(ConformationArrays<U> *dst) const
     {
         static const size_t timer = Timings::instance().index("Copy forces from arrays");
-        ScopedTimer         scoped(timer);
+        const ScopedTimer   scoped(timer);
         GMX_RELEASE_ASSERT(dst->nconf == nconf && dst->natom == natom, "Different conformations");
         for(size_t row = 0; row < DIM*natom; row++)
         {
@@ -362,7 +362,7 @@ public:
     void copyForces(const ConformationArrays<U> &src)
     {
         static const size_t timer = Timings::instance().index("Copy forces to arrays");
-        ScopedTimer         scoped(timer);
+        const ScopedTimer   scoped(timer);
         GMX_RELEASE_ASSERT(src.nconf == nconf && src.natom == natom, "Different conformations");
         for(size_t row = 0; row < DIM*natom; row++)
         {
@@ -377,7 +377,7 @@ public:
     void loadForces(const std::vector<T> &src)
     {
         static const size_t timer = Timings::instance().index("Copy fixed forces to arrays");
-        ScopedTimer         scoped(timer);
+        const ScopedTimer   scoped(timer);
         GMX_RELEASE_ASSERT(src.size() == f.size(), "Forces kept with another layout");
         for(size_t row = 0; row < DIM*natom; row++)
         {
@@ -832,8 +832,8 @@ struct ConformationData
         {
             arrays.resize(confs.size(), natom);
         }
-        auto xc = x(c);
-        auto fc = f(c);
+        const auto xc = x(c);
+        const auto fc = f(c);
         for(size_t a = 0; a < natom; a++)
         {
             for(int m = 0; m < DIM; m++)
@@ -862,8 +862,8 @@ struct ConformationData
         {
             arrays.resize(confs.size(), natom);
         }
-        auto xc = this->x(c);
-        auto fc = f(c);
+        const auto xc = this->x(c);
+        const auto fc = f(c);
         for(size_t a = 0; a < natom; a++)
         {
             for(int m = 0; m < DIM; m++)

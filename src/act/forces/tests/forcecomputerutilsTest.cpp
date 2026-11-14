@@ -68,7 +68,7 @@ protected:
     ForceComputerUtilsTest( ) :
         checker_(refData_.rootChecker())
     {
-        gmx::test::FloatingPointTolerance tolerance(gmx::test::relativeToleranceAsFloatingPoint(1.0, GMX_DOUBLE ? 1e-10 : 1e-6));
+        const gmx::test::FloatingPointTolerance tolerance(gmx::test::relativeToleranceAsFloatingPoint(1.0, GMX_DOUBLE ? 1e-10 : 1e-6));
         checker_.setDefaultTolerance(tolerance);
     }
 
@@ -97,7 +97,7 @@ protected:
     
 TEST_F (ForceComputerUtilsTest, NinetyDegreesAngle)
 {
-    std::vector<gmx::RVec> x = {
+    const std::vector<gmx::RVec> x = {
         { 0, 0, 0 },
         { 0, 0, 1 },
         { 0, 1, 1 }
@@ -107,7 +107,7 @@ TEST_F (ForceComputerUtilsTest, NinetyDegreesAngle)
 
 TEST_F (ForceComputerUtilsTest, LinearAngle)
 {
-    std::vector<gmx::RVec> x = {
+    const std::vector<gmx::RVec> x = {
         { 0, 0, 0 },
         { 0, 0, 1 },
         { 0, 0, 2 }
@@ -117,7 +117,7 @@ TEST_F (ForceComputerUtilsTest, LinearAngle)
 
 TEST_F (ForceComputerUtilsTest, ZeroAngle)
 {
-    std::vector<gmx::RVec> x = {
+    const std::vector<gmx::RVec> x = {
         { 0, 0, 0 },
         { 0, 0, 1 },
         { 0, 0, 0 }
@@ -129,7 +129,7 @@ TEST_F (ForceComputerUtilsTest, FortyFiveDegreesAngle)
 {
     // r_ij = xi - xj = (1,0,0), r_kj = xk - xj = (1,1,0)
     // cos_angle = 1/sqrt(2), angle = 45 degrees
-    std::vector<gmx::RVec> x = {
+    const std::vector<gmx::RVec> x = {
         { 1, 0, 0 },
         { 0, 0, 0 },
         { 1, 1, 0 }
@@ -141,7 +141,7 @@ TEST_F (ForceComputerUtilsTest, OneThirtyFiveDegreesAngle)
 {
     // r_ij = xi - xj = (1,0,0), r_kj = xk - xj = (-1,1,0)
     // cos_angle = -1/sqrt(2), angle = 135 degrees
-    std::vector<gmx::RVec> x = {
+    const std::vector<gmx::RVec> x = {
         { 1, 0, 0 },
         { 0, 0, 0 },
         { -1, 1, 0 }
@@ -152,7 +152,7 @@ TEST_F (ForceComputerUtilsTest, OneThirtyFiveDegreesAngle)
 TEST_F (ForceComputerUtilsTest, ArbitraryAngle)
 {
     // r_ij = (1,0,0), r_kj = (1,1,1), cos = 1/sqrt(3), angle ~ 54.7 degrees
-    std::vector<gmx::RVec> x = {
+    const std::vector<gmx::RVec> x = {
         { 1, 0, 0 },
         { 0, 0, 0 },
         { 1, 1, 1 }
@@ -162,7 +162,7 @@ TEST_F (ForceComputerUtilsTest, ArbitraryAngle)
 
 TEST_F (ForceComputerUtilsTest, DihedralAnglePbcNone)
 {
-    std::vector<gmx::RVec> x = {
+    const std::vector<gmx::RVec> x = {
         { 0, 0, 0 },
         { 0, 0, 1 },
         { 0, 1, 1 },
@@ -174,7 +174,7 @@ TEST_F (ForceComputerUtilsTest, DihedralAnglePbcNone)
 TEST_F (ForceComputerUtilsTest, DihedralAngleZeroDegrees)
 {
     // All four atoms in the same plane (XZ plane), cis configuration → 0 degree dihedral
-    std::vector<gmx::RVec> x = {
+    const std::vector<gmx::RVec> x = {
         { 0, 0, 0 },
         { 0, 0, 1 },
         { 1, 0, 1 },
@@ -186,7 +186,7 @@ TEST_F (ForceComputerUtilsTest, DihedralAngleZeroDegrees)
 TEST_F (ForceComputerUtilsTest, DihedralAngle180Degrees)
 {
     // Atoms in two planes meeting at 180 degrees (trans planar)
-    std::vector<gmx::RVec> x = {
+    const std::vector<gmx::RVec> x = {
         {  1, 0, 0 },
         {  0, 0, 0 },
         {  0, 0, 1 },
@@ -204,7 +204,7 @@ TEST_F (ForceComputerUtilsTest, DihedralAngleAlternativeOrdering)
         { 0,  1, 1 },
         { 1,  1, 1 }
     };
-    std::vector<gmx::RVec> xrev = { x[3], x[1], x[2], x[0] };
+    const std::vector<gmx::RVec> xrev = { x[3], x[1], x[2], x[0] };
     testDihedralAngle(xrev);
 }
 

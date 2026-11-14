@@ -299,7 +299,7 @@ private:
 
  public:
     //! \brief Default constructor
-    ForceComputer() {}
+    ForceComputer() = default;
     /*! \brief Constructor with initialization of variables
      * \param[in] msForce          The tolerance for the mean square force on shells
      * \param[in] maxiter          The maximum number of iterations for shell minimization

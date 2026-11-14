@@ -179,13 +179,13 @@ bool gpuVsiteParameters(InteractionType itype, const TopologyEntry &b, int index
         index[k]  = -1;
         factor[k] = 1;
     }
-    auto use = [index, factor](int k, int i, double f = 1)
+    const auto use = [index, factor](int k, int i, double f = 1)
     {
         index[k]  = i;
         factor[k] = f;
     };
     // The sign of the out-of-plane distance of the site, see Vsite3OUT
-    auto sign = [&b]() { return static_cast<const Vsite3OUT *>(b.self())->sign(); };
+    const auto sign = [&b]() { return static_cast<const Vsite3OUT *>(b.self())->sign(); };
     switch (itype)
     {
     case InteractionType::VSITE1:
@@ -255,7 +255,7 @@ bool gpuVsiteEntry(InteractionType itype, const TopologyEntry &b, gpu::VsiteEntr
         ve->parent[k] = static_cast<uint32_t>(ai[k]);
     }
     // The second parent first, for the routines that get it first
-    auto secondFirst = [ve]() { std::swap(ve->parent[0], ve->parent[1]); };
+    const auto secondFirst = [ve]() { std::swap(ve->parent[0], ve->parent[1]); };
     switch (itype)
     {
     case InteractionType::VSITE1:     ve->kind = gpu::VsiteKind::Copy; break;
@@ -405,7 +405,7 @@ bool GpuBatch::compute(bool forces)
         return false;
     }
     static const size_t timer = Timings::instance().index("GPU pair potentials");
-    ScopedTimer         scoped(timer);
+    const ScopedTimer   scoped(timer);
     std::vector<gpu::PairBatchBlock> blocks(ntask_);
     for (size_t k = 0; k < ntask_; k++)
     {
@@ -468,7 +468,7 @@ static bool computeGpuT(Potential                   mypot,
     // Kept between calls, such that the memory is used again
     static thread_local std::vector<gpu::PairEntry> pairs;
     preparePairs(kernel, entries, atoms, epsilonr, &pairs);
-    gpu::PairBatchBlock block = { atoms.size(), stride, nslot, x, kernel, pairs.data(), pairs.size(),
+    const gpu::PairBatchBlock block = { atoms.size(), stride, nslot, x, kernel, pairs.data(), pairs.size(),
                                   forces ? f : nullptr, energies };
     return gpu::computePairBlocks(&block, 1, forces);
 }

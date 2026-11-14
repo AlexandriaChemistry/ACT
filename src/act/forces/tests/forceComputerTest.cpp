@@ -70,7 +70,7 @@ namespace
 
 TEST(ForceComputerInit, DefaultConstructorHasExpectedTolerance)
 {
-    ForceComputer fc;
+    const ForceComputer fc;
     // Default force tolerance is 1e-6 (see forcecomputer.h)
     EXPECT_DOUBLE_EQ(1e-6, fc.forceTolerance());
 }
@@ -78,7 +78,7 @@ TEST(ForceComputerInit, DefaultConstructorHasExpectedTolerance)
 TEST(ForceComputerInit, ParameterizedConstructorStoresTolerance)
 {
     const double toler = 1e-8;
-    ForceComputer fc(toler, 50, 1);
+    const ForceComputer fc(toler, 50, 1);
     EXPECT_DOUBLE_EQ(toler, fc.forceTolerance());
 }
 
@@ -112,7 +112,7 @@ TEST(ForceComputerFtype, PresentInteractionReturnsCorrectPotential)
 {
     auto pd = getForceField("ACS-pg-vs2");
     ASSERT_NE(nullptr, pd);
-    ForceComputer fc;
+    const ForceComputer fc;
     // VSITE2 is present in ACS-pg-vs2
     auto pot = fc.ftype(pd, InteractionType::VSITE2);
     EXPECT_EQ(Potential::VSITE2, pot);
@@ -122,7 +122,7 @@ TEST(ForceComputerFtype, MissingInteractionReturnsNone)
 {
     auto pd = getForceField("ACS-pg-vs2");
     ASSERT_NE(nullptr, pd);
-    ForceComputer fc;
+    const ForceComputer fc;
     // BONDS is not expected to be in ACS-pg-vs2
     if (!pd->interactionPresent(InteractionType::BONDS))
     {
@@ -135,7 +135,7 @@ TEST(ForceComputerFtype, Vsite1PresentInVs2ForceField)
 {
     auto pd = getForceField("ACS-pg-vs2");
     ASSERT_NE(nullptr, pd);
-    ForceComputer fc;
+    const ForceComputer fc;
     auto pot = fc.ftype(pd, InteractionType::VSITE1);
     EXPECT_EQ(Potential::VSITE1, pot);
 }
@@ -144,7 +144,7 @@ TEST(ForceComputerFtype, Vsite3PresentInVs3ForceField)
 {
     auto pd = getForceField("ACS-pg-vs3");
     ASSERT_NE(nullptr, pd);
-    ForceComputer fc;
+    const ForceComputer fc;
     auto pot = fc.ftype(pd, InteractionType::VSITE3);
     EXPECT_EQ(Potential::VSITE3, pot);
 }
@@ -168,9 +168,9 @@ static bool setupMolecule(MsgHandler        *msghandler,
     bool   userqtot   = false;
     double qtot_babel = 0;
     const char  *conf     = "minimum";
-    std::string  fileName = gmx::formatString("molecules/%s.sdf", molName.c_str());
-    std::string  dataName = gmx::test::TestFileManager::getInputFilePath(fileName);
-    importFile(msghandler, pd, dataName.c_str(), &molprops,
+    const std::string fileName = gmx::formatString("molecules/%s.sdf", molName.c_str());
+    const std::string dataName = gmx::test::TestFileManager::getInputFilePath(fileName);
+    importFile(msghandler, pd, dataName, &molprops,
                conf, JobType::OPT, userqtot, &qtot_babel, true);
     if (!msghandler->ok() || molprops.size() != 1)
     {
@@ -214,7 +214,7 @@ protected:
         auto coords = mol.xOriginal();
         const auto *top = mol.topology();
 
-        ForceComputer fc;
+        const ForceComputer fc;
         fc.constructVsiteCoordinates(top, &coords);
         std::vector<gmx::RVec> forces(coords.size());
 
@@ -248,7 +248,7 @@ protected:
         const auto *top = mol.topology();
         std::vector<gmx::RVec> forces(coords.size());
     
-        ForceComputer fc(1e-3, 100, 1.0);
+        const ForceComputer fc(1e-3, 100, 1.0);
         EXPECT_EQ(0u, fc.numEvaluations());
         EXPECT_EQ(0u, fc.numShellIterations());
         EXPECT_EQ(0u, fc.numShellConvergenceFailed());
@@ -332,7 +332,7 @@ TEST_F(ForceComputerIntegrationTest, ComputeForcesHaveCorrectSize)
     ASSERT_TRUE(setupMolecule(&msghandler_, "ACS-pg-vs2", "hydrogen-fluoride", &mol));
     auto coords = mol.xOriginal();
     const auto *top = mol.topology();
-    ForceComputer fc;
+    const ForceComputer fc;
     forces.assign(coords.size(), { 0, 0, 0 });
     fc.compute(&msghandler_, pd, top, &coords, &forces, &energies);
     EXPECT_TRUE(msghandler_.ok());
@@ -353,7 +353,7 @@ TEST_F(ForceComputerIntegrationTest, ComputeOnceAndComputeGiveSameEpotWithoutShe
     ACTMol mol;
     ASSERT_TRUE(setupMolecule(&msghandler_, "ACS-pg-vs2", "hydrogen-fluoride", &mol));
     const auto *top = mol.topology();
-    ForceComputer fc;
+    const ForceComputer fc;
 
     // computeOnce
     auto coords1 = mol.xOriginal();
@@ -387,7 +387,7 @@ TEST_F(ForceComputerIntegrationTest, ConstructVsiteCoordinatesAndSpreadForces)
     ACTMol mol;
     ASSERT_TRUE(setupMolecule(&msghandler_, "ACS-pg-vs2", "hydrogen-fluoride", &mol));
     const auto *top = mol.topology();
-    ForceComputer fc;
+    const ForceComputer fc;
 
     auto coords = mol.xOriginal();
     fc.constructVsiteCoordinates(top, &coords);
@@ -507,7 +507,7 @@ TEST_F(ForceComputerIntegrationTest, ComputeStatisticsAreTracked)
     auto coords = mol.xOriginal();
     const auto *top = mol.topology();
 
-    ForceComputer fc;
+    const ForceComputer fc;
 
     EXPECT_EQ(0u, fc.numEvaluations());
     EXPECT_EQ(0u, fc.numShellIterations());
@@ -588,7 +588,7 @@ TEST_F(ForceComputerIntegrationTest, ComputeStatisticsAreTrackedDimerHyper)
 
     MsgHandler msghandler;
     msghandler.setPrintLevel(ACTStatus::Warning);
-    ForceComputer fc;
+    const ForceComputer fc;
     
     EXPECT_EQ(0u, fc.numEvaluations());
     EXPECT_EQ(0u, fc.numShellIterations());
@@ -647,7 +647,7 @@ TEST_F(ForceComputerIntegrationTest, ComputeStatisticsAreTrackedDimerHyper)
 // each interaction, see interactionFlops in forces_simd.cpp
 TEST_F(ForceComputerIntegrationTest, CountsFlops)
 {
-    std::string ffName("ACS-v3fds");
+    const std::string ffName("ACS-v3fds");
     auto        pd = getForceField(ffName);
     ASSERT_NE(nullptr, pd);
     ASSERT_FALSE(pd->polarizable());
@@ -655,7 +655,7 @@ TEST_F(ForceComputerIntegrationTest, CountsFlops)
     ASSERT_TRUE(setupMolecule(&msghandler_, ffName, "water_dimer", &mol));
     auto        coords = mol.xOriginal();
     const auto *top    = mol.topology();
-    ForceComputer fc;
+    const ForceComputer fc;
     fc.constructVsiteCoordinates(top, &coords);
     std::vector<gmx::RVec>            forces(coords.size());
     std::map<InteractionType, double> energies;
@@ -709,7 +709,7 @@ TEST_F(ForceComputerIntegrationTest, CountsFlops)
 // floating point operations are counted, but not those of the padding
 TEST_F(ForceComputerIntegrationTest, VsitesOfManyConformations)
 {
-    std::string ffName("ACS-v3fds");
+    const std::string ffName("ACS-v3fds");
     auto        pd = getForceField(ffName);
     ASSERT_NE(nullptr, pd);
     ACTMol mol;
@@ -722,7 +722,7 @@ TEST_F(ForceComputerIntegrationTest, VsitesOfManyConformations)
     // Three different conformations and forces, in four slots
     size_t nconf  = 3;
     size_t stride = 4;
-    auto   x0     = mol.xOriginal();
+    const auto x0     = mol.xOriginal();
     size_t natom  = x0.size();
     std::vector<std::vector<gmx::RVec>> x(nconf, x0), f(nconf, x0);
     for(size_t c = 0; c < nconf; c++)
@@ -751,7 +751,7 @@ TEST_F(ForceComputerIntegrationTest, VsitesOfManyConformations)
             }
         }
     }
-    VsiteHandler vsiteHandler;
+    const VsiteHandler vsiteHandler;
     auto        &timings = Timings::instance();
     // Count the operations in this test, whatever ACT_COUNT_FLOPS is
     struct CountFlops

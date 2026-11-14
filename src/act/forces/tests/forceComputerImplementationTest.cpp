@@ -182,13 +182,13 @@ protected:
         refData_(fcStrippedRefDataFilename()),
         checker_(refData_.rootChecker())
     {
-        gmx::test::FloatingPointTolerance tolerance(gmx::test::relativeToleranceAsFloatingPoint(1.0, GMX_DOUBLE ? 1e-10 : 1e-6));
+        const gmx::test::FloatingPointTolerance tolerance(gmx::test::relativeToleranceAsFloatingPoint(1.0, GMX_DOUBLE ? 1e-10 : 1e-6));
         checker_.setDefaultTolerance(tolerance);
         std::vector<double> q = { 1, 1, -1, -2 };
         for (int i = 0; i < 4; i++)
         {
             // Note the row value must be <= 2 in order to work for Slaters
-            atoms_.push_back({ "C", "C", "C", ActParticle::Atom, 6, 12, q[i], 2 });
+            atoms_.emplace_back("C", "C", "C", ActParticle::Atom, 6, 12, q[i], 2);
         }
     }
 
@@ -248,7 +248,7 @@ protected:
         }
         // Tolerance with an absolute part for the rounded coordinates in
         // single precision, for values of both float and double type
-        auto roundedTolerance = [](double absolute)
+        const auto roundedTolerance = [](double absolute)
         {
             return gmx::test::FloatingPointTolerance(absolute, absolute, 1e-5, 1e-5,
                                                      UINT64_MAX, UINT64_MAX, false);
@@ -270,7 +270,7 @@ protected:
             {
                 for (const auto &xj : *coordinates)
                 {
-                    gmx::RVec dx = xi - xj;
+                    const gmx::RVec dx = xi - xj;
                     extent = std::max(extent, static_cast<double>(norm(dx)));
                 }
             }
@@ -311,14 +311,14 @@ protected:
         // For each entry in energies2, check that the key exists in energies and compare values
         for (const auto &ee2 : energies2)
         {
-            auto it = energies.find(ee2.first);
+            const auto it = energies.find(ee2.first);
             ASSERT_NE(it, energies.end());
             EXPECT_TRUE(std::abs(ee2.second - it->second) < ediff);
         }
         // Also check the other direction: no extra entries in energies
         for (const auto &ee : energies)
         {
-            auto it2 = energies2.find(ee.first);
+            const auto it2 = energies2.find(ee.first);
             ASSERT_NE(it2, energies2.end());
             EXPECT_TRUE(std::abs(ee.second - it2->second) < ediff);
         }
@@ -355,7 +355,7 @@ protected:
         // two, such that the displaced coordinates are exact
         double h    = 1.0/1024;
         double emax = std::abs(epot);
-        auto shifted = [&](double dz)
+        const auto shifted = [&](double dz)
         {
             std::vector<gmx::RVec>            forces(coordinates->size(), fzero);
             std::map<InteractionType, double> energies;
@@ -419,7 +419,7 @@ TEST_P(ForceComputerImplementationTest, All)
     const auto &par   = std::get<1>(GetParam());
     const auto &coord = std::get<2>(GetParam());
     atoms_[1].setCharge(coord.charge1);
-    auto x   = coord.coordsBuilder();
+    const auto x   = coord.coordsBuilder();
     auto top = pot.topBuilder();
     if (Potential::COULOMB_POINT == pot.potential || Potential::COULOMB_GAUSSIAN == pot.potential ||
         Potential::COULOMB_SLATER == pot.potential)
@@ -518,39 +518,39 @@ static const std::vector<ForceComputerCoordParams> c_posResCoords = {
 static TopologyEntryVector makePairTop()
 {
     TopologyEntryVector top;
-    top.push_back(AtomPair(0, 1));
+    top.emplace_back(AtomPair(0, 1));
     return top;
 }
 
 //! Angle topology (bond 0-1, bond 1-2)
 static TopologyEntryVector makeAngleTop()
 {
-    Bond b1(0, 1, 1);
-    Bond b2(1, 2, 1);
+    const Bond b1(0, 1, 1);
+    const Bond b2(1, 2, 1);
     TopologyEntryVector top;
-    top.push_back(Angle(b1, b2));
+    top.emplace_back(Angle(b1, b2));
     return top;
 }
 
 //! Improper dihedral topology (bonds 0-1, 0-2, 0-3)
 static TopologyEntryVector makeImproperTop()
 {
-    Bond b1(0, 1, 1);
-    Bond b2(0, 2, 1);
-    Bond b3(0, 3, 1);
+    const Bond b1(0, 1, 1);
+    const Bond b2(0, 2, 1);
+    const Bond b3(0, 3, 1);
     TopologyEntryVector top;
-    top.push_back(Improper(b1, b2, b3));
+    top.emplace_back(Improper(b1, b2, b3));
     return top;
 }
 
 //! Proper dihedral topology (bonds 0-1, 1-2, 2-3)
 static TopologyEntryVector makeProperTop()
 {
-    Bond b1(0, 1, 1);
-    Bond b2(1, 2, 1);
-    Bond b3(2, 3, 1);
+    const Bond b1(0, 1, 1);
+    const Bond b2(1, 2, 1);
+    const Bond b3(2, 3, 1);
     TopologyEntryVector top;
-    top.push_back(Proper(b1, b2, b3));
+    top.emplace_back(Proper(b1, b2, b3));
     return top;
 }
 
@@ -558,7 +558,7 @@ static TopologyEntryVector makeProperTop()
 static TopologyEntryVector makeSingleAtomTop()
 {
     TopologyEntryVector top;
-    top.push_back(SingleAtom(0));
+    top.emplace_back(SingleAtom(0));
     return top;
 }
 
@@ -603,11 +603,11 @@ TEST(TangToenniesDampingTest, ShortDistances)
     std::vector<ActAtom> atoms;
     for (int i = 0; i < 2; i++)
     {
-        atoms.push_back({ "C", "C", "C", ActParticle::Atom, 6, 12, 0, 2 });
+        atoms.emplace_back("C", "C", "C", ActParticle::Atom, 6, 12, 0, 2);
     }
     // Exact in single precision
     double r = 0.25;
-    std::vector<gmx::RVec> x = { { 0, 0, 0 }, { 0, 0, static_cast<real>(r) } };
+    const std::vector<gmx::RVec> x = { { 0, 0, 0 }, { 0, 0, static_cast<real>(r) } };
     // In single precision, the direct formula for br >= ttTailMax has an
     // error of a few GMX_FLOAT_EPS divided by the damping function there.
     double toler = gmx::test::precisionTolerance(1e-13, 3*GMX_FLOAT_EPS/ttDamping(10, ttTailMax));
@@ -988,8 +988,8 @@ TEST_F(ForceComputerImplementationTest, GaussianEpsilonR)
     const auto &par   = c_coulZeta10Params;
     const auto &coord = c_stdPairCoords[0];
     atoms_[1].setCharge(coord.charge1);
-    auto x   = coord.coordsBuilder();
-    auto top = pot.topBuilder();
+    const auto x   = coord.coordsBuilder();
+    const auto top = pot.topBuilder();
     // The widths of the charge distributions belong to the atoms
     for(size_t i = 0; i < par.params.size(); i++)
     {

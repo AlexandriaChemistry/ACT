@@ -70,7 +70,7 @@ protected:
                const std::string &molName,
                ACTMol            *mol)
     {
-        std::string fileName = gmx::formatString("molecules/%s.sdf", molName.c_str());
+        const std::string fileName = gmx::formatString("molecules/%s.sdf", molName.c_str());
         return setupFile(ff, gmx::test::TestFileManager::getInputFilePath(fileName), mol);
     }
 
@@ -88,7 +88,7 @@ protected:
         const char           *conf      = (char *)"minimum";
         MsgHandler msghandler;
         msghandler.setPrintLevel(ACTStatus::Warning);
-        importFile(&msghandler, pd, dataName.c_str(), &molprops,
+        importFile(&msghandler, pd, dataName, &molprops,
                    conf, JobType::OPT, userqtot ,&qtot_babel,
                    true);
         EXPECT_TRUE(msghandler.ok());
@@ -98,7 +98,7 @@ protected:
             return false;
         }
         auto &molprop = molprops[0];
-        alexandria::ACTMol               mp_;
+        const alexandria::ACTMol         mp_;
 
         mol->Merge(&molprop);
         // Uncomment in case of issues
@@ -119,11 +119,11 @@ protected:
         {
             std::vector<gmx::RVec> coords = mp_.xOriginal();
 
-            VsiteHandler vh;
+            const VsiteHandler vh;
             vh.constructPositions(mp_.topology(), &coords);
 
             gmx::test::TestReferenceChecker checker_(this->rootChecker());
-            auto tolerance = gmx::test::relativeToleranceAsFloatingPoint(1.0, GMX_DOUBLE ? 1e-10 : 5e-2);
+            const auto tolerance = gmx::test::relativeToleranceAsFloatingPoint(1.0, GMX_DOUBLE ? 1e-10 : 5e-2);
             checker_.setDefaultTolerance(tolerance);
             auto  myatoms = mp_.topology()->atoms();
             const char *xyz[DIM] = { "X", "Y", "Z" };
@@ -131,7 +131,7 @@ protected:
             {
                 for(int m = 0; m < DIM; m++)
                 {
-                    auto label = gmx::formatString("coords[%s-%zu][%s]", myatoms[i].name().c_str(), i, xyz[m]);
+                    const auto label = gmx::formatString("coords[%s-%zu][%s]", myatoms[i].name().c_str(), i, xyz[m]);
                     checker_.checkReal(coords[i][m], label.c_str());
                 }
             }
@@ -146,7 +146,7 @@ protected:
     {
         ASSERT_TRUE(setupFile("ACS-pg-vs3", file, mol));
         *coords = mol->xOriginal();
-        VsiteHandler vh;
+        const VsiteHandler vh;
         vh.constructPositions(mol->topology(), coords);
     }
 
@@ -181,9 +181,9 @@ protected:
         {
             std::vector<gmx::RVec> coords = mp_.xOriginal();
 
-            VsiteHandler vh;
+            const VsiteHandler vh;
             vh.constructPositions(mp_.topology(), &coords);
-            gmx::RVec fzero = { 0, 0, 0 };
+            const gmx::RVec fzero = { 0, 0, 0 };
             std::vector<gmx::RVec> forces(coords.size(), fzero);
             auto  myatoms = mp_.topology()->atoms();
             size_t i = 0;
@@ -199,7 +199,7 @@ protected:
             }
             vh.distributeForces(mp_.topology(), coords, &forces);
             gmx::test::TestReferenceChecker checker_(this->rootChecker());
-            auto tolerance = gmx::test::relativeToleranceAsFloatingPoint(1.0, GMX_DOUBLE ? 1e-10 : 5e-2);
+            const auto tolerance = gmx::test::relativeToleranceAsFloatingPoint(1.0, GMX_DOUBLE ? 1e-10 : 5e-2);
             checker_.setDefaultTolerance(tolerance);
             const char *xyz[DIM] = { "X", "Y", "Z" };
 
@@ -207,7 +207,7 @@ protected:
             {
                 for(int m = 0; m < DIM; m++)
                 {
-                    auto label = gmx::formatString("forces[%s-%zu][%s]", myatoms[i].name().c_str(), i, xyz[m]);
+                    const auto label = gmx::formatString("forces[%s-%zu][%s]", myatoms[i].name().c_str(), i, xyz[m]);
                     checker_.checkReal(forces[i][m], label.c_str());
                 }
             }
@@ -240,7 +240,7 @@ protected:
                 found.insert(entry.first);
             }
         }
-        auto names = [](const std::set<InteractionType> &its)
+        const auto names = [](const std::set<InteractionType> &its)
         {
             std::string str;
             for (auto it : its)
@@ -294,7 +294,7 @@ protected:
                     EXPECT_EQ(0, forces[i][m]) << "vsite " << i;
                     continue;
                 }
-                auto shifted = [&](double dx)
+                const auto shifted = [&](double dx)
                 {
                     auto xs = coords;
                     xs[i][m] += dx;
@@ -411,11 +411,11 @@ TEST_F (VsiteHandlerTest, Vsite4Methylamine)
 
 TEST(Vsite1, HF)
 {
-    std::string forcefield("ACS-pg-vs2");
+    const std::string forcefield("ACS-pg-vs2");
     // Get forcefield
     auto pd  = getForceField(forcefield);
 
-    auto fh = Identifier({ "f", "v1f1" }, { 9 }, CanSwap::Yes);
+    const auto fh = Identifier({ "f", "v1f1" }, { 9 }, CanSwap::Yes);
 
     auto itype = InteractionType::VSITE1;
     EXPECT_TRUE(pd->interactionPresent(itype));
@@ -425,19 +425,19 @@ TEST(Vsite1, HF)
     auto vsite1_name = potentialToParameterName(Potential::VSITE1);
     auto param_fh = fs.findParameterType(fh, vsite1_name[vsite1A]);
     EXPECT_TRUE(param_fh->internalValue() == 1);
-    auto fh2 = Identifier({ "g", "v2f1" }, { 9 }, CanSwap::Yes);
+    const auto fh2 = Identifier({ "g", "v2f1" }, { 9 }, CanSwap::Yes);
     EXPECT_FALSE(fs.parameterExists(fh2));
     
 }
 
 TEST(Vsite2, HF)
 {
-    std::string forcefield("ACS-pg-vs2");
+    const std::string forcefield("ACS-pg-vs2");
     // Get forcefield
     auto pd  = getForceField(forcefield);
 
-    auto fh = Identifier({ "f_b", "h_b", "v2" }, { 1, 9 }, CanSwap::Vsite2);
-    auto hf = Identifier({ "h_b", "f_b", "v2" }, { 1, 9 }, CanSwap::Vsite2);
+    const auto fh = Identifier({ "f_b", "h_b", "v2" }, { 1, 9 }, CanSwap::Vsite2);
+    const auto hf = Identifier({ "h_b", "f_b", "v2" }, { 1, 9 }, CanSwap::Vsite2);
     // Compare identifiers
     EXPECT_TRUE(fh == hf);
     auto itype = InteractionType::VSITE2;
@@ -457,12 +457,12 @@ TEST(Vsite2, HF)
 
 TEST(Vsite2FD, HF)
 {
-    std::string forcefield("ACS-pg-vs2");
+    const std::string forcefield("ACS-pg-vs2");
     // Get forcefield
     auto pd  = getForceField(forcefield);
 
-    auto fh = Identifier({ "f_b", "h_b", "v2" }, { 1, 9 }, CanSwap::Vsite2);
-    auto hf = Identifier({ "h_b", "f_b", "v2" }, { 1, 9 }, CanSwap::Vsite2);
+    const auto fh = Identifier({ "f_b", "h_b", "v2" }, { 1, 9 }, CanSwap::Vsite2);
+    const auto hf = Identifier({ "h_b", "f_b", "v2" }, { 1, 9 }, CanSwap::Vsite2);
     // Compare identifiers
     EXPECT_TRUE(fh == hf);
     auto itype = InteractionType::VSITE2;
@@ -482,12 +482,12 @@ TEST(Vsite2FD, HF)
 
 TEST(Vsite2, HFCanSwapVsite2)
 {
-    std::string forcefield("ACS-pg-vs2");
+    const std::string forcefield("ACS-pg-vs2");
     // Get forcefield
     auto pd  = getForceField(forcefield);
 
-    auto fh = Identifier({ "f_b", "h_b", "v2" }, { 1, 9 }, CanSwap::Vsite2);
-    auto hf = Identifier({ "h_b", "f_b", "v2" }, { 1, 9 }, CanSwap::Vsite2);
+    const auto fh = Identifier({ "f_b", "h_b", "v2" }, { 1, 9 }, CanSwap::Vsite2);
+    const auto hf = Identifier({ "h_b", "f_b", "v2" }, { 1, 9 }, CanSwap::Vsite2);
     // Compare identifiers
     EXPECT_TRUE(fh == hf);
     auto itype = InteractionType::VSITE2;
@@ -503,11 +503,11 @@ TEST(Vsite2, HFCanSwapVsite2)
 
 TEST(Vsite3, hoh)
 {
-    std::string forcefield("ACS-pg-vs3");
+    const std::string forcefield("ACS-pg-vs3");
     // Get forcefield
     auto pd  = getForceField(forcefield);
 
-    auto hoh = Identifier({ "h_b", "o3_b", "h_b", "v3" }, { 1, 1, 9 }, CanSwap::Vsite3);
+    const auto hoh = Identifier({ "h_b", "o3_b", "h_b", "v3" }, { 1, 1, 9 }, CanSwap::Vsite3);
     // Compare identifiers
     EXPECT_TRUE(hoh == hoh);
     auto itype = InteractionType::VSITE3;
@@ -527,12 +527,12 @@ TEST(Vsite3, hoh)
 
 TEST(VSite3, hohCanSwapVsite3)
 {
-    std::string forcefield("ACS-pg-vs3");
+    const std::string forcefield("ACS-pg-vs3");
     // Get the forcefield
     auto pd = getForceField(forcefield);
 
-    auto hoh = Identifier({ "h_b", "o3_b", "h_b", "v3" }, { 1, 1, 9 }, CanSwap::Vsite3);
-    auto coh = Identifier({ "c3_b", "o3_b", "h_b", "v3" }, { 1, 1, 9 }, CanSwap::Vsite3);
+    const auto hoh = Identifier({ "h_b", "o3_b", "h_b", "v3" }, { 1, 1, 9 }, CanSwap::Vsite3);
+    const auto coh = Identifier({ "c3_b", "o3_b", "h_b", "v3" }, { 1, 1, 9 }, CanSwap::Vsite3);
     // Compare identifiers
     //9 means v-site
     EXPECT_FALSE(hoh == coh);
@@ -549,12 +549,12 @@ TEST(VSite3, hohCanSwapVsite3)
 
 TEST(VSite3fd, hohCanSwapNo)
 {
-    std::string forcefield("ACS-v3fds");
+    const std::string forcefield("ACS-v3fds");
     // Get the forcefield
     auto pd = getForceField(forcefield);
 
-    auto hoh = Identifier({ "h_b", "o3_b", "h_b", "v3Ow" }, { 1, 1, 9 }, CanSwap::No);
-    auto coh = Identifier({ "c3_b", "o3_b", "h_b", "v3Ow" }, { 1, 1, 9 }, CanSwap::No);
+    const auto hoh = Identifier({ "h_b", "o3_b", "h_b", "v3Ow" }, { 1, 1, 9 }, CanSwap::No);
+    const auto coh = Identifier({ "c3_b", "o3_b", "h_b", "v3Ow" }, { 1, 1, 9 }, CanSwap::No);
     // Compare identifiers
     //9 means v-site
     EXPECT_FALSE(hoh == coh);
@@ -573,12 +573,12 @@ TEST(VSite3fd, hohCanSwapNo)
 
 TEST(VSite3OUT, hohCanSwapNo)
 {
-    std::string forcefield("ACS-pg-vs3");
+    const std::string forcefield("ACS-pg-vs3");
     // Get the forcefield
     auto pd = getForceField(forcefield);
 
-    auto hoh = Identifier({ "h_b", "o3_b", "h_b", "v3out" }, { 1, 1, 9 }, CanSwap::No);
-    auto coh = Identifier({ "c3_b", "o3_b", "h_b", "v3out" }, { 1, 1, 9 }, CanSwap::No);
+    const auto hoh = Identifier({ "h_b", "o3_b", "h_b", "v3out" }, { 1, 1, 9 }, CanSwap::No);
+    const auto coh = Identifier({ "c3_b", "o3_b", "h_b", "v3out" }, { 1, 1, 9 }, CanSwap::No);
     // Compare identifiers
     EXPECT_FALSE(hoh == coh);
     auto itype = InteractionType::VSITE3OUT;
@@ -594,13 +594,13 @@ TEST(VSite3OUT, hohCanSwapNo)
 
 TEST(VSite4, nh3CanSwapNo)
 {
-    std::string forcefield("ACS-pg-vs3");
+    const std::string forcefield("ACS-pg-vs3");
     // Get the forcefield
     auto pd = getForceField(forcefield);
 
     // 9 means v-site
-    auto nh3 = Identifier({ "n3_b", "h_b", "h_b", "c3_b", "v4" }, { 1, 1, 1, 9 }, CanSwap::No);
-    auto cnh = Identifier({ "n3_b", "h_b", "h_b", "h_b", "v4" }, { 1, 1, 1, 9 }, CanSwap::No);
+    const auto nh3 = Identifier({ "n3_b", "h_b", "h_b", "c3_b", "v4" }, { 1, 1, 1, 9 }, CanSwap::No);
+    const auto cnh = Identifier({ "n3_b", "h_b", "h_b", "h_b", "v4" }, { 1, 1, 1, 9 }, CanSwap::No);
     // Compare identifiers
     EXPECT_FALSE(nh3 == cnh);
     auto itype = InteractionType::VSITE4;
@@ -617,11 +617,11 @@ TEST(VSite4, nh3CanSwapNo)
 
 TEST(VSite4S, nh3CanSwapNo)
 {
-    std::string forcefield("ACS-pg-vs3");
+    const std::string forcefield("ACS-pg-vs3");
     // Get the forcefield
     auto pd = getForceField(forcefield);
 
-    auto nh3 = Identifier({ "n3_b", "c3_b", "h_b", "h_b", "v4" }, { 1, 1, 1, 9 }, CanSwap::No);
+    const auto nh3 = Identifier({ "n3_b", "c3_b", "h_b", "h_b", "v4" }, { 1, 1, 1, 9 }, CanSwap::No);
     // Compare identifiers
     auto itype = InteractionType::VSITE4S;
     EXPECT_TRUE(pd->interactionPresent(itype));
@@ -635,11 +635,11 @@ TEST(VSite4S, nh3CanSwapNo)
 
 TEST(VSite4S3, nh3CanSwapNo)
 {
-    std::string forcefield("ACS-pg-vs3");
+    const std::string forcefield("ACS-pg-vs3");
     // Get the forcefield
     auto pd = getForceField(forcefield);
 
-    auto nh3 = Identifier({ "n3_b", "h_b", "h_b", "h_b", "v4" }, { 1, 1, 1, 9 }, CanSwap::No);
+    const auto nh3 = Identifier({ "n3_b", "h_b", "h_b", "h_b", "v4" }, { 1, 1, 1, 9 }, CanSwap::No);
     // Compare identifiers
     auto itype = InteractionType::VSITE4S3;
     EXPECT_TRUE(pd->interactionPresent(itype));
@@ -670,7 +670,7 @@ static Topology allVsiteTypes()
         std::vector<double> params;
         int                 sign;
     };
-    std::vector<Type> types = {
+    const std::vector<Type> types = {
         { InteractionType::VSITE1,     1, { 1.0 },             0 },
         { InteractionType::VSITE2,     2, { 0.3 },             0 },
         { InteractionType::VSITE2FD,   2, { 0.05 },            0 },
@@ -698,7 +698,7 @@ static Topology allVsiteTypes()
         {
             Vsite3OUT v3(parents[0], parents[1], parents[2], vs, t.sign);
             v3.setParams(t.params);
-            entries.push_back(BaseContainer<TopologyEntry>(std::move(v3)));
+            entries.emplace_back(std::move(v3));
         }
         else
         {
@@ -709,7 +709,7 @@ static Topology allVsiteTypes()
             }
             te.addAtom(vs);
             te.setParams(t.params);
-            entries.push_back(BaseContainer<TopologyEntry>(std::move(te)));
+            entries.emplace_back(std::move(te));
         }
         top.addEntry(t.itype, entries);
         vs += 1;
@@ -723,14 +723,14 @@ static Topology allVsiteTypes()
 // change results. Spreading the forces keeps the total force and torque.
 TEST(VsiteHandlerArrays, AllTypes)
 {
-    auto   top    = allVsiteTypes();
+    const auto top    = allVsiteTypes();
     size_t natom  = top.atoms().size();
     // More than four times the widest SIMD, and padding slots
     size_t nconf  = 37;
     size_t stride = 40;
     std::vector<std::vector<gmx::RVec>> x(nconf), f(nconf);
     unsigned int seed = 1993;
-    auto random = [&seed]()
+    const auto random = [&seed]()
     {
         seed = 1103515245*seed + 12345;
         return ((seed >> 8) % 2001)/1000.0 - 1.0;
@@ -773,14 +773,14 @@ TEST(VsiteHandlerArrays, AllTypes)
     }
     EXPECT_EQ(11u, ntype);
     auto         xstart = x;
-    VsiteHandler vsiteHandler;
+    const VsiteHandler vsiteHandler;
     vsiteHandler.constructPositions(&top, xa.data(), stride, stride, nconf);
     vsiteHandler.distributeForces(&top, xa.data(), fa.data(), stride, stride, nconf);
     // The total force and torque, that spreading the forces of the virtual
     // sites must not change, and the sums of the absolute values of their
     // terms, which give their rounding error
-    auto totals = [natom](const std::vector<gmx::RVec> &xc, const std::vector<gmx::RVec> &fc,
-                          gmx::RVec *ftot, gmx::RVec *torque, double *fabs, double *tabs)
+    const auto totals = [natom](const std::vector<gmx::RVec> &xc, const std::vector<gmx::RVec> &fc,
+                                gmx::RVec *ftot, gmx::RVec *torque, double *fabs, double *tabs)
     {
         clear_rvec(*ftot);
         clear_rvec(*torque);
