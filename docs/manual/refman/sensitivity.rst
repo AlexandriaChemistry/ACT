@@ -251,29 +251,29 @@ shown here for one parameter:
 
 The fields are:
 
-* **mode** — the analysis that was done, *1D* or *2D*.
-* **chi2_0** — the :math:`\chi^2` of the current (trained) parameter set before
+* **mode** - the analysis that was done, *1D* or *2D*.
+* **chi2_0** - the :math:`\chi^2` of the current (trained) parameter set before
   any perturbation.
-* **n_evaluations** — the number of :math:`\chi^2` computations, not counting
+* **n_evaluations** - the number of :math:`\chi^2` computations, not counting
   *chi2_0*.
-* **minimum** — whether all parameters are converged, see above.
-* **name**, **particle**, **parameter** — the force field parameter.
-* **lower**, **upper**, **delta** — its bounds and the step
+* **minimum** - whether all parameters are converged, see above.
+* **name**, **particle**, **parameter** - the force field parameter.
+* **lower**, **upper**, **delta** - its bounds and the step
   :math:`\delta p`.
-* **points** — the parameter values at which :math:`\chi^2` was computed, in
+* **points** - the parameter values at which :math:`\chi^2` was computed, in
   increasing order, with their :math:`\chi^2`.
-* **a, b, c** — coefficients of the fitted parabola
+* **a, b, c** - coefficients of the fitted parabola
   :math:`\chi^2(p) = a p^2 + b p + c`. The fit is done in coordinates
   centred on the parameter and scaled by the step, such that it stays
   accurate for parameters with narrow bounds. **fit_ok** is false if the
   parabola could not be fitted.
-* **p_min**, **chi2_min** — the extremum of the parabola, *null* if the
+* **p_min**, **chi2_min** - the extremum of the parabola, *null* if the
   parabola is a straight line. **p_min_bounded** is *p_min* limited to the
   bounds.
-* **flat** — whether :math:`\chi^2` is the same at all points, and
+* **flat** - whether :math:`\chi^2` is the same at all points, and
   **n_parameters_flat** the number of flat parameters.
-* **converged** — whether the parameter is converged, see above.
-* **force_constant** — the dimensionless force constant :math:`a/p^2`, used for
+* **converged** - whether the parameter is converged, see above.
+* **force_constant** - the dimensionless force constant :math:`a/p^2`, used for
   adaptive step sizes.
 
 In 2D the file has these as well:
@@ -312,15 +312,15 @@ In 2D the file has these as well:
      }
    }
 
-* **grid** — the values of both parameters and :math:`\chi^2` on the grid,
+* **grid** - the values of both parameters and :math:`\chi^2` on the grid,
   *chi2[k][l]* at *p_i[k]* and *p_j[l]*.
-* **a_ij**, **rho**, **corner_rms**, **hessian**, **gradient**, **shape** — the
+* **a_ij**, **rho**, **corner_rms**, **hessian**, **gradient**, **shape** - the
   coupling, the dimensionless coupling, the deviation of the corners, the Hessian,
   the gradient and the shape of the pair, see above.
-* **p_min**, **chi2_min** — the stationary point of a minimum and its
+* **p_min**, **chi2_min** - the stationary point of a minimum and its
   :math:`\chi^2`, **p_min_bounded** the minimum within the bounds, all *null* if
   the pair is not a minimum.
-* **hessian_diagnostic** — the Hessian of all parameters, see above.
+* **hessian_diagnostic** - the Hessian of all parameters, see above.
 
 Numbers are written with full precision, flags as *true* or *false* and undefined
 values as *null*.
@@ -332,10 +332,10 @@ Interpretation
 The coefficient *a* of the fitted parabola quantifies how sharply :math:`\chi^2`
 responds to changes in the parameter:
 
-* **Large** :math:`|a|` — the :math:`\chi^2` surface is steeply curved near the
+* **Large** :math:`|a|` - the :math:`\chi^2` surface is steeply curved near the
   current value; the parameter is *sensitive* and must be determined accurately.
   A large *a* also indicates a well-defined minimum.
-* **Small** :math:`|a| \approx 0` — the :math:`\chi^2` surface is nearly flat; the
+* **Small** :math:`|a| \approx 0` - the :math:`\chi^2` surface is nearly flat; the
   parameter has little influence on the training targets in the explored range. Such
   parameters may be poorly constrained by the data and are candidates for fixing at
   a reasonable value or removing from the fit.
