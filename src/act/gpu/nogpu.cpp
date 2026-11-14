@@ -273,6 +273,15 @@ const char *chainMask(System *, int)
     return nullptr;
 }
 
+void chainCountBlocks(System *, int, bool)
+{
+}
+
+void chainBlockCounts(System *, std::vector<uint64_t> *counts)
+{
+    counts->clear();
+}
+
 void chainActive(System *, char *, int *)
 {
 }

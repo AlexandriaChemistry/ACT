@@ -722,6 +722,8 @@ public:
     double                         *chainBoundNow_  = nullptr;
     //! The masks of the blocks, for all, the monomers and the dimers, see chainMask
     char                           *chainMasks_     = nullptr;
+    //! How often each block was computed with and without forces in the chain, see chainCountBlocks
+    uint64_t                       *chainBlockCount_ = nullptr;
     int32_t                        *chainBlockMol_  = nullptr;
     int32_t                        *chainBlockWhat_ = nullptr;
     double                         *chainChi2_      = nullptr;
@@ -3692,6 +3694,7 @@ void createChain(System *sys, const ChainSystem &c)
     sys->release(sys->chainActive_);
     sys->release(sys->chainBoundNow_);
     sys->release(sys->chainMasks_);
+    sys->release(sys->chainBlockCount_);
     sys->release(sys->chainBlockMol_);
     sys->release(sys->chainBlockWhat_);
     sys->release(sys->chainChi2_);
@@ -4336,6 +4339,40 @@ const char *chainMask(System *sys, int what)
 {
     int k = (what == -1) ? 0 : (what == -2 ? 1 : 2);
     return sys->chainMasks_ + k*sys->nblock_;
+}
+
+void chainCountBlocks(System *sys, int what, bool forces)
+{
+    size_t nblock = sys->nblock_;
+    if (nblock == 0 || !sys->chainMasks_)
+    {
+        return;
+    }
+    if (!sys->chainBlockCount_)
+    {
+        sys->chainBlockCount_ = sys->allocate<uint64_t>(2*nblock);
+        sys->queue_->memset(sys->chainBlockCount_, 0, 2*nblock*sizeof(uint64_t));
+    }
+    const char *mask  = chainMask(sys, what);
+    uint64_t   *count = sys->chainBlockCount_ + (forces ? 0 : nblock);
+    // Each work item its own block, after the mask in the same queue
+    sys->queue_->parallel_for(sycl::range<1>(nblock), [=](sycl::id<1> id)
+    {
+        count[id[0]] += mask[id[0]] ? 1 : 0;
+    });
+}
+
+void chainBlockCounts(System *sys, std::vector<uint64_t> *counts)
+{
+    size_t nblock = sys->nblock_;
+    counts->assign(2*nblock, 0);
+    if (!sys->chainBlockCount_)
+    {
+        return;
+    }
+    sys->queue_->memcpy(counts->data(), sys->chainBlockCount_, 2*nblock*sizeof(uint64_t));
+    sys->queue_->memset(sys->chainBlockCount_, 0, 2*nblock*sizeof(uint64_t));
+    sys->queue_->wait_and_throw();
 }
 
 void chainActive(System *sys, char *active, int *hit)

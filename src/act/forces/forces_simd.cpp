@@ -4793,15 +4793,29 @@ public:
     }
 
     /*! \brief Count the floating point operations of the blocks used, see Timings::addFlops
-     * Not during the chain, whose masks are on the GPU.
+     * During the chain, whose masks are on the GPU, the GPU counts the
+     * blocks, see chainFlops, and the relaxation counts its steps, see
+     * relaxFlops.
      * \param[in] what   The blocks, as use
      * \param[in] kind   0 with forces, 1 without, 2 the average of a step of the relaxation
      * \param[in] nsteps For kind 2, the slots computed in all steps
      */
     void countFlops(int what, int kind, size_t nsteps = 0) const
     {
-        if (chainRun || !Timings::instance().countFlops())
+        if (!Timings::instance().countFlops())
         {
+            return;
+        }
+        if (chainRun)
+        {
+            if (kind == 2)
+            {
+                relaxFlops(nsteps);
+            }
+            else
+            {
+                gpu::chainCountBlocks(system, what, kind == 0);
+            }
             return;
         }
         auto   u     = use(what);
@@ -4823,6 +4837,48 @@ public:
             flops = nslot > 0 ? nsteps*relax/nslot : 0;
         }
         Timings::instance().addFlops(flops);
+    }
+
+    //! Add the floating point operations of the blocks that the chain computed, see countFlops
+    void chainFlops() const
+    {
+        if (!Timings::instance().countFlops())
+        {
+            return;
+        }
+        std::vector<uint64_t> counts;
+        gpu::chainBlockCounts(system, &counts);
+        double flops = 0;
+        for (size_t b = 0; b < blocks.size() && 2*b < counts.size(); b++)
+        {
+            double n = blocks[b].confOfSlot.size();
+            flops += n*(counts[b]*blocks[b].flopsForces + counts[blocks.size() + b]*blocks[b].flopsEnergies);
+        }
+        Timings::instance().addFlops(flops);
+    }
+
+    /*! \brief Add the floating point operations of relaxation steps counted on the GPU, see countFlops
+     * Which blocks they belong to is not known, so the average of a slot
+     * over the blocks with moving shells is used.
+     * \param[in] nsteps The slots computed in all steps
+     */
+    void relaxFlops(size_t nsteps) const
+    {
+        if (nsteps == 0 || !Timings::instance().countFlops())
+        {
+            return;
+        }
+        double relax = 0, nslot = 0;
+        for (const auto &bl : blocks)
+        {
+            if (!bl.shells.movingShells.empty())
+            {
+                double n = bl.confOfSlot.size();
+                relax += n*bl.flopsRelax;
+                nslot += n;
+            }
+        }
+        Timings::instance().addFlops(nslot > 0 ? nsteps*relax/nslot : 0);
     }
 
     //! Whether the masks are those that the chain makes on the GPU, see GpuTrainingSystem::chainStep
@@ -6956,6 +7012,7 @@ void GpuTrainingSystem::chainEnd(std::vector<gpu::ChainResults> *results)
     {
         gpu::chainResults(im.system, r, &(*results)[r]);
     }
+    im.chainFlops();
     im.chainRun = false;
     // The charges, the virtual sites and the values on the GPU are those of
     // the last step, which the processor does not know: all are made again
@@ -7023,6 +7080,7 @@ size_t GpuTrainingSystem::relaxStatistics(size_t *nFailed)
     auto &im = *impl_;
     gpu::RelaxStatistics stats;
     gpu::relaxStatistics(im.system, &stats);
+    im.relaxFlops(stats.computed);
     *nFailed = stats.failed;
     if (stats.notFinite)
     {
