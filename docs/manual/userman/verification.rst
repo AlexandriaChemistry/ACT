@@ -164,7 +164,7 @@ The package *clang* is needed for the header files of the compiler that *clang-t
 ======================
 Code testing on GitHub
 ======================
-When a branch is pushed to github four `CI`_ (continuous integration) tests are deployed, so-called *github-workflows*. These all include downloading ACT to a test machine, build it and run the tests, all of which should pass. If a single test does not pass the branch cannot be included into the main branch.
+When a branch is pushed to github five `CI`_ (continuous integration) tests are deployed, so-called *github-workflows*. Four of them download ACT to a test machine, build it and run the tests, all of which should pass. If a single test does not pass the branch cannot be included into the main branch.
 
 .. _CI: https://en.wikipedia.org/wiki/Continuous_integration
  
@@ -174,6 +174,7 @@ The four different tests are
 + Double precision build on MacOS
 + Single precision build on Linux with explicit SIMD
 + Double precision build on Linux without explicit SIMD
++ *make tidy* on macOS, which fails if it would change the code of the directories of *src/act* that have been cleaned up with it, listed in *.github/workflows/act-tidy.yml*. It uses *clang-tidy* 23.1.5 in single precision, as other versions or configurations may propose other fixes. If it fails, run *make tidy* on the directories it names and commit the result.
 
 If a pull-request is made to the main branch, an additional tests will be done, to verify that the manual will build. This test too, has to pass.
 
