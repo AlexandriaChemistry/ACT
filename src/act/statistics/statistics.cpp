@@ -337,11 +337,11 @@ eStats gmx_stats::get_mse_mae(real *msea, real *maea)
         return ok;
     }
 
-    if (NULL != msea)
+    if (nullptr != msea)
     {
         *msea = mse_;
     }
-    if (NULL != maea)
+    if (nullptr != maea)
     {
         *maea = mae_;
     }
@@ -441,7 +441,7 @@ eStats gmx_stats::make_histogram(real binwidth, int *nb,
     {
         return eStats::INVALID_INPUT;
     }
-    if (x_.size() < 1)
+    if (x_.empty())
     {
         return eStats::NO_POINTS;
     }
