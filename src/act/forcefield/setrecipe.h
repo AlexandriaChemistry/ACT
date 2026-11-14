@@ -91,7 +91,7 @@ inline combination::PairStatus evaluateRecipe(const SetRecipe &recipe,
                                               const double    *factors,
                                               double          *out)
 {
-    auto internal = [values, factors](int32_t slot)
+    const auto internal = [values, factors](int32_t slot)
     {
         return slot < 0 ? 0.0 : values[slot]*factors[slot];
     };

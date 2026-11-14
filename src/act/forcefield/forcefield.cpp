@@ -1183,10 +1183,10 @@ void ForceField::checkUnits() const
     const std::set<std::string> eV      = { "eV", "eV/e" };
     const std::set<std::string> perNm   = { "1/nm" };
     std::string                 errors;
-    auto check = [&errors](const std::string         &where,
-                           const std::string         &name,
-                           const ForceFieldParameter &p,
-                           const std::set<std::string> &allowed)
+    const auto check = [&errors](const std::string         &where,
+                                 const std::string         &name,
+                                 const ForceFieldParameter &p,
+                                 const std::set<std::string> &allowed)
     {
         if (allowed.count(p.unit()) == 0)
         {
