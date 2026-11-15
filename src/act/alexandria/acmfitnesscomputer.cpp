@@ -399,7 +399,23 @@ void ACMFitnessComputer::updateMolecule(MsgHandler                      *msghand
         // only if parameters changed that the charges depend on.
         static const size_t timer = Timings::instance().index("Charge generation");
         const ScopedTimer   scoped(timer);
-        if (gpuSqe)
+        if (actmol->fragmentHandler()->sharedCharges())
+        {
+            // The charges of the compounds, generated once for all
+            // molecules, see MolGen::compoundChargeMap
+            const auto &qmap = molgen_->compoundChargeMap(msghandler, sii_->forcefield(), forceComp_,
+                                                          sii_, sii_->chargeParameterVersion());
+            actmol->setCharges(msghandler, qmap, true);
+            // The widths of the charge distributions
+            actmol->updateFixedCharges(sii_->forcefield(), algorithm_);
+            if (needQProps)
+            {
+                std::vector<gmx::RVec> forces(actmol->atomsConst().size(), { 0, 0, 0 });
+                actmol->updateQprops(sii_->forcefield(), forceComp_, &forces);
+            }
+            chargeVersion_[imol] = sii_->chargeParameterVersion();
+        }
+        else if (gpuSqe)
         {
             // The charges of the processor stay outdated, the next
             // evaluation on the processor generates them

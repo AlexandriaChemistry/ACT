@@ -62,6 +62,8 @@ private:
     std::vector<double>                qtotal_;
     //! Whether charges are fixed or not. They are when set from a charge map.
     bool                               fixedQ_ = false;
+    //! Whether the charges are those of the compounds, which change with the parameters, see MolGen::compoundCharges
+    bool                               sharedQ_ = false;
     //! Whether the topologies leave out the Coulomb pairs of particles without charge, see Topology::setLeaveOutUnchargedPairs
     bool                               leaveOutUncharged_ = true;
     //! Total number of atoms
@@ -128,12 +130,13 @@ public:
 
     /*! \brief Whether the charges of all fragments can be generated on the GPU
      * \param[in] pd The force field
-     * \return true for SQE with Gaussian or point charges, or fixed charges
+     * \return true for SQE with Gaussian or point charges, or fixed charges,
+     *         false for the charges of the compounds, which the processor copies
      */
     bool sqeOnGpu(const ForceField *pd) const;
 
     /*! \brief The particles of a fragment whose charges are generated,
-     * none if the charges are fixed
+     * none if the charges are fixed or those of the compounds
      * \param[in] ff The fragment
      */
     const std::vector<int> &acmParticles(size_t ff) const;
@@ -188,15 +191,22 @@ public:
     void setCharges(const std::vector<double> &q);
     /*! \brief Copy charges from a charge map. Check msghandler status on return
      * The charges of all particles, including shells and virtual sites, are
-     * copied, and are then fixed. A compound missing from the map, or a map
-     * with other particles or in another order, is an error.
+     * copied, and are then fixed, or shared with the other molecules with
+     * the same compounds. A compound missing from the map, or a map with
+     * other particles or in another order, is an error.
      * \param[in] msghandler For status and messaging
      * \param[in] qmap       The charge map
+     * \param[in] shared     Whether the charges are those of the compounds,
+     *                       which are copied again when the parameters change,
+     *                       rather than fixed
      */
     void setCharges(MsgHandler      *msghandler,
-                    const ChargeMap &qmap);
+                    const ChargeMap &qmap,
+                    bool             shared = false);
     //! \return whether charges are fixed or not
     bool fixedCharges() const { return fixedQ_; }
+    //! \return whether the charges are copied from those of the compounds, see setCharges
+    bool sharedCharges() const { return sharedQ_; }
     /*! \brief Set the charge generation algorithm to use
      * \param[in] alg The algorithm to use. Only Read or EEM/SQE are supported.
      */

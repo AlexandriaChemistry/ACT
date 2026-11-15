@@ -227,6 +227,35 @@ private:
     int                             maxpot_ = 100;
     //! Weight for the potential on the atoms in training on ESP. Should be 0 in most cases.
     real                            watoms_ = 0;
+    //! Whether the charges of each compound are generated once and copied to all molecules, see -qcompound
+    bool                            compoundCharges_ = false;
+    //! One molecule per compound, from which its charges are generated, see compoundReferences
+    std::vector<ACTMol>             compoundRefs_;
+    //! The charges of the compounds, made from compoundRefs_
+    ChargeMap                       compoundQ_;
+    //! The version of the charge parameters of compoundQ_
+    size_t                          compoundQVersion_ = 0;
+    //! The parameters whose version compoundQVersion_ is, see compoundChargeMap
+    const void                     *compoundQOwner_ = nullptr;
+    //! Whether compoundQ_ has been made at all
+    bool                            compoundQMade_ = false;
+    //! The algorithm that generates the charges of the compounds
+    ChargeGenerationAlgorithm       compoundAlg_ = ChargeGenerationAlgorithm::NONE;
+
+    /*! \brief Make the molecules of the compounds on all processors
+     * The master sends them to the other processors, which all make their
+     * topologies and generate their charges.
+     * \param[in]    msghandler For messages
+     * \param[in]    pd         The force field
+     * \param[in]    forceComp  For the shells and virtual sites
+     * \param[in]    alg        The charge generation algorithm
+     * \param[inout] refs       The molecules on the master, see compoundReferences
+     */
+    void setupCompoundCharges(MsgHandler                *msghandler,
+                              ForceField                *pd,
+                              const ForceComputer       *forceComp,
+                              ChargeGenerationAlgorithm  alg,
+                              std::vector<MolProp>      *refs);
     /*! \brief Check that we have enough data 
      * Check that we have enough data for all parameters to optimize
      * in this molecule.
@@ -327,6 +356,26 @@ public:
 
     //! \brief Return the const vector of molecules
     const std::vector<ACTMol> &actmols() const { return actmol_; }
+
+    //! \return whether the charges of each compound are copied to all molecules, see -qcompound
+    bool compoundCharges() const { return compoundCharges_; }
+
+    /*! \brief The charges of the compounds for the current parameters
+     * The charges are generated again from the molecules of the compounds
+     * if the version of the charge parameters changed, or they are those
+     * of other parameters, for instance of another individual.
+     * \param[in] msghandler For messages
+     * \param[in] pd         The force field
+     * \param[in] forceComp  For the shells and virtual sites
+     * \param[in] owner      The parameters, for instance the StaticIndividualInfo
+     * \param[in] version    The version of the charge parameters
+     * \return The charges of all particles of each compound, by InChI
+     */
+    const ChargeMap &compoundChargeMap(MsgHandler          *msghandler,
+                                       ForceField          *pd,
+                                       const ForceComputer *forceComp,
+                                       const void          *owner,
+                                       size_t               version);
 
     //! \brief Return the mutable vector of molecules
     std::vector<ACTMol> *actmolsPtr() { return &actmol_; }

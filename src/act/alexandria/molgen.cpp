@@ -120,6 +120,8 @@ void MolGen::addOptions(std::vector<t_pargs>          *pargs,
           "Minimum number of data points to optimize force field parameters" },
         { "-qsymm",  FALSE, etBOOL, {&qsymm_},
           "Symmetrize the charges on symmetric groups, e.g. CH3, NH2. The list of groups to symmetrize is specified in the force field file." },
+        { "-qcompound", FALSE, etBOOL, {&compoundCharges_},
+          "Generate the charges of each compound once for each set of parameters, from one structure of the compound, and use them in all molecules with that compound, for instance in all dimers. The structure is that of the monomer in the [TT]-charges[tt] file, or else that of a monomer in the [TT]-mp[tt] file, or else that of the compound in the first molecule it is in. Without this flag the charges of each molecule are generated from its own structure, or are fixed if [TT]-charges[tt] is given." },
         { "-lb",  FALSE, etBOOL, {&loadBalance_},
           "Try to divide the computational load evenly over helpers." },
         { "-fit", FALSE, etSTR, {&fitString_},
@@ -849,6 +851,17 @@ size_t MolGen::Read(MsgHandler                          *msghandler,
     fillIopt(pd, msghandler);
     /* Reading Molecules from allmols.xml */
     auto molfn = opt2fn("-mp", filenms.size(),filenms.data());
+    if (compoundCharges_ && compR->algorithm() != ChargeGenerationAlgorithm::EEM &&
+        compR->algorithm() != ChargeGenerationAlgorithm::SQE)
+    {
+        // The same on all processors, which all know the algorithm
+        msghandler->msg(ACTStatus::Warning,
+                        gmx::formatString("Ignoring -qcompound, since the charges are not generated with EEM or SQE but with %s.",
+                                          chargeGenerationAlgorithmName(compR->algorithm()).c_str()));
+        compoundCharges_ = false;
+    }
+    // The molecules of the compounds for -qcompound, on the master
+    std::vector<MolProp> compoundMPs;
     if (cr_->isMaster())
     {
         MolPropRead(msghandler, molfn, &mp);
@@ -899,6 +912,24 @@ size_t MolGen::Read(MsgHandler                          *msghandler,
             }
         }
         generate_index(&mp);
+        if (compoundCharges_)
+        {
+            // The selected molecules, whose compounds need charges
+            std::vector<const MolProp *> selected;
+            for (const auto &sel : gms.imolSelect())
+            {
+                for (const auto &m : mp)
+                {
+                    if (m.getIupac() == sel.iupac() || m.getMolname() == sel.iupac())
+                    {
+                        selected.push_back(&m);
+                        break;
+                    }
+                }
+            }
+            compoundMPs = compoundReferences(msghandler, selected, mp,
+                                             chargeMonomers.empty() ? nullptr : &chargeMonomers);
+        }
 
         if (msghandler)
     {
@@ -909,6 +940,10 @@ size_t MolGen::Read(MsgHandler                          *msghandler,
     {
         // Other processors receive the qmap from the master.
         broadcastChargeMap(cr_, compR->chargeMap());
+    }
+    if (compoundCharges_)
+    {
+        setupCompoundCharges(msghandler, pd, forceComp, compR->algorithm(), &compoundMPs);
     }
     /* Generate topology for Molecules and distribute them among the nodes */
     std::string      method, basis;
@@ -929,7 +964,10 @@ size_t MolGen::Read(MsgHandler                          *msghandler,
             { MolPropObservable::CHARGE,            iqmType::QM }
         };
     int  root  = 0;
-    const auto qmap  = compR->chargeMapConst();
+    // With -qcompound the charges of the compounds are copied to the
+    // molecules each time they change, otherwise those of -charges, if any,
+    // once
+    const auto qmap  = compoundCharges_ ? compoundQ_ : compR->chargeMapConst();
     auto alg   = compR->algorithm();
     if (cr_->isMaster())
     {
@@ -983,7 +1021,7 @@ size_t MolGen::Read(MsgHandler                          *msghandler,
                 auto fragments = actmol.fragmentHandler();
                 if (!qmap.empty())
                 {
-                    fragments->setCharges(msghandler, qmap);
+                    fragments->setCharges(msghandler, qmap, compoundCharges_);
                     if (msghandler->ok())
                     {
                         // Copy charges to the high-level topology as well
@@ -1195,7 +1233,7 @@ size_t MolGen::Read(MsgHandler                          *msghandler,
                 auto fragments = actmol.fragmentHandler();
                 if (!qmap.empty())
                 {
-                    fragments->setCharges(msghandler, qmap);
+                    fragments->setCharges(msghandler, qmap, compoundCharges_);
                     if (msghandler->ok())
                     {
                         // Copy charges to the high-level topology as well
@@ -1307,6 +1345,99 @@ size_t MolGen::Read(MsgHandler                          *msghandler,
         }
     }
     return actmol_.size();
+}
+
+void MolGen::setupCompoundCharges(MsgHandler                *msghandler,
+                                  ForceField                *pd,
+                                  const ForceComputer       *forceComp,
+                                  ChargeGenerationAlgorithm  alg,
+                                  std::vector<MolProp>      *refs)
+{
+    // Not MPI_COMM_WORLD, see broadcastChargeMap
+    auto comm = cr_->comm_world();
+    int  nref = refs->size();
+    cr_->bcast(&nref, comm);
+    compoundRefs_.clear();
+    for (int i = 0; i < nref; i++)
+    {
+        MolProp  received;
+        MolProp *mp = cr_->isMaster() ? &(*refs)[i] : &received;
+        cr_->startPackedBcast(comm, 0);
+        auto cs = mp->BroadCast(cr_, 0, comm);
+        cr_->finishPackedBcast();
+        if (CommunicationStatus::OK != cs)
+        {
+            GMX_THROW(gmx::InternalError("Could not broadcast the molecules of the compounds"));
+        }
+        ACTMol actmol;
+        actmol.Merge(mp);
+        actmol.setChargesFromForceField(alg != ChargeGenerationAlgorithm::Read &&
+                                        alg != ChargeGenerationAlgorithm::Custom);
+        actmol.GenerateTopology(msghandler, pd, missingParameters::Error);
+        if (!msghandler->ok())
+        {
+            // The molecules with this compound are left out, since it has no charges
+            msghandler->msg(ACTStatus::Warning, ACTMessage::Topology,
+                            gmx::formatString("Cannot make the topology of compound %s for its charges",
+                                              actmol.getMolname().c_str()));
+            msghandler->resetStatus();
+            continue;
+        }
+        compoundRefs_.push_back(std::move(actmol));
+    }
+    refs->clear();
+    compoundAlg_   = alg;
+    compoundQMade_ = false;
+    (void) compoundChargeMap(msghandler, pd, forceComp, pd, 0);
+    // The parameters may change before the first evaluation without a new
+    // version, for instance with -random_init, so the first evaluation
+    // generates the charges again
+    compoundQMade_ = false;
+}
+
+const ChargeMap &MolGen::compoundChargeMap(MsgHandler          *msghandler,
+                                           ForceField          *pd,
+                                           const ForceComputer *forceComp,
+                                           const void          *owner,
+                                           size_t               version)
+{
+    if (compoundQMade_ && version == compoundQVersion_ && owner == compoundQOwner_)
+    {
+        return compoundQ_;
+    }
+    compoundQ_.clear();
+    for (auto &ref : compoundRefs_)
+    {
+        // The parameters of the topologies, for instance of the virtual
+        // sites and the shells, which the charges depend on as well
+        ref.topologyPtr()->fillParameters(msghandler, pd, missingParameters::Error);
+        for (auto &ft : ref.fragmentHandler()->topologiesPtr())
+        {
+            ft.fillParameters(msghandler, pd, missingParameters::Error);
+        }
+        std::vector<gmx::RVec> forces(ref.atomsConst().size(), { 0, 0, 0 });
+        std::vector<gmx::RVec> coords = ref.xOriginal();
+        ref.generateCharges(msghandler, pd, forceComp, compoundAlg_, &coords, &forces);
+        if (!msghandler->ok())
+        {
+            // The molecules with this compound cannot get charges
+            msghandler->msg(ACTStatus::Warning, ACTMessage::ChargeGeneration,
+                            gmx::formatString("Cannot generate the charges of compound %s",
+                                              ref.getMolname().c_str()));
+            msghandler->resetStatus();
+            continue;
+        }
+        std::vector<std::pair<Identifier, double>> q;
+        for (const auto &a : ref.atomsConst())
+        {
+            q.emplace_back(a.id(), a.charge());
+        }
+        compoundQ_.insert({ ref.fragments()[0].inchi(), q });
+    }
+    compoundQVersion_ = version;
+    compoundQOwner_   = owner;
+    compoundQMade_    = true;
+    return compoundQ_;
 }
 
 } // namespace alexandria

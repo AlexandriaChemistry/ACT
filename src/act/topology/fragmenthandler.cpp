@@ -192,6 +192,10 @@ void FragmentHandler::fetchCharges(MsgHandler *msg_handler, std::vector<double> 
 
 bool FragmentHandler::sqeOnGpu(const ForceField *pd) const
 {
+    if (sharedQ_)
+    {
+        return false;
+    }
     if (fixedQ_ || algorithm_ != ChargeGenerationAlgorithm::SQE)
     {
         return fixedQ_;
@@ -209,7 +213,7 @@ bool FragmentHandler::sqeOnGpu(const ForceField *pd) const
 const std::vector<int> &FragmentHandler::acmParticles(size_t ff) const
 {
     static const std::vector<int> none;
-    return fixedQ_ ? none : QgenAcm_[ff].acmParticles();
+    return (fixedQ_ || sharedQ_) ? none : QgenAcm_[ff].acmParticles();
 }
 
 const std::vector<const ParticleType *> &FragmentHandler::particleTypes(const ForceField *pd, size_t ff)
@@ -234,6 +238,8 @@ void FragmentHandler::updateFixedCharges(const ForceField *pd, std::vector<ActAt
     for (size_t ff = 0; ff < topologies_.size(); ++ff)
     {
         auto ta = topologies_[ff].atomsPtr();
+        // The charges of the compounds do not have the fixed charges and
+        // the second charges, see ParticleType::chargeVS, which may change
         if (!fixedQ_)
         {
             QgenAcm_[ff].updateFixedCharges(ta);
@@ -389,7 +395,8 @@ bool FragmentHandler::fetchCharges(std::vector<ActAtom> *atoms)
 }
 
 void FragmentHandler::setCharges(MsgHandler      *msghandler,
-                                 const ChargeMap &qmap)
+                                 const ChargeMap &qmap,
+                                 bool             shared)
 {
     for(size_t i = 0; i < ids_.size() && msghandler->ok(); i++)
     {
@@ -429,11 +436,15 @@ void FragmentHandler::setCharges(MsgHandler      *msghandler,
             }
         }
     }
-    fixedQ_ = msghandler->ok();
+    fixedQ_  = msghandler->ok() && !shared;
+    sharedQ_ = msghandler->ok() && shared;
     if (fixedQ_)
     {
         // Set algorithm to reading charges for the future
         algorithm_ = ChargeGenerationAlgorithm::Read;
+    }
+    if (msghandler->ok())
+    {
         msghandler->msg(ACTStatus::Debug,
                         "Copied charges from chargemap to fragments\n");
     }

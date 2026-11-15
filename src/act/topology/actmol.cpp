@@ -786,9 +786,10 @@ ACTMessage ACTMol::GenerateAcmCharges(MsgHandler             *msg_handler,
                                              getMolname().c_str(), atomsConst().size(), qold.size()));
     }
     ACTMessage imm       = ACTMessage::OK;
-    if (fraghandler_.fixedCharges())
+    if (fraghandler_.fixedCharges() || fraghandler_.sharedCharges())
     {
-        // We do not need to derive charges again, since they were set once already.
+        // We do not need to derive charges again, since they were set once
+        // already, or are copied from those of the compounds.
         return imm;
     }
     int       iter      = 0;
@@ -1048,9 +1049,10 @@ void ACTMol::setCharges(const std::vector<double> &qcustom)
 }
 
 void ACTMol::setCharges(MsgHandler       *msghandler,
-                        const ChargeMap  &qmap)
+                        const ChargeMap  &qmap,
+                        bool              shared)
 {
-    fraghandler_.setCharges(msghandler, qmap);
+    fraghandler_.setCharges(msghandler, qmap, shared);
     if (!fraghandler_.fetchCharges(atoms()))
     {
         msghandler->msg(ACTStatus::Error,

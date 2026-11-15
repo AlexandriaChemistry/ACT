@@ -1687,5 +1687,61 @@ TEST(ValidateMolPropsTest, FragmentsInSwappedOrder)
     EXPECT_EQ(1u, msghandler.warningCount(ACTMessage::SwappedDimer));
 }
 
+// ============================================================
+// The molecules of the compounds, see train_ff -qcompound
+// ============================================================
+
+// Test: A fragment becomes a molecule with its atoms and bonds renumbered,
+// without the bonds to other fragments
+TEST(ExtractFragmentTest, SecondFragment)
+{
+    auto mp = makeMolecule("water#methanol", { water, methanol });
+    mp.AddBond(Bond(0, 1, 1));
+    mp.AddBond(Bond(3, 4, 1));
+    mp.AddBond(Bond(4, 5, 1));
+    mp.AddBond(Bond(2, 4, 1));
+    const auto out = extractFragment(mp, 1);
+    EXPECT_EQ("methanol", out.getMolname());
+    ASSERT_EQ(1u, out.fragments().size());
+    EXPECT_EQ(methanol.inchi, out.fragments()[0].inchi());
+    EXPECT_EQ(std::vector<int>({ 0, 1, 2, 3, 4, 5 }), out.fragments()[0].atoms());
+    ASSERT_EQ(1u, out.experimentConst().size());
+    const auto &atoms = out.experimentConst()[0].calcAtomConst();
+    ASSERT_EQ(methanol.atoms.size(), atoms.size());
+    for (size_t a = 0; a < atoms.size(); a++)
+    {
+        EXPECT_EQ(methanol.atoms[a], atoms[a].getName());
+        EXPECT_EQ(static_cast<int>(a), atoms[a].getAtomid());
+    }
+    ASSERT_EQ(2u, out.bondsConst().size());
+    EXPECT_EQ(0, out.bondsConst()[0].aI());
+    EXPECT_EQ(1, out.bondsConst()[0].aJ());
+    EXPECT_EQ(1, out.bondsConst()[1].aI());
+    EXPECT_EQ(2, out.bondsConst()[1].aJ());
+}
+
+// Test: The molecule of a compound is a monomer of the references first,
+// then a monomer of all molecules, then a fragment of the first molecule
+TEST(CompoundReferencesTest, Priority)
+{
+    auto all  = makeMolecules({ { "water#methanol", { water, methanol } },
+                                { "water", { water } } });
+    const auto refs = makeMolecules({ { "methanol-charges", { methanol } } });
+    const std::vector<const MolProp *> molecules = { &all[0] };
+    MsgHandler msghandler;
+    msghandler.setPrintLevel(ACTStatus::Fatal);
+    auto result = compoundReferences(&msghandler, molecules, all, &refs);
+    ASSERT_EQ(2u, result.size());
+    EXPECT_EQ("water", result[0].getMolname());
+    EXPECT_EQ("methanol-charges", result[1].getMolname());
+    // Without references methanol is the fragment of the dimer
+    result = compoundReferences(&msghandler, molecules, all, nullptr);
+    ASSERT_EQ(2u, result.size());
+    EXPECT_EQ("water", result[0].getMolname());
+    EXPECT_EQ("methanol", result[1].getMolname());
+    EXPECT_EQ(methanol.atoms.size(), result[1].experimentConst()[0].calcAtomConst().size());
+}
+
+
 } // namespace
 } // namespace alexandria

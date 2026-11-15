@@ -1075,8 +1075,12 @@ int train_ff(int argc, char *argv[])
     bool optionsOk = true;
     if (opt.commRec()->isMaster())
     {
-        opt.mg()->checkOptions(opt.msgHandler(), opt.sii()->forcefield(), compR.algorithm(),
-                               !compR.chargeFile().empty());
+        // With -qcompound the charges are generated, unless the algorithm does not
+        const auto alg       = compR.algorithm();
+        const bool generated = (opt.mg()->compoundCharges() &&
+                                (alg == ChargeGenerationAlgorithm::EEM || alg == ChargeGenerationAlgorithm::SQE));
+        opt.mg()->checkOptions(opt.msgHandler(), opt.sii()->forcefield(), alg,
+                               !compR.chargeFile().empty() && !generated);
     }
     opt.commRec()->bcast(&optionsOk, opt.commRec()->comm_world());
     if (!optionsOk)

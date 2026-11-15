@@ -228,6 +228,23 @@ TEST_F(TrainFFTest, MCMCHydrogenFluoride)
     runAndCheck("4S-lj14-7-pg-hvdw.xml", "hf-hf", combine(mcmcOptions(3), hfOptions()));
 }
 
+// Test: As MCMCHydrogenFluoride, with the charges of hydrogen fluoride
+// generated once from the monomer for each set of parameters, and copied to
+// the dimer, see -qcompound
+TEST_F(TrainFFTest, MCMCHydrogenFluorideCompound)
+{
+    auto options = combine(mcmcOptions(3), hfOptions());
+    options.emplace_back("-qcompound", "");
+    const auto output = trainfftest::runTrainFF(&fileManager(), "train", "4S-lj14-7-pg-hvdw.xml", "hf-hf", options);
+    ASSERT_EQ(0, output.status);
+    EXPECT_TRUE(logContains(output.log, "The charges of compound hydrogen-fluoride are those of the monomer in the molecules"));
+    ASSERT_GT(output.finalChi2, 0);
+    EXPECT_LE(output.finalChi2, output.initialChi2);
+    gmx::test::TestReferenceChecker checker(rootChecker());
+    checker.setDefaultTolerance(gmx::test::relativeToleranceAsFloatingPoint(1.0, 1e-4));
+    trainfftest::checkOutput(&checker, output);
+}
+
 //! \return the parameters listed as trained in the log, as identifier and type
 static std::set<std::pair<std::string, std::string>> trainedParameters(const TrainOutput &output)
 {
