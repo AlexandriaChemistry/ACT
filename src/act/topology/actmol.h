@@ -526,9 +526,12 @@ public:
     /*! \brief Copy charges from qmap to topologies
      * \param[in] msghandler Message Handler
      * \param[in] qmap       The charge map
+     * \param[in] shared     Whether the charges are those of the compounds,
+     *                       see FragmentHandler::setCharges
      */
     void setCharges(MsgHandler       *msghandler,
-                    const ChargeMap  &qmap);
+                    const ChargeMap  &qmap,
+                    bool              shared = false);
     /*! \brief
      * Generate or copy atomic partial charges
      *

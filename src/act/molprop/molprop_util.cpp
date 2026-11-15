@@ -397,4 +397,122 @@ MolPropValidation validateMolProps(MsgHandler           *msghandler,
     return result;
 }
 
+MolProp extractFragment(const MolProp &mp, size_t f)
+{
+    MolProp     out;
+    const auto &frag = mp.fragments()[f];
+    const std::string name = mp.fragments().size() == 1 ? mp.getMolname() :
+        (frag.iupac().empty() ? frag.formula() : frag.iupac());
+    out.SetMolname(name);
+    out.SetIupac(frag.iupac().empty() ? name : frag.iupac());
+    out.SetInchi(frag.inchi());
+    const auto *ref = referenceExperiment(mp);
+    if (!ref)
+    {
+        return out;
+    }
+    // The new index of each atom of the fragment
+    std::map<int, int> index;
+    std::vector<int>   atoms;
+    Experiment         exper(ref->getProgram(), ref->getMethod(), ref->getBasisset(),
+                             ref->getReference(), ref->getConformation(),
+                             ref->getDatafile(), JobType::OPT);
+    for (int a : frag.atoms())
+    {
+        index[a] = atoms.size();
+        auto ca  = ref->calcAtomConst()[a];
+        ca.setAtomid(atoms.size());
+        exper.AddAtom(ca);
+        atoms.push_back(atoms.size());
+    }
+    auto newFrag = frag;
+    newFrag.setAtoms(atoms);
+    out.addFragment(newFrag);
+    for (const auto &b : mp.bondsConst())
+    {
+        const auto ai = index.find(b.aI());
+        const auto aj = index.find(b.aJ());
+        if (ai != index.end() && aj != index.end())
+        {
+            int    i, j;
+            double bondorder;
+            b.get(&i, &j, &bondorder);
+            out.AddBond(Bond(ai->second, aj->second, bondorder));
+        }
+    }
+    out.AddExperiment(std::move(exper));
+    out.generateComposition();
+    return out;
+}
+
+std::vector<MolProp> compoundReferences(MsgHandler                         *msghandler,
+                                        const std::vector<const MolProp *> &molecules,
+                                        const std::vector<MolProp>         &all,
+                                        const std::vector<MolProp>         *references)
+{
+    // The compounds needed, in the order they are found, with the first
+    // molecule and fragment they are in
+    std::vector<std::pair<std::string, std::pair<const MolProp *, size_t>>> needed;
+    std::set<std::string> keys;
+    for (const auto *mp : molecules)
+    {
+        for (size_t f = 0; f < mp->fragments().size(); f++)
+        {
+            const auto key = compoundKey(mp->fragments()[f]);
+            if (!key.empty() && keys.insert(key).second)
+            {
+                needed.push_back({ key, { mp, f } });
+            }
+        }
+    }
+    // The first monomer of each compound in a set of molecules
+    const auto monomers = [](const std::vector<MolProp> &mps)
+    {
+        std::map<std::string, const MolProp *> found;
+        for (const auto &mp : mps)
+        {
+            if (mp.fragments().size() == 1 && referenceExperiment(mp))
+            {
+                found.insert({ compoundKey(mp.fragments()[0]), &mp });
+            }
+        }
+        return found;
+    };
+    const auto fromReferences = references ? monomers(*references) : std::map<std::string, const MolProp *>();
+    const auto fromAll        = monomers(all);
+    std::vector<MolProp> result;
+    for (const auto &n : needed)
+    {
+        const MolProp *mp = nullptr;
+        size_t         f  = 0;
+        std::string    source;
+        if (const auto r = fromReferences.find(n.first); r != fromReferences.end())
+        {
+            mp     = r->second;
+            source = "the monomer in the charge file";
+        }
+        else if (const auto a = fromAll.find(n.first); a != fromAll.end())
+        {
+            mp     = a->second;
+            source = "the monomer in the molecules";
+        }
+        else
+        {
+            mp     = n.second.first;
+            f      = n.second.second;
+            source = gmx::formatString("fragment %zu of %s", f + 1, mp->getMolname().c_str());
+        }
+        result.push_back(extractFragment(*mp, f));
+        if (msghandler)
+        {
+            const auto *ref = referenceExperiment(*mp);
+            msghandler->msg(ACTStatus::Info,
+                            gmx::formatString("The charges of compound %s are those of %s (data file %s).",
+                                              result.back().getMolname().c_str(), source.c_str(),
+                                              ref ? ref->getDatafile().c_str() : ""));
+        }
+    }
+    return result;
+}
+
 } // namespace alexandria

@@ -72,9 +72,9 @@ struct MolPropValidation
  * First each molecule is checked with MolProp::validate, which removes the
  * experiments with the atoms in another order than the reference
  * experiment. Then all molecules are checked together:
- * - each compound, a fragment identified by its InChI and formula (fragments
- *   with another identifier than an InChI are not checked), has its atoms in the
- *   same order (names and types) in all molecules, such that it can be
+ * - each fragment has an InChI as its identifier, and
+ * - each compound, a fragment identified by its InChI and formula, has its
+ *   atoms in the same order (names and types) in all molecules, such that it can be
  *   treated as one compound. The reference is the order of the compound in
  *   the references, if it is there, or else the order that most molecules
  *   have, the first of those if several are equally common, and
@@ -96,6 +96,34 @@ MolPropValidation validateMolProps(MsgHandler           *msghandler,
                                    std::vector<MolProp> *mps,
                                    std::vector<MolProp> *references = nullptr,
                                    ACTStatus             level      = ACTStatus::Error);
+
+/*! \brief A molecule made of one fragment of another molecule
+ * The atoms of the fragment in the first experiment that has atoms, with
+ * the bonds between them, in a new experiment of an optimization, for
+ * instance a monomer of a dimer.
+ * \param[in] mp The molecule
+ * \param[in] f  The fragment
+ * \return The new molecule, named after the fragment
+ */
+MolProp extractFragment(const MolProp &mp, size_t f);
+
+/*! \brief One molecule for each compound, from which its charges are made
+ * For each compound in the molecules, identified by its InChI and formula,
+ * the molecule is the first monomer of that compound in the references,
+ * for instance those of train_ff -charges, or else the first monomer in
+ * all molecules, or else the compound as a fragment of the first of the
+ * molecules it is in, see extractFragment. Which one is used is reported
+ * at Info level.
+ * \param[in] msghandler For the messages
+ * \param[in] molecules  The molecules whose compounds are needed
+ * \param[in] all        All molecules, whose monomers can be used
+ * \param[in] references Monomers to use first, or nullptr
+ * \return One molecule per compound
+ */
+std::vector<MolProp> compoundReferences(MsgHandler                         *msghandler,
+                                        const std::vector<const MolProp *> &molecules,
+                                        const std::vector<MolProp>         &all,
+                                        const std::vector<MolProp>         *references);
 
 } // namespace alexandria
 

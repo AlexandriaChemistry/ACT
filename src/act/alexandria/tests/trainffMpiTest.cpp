@@ -326,6 +326,27 @@ TEST_F(TrainFFMpiTest, MCMCHelpers)
     runAndCheck("halgren-PG.xml", "booze-mono", options, 0);
 }
 
+// Test: As MCMCHelpers, with the charges of hydrogen fluoride generated
+// from the monomer and copied to the dimer, see -qcompound, which each
+// processor does for its own molecules. The reference data are from a run on
+// two cores without helpers.
+TEST_F(TrainFFMpiTest, MCMCHelpersCompound)
+{
+    auto options = combine(gaOptions("MCMC", 1), mcmcOptions(2));
+    for (auto &o : options)
+    {
+        if (o.first == "-pop_size")
+        {
+            o.second = "2";
+        }
+    }
+    options.emplace_back("-fit", "chi eta zeta sigma epsilon");
+    options.emplace_back("-fc_allelec", "1");
+    options.emplace_back("-fc_mu", "1");
+    options.emplace_back("-qcompound", "");
+    runAndCheck("4S-lj14-7-pg-hvdw.xml", "hf-hf", options, 0);
+}
+
 // Test: The two-dimensional sensitivity analysis of a force field, with
 // the chi-squared divided over the master and the middlemen. The reference
 // data are a copy of those of TrainFFTest.Sensitivity2DJson, such that the
