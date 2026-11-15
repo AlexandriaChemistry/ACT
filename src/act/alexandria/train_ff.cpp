@@ -44,6 +44,8 @@
 
 #include <random>
 
+#include "config.h"
+
 #include "act/alexandria/acthelper.h"
 #include "act/alexandria/actmiddleman.h"
 #include "act/alexandria/alex_modules.h"
@@ -58,6 +60,7 @@
 #include "act/alexandria/train_utility.h"
 #include "act/forcefield/forcefield.h"
 #include "act/forcefield/forcefield_xml.h"
+#include "act/forces/forcecomputer.h"
 #include "act/gpu/gpu.h"
 #include "act/ga/penalizer.h"
 #include "act/topology/actmol_low.h"
@@ -146,6 +149,61 @@ void OptACM::check_pargs(MsgHandler *)
     gach_.check_pargs(&msghandler_);
 }
 
+int OptACM::chooseLockstep(const std::vector<t_filenm> &filenames)
+{
+    // Whether the GPU trains the force field, as ForceComputer::gpuCharges
+    // finds out later, from the first force field. The master reads it and
+    // counts the GPUs without starting them, and tells the others.
+    int gpus = 0;
+    if (commRec_.isMaster() && ACT_GPU_SYCL && !GMX_DOUBLE && bch_.gpuResident() &&
+        gach_.optimizer() != OptimizerAlg::MCMC && msghandler_.gpuAllowed())
+    {
+        ForceField pd;
+        readForceField(opt2fns("-ff", filenames.size(), filenames.data())[0], &pd, &msghandler_);
+        if (ForceComputer::gpuTrainable(&pd))
+        {
+            const auto facts = gpu::outOfMemoryFacts("");
+            int nodes = 1;
+            if (facts.nodeProcesses > 0)
+            {
+                nodes = (commRec_.size() + facts.nodeProcesses - 1)/facts.nodeProcesses;
+            }
+            gpus = nodes*facts.nodeGpus;
+        }
+    }
+    MPI_Bcast(&gpus, 1, MPI_INT, 0, commRec_.comm_world());
+    const auto plan = planLockstep(gach_.popSize(), commRec_.size(), gpus);
+    gach_.setLockstep(plan.lockstep);
+    if (commRec_.isMaster())
+    {
+        std::string text;
+        if (gpus == 0)
+        {
+            text = "-lockstep 0: the GPU does not train this force field here, so each middleman computes\n"
+                   "one individual at a time, with all processes.";
+        }
+        else
+        {
+            text = gmx::formatString("-lockstep 0: with %d GPU(s), %zu middlemen compute groups of %zu individuals,\n"
+                                     "%zu group(s) each per generation.",
+                                     gpus, plan.middlemen, plan.lockstep, plan.rounds);
+            if (plan.idle > 0)
+            {
+                text += gmx::formatString("\nWARNING: %zu of the %zu processes will be idle; start %zu processes to use them all.",
+                                          plan.idle, plan.idle + plan.processes, plan.processes);
+            }
+            if (plan.better > 0)
+            {
+                text += gmx::formatString("\nWARNING: with %zu processes each middleman would compute one group per generation.",
+                                          plan.better);
+            }
+        }
+        fprintf(stderr, "\n%s\n\n", text.c_str());
+        msghandler_.msg(ACTStatus::Info, text);
+    }
+    return plan.idle > 0 ? static_cast<int>(plan.processes) : 0;
+}
+
 void OptACM::optionsFinished(const std::vector<t_filenm> &filenames)
 {
     // With -nogpu_master the master does not start the GPU, before the log
@@ -158,8 +216,14 @@ void OptACM::optionsFinished(const std::vector<t_filenm> &filenames)
     mg_.optionsFinished(&msghandler_);
     const int nmiddlemen = gach_.popSize();  // MASTER now makes the work of a middleman too
     msghandler_.writeDebug(gmx::formatString("nmiddlemen = %d", nmiddlemen));
+    // With -lockstep 0 the plan decides how many processes work
+    int nactive = 0;
+    if (gach_.lockstep() == 0)
+    {
+        nactive = chooseLockstep(filenames);
+    }
     // Update the communication record and do necessary checks.
-    commRec_.init(nmiddlemen);
+    commRec_.init(nmiddlemen, nactive);
     if (commRec_.queue() && gach_.optimizer() == OptimizerAlg::MCMC)
     {
         GMX_THROW(gmx::InvalidInputError(gmx::formatString("The population (%d) is larger than the number of cores/threads (%d), which only the GA and HYBRID optimizers support",

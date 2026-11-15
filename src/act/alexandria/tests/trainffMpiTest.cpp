@@ -575,6 +575,38 @@ TEST_F(TrainFFMpiTest, LockstepCompoundChargesGpu)
                         "water_hyperpol2.xml", selFile);
 }
 
+// Test: -lockstep 0 chooses groups of 6 on 2 middlemen for 12 individuals
+// on one GPU, see planLockstep, and leaves the fourth process idle, which
+// trains as -lockstep 6 does with all processes
+TEST_F(TrainFFMpiTest, LockstepAutoGpu)
+{
+    if (!gmx::test::gpuTestRuns(gpuTraining(), "no GPU or double precision"))
+    {
+        return;
+    }
+    auto options = polarizableOptions(12, 2, "charge");
+    options.emplace_back("-noshell_keep", "");
+    auto automatic = options, explicitly = options;
+    automatic.emplace_back("-lockstep", "0");
+    explicitly.emplace_back("-lockstep", "6");
+    compareGpuTrainings(&fileManager(), "lockstep-auto", automatic, explicitly);
+}
+
+// Test: A group of individuals that does not fit into the GPU memory, here
+// set to 1 MB with ACT_GPU_MEMORY_BUDGET, is computed one individual at a
+// time, with the same result as all at once, see ForceComputer::setGpuMemoryBudget
+TEST_F(TrainFFMpiTest, LockstepInPartsGpu)
+{
+    if (!gmx::test::gpuTestRuns(gpuTraining(), "no GPU or double precision"))
+    {
+        return;
+    }
+    auto options = polarizableOptions(12, 2, "charge");
+    options.emplace_back("-noshell_keep", "");
+    options.emplace_back("-lockstep", "4");
+    compareGpuTrainings(&fileManager(), "lockstep-parts", options, options, "ACT_GPU_MEMORY_BUDGET");
+}
+
 // Test: The molecules whose parameters did not change are not computed again
 // on the GPU, their deviations, including the bounds of their charges, are
 // those kept from before. ACT_NO_GPU_SKIP computes all of them each time.

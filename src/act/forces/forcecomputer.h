@@ -178,7 +178,20 @@ private:
     //! Whether to compute on the GPU, see setGpuResident
     bool           gpuResident_      = false;
     //! The number of parameter sets on the GPU, see setGpuReplicas
-    size_t         gpuReplicas_      = 1;
+    mutable size_t gpuReplicas_      = 1;
+    //! The GPU memory that this process may use in bytes, 0 if not known, see setGpuMemoryBudget
+    double         gpuMemoryBudget_  = 0;
+    //! Whether the replicas were fitted into gpuMemoryBudget_, see fitGpuReplicas
+    mutable bool   replicasFitted_   = false;
+
+    /*! \brief Use as many replicas as fit into the GPU memory of this process
+     * The molecules are put on the GPU with one replica and with two, which
+     * gives the memory of one replica, and gpuReplicas_ is reduced to the
+     * number that fits gpuMemoryBudget_, with a note if that is fewer.
+     * \param[in] pd      The force field
+     * \param[in] allmols The molecules
+     */
+    void fitGpuReplicas(const ForceField *pd, const std::vector<ACTMol *> &allmols) const;
     //! Whether to keep the energies as the GPU gives them, see setKeepGpuEnergies
     bool           keepGpuEnergies_  = false;
     //! Whether the GPU could not compute the molecules, see prepareGpuResident
@@ -531,8 +544,15 @@ private:
      */
     void setGpuReplicas(size_t nreplica) { gpuReplicas_ = std::max<size_t>(1, nreplica); }
 
-    //! \return the number of replicas on the GPU, see setGpuReplicas
+    //! \return the number of replicas on the GPU, see setGpuReplicas and setGpuMemoryBudget
     size_t gpuReplicas() const { return gpuReplicas_; }
+
+    /*! \brief Set the GPU memory that this process may use
+     * With several replicas, as many are put on the GPU as fit, at the
+     * first evaluation on the GPU; gpuReplicas tells how many that is.
+     * \param[in] bytes The memory in bytes, 0 if not known
+     */
+    void setGpuMemoryBudget(double bytes) { gpuMemoryBudget_ = bytes; }
 
     /*! \brief Keep the energies of the calculations on the GPU, for gpuTypeEnergies
      * \param[in] keep Whether to keep them
@@ -727,6 +747,15 @@ private:
      * \param[in] pd The force field
      */
     bool gpuCharges(const ForceField *pd) const;
+
+    /*! \brief Whether the GPU can train a force field, as far as the force field goes
+     * A polarizable force field with SQE, bond corrections and Gaussian or
+     * point charges, see gpuCharges, which also needs the GPU, single
+     * precision and setGpuResident.
+     * \param[in] pd The force field
+     * \return whether it can
+     */
+    static bool gpuTrainable(const ForceField *pd);
 
     /*! \brief Whether only the GPU generates the charges, see gpuCharges
      * Then the processor need not generate them before computeRelaxedEnergies,

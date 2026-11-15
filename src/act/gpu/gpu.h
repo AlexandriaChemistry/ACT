@@ -625,6 +625,15 @@ System *createSystem(const SystemBlock *blocks, size_t nblock);
 //! Free the memory of a system on the GPU
 void destroySystem(System *system);
 
+/*! \brief The memory that a system has allocated on the GPU
+ * \param[in] system The system, may be nullptr
+ * \return the bytes, 0 without system or GPU
+ */
+size_t systemBytes(const System *system);
+
+//! \return the memory of the GPU of this process in bytes, 0 without GPU
+double deviceMemory();
+
 /*! \brief Replace the moving shells of a block, with new force constants
  * \param[in] system The system
  * \param[in] block  The block

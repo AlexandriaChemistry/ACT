@@ -1136,6 +1136,11 @@ System *createSystem(const SystemBlock *blocks, size_t nblock)
     return holder.release();
 }
 
+size_t systemBytes(const System *system)
+{
+    return system ? system->allocatedBytes_ : 0;
+}
+
 void destroySystem(System *system)
 {
     delete system;

@@ -119,6 +119,13 @@ private:
     int               population_           = 0;
     //! Whether I am left over in the layout of the processes, see init
     bool              idle_                  = false;
+    /*! \brief Leave the processes beyond a number idle
+     * The idle processes leave the ACT communicator, such that the others
+     * work as if they were all there is.
+     * \param[in] nactive The number of processes that work
+     * \return whether this process is idle
+     */
+    bool leaveIdle(int nactive);
     //! The number of idle processes
     int               nidle_                 = 0;
     //! Check whether init has been called
@@ -186,9 +193,13 @@ public:
      * \param[in] nmiddleman The number of middlemen. Knowing the total 
      *                       number of cores is then sufficient to derive
      *                       the rest.
+     * \param[in] nactive    The number of processes that work, for instance
+     *                       those of the plan of train_ff -lockstep 0; the
+     *                       others are idle. All work if 0 or not less than
+     *                       the number of processes.
      * \return Outcome of the initiation.
      */
-    CommunicationStatus init(int nmiddleman);
+    CommunicationStatus init(int nmiddleman, int nactive = 0);
     
     /*! \brief Tell the communication record that we are done.
      * Any additional communication will cause a throw.
@@ -278,6 +289,9 @@ public:
      * comm_world() of the others and should stop after init.
      */
     bool isIdle() const { return idle_; }
+
+    //! \return the number of processes that are idle, see init
+    int nIdle() const { return nidle_; }
 
     //! \return whether I am a middleman
     bool isMiddleMan() const { return NodeType::MiddleMan == nt_; }
