@@ -1105,7 +1105,7 @@ TEST_F(TrainFFTest, FinalOutputGpu)
         { "-noshell_keep", "" },
         { "-fit", fit }
     };
-    auto training = combine(common, {
+    const auto training = combine(common, {
         { "-seed", "219463979" },
         { "-optimizer", "MCMC" },
         { "-pop_size", "1" },
@@ -1119,7 +1119,7 @@ TEST_F(TrainFFTest, FinalOutputGpu)
     EXPECT_TRUE(logContains(trained.log, "GPU resident relaxation"));
     // The force field is only written if the training found a better one
     ASSERT_NE(std::string::npos, trained.forceField.find("</alexandria_chemistry>"));
-    auto again = combine(common, {
+    const auto again = combine(common, {
         { "-nooptimize", "" },
         { "-norandom_init", "" }
     });
