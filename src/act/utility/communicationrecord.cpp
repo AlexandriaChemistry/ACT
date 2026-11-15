@@ -155,7 +155,24 @@ void CommunicationRecord::print(FILE *fp)
     fprintf(fp, "%s", strToPrint.c_str());
 }
 
-CommunicationStatus CommunicationRecord::init(int nmiddleman)
+bool CommunicationRecord::leaveIdle(int nactive)
+{
+    nidle_ += size_ - nactive;
+    idle_   = rank_ >= nactive;
+    MPI_Comm active = MPI_COMM_NULL;
+    check_return("MPI_Comm_split", MPI_Comm_split(mpi_act_world_, idle_ ? 1 : 0, rank_, &active));
+    check_return("MPI_Comm_free", MPI_Comm_free(&mpi_act_world_));
+    mpi_act_world_ = active;
+    check_return("MPI_Comm_rank", MPI_Comm_rank(mpi_act_world_, &rank_));
+    check_return("MPI_Comm_size", MPI_Comm_size(mpi_act_world_, &size_));
+    if (idle_)
+    {
+        initCalled_ = true;
+    }
+    return idle_;
+}
+
+CommunicationStatus CommunicationRecord::init(int nmiddleman, int nactive)
 {
     if (initCalled_)
     {
@@ -163,6 +180,11 @@ CommunicationStatus CommunicationRecord::init(int nmiddleman)
     }
     nmiddlemen_ = nmiddleman;
     population_ = nmiddleman;
+    // The processes beyond those of a plan are idle, see train_ff -lockstep 0
+    if (nactive > 0 && nactive < size_ && leaveIdle(nactive))
+    {
+        return CommunicationStatus::OK;
+    }
     if (nmiddlemen_ < 1)
     {
         GMX_THROW(gmx::InvalidInputError(gmx::formatString("Cannot handle %d middlemen (individuals) with %d cores/threads",
@@ -185,27 +207,18 @@ CommunicationStatus CommunicationRecord::init(int nmiddleman)
         // Each individual needs the same number of helpers. The processes
         // left over are idle: they leave the ACT communicator, such that
         // the others work as if they were all there is.
-        int nactive = nmiddlemen_ * (1+nhelper_per_middleman_);
-        if (nactive != size_)
+        int nworking = nmiddlemen_ * (1+nhelper_per_middleman_);
+        if (nworking != size_)
         {
-            nidle_ = size_ - nactive;
-            idle_  = rank_ >= nactive;
             if (rank_ == 0)
             {
                 fprintf(stderr, "\nWARNING: %d of the %d cores/threads will be idle, since each of the %d individuals\n"
                         "needs the same number of cores/threads (%d). Use a multiple of %d cores/threads,\n"
                         "or more individuals than cores/threads.\n\n",
-                        nidle_, size_, nmiddlemen_, nhelper_per_middleman_ + 1, nmiddlemen_);
+                        size_ - nworking, size_, nmiddlemen_, nhelper_per_middleman_ + 1, nmiddlemen_);
             }
-            MPI_Comm active = MPI_COMM_NULL;
-            check_return("MPI_Comm_split", MPI_Comm_split(mpi_act_world_, idle_ ? 1 : 0, rank_, &active));
-            check_return("MPI_Comm_free", MPI_Comm_free(&mpi_act_world_));
-            mpi_act_world_ = active;
-            check_return("MPI_Comm_rank", MPI_Comm_rank(mpi_act_world_, &rank_));
-            check_return("MPI_Comm_size", MPI_Comm_size(mpi_act_world_, &size_));
-            if (idle_)
+            if (leaveIdle(nworking))
             {
-                initCalled_ = true;
                 return CommunicationStatus::OK;
             }
         }

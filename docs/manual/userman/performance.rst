@@ -91,6 +91,10 @@ Training on GPUs
 
 The best value of *-lockstep* depends on the GPU, on the number of GPUs per node and on the training set. Start with *-lockstep 8* and *pop_size/8* + 1 processes, and compare with 4 and 16 in a short run.
 
+With *-lockstep 0*, *train_ff* chooses the value itself. If the GPU trains the force field, which the master checks in the first force field before the processes get their tasks, it aims for at least two middlemen per GPU and groups of at most 16 individuals, with at most 40 middlemen per GPU, and uses the fewest middlemen that compute the groups in the same number of rounds. For a population of 128 this gives the settings that were the fastest in :numref:`tab-lockstep`: groups of 16 on 8 middlemen with four GPUs, and groups of 8 on 16 middlemen with eight. The processes left over are idle, with a warning that says how many to start; with too few processes, a warning says how many would compute the groups in one round. Without GPU training, each middleman computes one individual at a time with all processes. The GPUs counted are those that the job may use, as listed in *CUDA_VISIBLE_DEVICES*, *ROCR_VISIBLE_DEVICES* or *HIP_VISIBLE_DEVICES*, or else those of the node.
+
+With any value of *-lockstep*, a middleman puts as many replicas on the GPU as fit into its share of the GPU memory: the memory of the GPU divided over the processes that use it, less about 350 MB for the context of each and 10% that is kept free. It measures the memory of one replica at the first evaluation. If fewer fit than the individuals of a group, *train_ff* notes it and the middleman computes the group in parts, each with its individuals together, with the same results. Fewer processes per GPU, or a smaller *-lockstep*, then let more individuals be computed at once.
+
 .. figure:: ../images/trainff-lockstep.pdf
    :name: fig-trainff-lockstep
    :width: 100%

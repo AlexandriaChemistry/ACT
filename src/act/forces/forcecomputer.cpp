@@ -28,6 +28,7 @@
 #include "forcecomputer.h"
 
 #include <algorithm>
+#include <cmath>
 #include <set>
 #include <utility>
 #include <vector>
@@ -1730,6 +1731,44 @@ bool ForceComputer::useGpuResident() const
     return (gpuResident_ || gpuResidentCheck()) && !gpuResidentUnavailable_;
 }
 
+void ForceComputer::fitGpuReplicas(const ForceField *pd, const std::vector<ACTMol *> &allmols) const
+{
+    const size_t wanted   = gpuReplicas_;
+    const double distance = shellMaxDistance(pd);
+    const bool   charges  = gpuCharges(pd);
+    if (!gpuSystem_->prepare(pd, allmols, distance, charges, this, 1))
+    {
+        return;
+    }
+    const double one = gpuSystem_->bytes();
+    double       per = 0;
+    try
+    {
+        if (gpuSystem_->prepare(pd, allmols, distance, charges, this, 2))
+        {
+            per = gpuSystem_->bytes() - one;
+        }
+    }
+    catch (const gpu::OutOfMemory &)
+    {
+        // Not even two fit
+        per = gpuMemoryBudget_;
+    }
+    size_t fit = wanted;
+    if (per > 0)
+    {
+        fit = std::max(1.0, 1 + std::floor((gpuMemoryBudget_ - one)/per));
+    }
+    gpuReplicas_ = std::min(wanted, fit);
+    if (gpuReplicas_ < wanted)
+    {
+        fprintf(stderr, "Note: the GPU memory of this process, %.0f MB, holds %zu of the %zu individuals of a group\n"
+                "at once (%.0f MB for the first, %.0f MB for each other), so the group is computed in parts.\n"
+                "Fewer processes per GPU, or a smaller -lockstep, avoid that.\n",
+                gpuMemoryBudget_/1e6, gpuReplicas_, wanted, one/1e6, per/1e6);
+    }
+}
+
 bool ForceComputer::prepareGpuResident(const ForceField *pd, const std::vector<ACTMol *> &allmols) const
 {
     if (!useGpuResident() || !pd->polarizable())
@@ -1748,6 +1787,11 @@ bool ForceComputer::prepareGpuResident(const ForceField *pd, const std::vector<A
         // The blocks of the structures of the multipoles, see setGpuMultipoles
         gpuSystem_->setMultipoleBlocks(gpuMultipoles_);
     }
+    if (gpuReplicas_ > 1 && gpuMemoryBudget_ > 0 && !replicasFitted_)
+    {
+        replicasFitted_ = true;
+        fitGpuReplicas(pd, allmols);
+    }
     if (!gpuSystem_->prepare(pd, allmols, shellMaxDistance(pd), gpuCharges(pd), this, gpuReplicas_))
     {
         // The processor computes everything from now on
@@ -1758,13 +1802,18 @@ bool ForceComputer::prepareGpuResident(const ForceField *pd, const std::vector<A
     return true;
 }
 
-bool ForceComputer::gpuCharges(const ForceField *pd) const
+bool ForceComputer::gpuTrainable(const ForceField *pd)
 {
     auto qdist = pd->chargeDistribution();
-    return (useGpuResident() && !GMX_DOUBLE && gpu::useGpu() && pd->polarizable() &&
+    return (pd->polarizable() &&
             pd->interactionPresent(InteractionType::BONDCORRECTIONS) &&
             pd->chargeGenerationAlgorithm() == ChargeGenerationAlgorithm::SQE &&
             (qdist == ChargeDistributionType::Gaussian || qdist == ChargeDistributionType::Point));
+}
+
+bool ForceComputer::gpuCharges(const ForceField *pd) const
+{
+    return (useGpuResident() && !GMX_DOUBLE && gpu::useGpu() && gpuTrainable(pd));
 }
 
 bool ForceComputer::gpuChargesOnly(const ForceField *pd) const

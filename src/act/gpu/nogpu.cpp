@@ -109,6 +109,16 @@ System *createSystem(const SystemBlock *, size_t)
     return nullptr;
 }
 
+size_t systemBytes(const System *)
+{
+    return 0;
+}
+
+double deviceMemory()
+{
+    return 0;
+}
+
 void destroySystem(System *system)
 {
     delete system;

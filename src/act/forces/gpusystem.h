@@ -180,6 +180,9 @@ public:
     //! \return the number of replicas, see prepare
     size_t nreplica() const;
 
+    //! \return the memory that the molecules take on the GPU in bytes, see gpu::systemBytes
+    size_t bytes() const;
+
     /*! \brief Copy the parameters of the topologies to the GPU, and generate the charges there
      * All replicas get the same parameters.
      * \param[in] pd The force field

@@ -105,4 +105,75 @@ TEST(QueueBalanceTest, Empty)
 
 } // namespace
 
+// Test: The settings of the benchmarks in the manual, a population of 128
+TEST(LockstepPlanTest, Benchmarks)
+{
+    // Four GH200 (arrhenius): groups of 16 on 8 middlemen
+    auto plan = planLockstep(128, 129, 4);
+    EXPECT_EQ(16u, plan.lockstep);
+    EXPECT_EQ(8u, plan.middlemen);
+    EXPECT_EQ(9u, plan.processes);
+    EXPECT_EQ(120u, plan.idle);
+    EXPECT_EQ(1u, plan.rounds);
+    EXPECT_EQ(0u, plan.better);
+    // Eight MI250X GCDs (dardel): groups of 8 on 16 middlemen
+    plan = planLockstep(128, 129, 8);
+    EXPECT_EQ(8u, plan.lockstep);
+    EXPECT_EQ(16u, plan.middlemen);
+    EXPECT_EQ(17u, plan.processes);
+}
+
+// Test: A large population on one GPU takes several rounds if the
+// processes are too few, and says how many would do it in one
+TEST(LockstepPlanTest, TooFewProcesses)
+{
+    auto plan = planLockstep(512, 5, 1);
+    EXPECT_EQ(16u, plan.lockstep);
+    EXPECT_EQ(4u, plan.middlemen);
+    EXPECT_EQ(8u, plan.rounds);
+    EXPECT_EQ(0u, plan.idle);
+    EXPECT_EQ(33u, plan.better);
+    plan = planLockstep(512, 64, 1);
+    EXPECT_EQ(16u, plan.lockstep);
+    EXPECT_EQ(32u, plan.middlemen);
+    EXPECT_EQ(1u, plan.rounds);
+    EXPECT_EQ(31u, plan.idle);
+}
+
+// Test: A small population still uses at least two middlemen per GPU
+TEST(LockstepPlanTest, SmallPopulation)
+{
+    auto plan = planLockstep(12, 4, 1);
+    EXPECT_EQ(6u, plan.lockstep);
+    EXPECT_EQ(2u, plan.middlemen);
+    EXPECT_EQ(1u, plan.idle);
+    // Groups of equal size: 20 in 2 groups of 10, not 16 and 4
+    plan = planLockstep(20, 9, 1);
+    EXPECT_EQ(10u, plan.lockstep);
+    EXPECT_EQ(2u, plan.middlemen);
+}
+
+// Test: The number of middlemen per GPU stays below the limit of the
+// multi-process service, even if the groups get several rounds
+TEST(LockstepPlanTest, ManyIndividualsPerGpu)
+{
+    const auto plan = planLockstep(4096, 257, 1);
+    EXPECT_EQ(16u, plan.lockstep);
+    // 256 groups take 7 rounds on 40 middlemen, as on 37
+    EXPECT_LE(plan.middlemen, maxMiddlemenPerGpu);
+    EXPECT_EQ(37u, plan.middlemen);
+    EXPECT_EQ(7u, plan.rounds);
+}
+
+// Test: Without GPU or with one process nothing is planned
+TEST(LockstepPlanTest, NoGpu)
+{
+    auto plan = planLockstep(128, 33, 0);
+    EXPECT_EQ(1u, plan.lockstep);
+    EXPECT_EQ(32u, plan.middlemen);
+    EXPECT_EQ(0u, plan.idle);
+    plan = planLockstep(128, 1, 1);
+    EXPECT_EQ(1u, plan.lockstep);
+}
+
 } // namespace alexandria

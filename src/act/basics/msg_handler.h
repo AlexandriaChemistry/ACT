@@ -298,6 +298,9 @@ class MsgHandler
         //! \return whether we are in a verbose mode
         bool verbose() const { return printLevel_ >= ACTStatus::Verbose; }
 
+        //! \return whether the GPU may be used, false with -nogpu
+        bool gpuAllowed() const { return useGpu_; }
+
         //! \return whether we are in debug mode
         bool debug() const { return printLevel_ == ACTStatus::Debug; }
 

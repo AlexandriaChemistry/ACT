@@ -4185,6 +4185,7 @@ GpuTrainingSystem::GpuTrainingSystem() : impl_(new Impl) {}
 GpuTrainingSystem::~GpuTrainingSystem() = default;
 bool GpuTrainingSystem::prepare(const ForceField *, const std::vector<ACTMol *> &, double, bool, const ForceComputer *, size_t) { return false; }
 size_t GpuTrainingSystem::nreplica() const { return 1; }
+size_t GpuTrainingSystem::bytes() const { return 0; }
 void GpuTrainingSystem::updateParameters(const ForceField *, const ForceComputer *) {}
 void GpuTrainingSystem::stageParameters(size_t, const ForceField *, const ForceComputer *) {}
 void GpuTrainingSystem::uploadParameters(const ForceField *) {}
@@ -5477,6 +5478,11 @@ bool GpuTrainingSystem::prepare(const ForceField *pd, const std::vector<ACTMol *
 size_t GpuTrainingSystem::nreplica() const
 {
     return impl_->nreplica;
+}
+
+size_t GpuTrainingSystem::bytes() const
+{
+    return gpu::systemBytes(impl_->system);
 }
 
 void GpuTrainingSystem::updateParameters(const ForceField *pd, const ForceComputer *fc)

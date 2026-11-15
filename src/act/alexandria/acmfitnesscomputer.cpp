@@ -236,15 +236,41 @@ std::vector<double> ACMFitnessComputer::calcDeviations(MsgHandler               
     };
     // All sets at once needs a replica for each on the GPU, and no helpers,
     // which would compute their molecules one set at a time
-    const size_t nrep = forceComp_->gpuReplicas();
+    const bool parallel = sii_->commRec()->isParallelCalc();
+    // More sets than replicas are computed in parts of as many as there
+    // are replicas, for instance if fewer fit into the GPU memory than
+    // the individuals of a group, see ForceComputer::setGpuMemoryBudget
+    const auto inParts = [this, msghandler, &params, ims](size_t part)
+    {
+        std::vector<double> all;
+        for (size_t start = 0; start < params.size(); start += part)
+        {
+            const std::vector<const std::vector<double> *> some(params.begin() + start,
+                                                                params.begin() + std::min(params.size(), start + part));
+            const auto chi2 = calcDeviations(msghandler, some, ims);
+            all.insert(all.end(), chi2.begin(), chi2.end());
+        }
+        return all;
+    };
+    const size_t asked = forceComp_->gpuReplicas();
+    if (!parallel && asked > 1 && params.size() > asked)
+    {
+        return inParts(asked);
+    }
     DeviationTask first;
-    bool batch = (params.size() > 1 && params.size() <= nrep &&
-                  !sii_->commRec()->isParallelCalc());
+    bool batch = (params.size() > 1 && params.size() <= asked && !parallel);
     if (batch)
     {
         useParameters(params[0]);
         batch = (prepareDeviation(msghandler, CalcDev::Compute, ims, &first) &&
                  first.gpuCharges && !first.selected.empty());
+    }
+    // The first evaluation on the GPU puts as many replicas there as fit,
+    // see ForceComputer::fitGpuReplicas
+    const size_t nrep = forceComp_->gpuReplicas();
+    if (batch && params.size() > nrep)
+    {
+        return inParts(nrep);
     }
     if (batch)
     {

@@ -357,6 +357,12 @@ bool useGpu()
     return gpuInUse();
 }
 
+double deviceMemory()
+{
+    auto *queue = useGpu() ? gpuQueue() : nullptr;
+    return queue ? queue->get_device().get_info<sycl::info::device::global_mem_size>() : 0;
+}
+
 bool setUseGpu(bool use)
 {
     bool before = gpuInUse();

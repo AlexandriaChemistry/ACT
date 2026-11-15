@@ -161,6 +161,14 @@ public:
      */
     void optionsFinished(const std::vector<t_filenm> &filenames);
 
+    /*! \brief Choose -lockstep and the number of processes, for -lockstep 0
+     * See planLockstep. Called by all processes before the roles of the
+     * processes are set, see CommunicationRecord::init.
+     * \param[in] filenames The file options, for the force field
+     * \return the number of processes that work, 0 if all
+     */
+    int chooseLockstep(const std::vector<t_filenm> &filenames);
+
     //! \return the message handler
     MsgHandler *msgHandler() { return &msghandler_; }
 

@@ -145,10 +145,26 @@ OutOfMemoryFacts outOfMemoryFacts(const std::string &device)
     }
     else
     {
-        std::error_code error;
-        while (std::filesystem::exists("/dev/nvidia" + std::to_string(facts.nodeGpus), error))
+        // The GPUs that the job may use, as Slurm lists them, which
+        // selectGpuOfProcess leaves as they are if there is one, or else
+        // those of the node
+        for (const char *name : { "CUDA_VISIBLE_DEVICES", "ROCR_VISIBLE_DEVICES", "HIP_VISIBLE_DEVICES" })
         {
-            facts.nodeGpus++;
+            const char *value = std::getenv(name);
+            if (value && *value)
+            {
+                const std::string list(value);
+                facts.nodeGpus = static_cast<int>(std::count(list.begin(), list.end(), ',')) + 1;
+                break;
+            }
+        }
+        if (facts.nodeGpus == 0)
+        {
+            std::error_code error;
+            while (std::filesystem::exists("/dev/nvidia" + std::to_string(facts.nodeGpus), error))
+            {
+                facts.nodeGpus++;
+            }
         }
     }
     facts.nvidia = device.find("NVIDIA") != std::string::npos;

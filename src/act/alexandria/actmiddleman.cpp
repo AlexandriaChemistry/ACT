@@ -20,11 +20,15 @@
  */
 #include "actmiddleman.h" 
 
+#include <algorithm>
+#include <cstdlib>
+
 #include "act/alexandria/acminitializer.h"
 #include "act/alexandria/mcmcmutator.h"
 #include "act/alexandria/percentmutator.h"
 #include "act/alexandria/staticindividualinfo.h"
 #include "act/forces/forcecomputerstatistics.h"
+#include "act/gpu/gpu.h"
 #include "act/utility/portable_random.h"
 #include "act/utility/communicationrecord.h"
 #include "gromacs/utility/gmxassert.h"
@@ -134,6 +138,31 @@ ACTMiddleMan::ACTMiddleMan(MsgHandler                *msghandler,
     if (sii->commRec()->queue() && gach->lockstep() > 1 && !sii->commRec()->isParallelCalc())
     {
         forceComp_.setGpuReplicas(gach->lockstep());
+        // As many replicas as fit into the share of this process of the GPU
+        // memory: the GPUs of a node are shared by its processes that work,
+        // each with a context of about 350 MB, and 10% is kept free. The
+        // idle processes, see CommunicationRecord::init, use no GPU. Only
+        // the middlemen get here, so nothing is communicated.
+        const double memory = gpu::deviceMemory();
+        if (memory > 0)
+        {
+            const auto   cr      = sii->commRec();
+            const auto   facts   = gpu::outOfMemoryFacts("");
+            const int    started = cr->size() + cr->nIdle();
+            const int    perNode = facts.nodeProcesses > 0 ? facts.nodeProcesses : started;
+            const int    nodes   = std::max(1, (started + perNode - 1)/perNode);
+            const int    working = (cr->size() + nodes - 1)/nodes;
+            const int    gpus    = std::max(1, facts.nodeGpus);
+            const int    sharing = std::max(1, (working + gpus - 1)/gpus);
+            const double context = 350e6;
+            double       budget  = std::max(0.0, 0.9*memory/sharing - context);
+            // For developers and tests, the budget in MB
+            if (const char *mb = std::getenv("ACT_GPU_MEMORY_BUDGET"))
+            {
+                budget = std::atof(mb)*1e6;
+            }
+            forceComp_.setGpuMemoryBudget(budget);
+        }
     }
 }
 
@@ -224,7 +253,17 @@ void ACTMiddleMan::computeQueueWork(MsgHandler *msghandler)
                     gptr.push_back(&genomes[i]);
                     bptr.push_back(&best[i]);
                 }
-                MCMCMutator::mutateLockstep(msghandler, mutators, gptr, bptr);
+                // In parts of as many as fit on the GPU, see
+                // ForceComputer::setGpuMemoryBudget, each in lockstep
+                const size_t part = std::max<size_t>(1, forceComp_.gpuReplicas());
+                for (size_t start = 0; start < mutators.size(); start += part)
+                {
+                    const size_t end = std::min(mutators.size(), start + part);
+                    const std::vector<MCMCMutator *> m(mutators.begin() + start, mutators.begin() + end);
+                    const std::vector<ga::Genome *> g(gptr.begin() + start, gptr.begin() + end);
+                    const std::vector<ga::Genome *> b(bptr.begin() + start, bptr.begin() + end);
+                    MCMCMutator::mutateLockstep(msghandler, m, g, b);
+                }
                 for (int i = 0; i < n; i++)
                 {
                     minimum[i] = mutators[i]->foundMinimum();

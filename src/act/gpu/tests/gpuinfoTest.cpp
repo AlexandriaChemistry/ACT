@@ -32,6 +32,7 @@
  */
 #include "../gpu.h"
 
+#include <cstdlib>
 #include <string>
 #include <vector>
 
@@ -248,6 +249,40 @@ TEST(GpuOutOfMemoryTest, Facts)
     facts.nodeProcesses = 0;
     const auto unknown = gpu::outOfMemoryMessage("AMD Instinct MI250X", 68.7e9, 1, 1, facts);
     EXPECT_NE(std::string::npos, unknown.find("All processes that use this GPU share")) << unknown;
+}
+
+// Test: The GPUs of the node are those that the job may use, as Slurm lists
+// them in CUDA_VISIBLE_DEVICES, not all GPUs of the node
+TEST(GpuOutOfMemoryTest, ListedGpus)
+{
+    if (!gpu::gpuOfProcess().empty())
+    {
+        // selectGpuOfProcess chose a GPU already, which outOfMemoryFacts uses
+        return;
+    }
+    const std::vector<const char *> names = { "CUDA_VISIBLE_DEVICES", "ROCR_VISIBLE_DEVICES", "HIP_VISIBLE_DEVICES" };
+    std::vector<std::pair<bool, std::string>> saved;
+    for (const char *name : names)
+    {
+        const char *value = std::getenv(name);
+        saved.emplace_back(value != nullptr, value ? value : "");
+        unsetenv(name);
+    }
+    setenv("CUDA_VISIBLE_DEVICES", "3", 1);
+    EXPECT_EQ(1, gpu::outOfMemoryFacts("").nodeGpus);
+    setenv("CUDA_VISIBLE_DEVICES", "0,2", 1);
+    EXPECT_EQ(2, gpu::outOfMemoryFacts("").nodeGpus);
+    for (size_t i = 0; i < names.size(); i++)
+    {
+        if (saved[i].first)
+        {
+            setenv(names[i], saved[i].second.c_str(), 1);
+        }
+        else
+        {
+            unsetenv(names[i]);
+        }
+    }
 }
 
 // Test: What the log file shows about the GPUs of this computer is consistent:
