@@ -150,15 +150,20 @@ void evaluate(MsgHandler              *msghandler,
             pstore.push_back((*param)[change.first]);
             (*param)[change.first] = change.second;
         }
-        sii->updateForceField(msghandler, changed, *param);
+        // The helpers of the master compute part of the molecules, and
+        // need the parameters as well, as in ACMFitnessComputer::compute
+        fitComp->distributeTasks(CalcDev::Parameters);
+        fitComp->distributeParameters(msghandler, param, changed);
         fitComp->distributeTasks(cdc);
         point.chi2 = fitComp->calcDeviation(msghandler, cdc, ims);
-        // Restore in reverse order, should an index occur more than once
+        // Restore in reverse order, should an index occur more than once,
+        // on the helpers too, which only update the changed parameters
         for (size_t c = point.changes.size(); c > 0; c--)
         {
             (*param)[point.changes[c-1].first] = pstore[c-1];
         }
-        sii->updateForceField(msghandler, changed, *param);
+        fitComp->distributeTasks(CalcDev::Parameters);
+        fitComp->distributeParameters(msghandler, param, changed);
         for (size_t w = 0; w < nsent; w++)
         {
             cr->recv(workers[w], &(*points)[first + 1 + w].chi2);
@@ -195,8 +200,11 @@ bool SensitivityAnalysis::run(MsgHandler           *msghandler,
     bool   twoD   = mode == SensitivityMode::TwoD;
     size_t np     = param->size();
     size_t npairs = twoD ? np*(np - 1)/2 : 0;
+    // All parameters, on the helpers of the master too, which may have
+    // other ones, for instance those of the last evaluation of a training
     const std::set<int> changed;
-    sii->updateForceField(msghandler, changed, genome->bases());
+    fitComp->distributeTasks(CalcDev::Parameters);
+    fitComp->distributeParameters(msghandler, param, changed);
     auto cdc    = CalcDev::Compute;
     fitComp->distributeTasks(cdc);
     auto chi2_0 = fitComp->calcDeviation(msghandler, cdc, ims);

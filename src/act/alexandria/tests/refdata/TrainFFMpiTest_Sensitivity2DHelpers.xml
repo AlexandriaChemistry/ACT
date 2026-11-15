@@ -1,0 +1,28 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Sensitivity Name="2D">
+    <Real Name="chi2_0">26.505145562834585</Real>
+    <Real Name="c3 epsilon">0.026230050175860949</Real>
+    <Real Name="c3 sigma">0.76401460031752577</Real>
+    <Real Name="o3 epsilon">0.026852923828986248</Real>
+    <Real Name="o3 sigma">0.22445454883608892</Real>
+    <Real Name="ow epsilon">0.00098747204895318426</Real>
+    <Real Name="ow sigma">0.019534087675171435</Real>
+    <Real Name="c3 epsilon / c3 sigma">0.29529556893759018</Real>
+    <Real Name="c3 epsilon / o3 epsilon">0.044932085048613651</Real>
+    <Real Name="c3 epsilon / o3 sigma">0.12351715471406233</Real>
+    <Real Name="c3 epsilon / ow epsilon">0.00023049518555762267</Real>
+    <Real Name="c3 epsilon / ow sigma">0.00076179503488749015</Real>
+    <Real Name="c3 sigma / o3 epsilon">0.21015037844867812</Real>
+    <Real Name="c3 sigma / o3 sigma">0.63292441265252619</Real>
+    <Real Name="c3 sigma / ow epsilon">0.00045163459270281106</Real>
+    <Real Name="c3 sigma / ow sigma">9.3806560850673103e-05</Real>
+    <Real Name="o3 epsilon / o3 sigma">0.15495744949253598</Real>
+    <Real Name="o3 epsilon / ow epsilon">0.0015279256208460324</Real>
+    <Real Name="o3 epsilon / ow sigma">0.010418853580013369</Real>
+    <Real Name="o3 sigma / ow epsilon">0.0036616125165309745</Real>
+    <Real Name="o3 sigma / ow sigma">0.028204036167975795</Real>
+    <Real Name="ow epsilon / ow sigma">0.004590345613474169</Real>
+  </Sensitivity>
+</ReferenceData>
