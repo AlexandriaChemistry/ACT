@@ -367,6 +367,8 @@ This checks that
 
 A file may contain both a dimer A#B and a dimer B#A, for instance with the other molecule as hydrogen bond donor, as long as each is consistent. The number of problems is printed, and each is written to the log file. The molecules are written to the output file, without the experiments that were removed. The same checks are made when *train_ff* reads the data, which leaves out the molecules with problems, with a warning. If monomers for the charges are given with *train_ff -charges*, the order of the atoms of a compound in that file is the reference, since the charges of the compound are copied from there to the atoms of all molecules.
 
+With *train_ff -charges*, the charges of each compound are generated once, with the initial parameters, from the monomer in the charge file, for instance an energy-minimized structure. The charges of all particles, including shells and virtual sites, are then copied to every occurrence of the compound in the training data, and do not change during training. A molecule with a compound that is missing from the charge file, or with other particles than in the charge file, is left out with an error message. Since the charges are fixed, the parameters that determine them (*chi*, *eta*, bond corrections, *zeta*, *charge* and the virtual site parameters) cannot be trained together with *-charges*, and are removed from the training with a warning. Polarizabilities change only the force constants of the shells, not their charges, and can be trained.
+
 .. _sec-parallel:
 
 ------------------------------------------

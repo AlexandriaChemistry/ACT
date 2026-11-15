@@ -184,7 +184,8 @@ bool MolGen::hasMolPropObservable(MolPropObservable mpo) const
 
 void MolGen::checkOptions(MsgHandler                *msghandler,
                           const ForceField          *pd,
-                          ChargeGenerationAlgorithm  alg)
+                          ChargeGenerationAlgorithm  alg,
+                          bool                       fixedCharges)
 {
     for(auto toFit = fit_.begin(); toFit != fit_.end(); )
     {
@@ -202,10 +203,23 @@ void MolGen::checkOptions(MsgHandler                *msghandler,
                                                InteractionType::ELECTRONEGATIVITYEQUALIZATION, InteractionType::BONDCORRECTIONS };
             // The width of the charge distributions is that of the particle types
             bool zeta = (toFit->first == zetaName);
+            // With charges copied from a charge file, the parameters of the
+            // charge generation have no effect, and the charges would not
+            // follow them. Polarizabilities change only the force constants
+            // of the shells, not their charges, and can be trained.
+            std::set<InteractionType> acm = { InteractionType::ELECTRONEGATIVITYEQUALIZATION,
+                                              InteractionType::BONDCORRECTIONS, InteractionType::CHARGE };
             if (alg == ChargeGenerationAlgorithm::ESP && (elec.find(itype) != elec.end() || isVsite(itype) || zeta))
             {
                 msghandler->msg(ACTStatus::Warning,
                                 gmx::formatString("Cannot train parameter '%s' in conjunction with using the ESP algorithm for charge generation.",
+                                                  toFit->first.c_str()));
+                toFit = fit_.erase(toFit);
+            }
+            else if (fixedCharges && (acm.find(itype) != acm.end() || isVsite(itype) || zeta))
+            {
+                msghandler->msg(ACTStatus::Warning,
+                                gmx::formatString("Cannot train parameter '%s' with the charges of a charge file (-charges), since the charges do not change.",
                                                   toFit->first.c_str()));
                 toFit = fit_.erase(toFit);
             }
