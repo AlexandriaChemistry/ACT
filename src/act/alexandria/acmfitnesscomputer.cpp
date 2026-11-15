@@ -654,7 +654,11 @@ bool ACMFitnessComputer::prepareDeviation(MsgHandler    *msghandler,
         DeviationTask tmp;
         tmp.targets = targets;
         const auto et     = energyTask(tmp);
-        gpuCharges  = (!needQProps && et.compute && !et.forces &&
+        // The final evaluation of all molecules, see OptACM::runMaster,
+        // is followed by the output, which the processor computes from the
+        // charges and parameters of the molecules, so it makes them itself
+        gpuCharges  = (task != CalcDev::ComputeAll &&
+                       !needQProps && et.compute && !et.forces &&
                        forceComp_->gpuChargesOnly(sii_->forcefield()));
     }
     dt->gpuCharges = gpuCharges;
