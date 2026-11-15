@@ -39,4 +39,5 @@
   <String Name="36">Compound with its atoms in different orders</String>
   <String Name="37">Dimer with its monomers in swapped order</String>
   <String Name="38">Fragment without an InChI identifier</String>
+  <String Name="39">Calculation present twice</String>
 </ReferenceData>

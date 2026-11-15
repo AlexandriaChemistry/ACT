@@ -40,4 +40,5 @@
   <Int64 Name="Compound with its atoms in different orders">1</Int64>
   <Int64 Name="Dimer with its monomers in swapped order">1</Int64>
   <Int64 Name="Fragment without an InChI identifier">1</Int64>
+  <Int64 Name="Calculation present twice">1</Int64>
 </ReferenceData>

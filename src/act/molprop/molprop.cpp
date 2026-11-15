@@ -34,6 +34,7 @@
 
 #include "act/molprop/molprop.h"
 
+#include <algorithm>
 #include <cctype>
 #include <cmath>
 
@@ -187,6 +188,123 @@ bool MolProp::swappedFragments(const std::vector<CalcAtom> &atoms,
     return true;
 }
 
+/*! \brief Whether two calculations have the same input
+ * The same program, method, basis set and type of calculation, and the same
+ * atoms with exactly the same coordinates.
+ * \param[in] a The one
+ * \param[in] b The other
+ * \return true if they have
+ */
+static bool sameInput(const Experiment &a, const Experiment &b)
+{
+    if (a.getProgram() != b.getProgram() || a.getMethod() != b.getMethod() ||
+        a.getBasisset() != b.getBasisset() || a.getJobtype() != b.getJobtype())
+    {
+        return false;
+    }
+    const auto &atomsA = a.calcAtomConst();
+    const auto &atomsB = b.calcAtomConst();
+    if (atomsA.empty() || atomsA.size() != atomsB.size())
+    {
+        return false;
+    }
+    for (size_t i = 0; i < atomsA.size(); i++)
+    {
+        if (atomsA[i].getName() != atomsB[i].getName() ||
+            atomsA[i].coordUnit() != atomsB[i].coordUnit() ||
+            atomsA[i].getX() != atomsB[i].getX() ||
+            atomsA[i].getY() != atomsB[i].getY() ||
+            atomsA[i].getZ() != atomsB[i].getZ())
+        {
+            return false;
+        }
+    }
+    return true;
+}
+
+/*! \brief Whether two calculations have the same results
+ * The same properties, in the same order, with the same values, see
+ * GenericProperty::equals.
+ * \param[in] a The one
+ * \param[in] b The other
+ * \return true if they have
+ */
+static bool sameResults(const Experiment &a, const Experiment &b)
+{
+    const auto &pa = a.propertiesConst();
+    const auto &pb = b.propertiesConst();
+    if (pa.size() != pb.size())
+    {
+        return false;
+    }
+    for (const auto &p : pa)
+    {
+        const auto q = pb.find(p.first);
+        if (q == pb.end() || p.second.size() != q->second.size())
+        {
+            return false;
+        }
+        for (size_t i = 0; i < p.second.size(); i++)
+        {
+            if (!p.second[i]->equals(*q->second[i]))
+            {
+                return false;
+            }
+        }
+    }
+    return true;
+}
+
+void MolProp::removeDuplicates(MsgHandler *msghandler)
+{
+    std::vector<bool> remove(exper_.size(), false);
+    for (size_t i = 0; i < exper_.size(); i++)
+    {
+        for (size_t j = i + 1; j < exper_.size(); j++)
+        {
+            if (remove[i] || remove[j] || !sameInput(exper_[i], exper_[j]))
+            {
+                continue;
+            }
+            if (sameResults(exper_[i], exper_[j]))
+            {
+                remove[j] = true;
+                msghandler->msg(ACTStatus::Info, ACTMessage::DuplicateCalculation,
+                                gmx::formatString("Molecule %s: removing experiment %s, which is the same "
+                                                  "calculation as %s, with the same results.",
+                                                  getMolname().c_str(), exper_[j].getDatafile().c_str(),
+                                                  exper_[i].getDatafile().c_str()));
+            }
+            else
+            {
+                msghandler->msg(ACTStatus::Warning, ACTMessage::DuplicateCalculation,
+                                gmx::formatString("Molecule %s: experiments %s and %s are calculations with "
+                                                  "the same input, but have different results.",
+                                                  getMolname().c_str(), exper_[i].getDatafile().c_str(),
+                                                  exper_[j].getDatafile().c_str()));
+            }
+        }
+    }
+    if (std::none_of(remove.begin(), remove.end(), [](bool r) { return r; }))
+    {
+        return;
+    }
+    std::vector<Experiment> kept;
+    for (size_t i = 0; i < exper_.size(); i++)
+    {
+        if (!remove[i])
+        {
+            kept.push_back(std::move(exper_[i]));
+        }
+    }
+    exper_ = std::move(kept);
+    // The index of an experiment is its id
+    for (size_t ei = 0; ei < exper_.size(); ++ei)
+    {
+        exper_[ei].setId(ei);
+    }
+}
+
 bool MolProp::validate(MsgHandler *msghandler)
 {
     if (!msghandler)
@@ -305,6 +423,8 @@ bool MolProp::validate(MsgHandler *msghandler)
                                               getMolname().c_str(), nexper - exper_.size(), nexper));
         }
     }
+
+    removeDuplicates(msghandler);
 
     // Check that the atoms of each fragment match its formula, such that a
     // dimer A#B with the atoms in the order of B#A is detected. The

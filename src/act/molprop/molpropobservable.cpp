@@ -36,6 +36,7 @@
 
 #include <map>
 #include <string>
+#include <typeinfo>
 
 #include "act/basics/msg_handler.h"
 #include "act/molprop/multipole_names.h"
@@ -541,6 +542,88 @@ CommunicationStatus ElectrostaticPotential::BroadCast(const CommunicationRecord 
                       gmx::formatString("Failed to receive ElectrostaticPotential, status %s\n", cs_name(cs).c_str()));
     }
     return cs;
+}
+
+bool GenericProperty::equals(const GenericProperty &other) const
+{
+    return (typeid(*this) == typeid(other) && mpo_ == other.mpo_ && type_ == other.type_ &&
+            unit_ == other.unit_ && inputUnit_ == other.inputUnit_ &&
+            T_ == other.T_ && eP_ == other.eP_);
+}
+
+bool MolecularMultipole::equals(const GenericProperty &other) const
+{
+    if (!GenericProperty::equals(other))
+    {
+        return false;
+    }
+    const auto &o = static_cast<const MolecularMultipole &>(other);
+    return average_ == o.average_ && error_ == o.error_ && values_ == o.values_;
+}
+
+bool Harmonics::equals(const GenericProperty &other) const
+{
+    if (!GenericProperty::equals(other))
+    {
+        return false;
+    }
+    return values_ == static_cast<const Harmonics &>(other).values_;
+}
+
+bool MolecularPolarizability::equals(const GenericProperty &other) const
+{
+    if (!GenericProperty::equals(other))
+    {
+        return false;
+    }
+    const auto &o = static_cast<const MolecularPolarizability &>(other);
+    for (int m = 0; m < DIM; m++)
+    {
+        for (int n = 0; n < DIM; n++)
+        {
+            if (alpha_[m][n] != o.alpha_[m][n])
+            {
+                return false;
+            }
+        }
+    }
+    return average_ == o.average_ && error_ == o.error_;
+}
+
+bool MolecularEnergy::equals(const GenericProperty &other) const
+{
+    if (!GenericProperty::equals(other))
+    {
+        return false;
+    }
+    const auto &o = static_cast<const MolecularEnergy &>(other);
+    return average_ == o.average_ && error_ == o.error_;
+}
+
+bool ElectrostaticPotential::equals(const GenericProperty &other) const
+{
+    if (!GenericProperty::equals(other))
+    {
+        return false;
+    }
+    const auto &o = static_cast<const ElectrostaticPotential &>(other);
+    if (xyzUnit_ != o.xyzUnit_ || xyzInputUnit_ != o.xyzInputUnit_ ||
+        vUnit_ != o.vUnit_ || vInputUnit_ != o.vInputUnit_ ||
+        espID_ != o.espID_ || V_ != o.V_ || xyz_.size() != o.xyz_.size())
+    {
+        return false;
+    }
+    for (size_t i = 0; i < xyz_.size(); i++)
+    {
+        for (int d = 0; d < DIM; d++)
+        {
+            if (xyz_[i][d] != o.xyz_[i][d])
+            {
+                return false;
+            }
+        }
+    }
+    return true;
 }
 
 } // namespace alexandria
