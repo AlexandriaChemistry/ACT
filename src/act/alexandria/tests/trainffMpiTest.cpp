@@ -359,6 +359,39 @@ TEST_F(TrainFFMpiTest, Sensitivity2DMiddlemen)
     trainfftest::barrier();
 }
 
+// Test: As Sensitivity2DMiddlemen, with two individuals on four cores, such
+// that the master has a helper that computes part of the compounds, and has
+// to get the parameters of each point. The reference data are a copy of
+// those of TrainFFTest.Sensitivity2DJson.
+TEST_F(TrainFFMpiTest, Sensitivity2DHelpers)
+{
+    const Options options = {
+        { "-seed", "219463979" },
+        { "-v", "3" },
+        { "-optimizer", "MCMC" },
+        { "-pop_size", "2" },
+        { "-max_iter", "1" },
+        { "-nooptimize", "" },
+        { "-norandom_init", "" },
+        { "-sensitivity", "2D" },
+        { "-fc_bound", "10000" },
+        { "-ener_boltz_temp", "3000" },
+        { "-fit", "sigma epsilon" },
+        { "-fc_allelec", "1" },
+        { "-fc_exch", "1" },
+        { "-fc_disp", "1" }
+    };
+    const auto output = trainfftest::runTrainFF(&fileManager(), "sens2dh", "lj-pc-trained.xml",
+                                                "booze-inter", options);
+    EXPECT_EQ(0, output.status);
+    if (gmx_node_rank() == 0)
+    {
+        gmx::test::TestReferenceChecker checker(rootChecker());
+        trainfftest::checkSensitivity2D(&checker, output);
+    }
+    trainfftest::barrier();
+}
+
 // Test: HYBRID with the two-dimensional analysis as the test for a local
 // minimum in each generation, the middlemen compute part of it
 TEST_F(TrainFFMpiTest, HybridCurvature2D)
