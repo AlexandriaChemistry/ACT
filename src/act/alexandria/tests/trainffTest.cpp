@@ -54,9 +54,11 @@
 #include "act/forcefield/forcefield.h"
 #include "act/forcefield/forcefield_xml.h"
 #include "act/forcefield/particletype.h"
+#include "act/gpu/gpu.h"
 #include "gromacs/utility/exceptions.h"
 
 #include "testutils/cmdlinetest.h"
+#include "testutils/gputests.h"
 #include "testutils/refdata.h"
 #include "testutils/testasserts.h"
 
@@ -1068,6 +1070,65 @@ TEST_F(TrainFFTest, SensitivityFlatParameters)
                             " parameters do not change the chi2 (flat)"));
     EXPECT_TRUE(logContains(output.log, "Their pairs are degenerate."));
     EXPECT_EQ(expected.size(), trainfftest::jsonNumber(output.json["train_ff"]["sensitivity"]["n_parameters_flat"]));
+}
+
+//! \return the lines of a log file with the interaction energy per molecule
+static std::vector<std::string> interactionLines(const std::vector<std::string> &log)
+{
+    std::vector<std::string> lines;
+    for (const auto &line : log)
+    {
+        if (line.find("INTERACTION RMSD") != std::string::npos)
+        {
+            lines.push_back(line);
+        }
+    }
+    return lines;
+}
+
+// Test: After a training on the GPU, the energies of each molecule in the
+// log are those of the trained force field, as a new evaluation of it on the
+// GPU gives. The output is computed by the processor after the final
+// evaluation of all molecules, which therefore makes the charges itself,
+// see CalcDev::ComputeAll.
+TEST_F(TrainFFTest, FinalOutputGpu)
+{
+    if (!gmx::test::gpuTestRuns(gpu::useGpu() && !GMX_DOUBLE, "no GPU or double precision"))
+    {
+        return;
+    }
+    const std::string fit = "zeta charge alpha eta chi sigma epsilon gamma";
+    const Options common  = {
+        { "-v", "3" },
+        { "-fc_inter", "1" },
+        { "-fc_bound", "10000" },
+        { "-noshell_keep", "" },
+        { "-fit", fit }
+    };
+    auto training = combine(common, {
+        { "-seed", "219463979" },
+        { "-optimizer", "MCMC" },
+        { "-pop_size", "1" },
+        { "-max_iter", "3" },
+        { "-temp", "0.025" },
+        { "-random_init", "" }
+    });
+    const auto trained = trainfftest::runTrainFF(&fileManager(), "final", "alc-pol-wbh.xml",
+                                                 "booze-inter", training);
+    ASSERT_EQ(0, trained.status);
+    EXPECT_TRUE(logContains(trained.log, "GPU resident relaxation"));
+    // The force field is only written if the training found a better one
+    ASSERT_NE(std::string::npos, trained.forceField.find("</alexandria_chemistry>"));
+    auto again = combine(common, {
+        { "-nooptimize", "" },
+        { "-norandom_init", "" }
+    });
+    const auto evaluated = trainfftest::runTrainFF(&fileManager(), "final-again", "", "booze-inter", again,
+                                                   "", "", fileManager().getTemporaryFilePath("final-ff.xml"));
+    ASSERT_EQ(0, evaluated.status);
+    const auto before = interactionLines(trained.log);
+    EXPECT_EQ(3u, before.size());
+    EXPECT_EQ(before, interactionLines(evaluated.log));
 }
 
 } // namespace
