@@ -192,10 +192,6 @@ void FragmentHandler::fetchCharges(MsgHandler *msg_handler, std::vector<double> 
 
 bool FragmentHandler::sqeOnGpu(const ForceField *pd) const
 {
-    if (sharedQ_)
-    {
-        return false;
-    }
     if (fixedQ_ || algorithm_ != ChargeGenerationAlgorithm::SQE)
     {
         return fixedQ_;
@@ -213,7 +209,7 @@ bool FragmentHandler::sqeOnGpu(const ForceField *pd) const
 const std::vector<int> &FragmentHandler::acmParticles(size_t ff) const
 {
     static const std::vector<int> none;
-    return (fixedQ_ || sharedQ_) ? none : QgenAcm_[ff].acmParticles();
+    return fixedQ_ ? none : QgenAcm_[ff].acmParticles();
 }
 
 const std::vector<const ParticleType *> &FragmentHandler::particleTypes(const ForceField *pd, size_t ff)
@@ -448,6 +444,34 @@ void FragmentHandler::setCharges(MsgHandler      *msghandler,
         msghandler->msg(ACTStatus::Debug,
                         "Copied charges from chargemap to fragments\n");
     }
+}
+
+bool FragmentHandler::setSharedStructure(size_t f, const std::vector<gmx::RVec> &x)
+{
+    if (f >= topologies_.size() || x.size() != topologies_[f].atoms().size())
+    {
+        return false;
+    }
+    sharedX_.resize(topologies_.size());
+    sharedX_[f] = x;
+    return true;
+}
+
+std::vector<gmx::RVec> FragmentHandler::chargeStructure(const std::vector<gmx::RVec> &x) const
+{
+    std::vector<gmx::RVec> xs = x;
+    if (!sharedQ_)
+    {
+        return xs;
+    }
+    for (size_t f = 0; f < sharedX_.size(); f++)
+    {
+        for (size_t a = 0; a < sharedX_[f].size() && atomStart_[f] + a < xs.size(); a++)
+        {
+            copy_rvec(sharedX_[f][a], xs[atomStart_[f] + a]);
+        }
+    }
+    return xs;
 }
 
 void FragmentHandler::setCharges(const std::vector<ActAtom> &atoms)

@@ -242,6 +242,15 @@ private:
     //! The algorithm that generates the charges of the compounds
     ChargeGenerationAlgorithm       compoundAlg_ = ChargeGenerationAlgorithm::NONE;
 
+    /*! \brief Give the fragments of a molecule the structures of their compounds
+     * Such that the charges of the compounds can be generated where the
+     * molecule is, for instance on the GPU for each set of parameters, see
+     * FragmentHandler::chargeStructure.
+     * \param[in]    msghandler For errors
+     * \param[inout] actmol     The molecule, with the charges of the compounds
+     */
+    void setCompoundStructures(MsgHandler *msghandler, ACTMol *actmol) const;
+
     /*! \brief Make the molecules of the compounds on all processors
      * The master sends them to the other processors, which all make their
      * topologies and generate their charges.

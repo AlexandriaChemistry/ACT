@@ -487,22 +487,26 @@ Options polarizableOptions(int populationSize, int maxIter, const std::string &f
  * \param[in] options     The options of the first run
  * \param[in] other       The options of the second run
  * \param[in] otherEnv    The environment variable set during the second run, if any
+ * \param[in] ffName      The force field
+ * \param[in] selFile     The selection of the molecules of booze-inter, all if empty
  */
 void compareGpuTrainings(gmx::test::TestFileManager *fileManager,
                          const std::string          &label,
                          const Options              &options,
                          const Options              &other,
-                         const char                 *otherEnv = nullptr)
+                         const char                 *otherEnv = nullptr,
+                         const std::string          &ffName   = "alc-pol-wbh.xml",
+                         const std::string          &selFile  = "")
 {
-    auto first = trainfftest::runTrainFF(fileManager, label + "-1", "alc-pol-wbh.xml",
-                                         "booze-inter", options);
+    auto first = trainfftest::runTrainFF(fileManager, label + "-1", ffName,
+                                         "booze-inter", options, "", selFile);
     EXPECT_EQ(0, first.status);
     if (otherEnv)
     {
         setenv(otherEnv, "1", 1);
     }
-    auto second = trainfftest::runTrainFF(fileManager, label + "-2", "alc-pol-wbh.xml",
-                                          "booze-inter", other);
+    auto second = trainfftest::runTrainFF(fileManager, label + "-2", ffName,
+                                          "booze-inter", other, "", selFile);
     if (otherEnv)
     {
         unsetenv(otherEnv);
@@ -540,6 +544,35 @@ TEST_F(TrainFFMpiTest, LockstepChargesGpu)
     together.emplace_back("-lockstep", "4");
     oneByOne.emplace_back("-lockstep", "1");
     compareGpuTrainings(&fileManager(), "lockstep", together, oneByOne);
+}
+
+// Test: As LockstepChargesGpu with -qcompound, where the GPU generates the
+// charges of the compounds of each replica from their structures, see
+// FragmentHandler::chargeStructure: those of a stretched water monomer for
+// the water dimer, with a polarizable model of which the charges depend on
+// the structure
+TEST_F(TrainFFMpiTest, LockstepCompoundChargesGpu)
+{
+    if (!gmx::test::gpuTestRuns(gpuTraining(), "no GPU or double precision"))
+    {
+        return;
+    }
+    const auto selFile = fileManager().getTemporaryFilePath("water-dimer.dat");
+    if (gmx_node_rank() == 0)
+    {
+        std::ofstream sel(selFile);
+        sel << "water#water|Train\n";
+    }
+    trainfftest::barrier();
+    auto options = polarizableOptions(12, 2, "chi eta");
+    options.emplace_back("-noshell_keep", "");
+    options.emplace_back("-qcompound", "");
+    options.emplace_back("-charges", fileManager().getInputFilePath("molprop/water-stretched.xml"));
+    auto together = options, oneByOne = options;
+    together.emplace_back("-lockstep", "4");
+    oneByOne.emplace_back("-lockstep", "1");
+    compareGpuTrainings(&fileManager(), "lockstep-compound", together, oneByOne, nullptr,
+                        "water_hyperpol2.xml", selFile);
 }
 
 // Test: The molecules whose parameters did not change are not computed again

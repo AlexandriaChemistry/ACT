@@ -64,6 +64,8 @@ private:
     bool                               fixedQ_ = false;
     //! Whether the charges are those of the compounds, which change with the parameters, see MolGen::compoundCharges
     bool                               sharedQ_ = false;
+    //! The structure of the compound of each fragment with shared charges, from which they are generated, see setSharedStructure
+    std::vector<std::vector<gmx::RVec>> sharedX_;
     //! Whether the topologies leave out the Coulomb pairs of particles without charge, see Topology::setLeaveOutUnchargedPairs
     bool                               leaveOutUncharged_ = true;
     //! Total number of atoms
@@ -130,13 +132,14 @@ public:
 
     /*! \brief Whether the charges of all fragments can be generated on the GPU
      * \param[in] pd The force field
-     * \return true for SQE with Gaussian or point charges, or fixed charges,
-     *         false for the charges of the compounds, which the processor copies
+     * \return true for SQE with Gaussian or point charges, or fixed charges.
+     *         The charges of the compounds are generated from their
+     *         structures, see chargeStructure.
      */
     bool sqeOnGpu(const ForceField *pd) const;
 
     /*! \brief The particles of a fragment whose charges are generated,
-     * none if the charges are fixed or those of the compounds
+     * none if the charges are fixed
      * \param[in] ff The fragment
      */
     const std::vector<int> &acmParticles(size_t ff) const;
@@ -207,6 +210,23 @@ public:
     bool fixedCharges() const { return fixedQ_; }
     //! \return whether the charges are copied from those of the compounds, see setCharges
     bool sharedCharges() const { return sharedQ_; }
+    /*! \brief Set the structure of the compound of a fragment with shared charges
+     * The charges of the compound are generated from it, for instance by the
+     * GPU, see chargeStructure.
+     * \param[in] f The fragment
+     * \param[in] x The coordinates of all particles of the fragment. Those
+     *              of the virtual sites are constructed again from the atoms
+     *              where the charges are generated, with the parameters of
+     *              the moment.
+     * \return whether the number of particles is that of the fragment
+     */
+    bool setSharedStructure(size_t f, const std::vector<gmx::RVec> &x);
+    /*! \brief The structure from which the charges of a molecule are generated
+     * \param[in] x The coordinates of the molecule, for instance ACTMol::xOriginal
+     * \return The coordinates, with those of each fragment with shared
+     *         charges replaced by those of its compound, see setSharedStructure
+     */
+    std::vector<gmx::RVec> chargeStructure(const std::vector<gmx::RVec> &x) const;
     /*! \brief Set the charge generation algorithm to use
      * \param[in] alg The algorithm to use. Only Read or EEM/SQE are supported.
      */

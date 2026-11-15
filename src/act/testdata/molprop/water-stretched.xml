@@ -1,0 +1,27 @@
+<molecules>
+  <molecule molname="water">
+    <fragments>
+      <fragment identifier="InChI=1S/H2O/h1H2" mass="18.015" charge="0" multiplicity="1" symmetry_number="2" formula="H2O"> 1 2 3</fragment>
+      </fragments>
+    <molinfo iupac="water" cas="" cid="" inchi="" />
+    <bond ai="1" aj="2" bondorder="1" />
+    <bond ai="1" aj="3" bondorder="1" />
+    <experiment datasource="Theory" reference="Spoel2026a" conformation="conformation" program="Psi4" method="sapt2+(ccd)dmp2" basisset="aug-cc-pvtz" jobtype="Opt" datafile="1069">
+      <atom name="O" obtype="ow" atomid="0" coord_unit="Angstrom">
+        <x>1.2112724000000001</x>
+        <y>1.2885730000000002</y>
+        <z>-0.02677987</z>
+      </atom>
+      <atom name="H" obtype="hw" atomid="1" coord_unit="Angstrom">
+        <x>1.9729320000000001</x>
+        <y>2.272608</y>
+        <z>-0.02677987</z>
+      </atom>
+      <atom name="H" obtype="hw" atomid="2" coord_unit="Angstrom">
+        <x>1.9729320000000001</x>
+        <y>0.30453800000000003</y>
+        <z>-0.02677987</z>
+      </atom>
+      </experiment>
+    </molecule>
+</molecules>
