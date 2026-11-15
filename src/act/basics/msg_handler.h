@@ -128,7 +128,9 @@ enum class ACTMessage
         //! A dimer A#B with its fragments or the atoms of an experiment in the order of B#A
         SwappedDimer,
         //! A fragment with an identifier that is not an InChI
-        NoInChI
+        NoInChI,
+        //! Two calculations of a molecule with the same input
+        DuplicateCalculation
     };
 
 extern std::map<ACTMessage, const std::string> ACTMessages;

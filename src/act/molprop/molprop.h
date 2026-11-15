@@ -122,6 +122,16 @@ private:
     bool swappedFragments(const std::vector<CalcAtom> &atoms,
                           const std::vector<CalcAtom> &refAtoms) const;
 
+    /*! \brief Remove calculations that are present twice
+     * Two experiments with the same input, the same program, method, basis
+     * set and type of calculation and the same coordinates, and the same
+     * results are the same calculation: the second is removed, with a
+     * message at Info level. With different results both are kept, with a
+     * warning.
+     * \param[in] msghandler For the messages
+     */
+    void removeDuplicates(MsgHandler *msghandler);
+
 public:
     //! Constructor for a MolProp object
     MolProp() = default;
@@ -134,6 +144,7 @@ public:
      * or atomid) than the reference experiment, from which the topology is
      * generated, with a warning that names its data file, and says so if
      * the atoms are those of a dimer A#B in the order of B#A.
+     * Removes calculations that are present twice, see removeDuplicates.
      * Reports errors if the atoms of a fragment do not match its formula,
      * for instance in a dimer A#B with the atoms in the order of B#A.
      * For dimers (molecules with exactly two fragments) reports errors if

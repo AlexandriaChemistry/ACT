@@ -271,6 +271,15 @@ public:
      * \param[in] tw TextWriter
      */
     virtual void Dump(gmx::TextWriter *tw) const;
+
+    /*! \brief Whether another property is the same, with the same values
+     * The type, units, temperature and phase, and all values of a property
+     * of the same class, exactly, for instance to find calculations that
+     * are present twice, see MolProp::validate.
+     * \param[in] other The other property
+     * \return true if they are the same
+     */
+    virtual bool equals(const GenericProperty &other) const;
     /*! \brief
      * Broadcast this object over an MPI connection
      *
@@ -348,6 +357,9 @@ public:
 
     //! \copydoc alexandria::GenericProperty::Dump
     void Dump(gmx::TextWriter *tw) const override;
+
+    //! \copydoc alexandria::GenericProperty::equals
+    bool equals(const GenericProperty &other) const override;
 
     //! \copydoc alexandria::GenericProperty::getValue
     double getValue() const override
@@ -431,6 +443,9 @@ public:
     
     //! \copydoc alexandria::GenericProperty::Dump
     void Dump(gmx::TextWriter *tw) const override;
+
+    //! \copydoc alexandria::GenericProperty::equals
+    bool equals(const GenericProperty &other) const override;
     /*! \brief
      * Broadcast this object over an MPI connection
      *
@@ -514,6 +529,9 @@ public:
 
     //! \copydoc alexandria::GenericProperty::Dump
     void Dump(gmx::TextWriter *tw) const override;
+
+    //! \copydoc alexandria::GenericProperty::equals
+    bool equals(const GenericProperty &other) const override;
     /*! \brief
      * Broadcast this object over an MPI connection
      *
@@ -590,6 +608,9 @@ public:
 
     //! \copydoc alexandria::GenericProperty::Dump
     void Dump(gmx::TextWriter *tw) const override;
+
+    //! \copydoc alexandria::GenericProperty::equals
+    bool equals(const GenericProperty &other) const override;
     /*! \brief
      * Broadcast this object over an MPI connection
      *
@@ -680,6 +701,9 @@ public:
 
     //! \copydoc alexandria::GenericProperty::Dump
     void Dump(gmx::TextWriter *tw) const override;
+
+    //! \copydoc alexandria::GenericProperty::equals
+    bool equals(const GenericProperty &other) const override;
     /*! \brief
      * Broadcast this object over an MPI connection
      *

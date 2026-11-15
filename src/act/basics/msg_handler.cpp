@@ -91,7 +91,8 @@ std::map<ACTMessage, const std::string> ACTMessages = {
     { ACTMessage::InterFragmentBond,        "Bond between atoms in different fragments" },
     { ACTMessage::InconsistentCompoundOrder, "Compound with its atoms in different orders" },
     { ACTMessage::SwappedDimer,             "Dimer with its monomers in swapped order" },
-    { ACTMessage::NoInChI,                  "Fragment without an InChI identifier" }
+    { ACTMessage::NoInChI,                  "Fragment without an InChI identifier" },
+    { ACTMessage::DuplicateCalculation,     "Calculation present twice" }
 };
 
 //! \brief Map enum ACTStatus to string

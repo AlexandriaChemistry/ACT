@@ -1743,5 +1743,94 @@ TEST(CompoundReferencesTest, Priority)
 }
 
 
+// ============================================================
+// Calculations present twice, see MolProp::validate
+// ============================================================
+
+/*! \brief A calculation of three atoms with an interaction energy
+ * \param[in] method   The method
+ * \param[in] datafile The data file
+ * \param[in] dx       Shift of the x coordinate of the last atom
+ * \param[in] energy   The interaction energy
+ */
+static Experiment makeCalculation(const std::string &method, const std::string &datafile,
+                                  double dx, double energy)
+{
+    Experiment exp("Psi4", method, "aug-cc-pvtz", "ref", "min", datafile, JobType::SP);
+    for (int i = 0; i < 3; ++i)
+    {
+        CalcAtom ca(gmx::formatString("C%d", i + 1), "C.3", i + 1);
+        ca.setCoordUnit("pm");
+        ca.setCoords(100.0*i + (i == 2 ? dx : 0), 0.5*i, -0.25*i);
+        exp.AddAtom(ca);
+    }
+    exp.addProperty(MolPropObservable::INTERACTIONENERGY,
+                    std::make_unique<MolecularEnergy>(MolPropObservable::INTERACTIONENERGY, "SAPT", "kJ/mol",
+                                                      0, ePhase::GAS, energy, 0));
+    return exp;
+}
+
+//! \return a molecule with the calculations
+static MolProp moleculeWith(std::vector<Experiment> calcs)
+{
+    MolProp mp;
+    mp.SetMolname("mol");
+    for (auto &c : calcs)
+    {
+        mp.AddExperiment(std::move(c));
+    }
+    return mp;
+}
+
+// Test: The same calculation with the same results is kept once
+TEST(MolPropDuplicateTest, SameResultsRemoved)
+{
+    std::vector<Experiment> calcs;
+    calcs.push_back(makeCalculation("sapt", "a.log", 0, -12.5));
+    calcs.push_back(makeCalculation("sapt", "b.log", 0, -12.5));
+    calcs.push_back(makeCalculation("sapt", "c.log", 1, -10.0));
+    auto mp = moleculeWith(std::move(calcs));
+    MsgHandler msghandler;
+    msghandler.setPrintLevel(ACTStatus::Fatal);
+    EXPECT_TRUE(mp.validate(&msghandler));
+    ASSERT_EQ(2u, mp.experimentConst().size());
+    EXPECT_EQ("a.log", mp.experimentConst()[0].getDatafile());
+    EXPECT_EQ("c.log", mp.experimentConst()[1].getDatafile());
+    EXPECT_EQ(1, mp.experimentConst()[1].id());
+    EXPECT_EQ(1u, msghandler.warningCount(ACTMessage::DuplicateCalculation));
+    EXPECT_TRUE(msghandler.ok());
+}
+
+// Test: The same calculation with other results is kept twice, with a warning
+TEST(MolPropDuplicateTest, DifferentResultsKept)
+{
+    std::vector<Experiment> calcs;
+    calcs.push_back(makeCalculation("sapt", "a.log", 0, -12.5));
+    calcs.push_back(makeCalculation("sapt", "b.log", 0, -12.4));
+    auto mp = moleculeWith(std::move(calcs));
+    MsgHandler msghandler;
+    msghandler.setPrintLevel(ACTStatus::Fatal);
+    EXPECT_TRUE(mp.validate(&msghandler));
+    EXPECT_EQ(2u, mp.experimentConst().size());
+    EXPECT_EQ(1u, msghandler.warningCount(ACTMessage::DuplicateCalculation));
+    EXPECT_EQ(ACTStatus::Warning, msghandler.status());
+}
+
+// Test: Other coordinates or another method are other calculations
+TEST(MolPropDuplicateTest, OtherInputIsNoDuplicate)
+{
+    std::vector<Experiment> calcs;
+    calcs.push_back(makeCalculation("sapt", "a.log", 0, -12.5));
+    calcs.push_back(makeCalculation("sapt", "b.log", 1e-6, -12.5));
+    calcs.push_back(makeCalculation("mp2", "c.log", 0, -11.0));
+    auto mp = moleculeWith(std::move(calcs));
+    MsgHandler msghandler;
+    msghandler.setPrintLevel(ACTStatus::Fatal);
+    EXPECT_TRUE(mp.validate(&msghandler));
+    EXPECT_EQ(3u, mp.experimentConst().size());
+    EXPECT_EQ(0u, msghandler.warningCount(ACTMessage::DuplicateCalculation));
+}
+
+
 } // namespace
 } // namespace alexandria
