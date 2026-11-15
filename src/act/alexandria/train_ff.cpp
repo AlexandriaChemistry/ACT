@@ -47,6 +47,7 @@
 #include "config.h"
 
 #include "act/alexandria/acthelper.h"
+#include "act/alexandria/devcomputer.h"
 #include "act/alexandria/actmiddleman.h"
 #include "act/alexandria/alex_modules.h"
 #include "act/alexandria/hybrid.h"
@@ -869,13 +870,42 @@ bool OptACM::runMaster(bool               optimize,
                 // Check for consistency (read: bugs)
                 double chi2 = it->second.fitness(it->first);
                 // Shells relaxed from those of the previous evaluation, see
-                // ForceComputer::setKeepShells, depend slightly on where they
-                // started, in particular with poor parameters.
+                // ForceComputer::setKeepShells, depend on where they started,
+                // in particular with poor parameters: whether they converge,
+                // which adds BoundsDevComputer::shellFailurePenalty to the
+                // bounds for each conformation that does not, and the energies
+                // of those that do not. The recomputation starts from other
+                // shells than the training did, so with -shell_keep the chi2
+                // may differ, and only a warning says so, while the force
+                // field is written. Without, a difference is a bug.
                 double toler = bch_.shellKeep() ? 1e-3*std::max(1.0, std::abs(chi2before)) : 1e-3;
                 if (std::abs(chi2before - chi2) > toler)
                 {
-                    msghandler_.msg(ACTStatus::Fatal,
-                                    gmx::formatString("Chi2 after training was %.10g, after recomputing it is %.10g.", chi2before, chi2));
+                    const auto text = gmx::formatString("Chi2 after training was %.10g, after recomputing it is %.10g.", chi2before, chi2);
+                    if (bch_.shellKeep())
+                    {
+                        // The weight of one conformation whose shells did not converge
+                        double      unit    = 0;
+                        const auto &targets = sii_->fittingTargetsConst(it->first);
+                        const auto  bounds  = targets.find(eRMS::BOUNDS);
+                        if (bounds != targets.end() && bounds->second.totalWeight() > 0)
+                        {
+                            unit = (BoundsDevComputer::shellFailurePenalty*bounds->second.weight()/
+                                    bounds->second.totalWeight());
+                        }
+                        std::string units;
+                        if (unit > 0)
+                        {
+                            units = gmx::formatString(" The difference is %.1f times the penalty of %g for one conformation whose shells do not converge.",
+                                                      (chi2 - chi2before)/unit, unit);
+                        }
+                        msghandler_.msg(ACTStatus::Warning,
+                                        text + units + " With -shell_keep, the relaxation of the shells starts from where they were the previous time, so their convergence and energies depend on what was computed before, and the recomputation started from other shells than the training. Use -noshell_keep to get the same chi2 each time.");
+                    }
+                    else
+                    {
+                        msghandler_.msg(ACTStatus::Fatal, text);
+                    }
                 }
                 tw->writeStringFormatted("Minimum chi2 for %s %g\n",
                                          iMolSelectName(it->first).c_str(), chi2);
