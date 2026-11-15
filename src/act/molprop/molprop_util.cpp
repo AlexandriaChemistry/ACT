@@ -208,8 +208,8 @@ static const Experiment *referenceExperiment(const MolProp &mp)
 }
 
 /*! \brief The key of the compound of a fragment: its InChI and formula
- * Some files have another identifier than an InChI, such as "1", which does
- * not identify the compound.
+ * A fragment with another identifier than an InChI, such as "1", does not
+ * identify its compound, and validateMolProps reports it.
  * \param[in] frag The fragment
  * \return The key, empty if the fragment has no InChI
  */
@@ -254,6 +254,21 @@ MolPropValidation validateMolProps(MsgHandler           *msghandler,
         {
             result.nproblem += 1;
             result.invalid.insert(mp.getMolname());
+        }
+        // Without an InChI the compound of a fragment is unknown, and its
+        // order and charges cannot be compared with other molecules
+        for (const auto &frag : mp.fragments())
+        {
+            if (compoundKey(frag).empty())
+            {
+                result.nproblem += 1;
+                result.invalid.insert(mp.getMolname());
+                msghandler->msg(level, ACTMessage::NoInChI,
+                                gmx::formatString("Molecule %s: fragment %s has the identifier '%s', which is not an InChI.",
+                                                  mp.getMolname().c_str(),
+                                                  frag.iupac().empty() ? frag.formula().c_str() : frag.iupac().c_str(),
+                                                  frag.inchi().c_str()));
+            }
         }
     }
     // Where an order of the atoms of a compound occurs
