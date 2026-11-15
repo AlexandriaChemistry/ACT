@@ -187,6 +187,9 @@ public:
      */
     void setCharges(const std::vector<double> &q);
     /*! \brief Copy charges from a charge map. Check msghandler status on return
+     * The charges of all particles, including shells and virtual sites, are
+     * copied, and are then fixed. A compound missing from the map, or a map
+     * with other particles or in another order, is an error.
      * \param[in] msghandler For status and messaging
      * \param[in] qmap       The charge map
      */

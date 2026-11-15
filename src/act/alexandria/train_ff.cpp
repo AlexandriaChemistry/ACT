@@ -1075,7 +1075,8 @@ int train_ff(int argc, char *argv[])
     bool optionsOk = true;
     if (opt.commRec()->isMaster())
     {
-        opt.mg()->checkOptions(opt.msgHandler(), opt.sii()->forcefield(), compR.algorithm());
+        opt.mg()->checkOptions(opt.msgHandler(), opt.sii()->forcefield(), compR.algorithm(),
+                               !compR.chargeFile().empty());
     }
     opt.commRec()->bcast(&optionsOk, opt.commRec()->comm_world());
     if (!optionsOk)

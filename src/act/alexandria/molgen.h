@@ -295,13 +295,19 @@ public:
     void addFilenames(std::vector<t_filenm> *filenms);
 
     /*! \brief Check whether fitting options make sense.
-     * \param[in] msghandler For logging and status
-     * \param[in] pd         ForceField for information
-     * \param[in] alg        Allow checking flags for compatibility with algorithm
+     * Parameters that determine the charges cannot be trained if the
+     * charges do not change: with the ESP algorithm, or with charges
+     * copied from the monomers in a charge file (train_ff -charges).
+     * Such parameters are removed from training with a warning.
+     * \param[in] msghandler   For logging and status
+     * \param[in] pd           ForceField for information
+     * \param[in] alg          Allow checking flags for compatibility with algorithm
+     * \param[in] fixedCharges Whether the charges are copied from a charge file
      */
     void checkOptions(MsgHandler                *msghandler,
                       const ForceField          *pd,
-                      ChargeGenerationAlgorithm  alg);
+                      ChargeGenerationAlgorithm  alg,
+                      bool                       fixedCharges = false);
 
     /*! \brief Process options after parsing
      * \param[in] msghandler MsgHandler for output and debugging

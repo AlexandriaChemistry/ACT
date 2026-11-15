@@ -31,6 +31,7 @@
  * \author Mohammad Mehdi Ghahremanpour <mohammad.ghahremanpour@icm.uu.se>
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
+#include <algorithm>
 #include <cmath>
 
 #include <map>
@@ -377,6 +378,123 @@ TEST(AcmBondCorrectionTest, MissingBondCorrection)
     ASSERT_GT(nerased, 0u);
     butanolSQE(&pd, false);
 }
+}
+
+// ============================================================
+// Charges copied from a charge map, see train_ff -charges
+// ============================================================
+
+/*! \brief Methanol and water with the polarizable ACS-pg2, which has shells
+ * \param[in] mol The molecule to fill
+ */
+static void methanolWater(ACTMol *mol)
+{
+    auto pd = getForceField("ACS-pg2");
+    MsgHandler msghandler;
+    msghandler.setPrintLevel(ACTStatus::Fatal);
+    std::vector<MolProp> molprops;
+    double qtot = 0;
+    importFile(&msghandler, pd, gmx::test::TestFileManager::getInputFilePath("molecules/methanol-water.sdf"),
+               &molprops, "minimum", JobType::OPT, false, &qtot, true);
+    ASSERT_TRUE(msghandler.ok());
+    mol->Merge(&molprops[0]);
+    mol->setChargesFromForceField(false);
+    mol->GenerateTopology(&msghandler, pd, missingParameters::Ignore);
+    ASSERT_TRUE(msghandler.ok());
+}
+
+//! \return A charge map with all particles of each fragment, with charges that differ per particle
+static ChargeMap chargeMapOf(const FragmentHandler &fh)
+{
+    ChargeMap qmap;
+    for (size_t f = 0; f < fh.topologies().size(); f++)
+    {
+        std::vector<std::pair<Identifier, double>> q;
+        const auto &atoms = fh.topologies()[f].atoms();
+        for (size_t a = 0; a < atoms.size(); a++)
+        {
+            q.emplace_back(atoms[a].id(), 0.125*(f + 1) + 0.0625*a);
+        }
+        qmap.insert({ fh.ids()[f], q });
+    }
+    return qmap;
+}
+
+// Test: All particles, including shells, get the charges of the map, which are then fixed
+TEST(ChargeMapTest, CopiesAllParticles)
+{
+    ACTMol mol;
+    methanolWater(&mol);
+    auto *fh   = mol.fragmentHandler();
+    auto  qmap = chargeMapOf(*fh);
+    bool  hasShell = false;
+    for (const auto &a : fh->topologies()[0].atoms())
+    {
+        hasShell = hasShell || a.pType() == ActParticle::Shell;
+    }
+    EXPECT_TRUE(hasShell);
+    MsgHandler msghandler;
+    msghandler.setPrintLevel(ACTStatus::Fatal);
+    mol.setCharges(&msghandler, qmap);
+    EXPECT_TRUE(msghandler.ok());
+    EXPECT_TRUE(fh->fixedCharges());
+    for (size_t f = 0; f < fh->topologies().size(); f++)
+    {
+        const auto &atoms = fh->topologies()[f].atoms();
+        const auto &q     = qmap[fh->ids()[f]];
+        for (size_t a = 0; a < atoms.size(); a++)
+        {
+            EXPECT_DOUBLE_EQ(q[a].second, atoms[a].charge()) << "fragment " << f << " particle " << a;
+            EXPECT_DOUBLE_EQ(q[a].second, mol.atomsConst()[fh->atomStart()[f] + a].charge());
+        }
+    }
+}
+
+// Test: A compound that is not in the map is an error, and the charges are not fixed
+TEST(ChargeMapTest, MissingCompoundIsError)
+{
+    ACTMol mol;
+    methanolWater(&mol);
+    auto *fh   = mol.fragmentHandler();
+    auto  qmap = chargeMapOf(*fh);
+    qmap.erase(fh->ids()[1]);
+    MsgHandler msghandler;
+    msghandler.setPrintLevel(ACTStatus::Fatal);
+    mol.setCharges(&msghandler, qmap);
+    EXPECT_FALSE(msghandler.ok());
+    EXPECT_FALSE(fh->fixedCharges());
+    EXPECT_EQ(1u, msghandler.warningCount(ACTMessage::NoMolpropCharges));
+}
+
+// Test: Particles in another order than in the map are an error
+TEST(ChargeMapTest, ParticleMismatchIsError)
+{
+    ACTMol mol;
+    methanolWater(&mol);
+    auto *fh   = mol.fragmentHandler();
+    auto  qmap = chargeMapOf(*fh);
+    auto &q    = qmap[fh->ids()[0]];
+    std::reverse(q.begin(), q.end());
+    MsgHandler msghandler;
+    msghandler.setPrintLevel(ACTStatus::Fatal);
+    mol.setCharges(&msghandler, qmap);
+    EXPECT_FALSE(msghandler.ok());
+    EXPECT_FALSE(fh->fixedCharges());
+}
+
+// Test: A map with another number of particles, such as one without shells, is an error
+TEST(ChargeMapTest, ParticleCountIsError)
+{
+    ACTMol mol;
+    methanolWater(&mol);
+    auto *fh   = mol.fragmentHandler();
+    auto  qmap = chargeMapOf(*fh);
+    qmap[fh->ids()[1]].pop_back();
+    MsgHandler msghandler;
+    msghandler.setPrintLevel(ACTStatus::Fatal);
+    mol.setCharges(&msghandler, qmap);
+    EXPECT_FALSE(msghandler.ok());
+    EXPECT_FALSE(fh->fixedCharges());
 }
 
 }

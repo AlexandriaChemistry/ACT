@@ -394,48 +394,48 @@ void FragmentHandler::setCharges(MsgHandler      *msghandler,
     for(size_t i = 0; i < ids_.size() && msghandler->ok(); i++)
     {
         const auto qptr = qmap.find(ids_[i]);
-        if (qmap.end() != qptr)
+        if (qmap.end() == qptr)
         {
-            auto aptr = topologies_[i].atomsPtr();
-            // Complicated loop since model in topology may contain shells or vsites
-            // but at least the atoms should match.
-            size_t q = 0;
-            for(size_t a = 0; msghandler->ok() && a < aptr->size(); a++)
-            {
-                if ((*aptr)[a].pType() == ActParticle::Atom)
-                {
-                    if (!((*aptr)[a].id() == qptr->second[q].first))
-                    {
-                        msghandler->msg(ACTStatus::Warning,
-                                        gmx::formatString("Atom mismatch when reading charges from chargemap for %s. Expected %s but found %s. Make sure the atoms in your chargemap match those in your molprop file.\n",
-                                                          ids_[i].c_str(), (*aptr)[a].id().id().c_str(),
-                                                          qptr->second[a].first.id().c_str()));
-                    }
-                    if (msghandler->ok())
-                    {
-                        (*aptr)[a].setCharge(qptr->second[q].second);
-                        msghandler->msg(ACTStatus::Debug,
-                                        gmx::formatString("qmap Charge %zu = %g\n", a,
-                                                          (*aptr)[a].charge()));
-                    }
-                }
-                q += 1;
-            }
-        }
-        else
-        {
-            msghandler->msg(ACTStatus::Warning,
-                            gmx::formatString("Cannot find compound '%s' in the charge map\n",
+            msghandler->msg(ACTStatus::Error, ACTMessage::NoMolpropCharges,
+                            gmx::formatString("Cannot find compound '%s' in the charge map",
                                               ids_[i].c_str()));
+            break;
+        }
+        // The charge map has all particles, including shells and virtual
+        // sites, made with the same force field as this topology.
+        auto aptr = topologies_[i].atomsPtr();
+        if (aptr->size() != qptr->second.size())
+        {
+            msghandler->msg(ACTStatus::Error, ACTMessage::NoMolpropCharges,
+                            gmx::formatString("Compound %s has %zu particles but %zu in the charge map",
+                                              ids_[i].c_str(), aptr->size(), qptr->second.size()));
+            break;
+        }
+        for(size_t a = 0; a < aptr->size(); a++)
+        {
+            if (!((*aptr)[a].id() == qptr->second[a].first))
+            {
+                msghandler->msg(ACTStatus::Error, ACTMessage::NoMolpropCharges,
+                                gmx::formatString("Particle mismatch when reading charges from the charge map for %s. Particle %zu is %s but %s in the charge map. Make sure the atoms in your charge file are in the same order as those in your molprop file.",
+                                                  ids_[i].c_str(), a + 1, (*aptr)[a].id().id().c_str(),
+                                                  qptr->second[a].first.id().c_str()));
+                break;
+            }
+            (*aptr)[a].setCharge(qptr->second[a].second);
+            if (msghandler->debug())
+            {
+                msghandler->writeDebug(gmx::formatString("qmap Charge %zu = %g\n", a,
+                                                         (*aptr)[a].charge()));
+            }
         }
     }
     fixedQ_ = msghandler->ok();
-    // Set algorithm to reading charges for the future
-    msghandler->msg(ACTStatus::Debug,
-                    "Copied charges from chargemap to fragments\n");
-    if (msghandler->ok())
+    if (fixedQ_)
     {
+        // Set algorithm to reading charges for the future
         algorithm_ = ChargeGenerationAlgorithm::Read;
+        msghandler->msg(ACTStatus::Debug,
+                        "Copied charges from chargemap to fragments\n");
     }
 }
 
