@@ -1622,16 +1622,21 @@ TEST(ValidateMolPropsTest, ReferencesDecide)
     EXPECT_EQ(3u, msghandler.warningCount(ACTMessage::InconsistentCompoundOrder));
 }
 
-// Test: Fragments with another identifier than an InChI, such as "1" in some
-// files, are not taken to be the same compound
-TEST(ValidateMolPropsTest, NoInchiIsNotChecked)
+// Test: Fragments with another identifier than an InChI, such as "1", do not
+// identify their compound, and their molecules are problems
+TEST(ValidateMolPropsTest, NoInchiIsProblem)
 {
     const TestFragment a = { "1", "water", { "O", "H", "H" } };
     const TestFragment b = { "1", "methanol", { "C", "O", "H", "H", "H", "H" } };
-    auto mps = makeMolecules({ { "water", { a } }, { "methanol", { b } } });
+    auto mps = makeMolecules({ { "water", { a } }, { "methanol", { b } },
+                               { "water#methanol", { water, methanol } } });
     MsgHandler msghandler;
     msghandler.setPrintLevel(ACTStatus::Fatal);
-    EXPECT_EQ(0u, validateMolProps(&msghandler, &mps).nproblem);
+    const auto result = validateMolProps(&msghandler, &mps);
+    EXPECT_EQ(2u, result.nproblem);
+    EXPECT_EQ(std::set<std::string>({ "water", "methanol" }), result.invalid);
+    EXPECT_EQ(2u, msghandler.warningCount(ACTMessage::NoInChI));
+    EXPECT_EQ(0u, msghandler.warningCount(ACTMessage::InconsistentCompoundOrder));
 }
 
 // Test: A file may have a dimer as A#B and as B#A, for instance with another

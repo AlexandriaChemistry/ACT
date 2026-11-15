@@ -126,7 +126,9 @@ enum class ACTMessage
         //! A compound with its atoms in another order than in other molecules
         InconsistentCompoundOrder,
         //! A dimer A#B with its fragments or the atoms of an experiment in the order of B#A
-        SwappedDimer
+        SwappedDimer,
+        //! A fragment with an identifier that is not an InChI
+        NoInChI
     };
 
 extern std::map<ACTMessage, const std::string> ACTMessages;
