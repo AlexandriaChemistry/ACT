@@ -1022,6 +1022,10 @@ size_t MolGen::Read(MsgHandler                          *msghandler,
                 if (!qmap.empty())
                 {
                     fragments->setCharges(msghandler, qmap, compoundCharges_);
+                    if (msghandler->ok() && compoundCharges_)
+                    {
+                        setCompoundStructures(msghandler, &actmol);
+                    }
                     if (msghandler->ok())
                     {
                         // Copy charges to the high-level topology as well
@@ -1234,6 +1238,10 @@ size_t MolGen::Read(MsgHandler                          *msghandler,
                 if (!qmap.empty())
                 {
                     fragments->setCharges(msghandler, qmap, compoundCharges_);
+                    if (msghandler->ok() && compoundCharges_)
+                    {
+                        setCompoundStructures(msghandler, &actmol);
+                    }
                     if (msghandler->ok())
                     {
                         // Copy charges to the high-level topology as well
@@ -1393,6 +1401,23 @@ void MolGen::setupCompoundCharges(MsgHandler                *msghandler,
     // version, for instance with -random_init, so the first evaluation
     // generates the charges again
     compoundQMade_ = false;
+}
+
+void MolGen::setCompoundStructures(MsgHandler *msghandler, ACTMol *actmol) const
+{
+    auto *fh = actmol->fragmentHandler();
+    for (size_t f = 0; f < fh->ids().size(); f++)
+    {
+        const auto ref = std::find_if(compoundRefs_.begin(), compoundRefs_.end(),
+                                      [fh, f](const ACTMol &m) { return m.fragments()[0].inchi() == fh->ids()[f]; });
+        if (ref == compoundRefs_.end() || !fh->setSharedStructure(f, ref->xOriginal()))
+        {
+            msghandler->msg(ACTStatus::Error, ACTMessage::NoMolpropCharges,
+                            gmx::formatString("No structure of compound %s for the charges of %s",
+                                              fh->ids()[f].c_str(), actmol->getMolname().c_str()));
+            return;
+        }
+    }
 }
 
 const ChargeMap &MolGen::compoundChargeMap(MsgHandler          *msghandler,

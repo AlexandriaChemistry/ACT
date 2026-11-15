@@ -4359,8 +4359,10 @@ public:
         {
             auto  molptr = mols[k];
             auto  fh     = molptr->fragmentHandler();
-            // The structure the processor generates the charges for, see ACTMol::GenerateAcmCharges
-            std::vector<gmx::RVec> x = molptr->xOriginal();
+            // The structure the processor generates the charges for, see
+            // ACTMol::GenerateAcmCharges, or those of the compounds, see
+            // FragmentHandler::chargeStructure
+            std::vector<gmx::RVec> x = fh->chargeStructure(molptr->xOriginal());
             if (molptr->topology()->hasVsites())
             {
                 Coordinates cx(x);
@@ -4613,10 +4615,11 @@ public:
         {
             auto        molptr = mols[am.mol];
             const auto *top    = molptr->topology();
-            Coordinates cx(molptr->xOriginal());
+            const auto  xs     = molptr->fragmentHandler()->chargeStructure(molptr->xOriginal());
+            Coordinates cx(xs);
             const auto *c      = cx.view().data();
             GMX_RELEASE_ASSERT(3*am.firstAtom == x.size(), "The molecules of the charge generation are not in order");
-            x.insert(x.end(), c, c + 3*molptr->xOriginal().size());
+            x.insert(x.end(), c, c + 3*xs.size());
             start.push_back(vsites.size());
             for (const auto &entry : top->entries())
             {

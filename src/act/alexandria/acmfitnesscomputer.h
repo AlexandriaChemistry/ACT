@@ -121,6 +121,19 @@ private:
     std::map<iMolSelect, std::map<eRMS, bool>>     qPropsData_;
 
 
+    /*! \brief Make the charges of a molecule on the processor
+     * Generated from its structure, or copied from those of its compounds,
+     * see MolGen::compoundChargeMap.
+     * \param[in]    msghandler For messages
+     * \param[inout] actmol     The molecule
+     * \param[in]    imol       Its index, see chargeVersion_
+     * \param[in]    needQProps Whether the charge properties are needed
+     */
+    void makeHostCharges(MsgHandler *msghandler,
+                         ACTMol     *actmol,
+                         size_t      imol,
+                         bool        needQProps);
+
     /*! \brief Update the topology and the charges of a molecule for the parameters now
      * As in prepareDeviation.
      * \param[in]    msghandler Message Handler

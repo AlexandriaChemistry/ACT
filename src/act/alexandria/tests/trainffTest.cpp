@@ -1131,6 +1131,65 @@ TEST_F(TrainFFTest, FinalOutputGpu)
     EXPECT_EQ(before, interactionLines(evaluated.log));
 }
 
+// Test: With -qcompound the GPU generates the charges of the compounds from
+// their structures for each set of parameters, see
+// FragmentHandler::chargeStructure. The structure of water is a stretched
+// monomer, whose charges differ much from those of the water molecules in
+// the dimer (chi2 8774 instead of 1115), such that the chi2 of the training,
+// computed with the charges of the GPU, is that of the processor only if
+// the GPU uses the structure of the compound.
+TEST_F(TrainFFTest, CompoundChargesGpu)
+{
+    if (!gmx::test::gpuTestRuns(gpu::useGpu() && !GMX_DOUBLE, "no GPU or double precision"))
+    {
+        return;
+    }
+    const auto selFile = fileManager().getTemporaryFilePath("water-dimer.dat");
+    {
+        std::ofstream sel(selFile);
+        sel << "water#water|Train\n";
+    }
+    const Options common = {
+        { "-v", "3" },
+        { "-fc_inter", "1" },
+        { "-noshell_keep", "" },
+        { "-qcompound", "" },
+        { "-charges", fileManager().getInputFilePath("molprop/water-stretched.xml") },
+        { "-sensitivity", "1D" },
+        { "-fit", "chi eta" }
+    };
+    const auto training = combine(common, {
+        { "-seed", "219463979" },
+        { "-optimizer", "MCMC" },
+        { "-pop_size", "1" },
+        { "-max_iter", "3" },
+        { "-temp", "0.025" },
+        { "-random_init", "" }
+    });
+    const auto trained = trainfftest::runTrainFF(&fileManager(), "compound", "water_hyperpol2.xml",
+                                                 "booze-inter", training, "", selFile);
+    ASSERT_EQ(0, trained.status);
+    EXPECT_TRUE(logContains(trained.log, "GPU resident relaxation"));
+    EXPECT_TRUE(logContains(trained.log, "The charges of compound water are those of the monomer in the charge file"));
+    ASSERT_NE(std::string::npos, trained.forceField.find("</alexandria_chemistry>"));
+    const auto again = combine(common, {
+        { "-nooptimize", "" },
+        { "-norandom_init", "" },
+        { "-nogpu", "" }
+    });
+    const auto evaluated = trainfftest::runTrainFF(&fileManager(), "compound-again", "", "booze-inter", again,
+                                                   "", selFile, fileManager().getTemporaryFilePath("compound-ff.xml"));
+    ASSERT_EQ(0, evaluated.status);
+    // The chi2 of the trained parameters, on the GPU after the training,
+    // and on the processor, in single precision
+    ASSERT_TRUE(trained.sensitivity.contains("sensitivity"));
+    ASSERT_TRUE(evaluated.sensitivity.contains("sensitivity"));
+    const double onGpu       = trained.sensitivity["sensitivity"]["chi2_0"].get<double>();
+    const double onProcessor = evaluated.sensitivity["sensitivity"]["chi2_0"].get<double>();
+    ASSERT_GT(onGpu, 0);
+    EXPECT_NEAR(onGpu, onProcessor, 1e-4*onGpu);
+}
+
 } // namespace
 
 } // namespace alexandria

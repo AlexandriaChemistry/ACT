@@ -399,23 +399,7 @@ void ACMFitnessComputer::updateMolecule(MsgHandler                      *msghand
         // only if parameters changed that the charges depend on.
         static const size_t timer = Timings::instance().index("Charge generation");
         const ScopedTimer   scoped(timer);
-        if (actmol->fragmentHandler()->sharedCharges())
-        {
-            // The charges of the compounds, generated once for all
-            // molecules, see MolGen::compoundChargeMap
-            const auto &qmap = molgen_->compoundChargeMap(msghandler, sii_->forcefield(), forceComp_,
-                                                          sii_, sii_->chargeParameterVersion());
-            actmol->setCharges(msghandler, qmap, true);
-            // The widths of the charge distributions
-            actmol->updateFixedCharges(sii_->forcefield(), algorithm_);
-            if (needQProps)
-            {
-                std::vector<gmx::RVec> forces(actmol->atomsConst().size(), { 0, 0, 0 });
-                actmol->updateQprops(sii_->forcefield(), forceComp_, &forces);
-            }
-            chargeVersion_[imol] = sii_->chargeParameterVersion();
-        }
-        else if (gpuSqe)
+        if (gpuSqe)
         {
             // The charges of the processor stay outdated, the next
             // evaluation on the processor generates them
@@ -427,15 +411,41 @@ void ACMFitnessComputer::updateMolecule(MsgHandler                      *msghand
         }
         else
         {
-            // The coordinates and forces are not used here, and the
-            // charge properties only for the ESP and multipoles
-            std::vector<gmx::RVec> forces(actmol->atomsConst().size(), { 0, 0, 0 });
-            std::vector<gmx::RVec> coords = actmol->xOriginal();
-            actmol->generateCharges(msghandler, sii_->forcefield(), forceComp_,
-                                    algorithm_, &coords, &forces, needQProps, false);
-            chargeVersion_[imol] = sii_->chargeParameterVersion();
+            makeHostCharges(msghandler, actmol, imol, needQProps);
         }
     }
+}
+
+void ACMFitnessComputer::makeHostCharges(MsgHandler *msghandler,
+                                         ACTMol     *actmol,
+                                         size_t      imol,
+                                         bool        needQProps)
+{
+    if (actmol->fragmentHandler()->sharedCharges())
+    {
+        // The charges of the compounds, generated once for all
+        // molecules, see MolGen::compoundChargeMap
+        const auto &qmap = molgen_->compoundChargeMap(msghandler, sii_->forcefield(), forceComp_,
+                                                      sii_, sii_->chargeParameterVersion());
+        actmol->setCharges(msghandler, qmap, true);
+        // The widths of the charge distributions
+        actmol->updateFixedCharges(sii_->forcefield(), algorithm_);
+        if (needQProps)
+        {
+            std::vector<gmx::RVec> forces(actmol->atomsConst().size(), { 0, 0, 0 });
+            actmol->updateQprops(sii_->forcefield(), forceComp_, &forces);
+        }
+    }
+    else
+    {
+        // The coordinates and forces are not used here, and the
+        // charge properties only for the ESP and multipoles
+        std::vector<gmx::RVec> forces(actmol->atomsConst().size(), { 0, 0, 0 });
+        std::vector<gmx::RVec> coords = actmol->xOriginal();
+        actmol->generateCharges(msghandler, sii_->forcefield(), forceComp_,
+                                algorithm_, &coords, &forces, needQProps, false);
+    }
+    chargeVersion_[imol] = sii_->chargeParameterVersion();
 }
 
 bool ACMFitnessComputer::needChargeProperties(MsgHandler                          *msghandler,
@@ -813,11 +823,7 @@ bool ACMFitnessComputer::prepareDeviation(MsgHandler    *msghandler,
             size_t imol = molptr - &(*mymols->begin());
             if (chargeVersion_[imol] != sii_->chargeParameterVersion())
             {
-                std::vector<gmx::RVec> forces(molptr->atomsConst().size(), { 0, 0, 0 });
-                std::vector<gmx::RVec> coords = molptr->xOriginal();
-                molptr->generateCharges(msghandler, sii_->forcefield(), forceComp_,
-                                        algorithm_, &coords, &forces, needQProps, false);
-                chargeVersion_[imol] = sii_->chargeParameterVersion();
+                makeHostCharges(msghandler, molptr, imol, needQProps);
                 if (!msghandler->ok() && removeMol_)
                 {
                     molptr->setSupport(eSupport::No);
