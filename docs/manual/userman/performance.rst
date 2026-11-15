@@ -20,8 +20,22 @@ How train_ff uses the processes
 ===============================
 One process, the master, runs the genetic algorithm. How the others work depends on the size of the population (*-pop_size*):
 
-* **Population no larger than the number of processes.** The processes are divided into one group per individual, a middleman and its helpers, and the molecules of the training set are divided over the processes of a group. Each individual needs the same number of processes, so use a multiple of the population size; otherwise the processes left over are idle, which *train_ff* warns about. Splitting the molecules over helpers stays efficient down to 4-5 molecules per process :cite:p:`Spoel2025b`.
-* **Population larger than the number of processes.** This is possible with the GA and HYBRID optimizers. Each process except the master is then a middleman that computes one individual at a time, and gets the next one from the master when it is done. The master itself computes no individuals.
+* **Population no larger than the number of processes.** The processes are divided into one group per individual, a middleman and its helpers, and the molecules of the training set are divided over the processes of a group, see :numref:`fig-trainff-helpers`. The master is the middleman of the first group. Each individual needs the same number of processes, so use a multiple of the population size; otherwise the processes left over are idle, which *train_ff* warns about. Splitting the molecules over helpers stays efficient down to 4-5 molecules per process :cite:p:`Spoel2025b`.
+* **Population larger than the number of processes.** This is possible with the GA and HYBRID optimizers. Each process except the master is then a middleman that computes one individual at a time, and gets the next one from a queue at the master when it is done, see :numref:`fig-trainff-queue`. The master itself computes no individuals. A middleman holds all molecules of the training set.
+
+.. figure:: ../images/trainff-helpers.pdf
+   :name: fig-trainff-helpers
+   :width: 100%
+   :align: center
+
+   A population of 4 individuals on 12 processes. Each individual is computed by a middleman and two helpers, which each compute a third of the molecules and send their part of the :math:`\chi^2` to the middleman. The master is the middleman of individual A. All individuals are computed at the same time.
+
+.. figure:: ../images/trainff-queue.pdf
+   :name: fig-trainff-queue
+   :width: 100%
+   :align: center
+
+   A population of 8 individuals on 5 processes. The master keeps the individuals of a generation in a queue and gives the next one to the first middleman that is done. Each of the 4 middlemen computes 2 individuals per generation, one per round.
 
 In the second case, a generation ends when the last individual is done. If the number of middlemen does not divide the population, the last round of individuals keeps only some of the middlemen busy, and the others wait. Choose the number of processes such that every middleman computes the same number of individuals: one more than a divisor of the population. For example, a training with a population of 256 on a node with 288 cores (arrhenius, GH200) took:
 
@@ -51,7 +65,7 @@ For force fields **without shells**, the processor computes everything, also in 
 Training on GPUs
 ================
 * **Several processes per GPU.** Each process waits for the GPU part of the time, so several processes per GPU keep it busy. On NVIDIA GPUs, start the multi-process service in the job script when several processes share a GPU, see the installation chapter. The service takes at most 48 or 60 processes per GPU, depending on the NVIDIA driver; the ranks beyond that compute without the GPU.
-* **-lockstep.** With a population larger than the number of processes, *-lockstep k* gives each middleman *k* individuals at once. The GPU runs the MCMC steps of these individuals together, in the same calculations: each step takes as many operations on the GPU, and as much waiting for it, for *k* individuals as for one. Fewer processes are needed, *pop_size/k* + 1, which also shortens the start-up of the GPU in each process. With a population of 128 on a node with eight AMD MI250X GCDs (dardel) and on a node with four NVIDIA GH200 (arrhenius) we measured:
+* **-lockstep.** With a population larger than the number of processes, *-lockstep k* gives each middleman *k* individuals at once. The GPU runs the MCMC steps of these individuals together, in the same calculations: each step takes as many operations on the GPU, and as much waiting for it, for *k* individuals as for one. Fewer processes are needed, *pop_size/k* + 1, which also shortens the start-up of the GPU in each process. The master then hands out groups of *k* individuals, and a middleman keeps a copy of the molecules on the GPU for each individual of its group, a replica, see :numref:`fig-trainff-lockstep`. The replicas share the topology; each one adds its own parameters, coordinates and shells, about 43 MB for BFdb, on top of about 330 MB for the GPU context of the process and about 270 MB for the first copy of the molecules. With a population *P*, lockstep *k* and *M* middlemen (the processes minus the master), a generation has *P/k* groups, each middleman computes *P/(k M)* of them one after another, in rounds, and the GPU computes *k M* individuals at once. For example, *P* = 512 with 4 middlemen on one GPU and *-lockstep 16* gives 32 groups and 8 rounds per middleman, with 64 individuals on the GPU at once and about 1.3 GB of GPU memory per process for BFdb. *-lockstep 128* would do the same work in one round, but needs about 6 GB per process, which no longer fits 4 processes on a GPU with 21 GB. With a population of 128 on a node with eight AMD MI250X GCDs (dardel) and on a node with four NVIDIA GH200 (arrhenius) we measured:
 
   .. table:: Wall time of the master in s of short trainings with a population of 128, by *-lockstep*, with *-shell_keep*.
      :name: tab-lockstep
@@ -76,6 +90,13 @@ Training on GPUs
 * Molecules that a changed parameter does not affect are not computed again; this happens automatically, also on the GPU.
 
 The best value of *-lockstep* depends on the GPU, on the number of GPUs per node and on the training set. Start with *-lockstep 8* and *pop_size/8* + 1 processes, and compare with 4 and 16 in a short run.
+
+.. figure:: ../images/trainff-lockstep.pdf
+   :name: fig-trainff-lockstep
+   :width: 100%
+   :align: center
+
+   A population of 16 individuals on 3 processes with *-lockstep 4*. The master hands out 4 groups of 4 individuals; each of the 2 middlemen computes 2 groups per generation, one per round, with the 4 individuals of a group as 4 replicas on the GPU, computed together. With 5 processes (4 middlemen), each middleman would compute one group, in one round. Below, the GPU memory of one middleman for BFdb with the 6P force field.
 
 .. _sec-measuring:
 
