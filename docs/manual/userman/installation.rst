@@ -189,6 +189,14 @@ where *Value* can be *ON* or *OFF* or something more option specific.
    +----------------------+------------------------------------------------------------+
    |                      | the libraries, empty by default.                           |
    +----------------------+------------------------------------------------------------+
+   | BUILD_SHARED_LIBS    | Shared libraries, default ON on Linux and macOS. They are  |
+   +----------------------+------------------------------------------------------------+
+   |                      | installed in lib (or lib64) of the installation, where the |
+   +----------------------+------------------------------------------------------------+
+   |                      | programs find them by themselves. OFF builds static        |
+   +----------------------+------------------------------------------------------------+
+   |                      | libraries, which are linked into the programs.             |
+   +----------------------+------------------------------------------------------------+
    | ACT_MPI              | Build with MPI, needed to train with several processes,    |
    +----------------------+------------------------------------------------------------+
    |                      | default ON.                                                |
