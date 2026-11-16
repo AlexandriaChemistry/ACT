@@ -37,6 +37,8 @@
 #include <cstdlib>
 #include <filesystem>
 #include <fstream>
+#include <system_error>
+#include <vector>
 
 #include <sycl/sycl.hpp>
 
@@ -197,11 +199,33 @@ static std::string &chosenGpu()
     return chosen;
 }
 
+/*! \brief The environment variables that select the GPUs of this node
+ * Slurm may set those of other vendors too, for instance ROCR_VISIBLE_DEVICES
+ * on a node with NVIDIA GPUs, which the runtime does not use.
+ * \return the variables of the runtime of the GPUs of the node, all if unknown
+ */
+static std::vector<const char *> visibleDeviceVariables()
+{
+    std::error_code error;
+    bool            nvidia = (std::filesystem::exists("/dev/nvidiactl", error) ||
+                              std::filesystem::exists("/dev/nvidia0", error));
+    bool            amd    = std::filesystem::exists("/dev/kfd", error);
+    if (nvidia && !amd)
+    {
+        return { "CUDA_VISIBLE_DEVICES" };
+    }
+    if (amd && !nvidia)
+    {
+        return { "ROCR_VISIBLE_DEVICES", "HIP_VISIBLE_DEVICES" };
+    }
+    return { "CUDA_VISIBLE_DEVICES", "ROCR_VISIBLE_DEVICES", "HIP_VISIBLE_DEVICES" };
+}
+
 void selectGpuOfProcess()
 {
     int  rank   = localRank();
     bool listed = false;
-    for (const char *name : { "CUDA_VISIBLE_DEVICES", "ROCR_VISIBLE_DEVICES", "HIP_VISIBLE_DEVICES" })
+    for (const char *name : visibleDeviceVariables())
     {
         const char *value = std::getenv(name);
         if (!value || !*value)
@@ -249,6 +273,19 @@ void selectGpuOfProcess()
 std::string gpuOfProcess()
 {
     return chosenGpu();
+}
+
+std::string gpuId()
+{
+    for (const char *name : visibleDeviceVariables())
+    {
+        const char *value = std::getenv(name);
+        if (value && *value)
+        {
+            return value;
+        }
+    }
+    return "";
 }
 
 int gpuIndex()

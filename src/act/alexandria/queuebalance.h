@@ -36,6 +36,7 @@
 
 #include <algorithm>
 #include <cstddef>
+#include <vector>
 
 namespace alexandria
 {
@@ -170,6 +171,49 @@ inline LockstepPlan planLockstep(size_t population, size_t processes, size_t gpu
         }
     }
     return plan;
+}
+
+/*! \brief Choose the processes that work, spread over the GPUs
+ * The master, rank 0, always works. The others are taken one at a time
+ * from the GPU with the fewest working processes so far, the lowest ranks
+ * first, such that the working processes are spread evenly over the GPUs
+ * however the processes were bound to them, for instance with
+ * srun --gpu-bind=single:32 ranks 0-31 on the first GPU.
+ * \param[in] gpuOfRank The GPU of each process, numbered from 0
+ * \param[in] nworking  The number of processes that work
+ * \return for each process whether it works
+ */
+inline std::vector<char> spreadOverGpus(const std::vector<int> &gpuOfRank, size_t nworking)
+{
+    const size_t      n = gpuOfRank.size();
+    std::vector<char> working(n, 0);
+    if (n == 0)
+    {
+        return working;
+    }
+    int ngpu = 0;
+    for (auto g : gpuOfRank)
+    {
+        ngpu = std::max(ngpu, g + 1);
+    }
+    std::vector<size_t> count(ngpu, 0);
+    working[0] = 1;
+    count[gpuOfRank[0]]++;
+    for (size_t chosen = 1; chosen < std::min(nworking, n); chosen++)
+    {
+        // The first rank not working yet on the GPU with the fewest
+        size_t best = n;
+        for (size_t r = 1; r < n; r++)
+        {
+            if (!working[r] && (best == n || count[gpuOfRank[r]] < count[gpuOfRank[best]]))
+            {
+                best = r;
+            }
+        }
+        working[best] = 1;
+        count[gpuOfRank[best]]++;
+    }
+    return working;
 }
 
 } // namespace alexandria

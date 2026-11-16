@@ -153,7 +153,8 @@ ACTMiddleMan::ACTMiddleMan(MsgHandler                *msghandler,
             const int    nodes   = std::max(1, (started + perNode - 1)/perNode);
             const int    working = (cr->size() + nodes - 1)/nodes;
             const int    gpus    = std::max(1, facts.nodeGpus);
-            const int    sharing = std::max(1, (working + gpus - 1)/gpus);
+            // As train_ff counted them, from the GPU of each process
+            const int    sharing = cr->gpuSharing() > 0 ? cr->gpuSharing() : std::max(1, (working + gpus - 1)/gpus);
             const double context = 350e6;
             double       budget  = std::max(0.0, 0.9*memory/sharing - context);
             // For developers and tests, the budget in MB

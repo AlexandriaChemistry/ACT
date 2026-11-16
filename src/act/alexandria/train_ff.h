@@ -164,10 +164,14 @@ public:
     /*! \brief Choose -lockstep and the number of processes, for -lockstep 0
      * See planLockstep. Called by all processes before the roles of the
      * processes are set, see CommunicationRecord::init.
-     * \param[in] filenames The file options, for the force field
+     * \param[in]  filenames The file options, for the force field
+     * \param[in]  gpuOfRank The GPU of each process, numbered from 0
+     * \param[out] working   Whether each process works, see spreadOverGpus
      * \return the number of processes that work, 0 if all
      */
-    int chooseLockstep(const std::vector<t_filenm> &filenames);
+    int chooseLockstep(const std::vector<t_filenm> &filenames,
+                       const std::vector<int>       &gpuOfRank,
+                       std::vector<char>            *working);
 
     //! \return the message handler
     MsgHandler *msgHandler() { return &msghandler_; }

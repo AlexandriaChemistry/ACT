@@ -119,13 +119,16 @@ private:
     int               population_           = 0;
     //! Whether I am left over in the layout of the processes, see init
     bool              idle_                  = false;
-    /*! \brief Leave the processes beyond a number idle
+    /*! \brief Leave the processes that do not work idle
      * The idle processes leave the ACT communicator, such that the others
-     * work as if they were all there is.
+     * work as if they were all there is, in the order of their ranks.
      * \param[in] nactive The number of processes that work
+     * \param[in] active  Whether this process works
      * \return whether this process is idle
      */
-    bool leaveIdle(int nactive);
+    bool leaveIdle(int nactive, bool active);
+    //! The number of processes that work on the GPU of this process, 0 if unknown, see setGpuSharing
+    int               gpuSharing_            = 0;
     //! The number of idle processes
     int               nidle_                 = 0;
     //! Check whether init has been called
@@ -197,9 +200,21 @@ public:
      *                       those of the plan of train_ff -lockstep 0; the
      *                       others are idle. All work if 0 or not less than
      *                       the number of processes.
+     * \param[in] active     Whether this process is one of those that work:
+     *                       1 or 0, or -1 for the first nactive ranks. The
+     *                       master, rank 0, must work.
      * \return Outcome of the initiation.
      */
-    CommunicationStatus init(int nmiddleman, int nactive = 0);
+    CommunicationStatus init(int nmiddleman, int nactive = 0, int active = -1);
+
+    /*! \brief Set the number of processes that work on the GPU of this process
+     * For the share of the GPU memory of each, see ACTMiddleMan.
+     * \param[in] n The number of processes, including this one
+     */
+    void setGpuSharing(int n) { gpuSharing_ = n; }
+
+    //! \return the number of processes that work on the GPU of this process, 0 if unknown
+    int gpuSharing() const { return gpuSharing_; }
     
     /*! \brief Tell the communication record that we are done.
      * Any additional communication will cause a throw.
