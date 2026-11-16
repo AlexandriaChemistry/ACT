@@ -1,5 +1,19 @@
 import os
+import shutil
 import sys
+
+def alexandria_program() -> str:
+    """The alexandria program: that in the environment variable
+    ACT_ALEXANDRIA, if set, and otherwise alexandria from the PATH, or
+    alexandria_d, as a double precision build installs it, if there is
+    only that one."""
+    program = os.environ.get("ACT_ALEXANDRIA")
+    if program:
+        return program
+    for name in [ "alexandria", "alexandria_d" ]:
+        if shutil.which(name):
+            return name
+    return "alexandria"
 
 def actdata() -> str:
     """The directory with the data files of ACT: that in the environment

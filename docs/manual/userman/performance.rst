@@ -9,7 +9,7 @@ Training a force field takes most of the computer time spent with ACT, so this c
 ======================
 Building ACT for speed
 ======================
-* Build in single precision, with *-DACT_DOUBLE=OFF*. The explicit SIMD routines then compute twice as many interactions per instruction, and a GPU can only be used in single precision builds. Energies are still summed in double precision.
+* Build in single precision, the default, and not with *-DACT_DOUBLE=ON*. The explicit SIMD routines then compute twice as many interactions per instruction, and a GPU can only be used in single precision builds. Energies are still summed in double precision.
 * On a cluster, set *ACT_SIMD* to the SIMD instructions of the compute nodes if you compile on a head node with another processor, and give the compiler the instructions of the compute nodes in *CMAKE_CXX_FLAGS*, for instance *-march=native* when compiling on a compute node.
 * For a GPU, build with *-DACT_GPU=SYCL*, see the installation chapter.
 

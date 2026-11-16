@@ -43,8 +43,15 @@ jobs:
           export MPICXX=/usr/bin/g++
           export MPICC=/usr/bin/gcc
           export CXXFLAGS='-std=c++20'
-          cmake -DGMX_DOUBLE=ON -DCMAKE_PREFIX_PATH=${ACT_CONDA_PREFIX} -DBUILD_SHARED_LIBS=OFF -DGMX_OPENMP=OFF -DGMX_MPI=ON -DCMAKE_INSTALL_PREFIX=${{ github.workspace }}/../tools -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_COMPILER=${MPICXX} -DCMAKE_C_COMPILER=${MPICC} ..
+          cmake -DACT_DOUBLE=ON -DCMAKE_PREFIX_PATH=${ACT_CONDA_PREFIX} -DBUILD_SHARED_LIBS=OFF -DACT_OPENMP=OFF -DACT_MPI=ON -DCMAKE_INSTALL_PREFIX=${{ github.workspace }}/../tools -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_COMPILER=${MPICXX} -DCMAKE_C_COMPILER=${MPICC} ..
           make -j 4 install tests
+      - name: Check the installed names in double precision
+        run: |
+          # A double precision build installs alexandria_d and libactgromacs_d,
+          # such that it can be next to a single precision build
+          test -x ${{ github.workspace }}/../tools/bin/alexandria_d
+          test ! -e ${{ github.workspace }}/../tools/bin/alexandria
+          ls ${{ github.workspace }}/../tools/lib*/libactgromacs_d.*
       - name: Test the ACT
         run: |
           source ${{ github.workspace }}/../tools/bin/ACTRC
@@ -96,4 +103,4 @@ jobs:
         run: |
           source ${{ github.workspace }}/../tools/bin/ACTRC
           cd ${{ github.workspace }}/src/act/python/tests
-          ACT_REQUIRE_OPENMM=1 ACT_ALEXANDRIA=${{ github.workspace }}/build/bin/alexandria python -m unittest -v test_act_openmm
+          ACT_REQUIRE_OPENMM=1 ACT_ALEXANDRIA=${{ github.workspace }}/build/bin/alexandria_d python -m unittest -v test_act_openmm

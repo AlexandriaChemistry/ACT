@@ -44,7 +44,7 @@ jobs:
           export MPICC=/usr/bin/gcc
           export CXXFLAGS='-std=c++20'
           # Single precision with the explicit SIMD of the runner
-          cmake -DGMX_DOUBLE=OFF -DACT_SIMD=AUTO -DCMAKE_PREFIX_PATH=${ACT_CONDA_PREFIX} -DBUILD_SHARED_LIBS=OFF -DGMX_OPENMP=OFF -DGMX_MPI=ON -DCMAKE_INSTALL_PREFIX=${{ github.workspace }}/../tools -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_COMPILER=${MPICXX} -DCMAKE_C_COMPILER=${MPICC} .. | tee cmake.log
+          cmake -DACT_DOUBLE=OFF -DACT_SIMD=AUTO -DCMAKE_PREFIX_PATH=${ACT_CONDA_PREFIX} -DBUILD_SHARED_LIBS=OFF -DACT_OPENMP=OFF -DACT_MPI=ON -DCMAKE_INSTALL_PREFIX=${{ github.workspace }}/../tools -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_COMPILER=${MPICXX} -DCMAKE_C_COMPILER=${MPICC} .. | tee cmake.log
           # The test is about the explicit SIMD of the runner, not about the
           # code without it, which the compiler may fall back to
           if ! grep -q "Using .* for the explicit SIMD force routines" cmake.log; then
@@ -53,6 +53,9 @@ jobs:
           fi
           grep "for the explicit SIMD force routines" cmake.log
           make -j 4 install tests
+          # Single precision is the default and installs alexandria
+          test -x ${{ github.workspace }}/../tools/bin/alexandria
+          test ! -e ${{ github.workspace }}/../tools/bin/alexandria_d
       - name: Test the ACT in single precision
         run: |
           source ${{ github.workspace }}/../tools/bin/ACTRC
