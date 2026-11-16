@@ -43,9 +43,8 @@
 #include <cstdlib>
 
 #include <map>
+#include <set>
 #include <random>
-
-#include <unistd.h>
 
 #include "config.h"
 
@@ -153,37 +152,54 @@ void OptACM::check_pargs(MsgHandler *)
     gach_.check_pargs(&msghandler_);
 }
 
-/*! \brief The GPU of each process, numbered from 0 over all nodes
- * From the name of the node and the GPU that the process uses, see
- * gpu::gpuId. Called by all processes.
- * \param[in] comm The communicator of all processes
- * \return the GPU of each process, in the order of the ranks
- */
-static std::vector<int> gpuOfRanks(MPI_Comm comm)
+//! The node and the GPU of each process, see placeRanks
+struct RankPlaces
 {
-    constexpr int keyLength = 256;
-    char          host[keyLength - 64] = { 0 };
-    gethostname(host, sizeof(host) - 1);
-    const auto        id = gpu::gpuId();
-    std::vector<char> mine(keyLength, 0);
-    std::snprintf(mine.data(), keyLength, "%s|%.60s", host, id.c_str());
+    //! The node of each process, the lowest rank on it
+    std::vector<int> node;
+    //! The GPU of each process, numbered from 0 over all nodes
+    std::vector<int> gpu;
+};
+
+/*! \brief The node and the GPU of each process
+ * The processes on a node are those that share its memory, as MPI tells,
+ * and the GPU of a process is the one that it uses, see gpu::gpuId. Called
+ * by all processes.
+ * \param[in] comm The communicator of all processes
+ * \return the node and the GPU of each process, in the order of the ranks
+ */
+static RankPlaces placeRanks(MPI_Comm comm)
+{
+    int rank = 0;
     int size = 1;
+    MPI_Comm_rank(comm, &rank);
     MPI_Comm_size(comm, &size);
-    std::vector<char> all(static_cast<size_t>(size)*keyLength);
-    MPI_Allgather(mine.data(), keyLength, MPI_CHAR, all.data(), keyLength, MPI_CHAR, comm);
-    std::map<std::string, int> number;
-    std::vector<int>           gpus;
+    MPI_Comm node = MPI_COMM_NULL;
+    MPI_Comm_split_type(comm, MPI_COMM_TYPE_SHARED, rank, MPI_INFO_NULL, &node);
+    int      lowest = rank;
+    MPI_Allreduce(MPI_IN_PLACE, &lowest, 1, MPI_INT, MPI_MIN, node);
+    MPI_Comm_free(&node);
+    RankPlaces places;
+    places.node.resize(size);
+    MPI_Allgather(&lowest, 1, MPI_INT, places.node.data(), 1, MPI_INT, comm);
+    // The GPU, as a string such as 0 or a UUID, numbered here
+    constexpr int     idLength = 64;
+    std::vector<char> mine(idLength, 0);
+    std::snprintf(mine.data(), idLength, "%s", gpu::gpuId().c_str());
+    std::vector<char> all(static_cast<size_t>(size)*idLength);
+    MPI_Allgather(mine.data(), idLength, MPI_CHAR, all.data(), idLength, MPI_CHAR, comm);
+    std::map<std::pair<int, std::string>, int> number;
     for (int r = 0; r < size; r++)
     {
-        const std::string key(all.data() + static_cast<size_t>(r)*keyLength);
-        auto              it = number.find(key);
+        const std::pair<int, std::string> key(places.node[r], std::string(all.data() + static_cast<size_t>(r)*idLength));
+        auto it = number.find(key);
         if (it == number.end())
         {
             it = number.insert({ key, static_cast<int>(number.size()) }).first;
         }
-        gpus.push_back(it->second);
+        places.gpu.push_back(it->second);
     }
-    return gpus;
+    return places;
 }
 
 int OptACM::chooseLockstep(const std::vector<t_filenm> &filenames,
@@ -269,7 +285,8 @@ void OptACM::optionsFinished(const std::vector<t_filenm> &filenames)
     msghandler_.writeDebug(gmx::formatString("nmiddlemen = %d", nmiddlemen));
     // The GPU of each process, and with -lockstep 0 the plan decides which
     // processes work
-    const auto        gpuOfRank = gpuOfRanks(commRec_.comm_world());
+    const auto        places    = placeRanks(commRec_.comm_world());
+    const auto       &gpuOfRank = places.gpu;
     std::vector<char> working(gpuOfRank.size(), 1);
     int               nactive = 0;
     if (gach_.lockstep() == 0)
@@ -284,6 +301,19 @@ void OptACM::optionsFinished(const std::vector<t_filenm> &filenames)
     {
         sharing += working[r] && gpuOfRank[r] == gpuOfRank[myRank] ? 1 : 0;
     }
+    // The working processes and their GPUs on this node, for the message
+    // when the GPU memory runs out
+    int           nodeWorking = 0;
+    std::set<int> nodeGpus;
+    for (size_t r = 0; r < gpuOfRank.size(); r++)
+    {
+        if (working[r] && places.node[r] == places.node[myRank])
+        {
+            nodeWorking++;
+            nodeGpus.insert(gpuOfRank[r]);
+        }
+    }
+    gpu::setNodeLayout(nodeWorking, static_cast<int>(nodeGpus.size()));
     // Update the communication record and do necessary checks.
     commRec_.init(nmiddlemen, nactive, working[myRank] ? 1 : 0);
     commRec_.setGpuSharing(sharing);

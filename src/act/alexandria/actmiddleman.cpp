@@ -139,22 +139,17 @@ ACTMiddleMan::ACTMiddleMan(MsgHandler                *msghandler,
     {
         forceComp_.setGpuReplicas(gach->lockstep());
         // As many replicas as fit into the share of this process of the GPU
-        // memory: the GPUs of a node are shared by its processes that work,
-        // each with a context of about 350 MB, and 10% is kept free. The
+        // memory: a GPU is shared by the processes that work on it, each
+        // with a context of about 350 MB, and 10% is kept free. The
         // idle processes, see CommunicationRecord::init, use no GPU. Only
         // the middlemen get here, so nothing is communicated.
         const double memory = gpu::deviceMemory();
         if (memory > 0)
         {
+            // The working processes on the GPU of this one, as train_ff
+            // counted them, or else all, see CommunicationRecord::gpuSharing
             const auto   cr      = sii->commRec();
-            const auto   facts   = gpu::outOfMemoryFacts("");
-            const int    started = cr->size() + cr->nIdle();
-            const int    perNode = facts.nodeProcesses > 0 ? facts.nodeProcesses : started;
-            const int    nodes   = std::max(1, (started + perNode - 1)/perNode);
-            const int    working = (cr->size() + nodes - 1)/nodes;
-            const int    gpus    = std::max(1, facts.nodeGpus);
-            // As train_ff counted them, from the GPU of each process
-            const int    sharing = cr->gpuSharing() > 0 ? cr->gpuSharing() : std::max(1, (working + gpus - 1)/gpus);
+            const int    sharing = cr->gpuSharing() > 0 ? cr->gpuSharing() : cr->size();
             const double context = 350e6;
             double       budget  = std::max(0.0, 0.9*memory/sharing - context);
             // For developers and tests, the budget in MB

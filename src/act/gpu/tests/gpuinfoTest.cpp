@@ -33,8 +33,12 @@
 #include "../gpu.h"
 
 #include <cstdlib>
+#include <filesystem>
+#include <fstream>
 #include <string>
 #include <vector>
+
+#include <unistd.h>
 
 #include <gtest/gtest.h>
 
@@ -305,6 +309,35 @@ TEST(GpuInformationTest, Consistent)
         EXPECT_TRUE(contains(gpu::noGpuReasons(), "acpp-info -l"));
         EXPECT_FALSE(gpu::useGpu());
     }
+}
+
+// Test: The AMD GPUs are the nodes of the topology of the kernel driver with
+// a gpu_id other than 0, the processors have 0
+TEST(GpuNodeTest, AmdGpus)
+{
+    namespace fs = std::filesystem;
+    const fs::path topology = fs::temp_directory_path() / ("act-kfd-" + std::to_string(::getpid()));
+    fs::remove_all(topology);
+    const std::vector<std::string> ids = { "0", "53210", "0", "18234", "40001" };
+    for (size_t n = 0; n < ids.size(); n++)
+    {
+        fs::create_directories(topology / std::to_string(n));
+        std::ofstream(topology / std::to_string(n) / "gpu_id") << ids[n] << "\n";
+    }
+    EXPECT_EQ(3, gpu::amdGpusOfNode(topology.string()));
+    fs::remove_all(topology);
+    EXPECT_EQ(0, gpu::amdGpusOfNode(topology.string()));
+}
+
+// Test: The message about the GPU memory uses the processes and GPUs of the
+// node that MPI found, once they are known
+TEST(GpuNodeTest, Layout)
+{
+    gpu::setNodeLayout(17, 8);
+    const auto facts = gpu::outOfMemoryFacts("");
+    EXPECT_EQ(17, facts.nodeProcesses);
+    EXPECT_EQ(8, facts.nodeGpus);
+    gpu::setNodeLayout(0, 0);
 }
 
 } // namespace
