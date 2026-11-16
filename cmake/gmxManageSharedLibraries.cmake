@@ -40,8 +40,9 @@
 # Determine the defaults (this block has no effect if the variables have
 # already been set)
 if(APPLE OR CYGWIN OR ${CMAKE_SYSTEM_NAME} MATCHES "Linux|.*BSD|GNU")
-    # Maybe Solaris should be here? Patch this if you know!
-    SET(SHARED_LIBS_DEFAULT OFF)
+    # Shared libraries, which the installed programs find through their
+    # relative rpath, see CMAKE_INSTALL_RPATH
+    SET(SHARED_LIBS_DEFAULT ON)
 elseif(WIN32)
     # Support for shared libs on native Windows is a bit new. Its
     # default might change later if/when we sort things out. Also,
@@ -69,7 +70,7 @@ if (NOT GMX_BUILD_SHARED_EXE)
 endif()
 
 # Declare the user-visible options
-option(BUILD_SHARED_LIBS "Enable shared libraries (can be problematic e.g. with MPI, or on some HPC systems)" ${SHARED_LIBS_DEFAULT})
+option(BUILD_SHARED_LIBS "Build shared libraries, OFF for static libraries" ${SHARED_LIBS_DEFAULT})
 
 if (UNIX)
     set(GMX_PREFER_STATIC_LIBS_DESCRIPTION
