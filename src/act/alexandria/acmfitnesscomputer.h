@@ -449,11 +449,22 @@ public:
      * \param[in] msghandler Message Handler
      * \param[in] params     The parameters of each set, all of them
      * \param[in] ims        The dataset to do computations on
+     * \param[in] newSets    Whether the sets are new individuals, whose
+     *                       relaxation starts from the shells on their parents
+     *                       rather than from shells kept before, see forgetKeptShells
      * \return the deviation of each set
      */
     std::vector<double> calcDeviations(MsgHandler                               *msghandler,
                                        const std::vector<const std::vector<double> *> &params,
-                                       iMolSelect                                ims);
+                                       iMolSelect                                ims,
+                                       bool                                      newSets = false);
+
+    /*! \brief Forget the shells that the previous evaluations kept
+     * With -shell_keep the relaxation starts from the shells of the previous
+     * evaluation, so the next one starts from the shells on their parents,
+     * for instance for another individual, see ForceComputer::forgetKeptShells.
+     */
+    void forgetKeptShells();
 
     /*! \brief The first step of calcDeviation, before computing energies
      * Receives or sends the dataset, resets the chi squared, updates the

@@ -240,6 +240,9 @@ public:
      */
     bool restoreShells(int what);
 
+    //! Forget the shells that keepShells kept, the next relaxation starts from the parents
+    void forgetShells();
+
     //! Construct the virtual sites
     void constructVsites();
 

@@ -337,7 +337,7 @@ void MCMCMutator::mutateLockstep(MsgHandler                       *msghandler,
     }
     auto       fitComp  = mutators[0]->fitComp_;
     const auto imsTrain = iMolSelect::Train;
-    auto       chi2     = fitComp->calcDeviations(msghandler, params, imsTrain);
+    auto       chi2     = fitComp->calcDeviations(msghandler, params, imsTrain, true);
     for (size_t i = 0; i < n; i++)
     {
         states[i].prevEval[imsTrain] = chi2[i];
