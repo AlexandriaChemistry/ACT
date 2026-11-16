@@ -1,5 +1,6 @@
 import os, random, sys
 from act_openmm import ActOpenMMSim
+from actutils import alexandria_program
 from get_csv_rows import *
 
 class GeneralCouplingTheory:
@@ -133,7 +134,7 @@ class GeneralCouplingTheory:
                         else:
                             self.log.write("Iter %d obs %s Changing %s %s from %g to %g\n" %
                                            ( myiter, obs, atom, param, oldval, myparam["value"]))
-                        edit_cmd = ("alexandria edit_ff -ff %s -o %s -p %s -val %g -a %s -force" % ( self.actff, self.actff, param,
+                        edit_cmd = ("%s edit_ff -ff %s -o %s -p %s -val %g -a %s -force" % ( alexandria_program(), self.actff, self.actff, param,
                                                                                                      myparam["value"], atom ))
                         os.system(edit_cmd)
                         if self.debug:

@@ -187,8 +187,9 @@ foreach(_opt DOUBLE MPI OPENMP)
     unset(GMX_${_opt} CACHE)
 endforeach()
 
-gmx_set_boolean(GMX_DOUBLE_DEFAULT ON)
-option(ACT_DOUBLE "Use double precision (much slower, use only if you really need it)" ${GMX_DOUBLE_DEFAULT})
+option(ACT_DOUBLE "Use double precision (much slower, use only if you really need it)" OFF)
+# Programs and libraries in double precision get the suffix _d
+include(actManageSuffixes)
 
 option(ACT_MPI    "Build a parallel (message-passing) version of ACT" ON)
 gmx_dependent_option(

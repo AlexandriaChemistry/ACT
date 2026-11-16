@@ -71,6 +71,14 @@ add_subdirectory(gromacs)
 
 # The ACT library file
 add_library(actLib "")
+set_target_properties(actLib PROPERTIES OUTPUT_NAME "actLib${ACT_LIBS_SUFFIX}")
+# The programs need it only if it is a shared library
+if(BUILD_SHARED_LIBS)
+    install(TARGETS actLib
+            LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+            RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+            COMPONENT libraries)
+endif()
 # Everything that uses the ACT code links this library, which brings
 # libactgromacs and the external libraries along.
 target_link_libraries(actLib PUBLIC libactgromacs ${GMX_EXTRA_LIBRARIES})

@@ -44,6 +44,7 @@ from simtk.unit import *
 from simtk import openmm, unit
 import numpy as np
 import argparse, copy, inspect, math, sys, shutil
+from actutils import alexandria_program
 from enum import Enum
 
 # Should correspond to both ACT and OpenMM
@@ -554,14 +555,15 @@ class ActOpenMMSim:
             self.txt.write("force field            %s\n" % self.xmlfile)
         elif None != self.actfile:
             # Run alexandria gentop, but first check whether we have alexandria
-            if None == shutil.which("alexandria"):
-                sys.exit("You provided and ACT force field file, but the alexandria program is not in your PATH")
+            alexandria = alexandria_program()
+            if None == shutil.which(alexandria):
+                sys.exit("You provided an ACT force field file, but the alexandria program is not in your PATH")
             self.xmloutfile = "act.xml"
             if os.path.exists(self.xmloutfile):
                 if self.verbose:
                     self.txt.write("Removing existing OpenMM force field file %s\n" % self.xmloutfile)
                 os.unlink(self.xmloutfile)
-            mycmd = ("alexandria gentop -ff %s -f %s -openmm %s" % ( self.actfile,
+            mycmd = ("%s gentop -ff %s -f %s -openmm %s" % ( alexandria, self.actfile,
                                                                      self.pdbfile,
                                                                      self.xmloutfile ))
             os.system(mycmd)

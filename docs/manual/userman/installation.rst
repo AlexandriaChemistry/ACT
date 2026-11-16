@@ -132,6 +132,15 @@ which should give you something like::
   % which alexandria
   ~/tools/bin/alexandria
 
+ACT is built in single precision by default, which is faster and needed to use a GPU. A build in double precision, with *-DACT_DOUBLE=ON*, names its programs and libraries with the suffix *_d*: *alexandria_d* and *libactgromacs_d*. Both can therefore be installed in the same place, from two build directories::
+
+  cmake -S . -B build-Release -DCMAKE_INSTALL_PREFIX=$HOME/tools
+  cmake -S . -B build-Release-double -DCMAKE_INSTALL_PREFIX=$HOME/tools -DACT_DOUBLE=ON
+  make -C build-Release -j 8 install
+  make -C build-Release-double -j 8 install
+
+after which *alexandria* computes in single and *alexandria_d* in double precision. The python scripts of ACT run *alexandria*, or *alexandria_d* if only that one is installed; the environment variable *ACT_ALEXANDRIA* selects another program, for instance *ACT_ALEXANDRIA=alexandria_d* to use double precision when both are installed. A build directory that was configured with an older version of ACT keeps its precision, which was double by default before.
+
 There are some building options available that are mainly of use for developers (see :ref:`tab-cmake`). These options have to be specified using::
 
   -DOPTION=Value
@@ -158,13 +167,27 @@ where *Value* can be *ON* or *OFF* or something more option specific.
    +----------------------+------------------------------------------------------------+
    |                      | -DCMAKE_PREFIX_PATH=${CONDA_PREFIX}/lib                    |
    +----------------------+------------------------------------------------------------+
-   | ACT_DOUBLE           | Double precision, default ON. Single precision (OFF) is    |
+   | ACT_DOUBLE           | Double precision, default OFF. Single precision is faster  |
    +----------------------+------------------------------------------------------------+
-   |                      | faster and is needed to use a GPU. Before, this option was |
+   |                      | and is needed to use a GPU. The programs and libraries of  |
+   +----------------------+------------------------------------------------------------+
+   |                      | a double precision build get the suffix _d, see above.     |
+   +----------------------+------------------------------------------------------------+
+   |                      | Before, this option was                                    |
    +----------------------+------------------------------------------------------------+
    |                      | called GMX_DOUBLE; the old names of this and the next two  |
    +----------------------+------------------------------------------------------------+
    |                      | options still work, with a warning.                        |
+   +----------------------+------------------------------------------------------------+
+   | ACT_DEFAULT_SUFFIX   | Whether the suffix of the programs and libraries follows   |
+   +----------------------+------------------------------------------------------------+
+   |                      | the precision, _d in double precision and none in single,  |
+   +----------------------+------------------------------------------------------------+
+   |                      | default ON. With OFF, ACT_BINARY_SUFFIX and                |
+   +----------------------+------------------------------------------------------------+
+   |                      | ACT_LIBS_SUFFIX give the suffixes of the programs and of   |
+   +----------------------+------------------------------------------------------------+
+   |                      | the libraries, empty by default.                           |
    +----------------------+------------------------------------------------------------+
    | ACT_MPI              | Build with MPI, needed to train with several processes,    |
    +----------------------+------------------------------------------------------------+

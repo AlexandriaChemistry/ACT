@@ -40,7 +40,7 @@ from PIL import ImageTk, Image
 # The ACT python modules of the installation. In the source tree, those next
 # to this script come first.
 sys.path.insert(1, "@ACT_PYTHON_LIB_PATH@")
-from actutils import act_library_filename
+from actutils import act_library_filename, alexandria_program
 
 # Some global variables
 Atom     = "Atom"
@@ -1434,7 +1434,7 @@ class GeometryFF:
         elif not os.path.exists(self.fnms["-mp"][defnm]):
             show_info(f"Molprop file {self.fnms['-mp'][defnm]} does not exist")
             return 1
-        mycmd = f"alexandria geometry_ff "
+        mycmd = f"{alexandria_program()} geometry_ff "
         for fn in self.fnms:
             mycmd += f" {fn} {self.fnms[fn][defnm]} "
         if qalg.get() == "EEM":
@@ -1483,7 +1483,7 @@ class GeometryFF:
         acmtypes = self.monovalentAcmTypes(ffName)
         if len(acmtypes) == 0:
             return 0
-        mycmd = [ "alexandria", "edit_ff", "-ff", ffName, "-o", ffName,
+        mycmd = [ alexandria_program(), "edit_ff", "-ff", ffName, "-o", ffName,
                   "-p", "chi", "-a", " ".join(acmtypes), "-mut", Fixed ]
         print(f"Will run '{' '.join(mycmd)}'")
         return subprocess.run(mycmd).returncode

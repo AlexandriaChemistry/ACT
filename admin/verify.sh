@@ -193,7 +193,8 @@ runCases()
 regressionSet()
 {
     local dir=$1; shift
-    local act=$dir/bin/alexandria
+    # A double precision build names it alexandria_d
+    local act=$dir/bin/alexandria$(cacheValue "$dir" ACT_BINARY_SUFFIX)
     # The MPI launcher of that build, which may differ for the GPU build
     mpiexec=$(cacheValue "$dir" MPIEXEC_EXECUTABLE)
     for mode in "$@"; do
@@ -268,7 +269,7 @@ fi
 
 if [ -n "$regression" ]; then
     regressionSet "$build" simd nosimd
-    if [ $gpu -eq 1 ] && [ -x "$gpubuild/bin/alexandria" ]; then
+    if [ $gpu -eq 1 ] && [ -x "$gpubuild/bin/alexandria$(cacheValue "$gpubuild" ACT_BINARY_SUFFIX)" ]; then
         regressionSet "$gpubuild" gpu
     fi
 fi

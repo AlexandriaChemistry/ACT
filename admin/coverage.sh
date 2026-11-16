@@ -92,9 +92,9 @@ for b in "$build"/bin/*-test; do
     objects+=(-object "$b")
 done
 ignore='(src/gromacs|src/external|testutils|/tests/|googletest|_deps|/usr/|python|config\.h)'
-xcrun llvm-cov report "$build/bin/alexandria" "${objects[@]}" -instr-profile="$out/merged.profdata" \
+xcrun llvm-cov report "$build/bin/alexandria$(cacheValue "$build" ACT_BINARY_SUFFIX)" "${objects[@]}" -instr-profile="$out/merged.profdata" \
     -ignore-filename-regex="$ignore" > "$out/report.txt"
-xcrun llvm-cov show "$build/bin/alexandria" "${objects[@]}" -instr-profile="$out/merged.profdata" \
+xcrun llvm-cov show "$build/bin/alexandria$(cacheValue "$build" ACT_BINARY_SUFFIX)" "${objects[@]}" -instr-profile="$out/merged.profdata" \
     -ignore-filename-regex="$ignore" -format=html -output-dir="$out/html" > /dev/null
 
 python3 - "$out/report.txt" > "$out/summary.txt" <<'EOF'

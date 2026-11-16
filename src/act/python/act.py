@@ -3,7 +3,7 @@
 import os, shutil, sys
 from enum import Enum
 from get_csv_rows import *
-from actutils import actdata
+from actutils import actdata, alexandria_program
 
 class Alg(Enum):
     GA     = 1
@@ -123,8 +123,8 @@ class ACT:
                     LogFile:str, options: dict):
         if not os.path.exists(ForceFieldFileIn):
             sys.exit("No force field file %s" % ForceFieldFileIn)
-        cmd = ( "alexandria geometry_ff -ff %s -o %s -mp %s -sel %s -g %s" % 
-                ( ForceFieldFileIn, ForceFieldFileOut,
+        cmd = ( "%s geometry_ff -ff %s -o %s -mp %s -sel %s -g %s" %
+                ( alexandria_program(), ForceFieldFileIn, ForceFieldFileOut,
                   self.molpropfile, self.selectionfile, LogFile ) )
         for opt in options:
             cmd += ( " %s %s " % ( opt, options[opt] ))
@@ -138,8 +138,8 @@ class ACT:
         if not os.path.exists(ForceFieldFileIn):
             sys.exit("No force field file %s" % ForceFieldFileIn)
 
-        cmd = ( "alexandria train_ff -ff %s -o %s -mp %s -sel %s -g %s" %
-                ( ForceFieldFileIn, ForceFieldFileOut,
+        cmd = ( "%s train_ff -ff %s -o %s -mp %s -sel %s -g %s" %
+                ( alexandria_program(), ForceFieldFileIn, ForceFieldFileOut,
                   self.molpropfile,
                   self.selectionfile, LogFile ) )
         if len(self.chargesfile) > 0:

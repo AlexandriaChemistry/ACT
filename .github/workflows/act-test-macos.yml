@@ -40,7 +40,7 @@ jobs:
           export MPICXX=$(which mpicxx)
           export MPICC=$(which mpicc)
           export CXXFLAGS='-std=c++20'
-          cmake -DGMX_DOUBLE=ON -DCMAKE_PREFIX_PATH=${CONDA_PREFIX} -DBUILD_SHARED_LIBS=OFF -DGMX_OPENMP=OFF -DGMX_MPI=ON -DCMAKE_INSTALL_PREFIX=${{ github.workspace }}/../tools -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_COMPILER=${MPICXX} -DCMAKE_C_COMPILER=${MPICC} ..
+          cmake -DACT_DOUBLE=ON -DCMAKE_PREFIX_PATH=${CONDA_PREFIX} -DBUILD_SHARED_LIBS=OFF -DACT_OPENMP=OFF -DACT_MPI=ON -DCMAKE_INSTALL_PREFIX=${{ github.workspace }}/../tools -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_COMPILER=${MPICXX} -DCMAKE_C_COMPILER=${MPICC} ..
           make -j 4 install tests
       - name: Test the ACT
         shell: bash -el {0}
@@ -96,4 +96,4 @@ jobs:
         run: |
           source ${{ github.workspace }}/../tools/bin/ACTRC
           cd ${{ github.workspace }}/src/act/python/tests
-          ACT_REQUIRE_OPENMM=1 ACT_ALEXANDRIA=${{ github.workspace }}/build/bin/alexandria python -m unittest -v test_act_openmm
+          ACT_REQUIRE_OPENMM=1 ACT_ALEXANDRIA=${{ github.workspace }}/build/bin/alexandria_d python -m unittest -v test_act_openmm

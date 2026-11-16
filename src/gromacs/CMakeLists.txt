@@ -100,7 +100,7 @@ target_link_libraries(libactgromacs
                       ${GMX_PUBLIC_LIBRARIES}
                       )
 set_target_properties(libactgromacs PROPERTIES
-                      OUTPUT_NAME "actgromacs${GMX_LIBS_SUFFIX}"
+                      OUTPUT_NAME "actgromacs${ACT_LIBS_SUFFIX}"
                       SOVERSION ${LIBRARY_SOVERSION_MAJOR}
                       VERSION ${LIBRARY_VERSION}
                       COMPILE_FLAGS "${OpenMP_C_FLAGS}")

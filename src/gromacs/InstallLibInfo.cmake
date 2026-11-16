@@ -52,7 +52,7 @@ function (do_pkgconfig)
                    libactgromacs.pc @ONLY)
     install(FILES ${CMAKE_CURRENT_BINARY_DIR}/libactgromacs.pc
             DESTINATION ${GMX_INSTALL_PKGCONFIGDIR}
-            RENAME "libactgromacs${GMX_LIBS_SUFFIX}.pc"
+            RENAME "libactgromacs${ACT_LIBS_SUFFIX}.pc"
             COMPONENT development)
 endfunction()
 
@@ -60,7 +60,7 @@ function (do_cmake_config)
     # Install everything into a subdirectory, because
     #  1. CMake expects things to be there for CMAKE_PREFIX_PATH to work, and
     #  2. This nicely isolates files for different suffixes from each other.
-    set(GMX_INSTALL_CMAKEPKGDIR ${GMX_INSTALL_CMAKEDIR}/gromacs${GMX_LIBS_SUFFIX})
+    set(GMX_INSTALL_CMAKEPKGDIR ${GMX_INSTALL_CMAKEDIR}/gromacs${ACT_LIBS_SUFFIX})
 
     # Install import definitions that take care of the library locations and
     # library dependencies.
@@ -84,11 +84,11 @@ function (do_cmake_config)
     # specifying CONFIGS.
     install(FILES ${CMAKE_CURRENT_BINARY_DIR}/actgromacs-config.cmake
             DESTINATION ${GMX_INSTALL_CMAKEPKGDIR}
-            RENAME "actgromacs${GMX_LIBS_SUFFIX}-config.cmake"
+            RENAME "actgromacs${ACT_LIBS_SUFFIX}-config.cmake"
             COMPONENT development)
     install(FILES ${CMAKE_CURRENT_BINARY_DIR}/actgromacs-config-version.cmake
             DESTINATION ${GMX_INSTALL_CMAKEPKGDIR}
-            RENAME "actgromacs${GMX_LIBS_SUFFIX}-config-version.cmake"
+            RENAME "actgromacs${ACT_LIBS_SUFFIX}-config-version.cmake"
             COMPONENT development)
 endfunction()
 

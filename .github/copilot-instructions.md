@@ -51,11 +51,11 @@ mkdir build && cd build
 export MPICXX=/usr/bin/g++
 export MPICC=/usr/bin/gcc
 export CXXFLAGS='-std=c++20'
-cmake -DGMX_DOUBLE=ON \
+cmake -DACT_DOUBLE=ON \
       -DCMAKE_PREFIX_PATH=/path/to/conda/env \
       -DBUILD_SHARED_LIBS=OFF \
-      -DGMX_OPENMP=OFF \
-      -DGMX_MPI=ON \
+      -DACT_OPENMP=OFF \
+      -DACT_MPI=ON \
       -DCMAKE_INSTALL_PREFIX=../tools \
       -DCMAKE_BUILD_TYPE=Release \
       -DCMAKE_CXX_COMPILER=${MPICXX} \
@@ -68,7 +68,7 @@ make -j4 install tests
 
 | Option | Typical value | Purpose |
 |---|---|---|
-| `ACT_DOUBLE` | `ON` | Use double precision (required for accuracy) |
+| `ACT_DOUBLE` | `OFF` (default) | Double precision; its programs and libraries get the suffix `_d` (`alexandria_d`) |
 | `ACT_MPI` | `ON` | Enable MPI parallelism |
 | `ACT_OPENMP` | `OFF` | OpenMP (usually off) |
 | `BUILD_SHARED_LIBS` | `OFF` | Static linking |
@@ -247,7 +247,7 @@ Both: checkout → conda (RDKit, Boost, Eigen) → cmake build → `make install
 ## Common Pitfalls
 
 1. **`actpre.h` must be first** in every `.cpp`. Omitting it causes cryptic include-order errors.
-2. **Double precision** (`ACT_DOUBLE=ON`) is required. Single-precision builds are not supported.
+2. **Precision**: single precision is the default and is needed for the GPU; the tests pass in both. A double precision build (`ACT_DOUBLE=ON`) names its program `bin/alexandria_d`.
 3. **MPI is required** (`ACT_MPI=ON`). Serial builds are not tested.
 4. **Forces vector sizing**: `ForceComputer::compute` does not resize the forces vector; the caller must size it to `topology->atoms().size()` before calling.
 5. **Fragment bond indices** are 0-based within fragments and exclude shell particles. Use `nonFixed_[b.aI()]` for post-build atom positions.

@@ -68,7 +68,7 @@ endif()
 add_executable(alexandria alexandria.cpp)
 
 target_link_libraries(alexandria actLib ${GMX_EXE_LINKER_FLAGS})
-set(BINARY_NAME "alexandria${GMX_BINARY_SUFFIX}")
+set(BINARY_NAME "alexandria${ACT_BINARY_SUFFIX}")
 set_target_properties(alexandria PROPERTIES 
                       OUTPUT_NAME "${BINARY_NAME}")
 
