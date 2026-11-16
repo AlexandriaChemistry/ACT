@@ -255,17 +255,24 @@ void selectGpuOfProcess()
     }
     if (!listed)
     {
-        // The NVIDIA GPUs of the node
-        int n = 0;
+        // The NVIDIA GPUs of the node, or else its AMD GPUs, for instance
+        // with mpirun outside a queue system
+        int         n    = 0;
+        const char *name = "CUDA_VISIBLE_DEVICES";
         while (std::filesystem::exists("/dev/nvidia" + std::to_string(n)))
         {
             n++;
+        }
+        if (n == 0)
+        {
+            n    = amdGpusOfNode();
+            name = "ROCR_VISIBLE_DEVICES";
         }
         if (n > 1)
         {
             std::string id = std::to_string(rank % n);
             chosenGpu()    = id + " of " + std::to_string(n);
-            setenv("CUDA_VISIBLE_DEVICES", id.c_str(), 1);
+            setenv(name, id.c_str(), 1);
         }
     }
 }

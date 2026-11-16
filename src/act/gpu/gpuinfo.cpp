@@ -41,6 +41,7 @@
 #include <filesystem>
 #include <fstream>
 #include <system_error>
+#include <utility>
 
 namespace alexandria
 {
@@ -120,13 +121,50 @@ static int numberInEnvironment(const char *name)
     return value && std::isdigit(static_cast<unsigned char>(*value)) ? std::atoi(value) : 0;
 }
 
+int amdGpusOfNode(const std::string &topology)
+{
+    int             gpus = 0;
+    std::error_code error;
+    for (const auto &node : std::filesystem::directory_iterator(topology, error))
+    {
+        std::ifstream file(node.path() / "gpu_id");
+        long          id = 0;
+        if (file >> id && id != 0)
+        {
+            gpus++;
+        }
+    }
+    return gpus;
+}
+
+//! The processes and GPUs of this node, see setNodeLayout
+static std::pair<int, int> &nodeLayout()
+{
+    static std::pair<int, int> layout = { 0, 0 };
+    return layout;
+}
+
+void setNodeLayout(int processes, int gpus)
+{
+    nodeLayout() = { processes, gpus };
+}
+
 OutOfMemoryFacts outOfMemoryFacts(const std::string &device)
 {
     OutOfMemoryFacts facts;
+    if (nodeLayout().first > 0)
+    {
+        facts.nodeProcesses = nodeLayout().first;
+        facts.nodeGpus      = nodeLayout().second;
+    }
     // Those of the MPI libraries first, as in localRank
     for (const char *name : { "OMPI_COMM_WORLD_LOCAL_SIZE", "MPI_LOCALNRANKS", "PMI_LOCAL_SIZE",
                               "MV2_COMM_WORLD_LOCAL_SIZE", "SLURM_STEP_TASKS_PER_NODE" })
     {
+        if (facts.nodeProcesses > 0)
+        {
+            break;
+        }
         facts.nodeProcesses = numberInEnvironment(name);
         if (facts.nodeProcesses > 0)
         {
@@ -136,7 +174,11 @@ OutOfMemoryFacts outOfMemoryFacts(const std::string &device)
     // selectGpuOfProcess tells "1 of 0,1,2,3" or "1 of 4" if the node has several
     const auto chosen = gpuOfProcess();
     auto of     = chosen.find(" of ");
-    if (of != std::string::npos)
+    if (facts.nodeGpus > 0)
+    {
+        // From setNodeLayout
+    }
+    else if (of != std::string::npos)
     {
         auto list = chosen.substr(of + 4);
         facts.nodeGpus = list.find(',') != std::string::npos
@@ -164,6 +206,10 @@ OutOfMemoryFacts outOfMemoryFacts(const std::string &device)
             while (std::filesystem::exists("/dev/nvidia" + std::to_string(facts.nodeGpus), error))
             {
                 facts.nodeGpus++;
+            }
+            if (facts.nodeGpus == 0)
+            {
+                facts.nodeGpus = amdGpusOfNode();
             }
         }
     }

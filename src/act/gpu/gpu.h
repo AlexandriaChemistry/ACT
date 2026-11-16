@@ -117,10 +117,27 @@ struct OutOfMemoryFacts
     bool mpsRuns       = false;
 };
 
+/*! \brief The AMD GPUs of this node, as the ROCm runtime finds them
+ * Each GPU, or GCD of a GPU with several, is a node of the topology of the
+ * kernel driver with a gpu_id other than 0; the processors are nodes with 0.
+ * \param[in] topology The directory of the nodes of the topology
+ * \return the number of GPUs, 0 without the driver
+ */
+int amdGpusOfNode(const std::string &topology = "/sys/class/kfd/kfd/topology/nodes");
+
+/*! \brief Tell the processes and GPUs of this node, as the MPI processes found them
+ * For the message of OutOfMemory, see outOfMemoryFacts, once MPI knows
+ * which processes share a node, for instance with MPI_Comm_split_type.
+ * \param[in] processes The processes on this node
+ * \param[in] gpus      The GPUs that they use
+ */
+void setNodeLayout(int processes, int gpus);
+
 /*! \brief The facts about this node for the message of OutOfMemory
- * The number of processes on the node comes from the environment variables
- * of the MPI libraries and Slurm, that of the GPUs from what
- * selectGpuOfProcess found or from the NVIDIA device files, and the
+ * The numbers of processes and GPUs on the node are those of setNodeLayout,
+ * or before that the number of processes comes from the environment
+ * variables of the MPI libraries and Slurm, that of the GPUs from what
+ * selectGpuOfProcess found or from the NVIDIA or AMD devices, and the
  * multi-process service runs if the process in its file
  * nvidia-cuda-mps-control.pid exists, in CUDA_MPS_PIPE_DIRECTORY or else
  * in /tmp/nvidia-mps.
@@ -195,7 +212,8 @@ std::vector<std::string> explainNoGpu(const NoGpuFacts &facts);
  * If CUDA_VISIBLE_DEVICES, ROCR_VISIBLE_DEVICES or HIP_VISIBLE_DEVICES
  * lists several GPUs, as Slurm sets them, only that of this process is
  * kept, and without such a list on a node with several NVIDIA GPUs,
- * CUDA_VISIBLE_DEVICES is set to it. Otherwise, the GPU runtime makes a
+ * CUDA_VISIBLE_DEVICES is set to it, or on a node with several AMD GPUs,
+ * see amdGpusOfNode, ROCR_VISIBLE_DEVICES. Otherwise, the GPU runtime makes a
  * context on each GPU in each process, and the NVIDIA multi-process
  * service takes only 48 or 60 processes per GPU. Must be called before anything
  * else uses the GPU, at the start of main.
