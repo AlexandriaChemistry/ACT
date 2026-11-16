@@ -66,6 +66,11 @@ std::string gpuOfProcess()
     return "";
 }
 
+std::string gpuId()
+{
+    return "";
+}
+
 int gpuIndex()
 {
     return -1;

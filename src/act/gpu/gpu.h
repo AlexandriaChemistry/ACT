@@ -205,6 +205,14 @@ void selectGpuOfProcess();
 //! \return the GPU of the node that selectGpuOfProcess chose, empty if it did not choose
 std::string gpuOfProcess();
 
+/*! \brief The GPU of the node that this process uses
+ * After selectGpuOfProcess: the GPU that CUDA_VISIBLE_DEVICES, or on a node
+ * with AMD GPUs ROCR_VISIBLE_DEVICES or HIP_VISIBLE_DEVICES, gives the
+ * process, as selectGpuOfProcess chose it or as srun --gpu-bind gave it.
+ * \return the identifier of the GPU on the node, empty if not known
+ */
+std::string gpuId();
+
 /*! \brief The GPU that this process uses
  * The processes on a node are spread over its GPUs: the number of the
  * process on the node, from the environment variables that the MPI

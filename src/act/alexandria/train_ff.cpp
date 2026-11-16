@@ -42,7 +42,10 @@
 #include <cstdio>
 #include <cstdlib>
 
+#include <map>
 #include <random>
+
+#include <unistd.h>
 
 #include "config.h"
 
@@ -150,7 +153,42 @@ void OptACM::check_pargs(MsgHandler *)
     gach_.check_pargs(&msghandler_);
 }
 
-int OptACM::chooseLockstep(const std::vector<t_filenm> &filenames)
+/*! \brief The GPU of each process, numbered from 0 over all nodes
+ * From the name of the node and the GPU that the process uses, see
+ * gpu::gpuId. Called by all processes.
+ * \param[in] comm The communicator of all processes
+ * \return the GPU of each process, in the order of the ranks
+ */
+static std::vector<int> gpuOfRanks(MPI_Comm comm)
+{
+    constexpr int keyLength = 256;
+    char          host[keyLength - 64] = { 0 };
+    gethostname(host, sizeof(host) - 1);
+    const auto        id = gpu::gpuId();
+    std::vector<char> mine(keyLength, 0);
+    std::snprintf(mine.data(), keyLength, "%s|%.60s", host, id.c_str());
+    int size = 1;
+    MPI_Comm_size(comm, &size);
+    std::vector<char> all(static_cast<size_t>(size)*keyLength);
+    MPI_Allgather(mine.data(), keyLength, MPI_CHAR, all.data(), keyLength, MPI_CHAR, comm);
+    std::map<std::string, int> number;
+    std::vector<int>           gpus;
+    for (int r = 0; r < size; r++)
+    {
+        const std::string key(all.data() + static_cast<size_t>(r)*keyLength);
+        auto              it = number.find(key);
+        if (it == number.end())
+        {
+            it = number.insert({ key, static_cast<int>(number.size()) }).first;
+        }
+        gpus.push_back(it->second);
+    }
+    return gpus;
+}
+
+int OptACM::chooseLockstep(const std::vector<t_filenm> &filenames,
+                           const std::vector<int>       &gpuOfRank,
+                           std::vector<char>            *working)
 {
     // Whether the GPU trains the force field, as ForceComputer::gpuCharges
     // finds out later, from the first force field. The master reads it and
@@ -163,18 +201,17 @@ int OptACM::chooseLockstep(const std::vector<t_filenm> &filenames)
         readForceField(opt2fns("-ff", filenames.size(), filenames.data())[0], &pd, &msghandler_);
         if (ForceComputer::gpuTrainable(&pd))
         {
-            const auto facts = gpu::outOfMemoryFacts("");
-            int nodes = 1;
-            if (facts.nodeProcesses > 0)
-            {
-                nodes = (commRec_.size() + facts.nodeProcesses - 1)/facts.nodeProcesses;
-            }
-            gpus = nodes*facts.nodeGpus;
+            // The GPUs that the processes use, on all nodes
+            gpus = 1 + *std::max_element(gpuOfRank.begin(), gpuOfRank.end());
         }
     }
     MPI_Bcast(&gpus, 1, MPI_INT, 0, commRec_.comm_world());
     const auto plan = planLockstep(gach_.popSize(), commRec_.size(), gpus);
     gach_.setLockstep(plan.lockstep);
+    // The processes that work, spread over the GPUs, the same in all
+    // processes since they all know the GPU of each
+    *working = gpus > 0 && plan.idle > 0 ? spreadOverGpus(gpuOfRank, plan.processes)
+                                         : std::vector<char>(gpuOfRank.size(), 1);
     if (commRec_.isMaster())
     {
         std::string text;
@@ -188,6 +225,19 @@ int OptACM::chooseLockstep(const std::vector<t_filenm> &filenames)
             text = gmx::formatString("-lockstep 0: with %d GPU(s), %zu middlemen compute groups of %zu individuals,\n"
                                      "%zu group(s) each per generation.",
                                      gpus, plan.middlemen, plan.lockstep, plan.rounds);
+            if (gpus > 1)
+            {
+                std::vector<int> perGpu(gpus, 0);
+                for (size_t r = 0; r < gpuOfRank.size(); r++)
+                {
+                    perGpu[gpuOfRank[r]] += (*working)[r];
+                }
+                text += "\nWorking processes on each GPU, the master included:";
+                for (auto n : perGpu)
+                {
+                    text += gmx::formatString(" %d", n);
+                }
+            }
             if (plan.idle > 0)
             {
                 text += gmx::formatString("\nWARNING: %zu of the %zu processes will be idle; start %zu processes to use them all.",
@@ -217,14 +267,26 @@ void OptACM::optionsFinished(const std::vector<t_filenm> &filenames)
     mg_.optionsFinished(&msghandler_);
     const int nmiddlemen = gach_.popSize();  // MASTER now makes the work of a middleman too
     msghandler_.writeDebug(gmx::formatString("nmiddlemen = %d", nmiddlemen));
-    // With -lockstep 0 the plan decides how many processes work
-    int nactive = 0;
+    // The GPU of each process, and with -lockstep 0 the plan decides which
+    // processes work
+    const auto        gpuOfRank = gpuOfRanks(commRec_.comm_world());
+    std::vector<char> working(gpuOfRank.size(), 1);
+    int               nactive = 0;
     if (gach_.lockstep() == 0)
     {
-        nactive = chooseLockstep(filenames);
+        nactive = chooseLockstep(filenames, gpuOfRank, &working);
+    }
+    // The working processes that share the GPU of this one, for its share
+    // of the GPU memory
+    const int myRank  = commRec_.rank();
+    int       sharing = 0;
+    for (size_t r = 0; r < gpuOfRank.size(); r++)
+    {
+        sharing += working[r] && gpuOfRank[r] == gpuOfRank[myRank] ? 1 : 0;
     }
     // Update the communication record and do necessary checks.
-    commRec_.init(nmiddlemen, nactive);
+    commRec_.init(nmiddlemen, nactive, working[myRank] ? 1 : 0);
+    commRec_.setGpuSharing(sharing);
     if (commRec_.queue() && gach_.optimizer() == OptimizerAlg::MCMC)
     {
         GMX_THROW(gmx::InvalidInputError(gmx::formatString("The population (%d) is larger than the number of cores/threads (%d), which only the GA and HYBRID optimizers support",

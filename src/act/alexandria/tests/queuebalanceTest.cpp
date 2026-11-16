@@ -32,7 +32,9 @@
  */
 #include "act/alexandria/queuebalance.h"
 
+#include <algorithm>
 #include <array>
+#include <vector>
 
 #include <gtest/gtest.h>
 
@@ -174,6 +176,41 @@ TEST(LockstepPlanTest, NoGpu)
     EXPECT_EQ(0u, plan.idle);
     plan = planLockstep(128, 1, 1);
     EXPECT_EQ(1u, plan.lockstep);
+}
+
+// Test: The working processes are spread over the GPUs, also when the
+// processes were bound to the GPUs in blocks, as with srun
+// --gpu-bind=single:4, and when the local ranks alternate between them
+TEST(LockstepPlanTest, SpreadOverGpus)
+{
+    // 16 processes on 4 GPUs in blocks of 4, 9 of them work
+    std::vector<int> blocks;
+    for (int r = 0; r < 16; r++)
+    {
+        blocks.push_back(r/4);
+    }
+    auto working = spreadOverGpus(blocks, 9);
+    std::array<int, 4> count = { 0, 0, 0, 0 };
+    for (size_t r = 0; r < blocks.size(); r++)
+    {
+        count[blocks[r]] += working[r];
+    }
+    EXPECT_EQ(1, working[0]);
+    EXPECT_EQ((std::array<int, 4>{ 3, 2, 2, 2 }), count);
+    // Ranks on the GPUs in turn, the lowest ones work, as without spreading
+    std::vector<int> alternating;
+    for (int r = 0; r < 16; r++)
+    {
+        alternating.push_back(r % 4);
+    }
+    working = spreadOverGpus(alternating, 9);
+    for (size_t r = 0; r < alternating.size(); r++)
+    {
+        EXPECT_EQ(r < 9 ? 1 : 0, working[r]) << "rank " << r;
+    }
+    // All of them if as many work as there are
+    working = spreadOverGpus(blocks, 16);
+    EXPECT_EQ(16, std::count(working.begin(), working.end(), 1));
 }
 
 } // namespace alexandria

@@ -155,14 +155,14 @@ void CommunicationRecord::print(FILE *fp)
     fprintf(fp, "%s", strToPrint.c_str());
 }
 
-bool CommunicationRecord::leaveIdle(int nactive)
+bool CommunicationRecord::leaveIdle(int nactive, bool active)
 {
     nidle_ += size_ - nactive;
-    idle_   = rank_ >= nactive;
-    MPI_Comm active = MPI_COMM_NULL;
-    check_return("MPI_Comm_split", MPI_Comm_split(mpi_act_world_, idle_ ? 1 : 0, rank_, &active));
+    idle_   = !active;
+    MPI_Comm part = MPI_COMM_NULL;
+    check_return("MPI_Comm_split", MPI_Comm_split(mpi_act_world_, idle_ ? 1 : 0, rank_, &part));
     check_return("MPI_Comm_free", MPI_Comm_free(&mpi_act_world_));
-    mpi_act_world_ = active;
+    mpi_act_world_ = part;
     check_return("MPI_Comm_rank", MPI_Comm_rank(mpi_act_world_, &rank_));
     check_return("MPI_Comm_size", MPI_Comm_size(mpi_act_world_, &size_));
     if (idle_)
@@ -172,7 +172,7 @@ bool CommunicationRecord::leaveIdle(int nactive)
     return idle_;
 }
 
-CommunicationStatus CommunicationRecord::init(int nmiddleman, int nactive)
+CommunicationStatus CommunicationRecord::init(int nmiddleman, int nactive, int active)
 {
     if (initCalled_)
     {
@@ -181,7 +181,7 @@ CommunicationStatus CommunicationRecord::init(int nmiddleman, int nactive)
     nmiddlemen_ = nmiddleman;
     population_ = nmiddleman;
     // The processes beyond those of a plan are idle, see train_ff -lockstep 0
-    if (nactive > 0 && nactive < size_ && leaveIdle(nactive))
+    if (nactive > 0 && nactive < size_ && leaveIdle(nactive, active < 0 ? rank_ < nactive : active != 0))
     {
         return CommunicationStatus::OK;
     }
@@ -217,7 +217,7 @@ CommunicationStatus CommunicationRecord::init(int nmiddleman, int nactive)
                         "or more individuals than cores/threads.\n\n",
                         size_ - nworking, size_, nmiddlemen_, nhelper_per_middleman_ + 1, nmiddlemen_);
             }
-            if (leaveIdle(nworking))
+            if (leaveIdle(nworking, rank_ < nworking))
             {
                 return CommunicationStatus::OK;
             }
