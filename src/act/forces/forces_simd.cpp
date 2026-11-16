@@ -6044,8 +6044,9 @@ bool GpuTrainingSystem::setDeviations(const GpuDeviationSetup &setup)
     }
     im.devReady    = false;
     im.devComputed = false;
+    // Any number of targets, the arrays on the GPU are made for them
     if (!im.system || setup.mols != std::vector<const ACTMol *>(im.mols.begin(), im.mols.end()) ||
-        setup.targets.size() > 8 || gpu::pairEnergyTerms != 3)
+        gpu::pairEnergyTerms != 3)
     {
         return false;
     }
@@ -6097,6 +6098,9 @@ bool GpuTrainingSystem::setDeviations(const GpuDeviationSetup &setup)
                 break;
             case InteractionType::EXCHANGE:
                 t.second.role = gpu::deviationExchangeRole;
+                break;
+            case InteractionType::DISPERSION:
+                t.second.role = gpu::deviationDispersionRole;
                 break;
             case InteractionType::INDUCTION:
                 t.second.role = gpu::deviationInduction;
@@ -6233,6 +6237,7 @@ bool GpuTrainingSystem::setDeviations(const GpuDeviationSetup &setup)
     d.ntarget        = targets.size();
     d.allElecType    = static_cast<int32_t>(InteractionType::ALLELEC);
     d.exchIndType    = static_cast<int32_t>(InteractionType::EXCHIND);
+    d.exchDispType   = static_cast<int32_t>(InteractionType::EXCHDISP);
     d.inductionType  = static_cast<int32_t>(InteractionType::INDUCTION);
     d.weights        = weights.data();
     d.nweight        = weights.size();

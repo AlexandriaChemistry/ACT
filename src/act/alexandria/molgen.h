@@ -82,6 +82,8 @@ enum class eRMS {
     AllElec,
     //! Sum of exchange and induction terms
     ExchInd,
+    //! Sum of exchange and dispersion terms, the van der Waals energy
+    Vdw,
     //! Rest term for SAPT
     DeltaHF,
     //! Mean square force on the atoms

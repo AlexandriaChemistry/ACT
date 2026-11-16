@@ -72,6 +72,7 @@ std::map<eRMS, const char *> ermsNames = {
     { eRMS::Induction,  "Induction"  },
     { eRMS::AllElec,    "AllElec"    },
     { eRMS::ExchInd,    "ExchInd"    },
+    { eRMS::Vdw,        "Vdw"        },
     { eRMS::DeltaHF,    "DeltaHF"    },
     { eRMS::Force2,     "Force2"     },
     { eRMS::Polar,      "Polar"      },
@@ -137,7 +138,9 @@ void MolGen::addOptions(std::vector<t_pargs>          *pargs,
         { "-fc_allelec",    FALSE, etREAL, {targets->find(eRMS::AllElec)->second.weightPtr()},
           "Force constant in the penalty function for the deviation of the sum of all energy components involving electrostatics, that is Coulomb, Induction, InductionCorrection, of the sum of SAPT energy terms Electrostatics and Induction for multimers from the reference." },
         { "-fc_exchind",   FALSE, etREAL, {targets->find(eRMS::ExchInd)->second.weightPtr()},
-          "Force constant in the penalty function for the deviation of the sum of the exchange energy and the components involving induction, that is Exchange, Induction and InductionCorrection, of the sum of SAPT energy terms Electrostatics and Induction for multimers from the reference." },
+          "Force constant in the penalty function for the deviation of the sum of the exchange energy and the components involving induction, that is Exchange, Induction and InductionCorrection, of the sum of SAPT energy terms Exchange and Induction for multimers from the reference." },
+        { "-fc_vdw",   FALSE, etREAL, {targets->find(eRMS::Vdw)->second.weightPtr()},
+          "Force constant in the penalty function for the deviation of the van der Waals energy, the sum of the Exchange and Dispersion components, of the sum of SAPT energy terms Exchange and Dispersion for multimers from the reference. For potentials that describe both with the same parameters, such as Buffered 14-7, Wang-Buckingham or Generalized Buckingham." },
         { "-fc_disp",    FALSE, etREAL, {targets->find(eRMS::Dispersion)->second.weightPtr()},
           "Force constant in the penalty function for the deviation of the dispersion component of the interaction energies of multimers from the reference." },
         { "-fc_exch",    FALSE, etREAL, {targets->find(eRMS::Exchange)->second.weightPtr()},
@@ -803,6 +806,7 @@ static double computeCost(const ACTMol                         *actmol,
             case eRMS::Exchange:
             case eRMS::AllElec:
             case eRMS::ExchInd:
+            case eRMS::Vdw:
                 // All versus all interactions for dimer and monomers separately
                 w += 2*gmx::square(myexp.NAtom());
                 break;

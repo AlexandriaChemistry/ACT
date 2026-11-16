@@ -1848,6 +1848,7 @@ void ACMFitnessComputer::fillDevComputers(MsgHandler *msghandler,
         sii_->target(iMolSelect::Train, eRMS::DeltaHF)->weight() > 0 ||
         sii_->target(iMolSelect::Train, eRMS::AllElec)->weight() > 0 ||
         sii_->target(iMolSelect::Train, eRMS::ExchInd)->weight() > 0 ||
+        sii_->target(iMolSelect::Train, eRMS::Vdw)->weight() > 0 ||
         sii_->target(iMolSelect::Train, eRMS::Force2)->weight() > 0)
     {
         auto T = molgen_->enerBoltzTemp();

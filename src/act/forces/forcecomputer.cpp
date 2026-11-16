@@ -1017,6 +1017,35 @@ static void calcInduction(ConformationEnergies *cener)
     }
 }
 
+/*! \brief Compute the van der Waals energy, the dispersion plus the exchange
+ * The exchange includes the van der Waals correction. The terms are added in
+ * the order of their types, as on the GPU.
+ * \param[inout] cener The energies of all conformations
+ */
+static void calcExchDisp(ConformationEnergies *cener)
+{
+    if (!cener->find(InteractionType::DISPERSION).have && !cener->find(InteractionType::EXCHANGE).have)
+    {
+        return;
+    }
+    // Added first, which may move the data of the others
+    auto       exchDisp   = cener->add(InteractionType::EXCHDISP);
+    const auto dispersion = cener->find(InteractionType::DISPERSION);
+    const auto exchange   = cener->find(InteractionType::EXCHANGE);
+    for(size_t c = 0; c < cener->nconf(); c++)
+    {
+        double sum = 0;
+        for(const auto &t : { dispersion, exchange })
+        {
+            if (t.has(c))
+            {
+                sum += t.act[c];
+            }
+        }
+        exchDisp.set(c, sum);
+    }
+}
+
 /*! \brief Take the induction correction of a potential into account
  * A potential for the INDUCTIONCORRECTION, e.g. MACDANIEL_SCHMIDT, is part
  * of all electrostatics and of exchange plus induction, as in
@@ -1690,6 +1719,7 @@ static void postProcessRelaxedEnergies(const std::vector<ACTMol *>            &a
                 subtractMonomers(dimer, monomers);
             }
             calcInduction(dimer);
+            calcExchDisp(dimer);
             // The induction correction from a potential, before the
             // induction correction from the shells is added
             auto correction = potentialCorrection(dimer);
@@ -1725,6 +1755,7 @@ static void postProcessRelaxedEnergies(const std::vector<ACTMol *>            &a
         for(size_t i = 0; i < tops.size() && !inter; i++)
         {
             calcInduction(monomers[i]);
+            calcExchDisp(monomers[i]);
             const auto correction = potentialCorrection(monomers[i]);
             if (!correction.empty())
             {
@@ -2719,6 +2750,13 @@ void ForceComputer::computeTotal(MsgHandler                                     
                               sum({ InteractionType::EXCHANGE,
                                     InteractionType::INDUCTION,
                                     InteractionType::INDUCTIONCORRECTION }));
+        if (emap.count(InteractionType::DISPERSION) > 0 || emap.count(InteractionType::EXCHANGE) > 0)
+        {
+            // The van der Waals energy, as calcExchDisp
+            emap.insert_or_assign(InteractionType::EXCHDISP,
+                                  sum({ InteractionType::DISPERSION,
+                                        InteractionType::EXCHANGE }));
+        }
         energies->push_back(emap);
     }
     // Spread forces to atoms, unless the energy calculations did

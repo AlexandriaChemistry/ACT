@@ -2,7 +2,7 @@
 <?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
 <ReferenceData>
   <Sequence Name="Legends">
-    <Int Name="Length">14</Int>
+    <Int Name="Length">15</Int>
     <String>BONDS</String>
     <String>ANGLES</String>
     <String>PROPER_DIHEDRALS</String>
@@ -13,6 +13,7 @@
     <String>INDUCTION</String>
     <String>ALLELEC</String>
     <String>EXCHIND</String>
+    <String>EXCHDISP</String>
     <String>EPOT</String>
     <String>EKIN</String>
     <String>ETOT</String>
@@ -160,6 +161,19 @@
     <Real>0.98129</Real>
     <Real>0.95745000000000002</Real>
     <Real>0.91757999999999995</Real>
+  </Sequence>
+  <Sequence Name="EXCHDISP">
+    <Int Name="Length">10</Int>
+    <Real>-1.7364900000000001</Real>
+    <Real>-1.7634399999999999</Real>
+    <Real>-1.7968200000000001</Real>
+    <Real>-1.8319799999999999</Real>
+    <Real>-1.86711</Real>
+    <Real>-1.90269</Real>
+    <Real>-1.9381999999999999</Real>
+    <Real>-1.9706600000000001</Real>
+    <Real>-1.99719</Real>
+    <Real>-2.0185200000000001</Real>
   </Sequence>
   <Sequence Name="EPOT">
     <Int Name="Length">10</Int>

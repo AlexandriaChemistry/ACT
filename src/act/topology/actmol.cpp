@@ -455,7 +455,9 @@ void ACTMol::forceEnergyMaps(MsgHandler                                         
                                           MolPropObservable::INDUCTIONCORRECTION } },
             { InteractionType::EXCHIND,  { MolPropObservable::EXCHANGE,
                                            MolPropObservable::INDUCTION,
-                                           MolPropObservable::INDUCTIONCORRECTION } }
+                                           MolPropObservable::INDUCTIONCORRECTION } },
+            { InteractionType::EXCHDISP, { MolPropObservable::EXCHANGE,
+                                           MolPropObservable::DISPERSION } }
         };
         if (!separateInductionCorrection)
         {

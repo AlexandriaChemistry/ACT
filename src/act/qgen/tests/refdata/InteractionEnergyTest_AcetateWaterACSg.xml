@@ -26,5 +26,6 @@
   <Real Name="COULOMB">-33.090228944332623</Real>
   <Real Name="ALLELEC">-33.090228944332623</Real>
   <Real Name="EXCHIND">0.50344989500050497</Real>
+  <Real Name="EXCHDISP">-2.9052812920022459</Real>
   <Real Name="EPOT">-35.995510236334837</Real>
 </ReferenceData>

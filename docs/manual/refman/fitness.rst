@@ -89,6 +89,12 @@ Table :ref:`tab-fitness` lists the supported observables and the corresponding c
    +--------------+------------------------------------------------------------+
    | -fc_exchind  | Sum of exchange and induction components.                  |
    +--------------+------------------------------------------------------------+
+   | -fc_vdw      | Sum of exchange and dispersion components, the van der     |
+   |              | Waals energy, for potentials that describe both with the   |
+   |              | same parameters, such as Buffered 14-7, Wang-Buckingham    |
+   |              | and Generalized Buckingham. Only conformations with both   |
+   |              | SAPT terms are used.                                       |
+   +--------------+------------------------------------------------------------+
    | -fc_deltahf  | The :math:`\Delta` HF part of the induction can be trained |
    |              | independently of the induction component. If this is used, |
    |              | this part should be subtracted from the induction to       |

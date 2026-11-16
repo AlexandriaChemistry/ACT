@@ -3322,6 +3322,7 @@ void computeDeviations(System *sys, const char *use, double *dimerSums, double *
     uint64_t    ndc     = sys->devNDimerConf_, nmc = sys->devNMonoConf_;
     int         lf      = d.lossFunction;
     int32_t     allElecType = d.allElecType, exchIndType = d.exchIndType, inductionType = d.inductionType;
+    int32_t     exchDispType = d.exchDispType;
     // The weight and loss of each target of each conformation of each dimer,
     // with the energies made as compactInteraction makes them
     if (ndc > 0 && ntarget > 0)
@@ -3395,7 +3396,7 @@ void computeDeviations(System *sys, const char *use, double *dimerSums, double *
             }
             // calcInduction
             bool   haveInduction = false;
-            double eInduction    = 0, eAllElec = 0, eExchInd = 0;
+            double eInduction    = 0, eAllElec = 0, eExchInd = 0, eExchDisp = 0;
             for (uint32_t i = 0; i < nt; i++)
             {
                 uint32_t role = dT[t0 + i].role;
@@ -3409,9 +3410,17 @@ void computeDeviations(System *sys, const char *use, double *dimerSums, double *
                     }
                     eAllElec += act[i];
                 }
-                else if (role & deviationExchangeRole)
+                else
                 {
-                    eExchInd += act[i];
+                    if (role & deviationExchangeRole)
+                    {
+                        eExchInd += act[i];
+                    }
+                    // The van der Waals energy, in the order of the types
+                    if (role & (deviationExchangeRole | deviationDispersionRole))
+                    {
+                        eExchDisp += act[i];
+                    }
                 }
             }
             double induction      = indEntry >= 0 ? act[indEntry] : 0.0;
@@ -3450,6 +3459,11 @@ void computeDeviations(System *sys, const char *use, double *dimerSums, double *
                 else if (tt == exchIndType)
                 {
                     v    = eExchInd;
+                    have = true;
+                }
+                else if (tt == exchDispType)
+                {
+                    v    = eExchDisp;
                     have = true;
                 }
                 else if (tt == inductionType)

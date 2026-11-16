@@ -1,0 +1,34 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Sequence Name="water#1-butanol-charge">
+    <Int Name="Length">19</Int>
+    <Real>-0.31255035377471163</Real>
+    <Real>0.15627517688735582</Real>
+    <Real>0.15627517688735582</Real>
+    <Real>0</Real>
+    <Real>-0.33514702213054348</Real>
+    <Real>0.1185012199236974</Real>
+    <Real>0.1185012199236974</Real>
+    <Real>0.1185012199236974</Real>
+    <Real>-0.27396916120731118</Real>
+    <Real>0.13245527781102273</Real>
+    <Real>0.13243898541284935</Real>
+    <Real>-0.26232836545927729</Real>
+    <Real>0.14473368803046094</Real>
+    <Real>0.14474551597435717</Real>
+    <Real>-0.25839796547436911</Real>
+    <Real>0.14273305487636834</Real>
+    <Real>0.14272314289755297</Real>
+    <Real>-0.23304788453813979</Real>
+    <Real>0.16755707403593706</Real>
+  </Sequence>
+  <Real Name="water#1-butanol-Interaction-weight">4</Real>
+  <Real Name="water#1-butanol-Interaction-chi2">322.20092680145609</Real>
+  <Real Name="water#1-butanol-Exchange-weight">4</Real>
+  <Real Name="water#1-butanol-Exchange-chi2">25.098803988985505</Real>
+  <Real Name="water#1-butanol-Dispersion-weight">4</Real>
+  <Real Name="water#1-butanol-Dispersion-chi2">627.1706833439016</Real>
+  <Real Name="water#1-butanol-Vdw-weight">4</Real>
+  <Real Name="water#1-butanol-Vdw-chi2">469.35189374318736</Real>
+</ReferenceData>

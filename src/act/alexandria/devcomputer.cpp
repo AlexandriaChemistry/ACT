@@ -547,6 +547,9 @@ static bool qmReference(const ACTEnergyMap &eMap,
     case InteractionType::EXCHIND:
         terms = { InteractionType::EXCHANGE, InteractionType::INDUCTION, itICorr };
         break;
+    case InteractionType::EXCHDISP:
+        terms = { InteractionType::EXCHANGE, InteractionType::DISPERSION };
+        break;
     case InteractionType::INDUCTION:
         if (sepIndCorr)
         {
@@ -756,7 +759,7 @@ ForceEnergyDevComputer::EnergyTask ForceEnergyDevComputer::energyTask(const std:
     task.forces       = (tf != targets.end() && tf->second.weight() > 0);
     bool       doInter = false;
     for (auto rms : { eRMS::Interaction, eRMS::Electrostatics, eRMS::Dispersion, eRMS::Exchange,
-                      eRMS::Induction, eRMS::DeltaHF, eRMS::ExchInd, eRMS::AllElec })
+                      eRMS::Induction, eRMS::DeltaHF, eRMS::ExchInd, eRMS::AllElec, eRMS::Vdw })
     {
         const auto t = targets.find(rms);
         doInter = doInter || (t != targets.end() && t->second.weight() > 0);
@@ -794,7 +797,8 @@ void ForceEnergyDevComputer::calcDeviation(MsgHandler                     *msgha
         { eRMS::Induction,      InteractionType::INDUCTION           },
         { eRMS::DeltaHF,        InteractionType::INDUCTIONCORRECTION },
         { eRMS::ExchInd,        InteractionType::EXCHIND             },
-        { eRMS::AllElec,        InteractionType::ALLELEC             }
+        { eRMS::AllElec,        InteractionType::ALLELEC             },
+        { eRMS::Vdw,            InteractionType::EXCHDISP            }
     };
     // Remove the terms without a target or with zero weight
     rmsE.erase(std::remove_if(rmsE.begin(), rmsE.end(),
@@ -1083,8 +1087,26 @@ static std::map<InteractionType, CompactTerm> compactInteraction(const std::vect
     {
         inter[InteractionType::INDUCTION] = std::move(induction);
     }
-    inter[InteractionType::ALLELEC] = std::move(allElec);
-    inter[InteractionType::EXCHIND] = std::move(exchInd);
+    // The van der Waals energy: the dispersion plus the exchange, which
+    // includes the van der Waals correction, in the order of the types
+    CompactTerm exchDisp;
+    exchDisp.act.assign(nconf, 0.0);
+    exchDisp.before.assign(nconf, 0.0);
+    exchDisp.have.assign(nconf, 1);
+    for (auto itype : { InteractionType::DISPERSION, InteractionType::EXCHANGE })
+    {
+        const auto t = inter.find(itype);
+        if (t != inter.end())
+        {
+            for (size_t c = 0; c < nconf && c < t->second.act.size(); c++)
+            {
+                exchDisp.act[c] += t->second.act[c];
+            }
+        }
+    }
+    inter[InteractionType::ALLELEC]  = std::move(allElec);
+    inter[InteractionType::EXCHIND]  = std::move(exchInd);
+    inter[InteractionType::EXCHDISP] = std::move(exchDisp);
     return inter;
 }
 
@@ -1118,7 +1140,8 @@ static EnergyTargets energyTargets(const std::map<eRMS, FittingTarget> &targets)
         { eRMS::Induction,      InteractionType::INDUCTION           },
         { eRMS::DeltaHF,        InteractionType::INDUCTIONCORRECTION },
         { eRMS::ExchInd,        InteractionType::EXCHIND             },
-        { eRMS::AllElec,        InteractionType::ALLELEC             }
+        { eRMS::AllElec,        InteractionType::ALLELEC             },
+        { eRMS::Vdw,            InteractionType::EXCHDISP            }
     };
     for (const auto &r : all)
     {
@@ -1260,7 +1283,8 @@ bool ForceEnergyDevComputer::calcDeviationCompact(const ForceComputer           
         { eRMS::Induction,      InteractionType::INDUCTION           },
         { eRMS::DeltaHF,        InteractionType::INDUCTIONCORRECTION },
         { eRMS::ExchInd,        InteractionType::EXCHIND             },
-        { eRMS::AllElec,        InteractionType::ALLELEC             }
+        { eRMS::AllElec,        InteractionType::ALLELEC             },
+        { eRMS::Vdw,            InteractionType::EXCHDISP            }
     };
     rmsE.erase(std::remove_if(rmsE.begin(), rmsE.end(),
                               [targets](const RmsInter &r)
