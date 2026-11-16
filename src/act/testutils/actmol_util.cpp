@@ -37,7 +37,7 @@
 #include "actmol_util.h"
 #include "act/import/import.h"
 #include "act/basics/msg_handler.h"
-#include "act/forcefield/forcefield_utils.h"
+#include "act/testutils/forcefield_utils.h"
 #include "act/topology/actmol.h"
 
 namespace alexandria
