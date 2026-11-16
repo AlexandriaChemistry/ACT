@@ -1153,7 +1153,9 @@ enum DeviationRole : uint32_t
     //! An induction from a potential
     deviationInduction           = 4,
     //! An induction correction from a potential
-    deviationInductionCorrection = 8
+    deviationInductionCorrection = 8,
+    //! The dispersion
+    deviationDispersionRole      = 16
 };
 
 //! An energy type of a block, see DeviationSystem
@@ -1230,6 +1232,7 @@ struct DeviationSystem
     //! The interaction types of the sums and of the induction
     int32_t                 allElecType    = 0;
     int32_t                 exchIndType    = 0;
+    int32_t                 exchDispType   = 0;
     int32_t                 inductionType  = 0;
     //! The weight of each reference conformation
     const double           *weights        = nullptr;

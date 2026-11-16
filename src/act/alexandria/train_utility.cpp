@@ -291,6 +291,7 @@ TrainForceFieldPrinter::TrainForceFieldPrinter()
                InteractionType::DISPERSION,
                InteractionType::EXCHANGE,
                InteractionType::EXCHIND,
+               InteractionType::EXCHDISP,
                InteractionType::ALLELEC };
 }
 
@@ -1100,7 +1101,8 @@ void TrainForceFieldPrinter::printEnergyForces(MsgHandler                       
         { eRMS::Induction,      InteractionType::INDUCTION           },
         { eRMS::DeltaHF,        InteractionType::INDUCTIONCORRECTION },
         { eRMS::ExchInd,        InteractionType::EXCHIND             },
-        { eRMS::AllElec,        InteractionType::ALLELEC             }
+        { eRMS::AllElec,        InteractionType::ALLELEC             },
+        { eRMS::Vdw,            InteractionType::EXCHDISP            }
     };
     for(const auto &iem : interactionEnergyMap)
     {

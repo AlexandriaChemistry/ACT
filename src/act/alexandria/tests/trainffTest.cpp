@@ -457,6 +457,24 @@ TEST_F(TrainFFTest, InteractionComponents)
     EXPECT_LT(output.finalChi2, output.initialChi2);
 }
 
+// Test: The van der Waals energy, exchange plus dispersion, is a training
+// target, for a Buffered 14-7 potential that describes both together
+TEST_F(TrainFFTest, VdwComponent)
+{
+    const auto ffFile = fileManager().getInputFilePath("forcefields/ACS-v3fds.xml");
+    const auto output = trainfftest::runTrainFF(&fileManager(), "vdw", "", "",
+                                                combine(mcmcOptions(5),
+                                                        { { "-fit", "sigma epsilon" }, { "-fc_vdw", "1" } }),
+                                                fileManager().getInputFilePath("molprop/water-butanol.xml"),
+                                                trainSelection(&fileManager(), "vdw", { "water#1-butanol" }),
+                                                ffFile);
+    ASSERT_EQ(0, output.status);
+    EXPECT_TRUE(hasInitialComponent(output, "Vdw"));
+    EXPECT_LT(0u, trainedParameters(output).size());
+    ASSERT_GT(output.initialChi2, 0);
+    EXPECT_LT(output.finalChi2, output.initialChi2);
+}
+
 // Test: With another loss function the chi squared of the same parameters
 // differs, and training works with each of them
 TEST_F(TrainFFTest, LossFunctions)

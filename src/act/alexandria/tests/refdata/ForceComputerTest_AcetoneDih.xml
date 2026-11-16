@@ -11,6 +11,7 @@
   <Real Name="INDUCTION_act">0</Real>
   <Real Name="ALLELEC_act">-67.26863130811337</Real>
   <Real Name="EXCHIND_act">8226.6930751936598</Real>
+  <Real Name="EXCHDISP_act">8201.9539276623491</Real>
   <Real Name="EPOT_act">8153.6567677531539</Real>
   <Real Name="o2-1_act fX">0.041542982744972701</Real>
   <Real Name="o2-1_act fY">98971.215150223623</Real>

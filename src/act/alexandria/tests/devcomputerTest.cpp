@@ -331,6 +331,63 @@ protected:
      * \param[in] sepIndCorr Whether to separate the induction correction
      * \return The number of energies with a non-zero induction correction
      */
+    /*! \brief Check that the van der Waals energy is the exchange plus the dispersion
+     * For the reference data and for ACT, in each conformation of each dimer.
+     * \param[in] mpFile The molecules
+     * \param[in] ffName The force field
+     * \return the number of conformations with reference data for the sum
+     */
+    int checkExchDisp(const std::string &mpFile, const std::string &ffName)
+    {
+        const ForceComputer forceComputer;
+        MsgHandler    msghandler;
+        auto          pd = getForceField(ffName);
+        std::vector<alexandria::MolProp> mps;
+        MolPropRead(&msghandler, mpFile.c_str(), &mps);
+        int nsum = 0;
+        for(auto &mp : mps)
+        {
+            ACTMol actmol;
+            actmol.Merge(&mp);
+            actmol.GenerateTopology(&msghandler, pd, missingParameters::Ignore);
+            EXPECT_TRUE(msghandler.ok());
+            std::vector<gmx::RVec> forces(actmol.atomsConst().size());
+            std::vector<gmx::RVec> coords = actmol.xOriginal();
+            actmol.generateCharges(&msghandler, pd, &forceComputer,
+                                   pd->chargeGenerationAlgorithm(), &coords, &forces);
+            std::vector<std::vector<std::pair<double, double>>>               forceMap;
+            std::vector<ACTEnergy>                                            energyMap;
+            ACTEnergyMapVector                                                interactionEnergyMap;
+            std::vector<std::pair<double, std::map<InteractionType, double>>> energyComponentMap;
+            actmol.forceEnergyMaps(&msghandler, pd, &forceComputer, &forceMap, &energyMap,
+                                   &interactionEnergyMap, &energyComponentMap, true);
+            for(const auto &iem : interactionEnergyMap)
+            {
+                const auto exch = iem.find(InteractionType::EXCHANGE);
+                const auto disp = iem.find(InteractionType::DISPERSION);
+                const auto sum  = iem.find(InteractionType::EXCHDISP);
+                if (iem.end() == sum)
+                {
+                    ADD_FAILURE() << "No EXCHDISP for " << actmol.getMolname();
+                    continue;
+                }
+                double eact = ((iem.end() != exch ? exch->second.eact() : 0.0) +
+                               (iem.end() != disp ? disp->second.eact() : 0.0));
+                EXPECT_NEAR(eact, sum->second.eact(), 1e-10*std::max(1.0, std::abs(eact))) << actmol.getMolname();
+                bool haveQM = (iem.end() != exch && exch->second.haveQM() &&
+                               iem.end() != disp && disp->second.haveQM());
+                EXPECT_EQ(haveQM, sum->second.haveQM()) << actmol.getMolname();
+                if (haveQM)
+                {
+                    double eqm = exch->second.eqm() + disp->second.eqm();
+                    EXPECT_NEAR(eqm, sum->second.eqm(), 1e-10*std::max(1.0, std::abs(eqm))) << actmol.getMolname();
+                    nsum += 1;
+                }
+            }
+        }
+        return nsum;
+    }
+
     int checkInductionQM(const std::string &mpFile, bool sepIndCorr)
     {
         const ForceComputer forceComputer;
@@ -882,6 +939,28 @@ TEST_F(ForceEnergyDevComputerTest, CalcDevDimerExchIndAllElecInductionCorrection
     opts.weights = unitWeights({ eRMS::Interaction, eRMS::ExchInd, eRMS::AllElec,
                                  eRMS::Induction, eRMS::DeltaHF });
     testCalcDev(deltaHFFile(), "ACS-pol", opts);
+}
+
+// Test: The van der Waals energy is the exchange plus the dispersion, for the
+// reference and for ACT, with a Buffered 14-7 potential
+TEST_F(ForceEnergyDevComputerTest, ExchDispIsSum14_7)
+{
+    EXPECT_EQ(4, checkExchDisp(fileManager().getInputFilePath("molprop/water-butanol.xml"), "ACS-v3fds"));
+}
+
+// Test: The same for dimers with another van der Waals potential
+TEST_F(ForceEnergyDevComputerTest, ExchDispIsSum)
+{
+    EXPECT_LT(0, checkExchDisp(dimerFile(), "ACS-g2"));
+}
+
+// Test: The van der Waals target, the exchange plus the dispersion, with a
+// Buffered 14-7 potential
+TEST_F(ForceEnergyDevComputerTest, CalcDevDimerVdw14_7)
+{
+    DevOptions opts;
+    opts.weights = unitWeights({ eRMS::Interaction, eRMS::Exchange, eRMS::Dispersion, eRMS::Vdw });
+    testCalcDev(fileManager().getInputFilePath("molprop/water-butanol.xml"), "ACS-v3fds", opts);
 }
 
 // Test: Mean absolute error loss function
@@ -2477,7 +2556,7 @@ TEST_F(PropertyDevComputerTest, CompactDeviationsAsCalcDeviationGpu)
     ASSERT_TRUE(forceComputer.prepareGpuResident(&pd, pointers(&mols))) << "The GPU cannot compute these molecules";
     const std::vector<eRMS> all = { eRMS::EPOT, eRMS::Interaction, eRMS::Electrostatics,
                                     eRMS::Dispersion, eRMS::Exchange, eRMS::Induction,
-                                    eRMS::DeltaHF, eRMS::ExchInd, eRMS::AllElec };
+                                    eRMS::DeltaHF, eRMS::ExchInd, eRMS::AllElec, eRMS::Vdw };
     for(auto lf : { LossFunction::MSE, LossFunction::MAE, LossFunction::Huber, LossFunction::Asinh })
     {
         for(double T : { 0.0, 300.0 })

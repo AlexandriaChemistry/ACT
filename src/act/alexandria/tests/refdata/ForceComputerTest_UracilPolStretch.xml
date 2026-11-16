@@ -12,6 +12,7 @@
   <Real Name="INDUCTION0.99_act">-10.665394287404165</Real>
   <Real Name="ALLELEC0.99_act">-221.02648008961594</Real>
   <Real Name="EXCHIND0.99_act">166.33226421436621</Real>
+  <Real Name="EXCHDISP0.99_act">166.60512401284052</Real>
   <Real Name="EPOT0.99_act">-4807.6100309354988</Real>
   <Real Name="n2-1_act0.99 fX">584.59657501854815</Real>
   <Real Name="n2-1_act0.99 fY">-4758.2683005740691</Real>
@@ -60,6 +61,7 @@
   <Real Name="INDUCTION1.06_act">-11.260279735179555</Real>
   <Real Name="ALLELEC1.06_act">-215.80560818336733</Real>
   <Real Name="EXCHIND1.06_act">78.473041910581713</Real>
+  <Real Name="EXCHDISP1.06_act">81.220543907940751</Real>
   <Real Name="EPOT1.06_act">-4759.6881431843613</Real>
   <Real Name="n2-1_act1.06 fX">241.45368883860965</Real>
   <Real Name="n2-1_act1.06 fY">-2035.4296206366193</Real>

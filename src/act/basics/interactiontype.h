@@ -75,6 +75,8 @@ enum class InteractionType
     ALLELEC,
     //! Sum of exchange and induction
     EXCHIND,
+    //! Sum of exchange and dispersion, the van der Waals energy
+    EXCHDISP,
     //! Potential energy, sum over the above
     EPOT,
     //! Constrained bonds, that are not allowed to fluctuate.

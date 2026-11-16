@@ -398,6 +398,7 @@ protected:
             // The terms add up to the interaction energy, except those that
             // are sums of other terms.
             const std::set<InteractionType> sums = { InteractionType::ALLELEC, InteractionType::EXCHIND,
+                                               InteractionType::EXCHDISP,
                                                InteractionType::EPOT };
             double esum = 0;
             for(const auto &e : einter[c])

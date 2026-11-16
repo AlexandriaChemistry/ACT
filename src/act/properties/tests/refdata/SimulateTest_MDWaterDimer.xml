@@ -2,7 +2,7 @@
 <?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
 <ReferenceData>
   <Sequence Name="Legends">
-    <Int Name="Length">12</Int>
+    <Int Name="Length">13</Int>
     <String>BONDS</String>
     <String>ANGLES</String>
     <String>DISPERSION</String>
@@ -11,6 +11,7 @@
     <String>INDUCTION</String>
     <String>ALLELEC</String>
     <String>EXCHIND</String>
+    <String>EXCHDISP</String>
     <String>EPOT</String>
     <String>EKIN</String>
     <String>ETOT</String>
@@ -132,6 +133,19 @@
     <Real>0.38572000000000001</Real>
     <Real>0.37720999999999999</Real>
     <Real>0.36913000000000001</Real>
+  </Sequence>
+  <Sequence Name="EXCHDISP">
+    <Int Name="Length">10</Int>
+    <Real>-0.71628999999999998</Real>
+    <Real>-0.71196000000000004</Real>
+    <Real>-0.70757999999999999</Real>
+    <Real>-0.70318999999999998</Real>
+    <Real>-0.69925999999999999</Real>
+    <Real>-0.69606000000000001</Real>
+    <Real>-0.69316999999999995</Real>
+    <Real>-0.69001999999999997</Real>
+    <Real>-0.68659999999999999</Real>
+    <Real>-0.68322000000000005</Real>
   </Sequence>
   <Sequence Name="EPOT">
     <Int Name="Length">10</Int>

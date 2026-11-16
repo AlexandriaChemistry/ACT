@@ -10,6 +10,7 @@
   <Real Name="INDUCTION before">-0.24915680121642922</Real>
   <Real Name="ALLELEC before">-78.491850239793052</Real>
   <Real Name="EXCHIND before">972.02620890046057</Real>
+  <Real Name="EXCHDISP before">969.57348509462543</Real>
   <Real Name="EPOT before">91.09211792710596</Real>
   <Real Name="Coordinate RMSD before minimizing">1.6055975807798596e-17</Real>
   <String Name="algorithm">LBFGS</String>
@@ -23,6 +24,7 @@
   <Real Name="INDUCTION after">-0.3761891519224751</Real>
   <Real Name="ALLELEC after">-76.887375058371802</Real>
   <Real Name="EXCHIND after">103.97034230209297</Real>
+  <Real Name="EXCHDISP after">101.87921177990624</Real>
   <Real Name="EPOT after">-617.10816217174647</Real>
   <Real Name="RMS force">0.0002959564326698335</Real>
   <Sequence Name="Equilibrium force">

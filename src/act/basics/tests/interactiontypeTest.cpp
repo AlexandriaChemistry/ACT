@@ -74,6 +74,7 @@ TEST(InteractionTypeTest, stringToInteractionTypeAllValid)
         InteractionType::CHARGETRANSFER,
         InteractionType::ALLELEC,
         InteractionType::EXCHIND,
+        InteractionType::EXCHDISP,
         InteractionType::EPOT,
         InteractionType::CONSTR,
         InteractionType::VSITE1,
@@ -136,6 +137,7 @@ TEST(InteractionTypeTest, interactionTypeToDescriptionNotEmpty)
         InteractionType::CHARGETRANSFER,
         InteractionType::ALLELEC,
         InteractionType::EXCHIND,
+        InteractionType::EXCHDISP,
         InteractionType::EPOT,
         InteractionType::CONSTR,
         InteractionType::VSITE1,
@@ -209,6 +211,7 @@ TEST(InteractionTypeTest, interactionTypeToNatomsReturnsOne)
     EXPECT_EQ(1, interactionTypeToNatoms(InteractionType::ELECTROSTATICS));
     EXPECT_EQ(1, interactionTypeToNatoms(InteractionType::ALLELEC));
     EXPECT_EQ(1, interactionTypeToNatoms(InteractionType::EXCHIND));
+    EXPECT_EQ(1, interactionTypeToNatoms(InteractionType::EXCHDISP));
     EXPECT_EQ(1, interactionTypeToNatoms(InteractionType::ELECTRONEGATIVITYEQUALIZATION));
 }
 

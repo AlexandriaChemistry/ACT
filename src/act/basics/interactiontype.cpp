@@ -61,6 +61,7 @@ std::map<InteractionType, NameDescr> eitNames = {
     { InteractionType::VDWCORRECTION,      { "VDWCORRECTION", "Correction to van der Waals due to anisotropy" } },
     { InteractionType::CHARGETRANSFER,     { "CHARGETRANSFER", "Charge transfer energy correction" } },
     { InteractionType::EXCHIND,            { "EXCHIND", "Sum over EXCHANGE, INDUCTION and INDUCTIONCORRECTION" } },
+    { InteractionType::EXCHDISP,           { "EXCHDISP", "Sum over EXCHANGE and DISPERSION" } },
     { InteractionType::ALLELEC,            { "ALLELEC", "Sum over COULOMB, POLARIZATION and CHARGE TRANSFER" } },
     { InteractionType::EPOT,               { "EPOT", "Potential energy" } },
     { InteractionType::POLARIZATION,       { "POLARIZATION", "polarization" } },
@@ -154,6 +155,7 @@ int interactionTypeToNatoms(InteractionType iType)
     case InteractionType::ELECTROSTATICS:
     case InteractionType::ALLELEC:
     case InteractionType::EXCHIND:
+    case InteractionType::EXCHDISP:
     case InteractionType::ELECTRONEGATIVITYEQUALIZATION:
         return 1;
     case InteractionType::VSITE1:

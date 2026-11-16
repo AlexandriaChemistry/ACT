@@ -42,5 +42,6 @@
   <Real Name="INDUCTION">-8.5790096645246123</Real>
   <Real Name="ALLELEC">-195.49423788695896</Real>
   <Real Name="EXCHIND">5913.6498284320014</Real>
+  <Real Name="EXCHDISP">5898.7013900218899</Real>
   <Real Name="EPOT">5722.7607413132446</Real>
 </ReferenceData>
