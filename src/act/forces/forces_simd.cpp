@@ -4196,6 +4196,7 @@ void GpuTrainingSystem::resetShells() {}
 void GpuTrainingSystem::resetShellFailures() {}
 void GpuTrainingSystem::keepShells() {}
 bool GpuTrainingSystem::restoreShells(int) { return false; }
+void GpuTrainingSystem::forgetShells() {}
 void GpuTrainingSystem::constructVsites() {}
 void GpuTrainingSystem::setKeepEnergies(bool) {}
 bool GpuTrainingSystem::typeEnergies(const ACTMol *, int, std::vector<GpuTypeEnergies> *) const { return false; }
@@ -6002,6 +6003,11 @@ void GpuTrainingSystem::keepShells()
     {
         gpu::keepShells(im.system, im.mask(-1), false);
     }
+}
+
+void GpuTrainingSystem::forgetShells()
+{
+    impl_->shellsKept = false;
 }
 
 bool GpuTrainingSystem::restoreShells(int what)

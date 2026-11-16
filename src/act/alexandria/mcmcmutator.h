@@ -330,9 +330,11 @@ public:
      * The steps of all genomes are computed at once, see
      * ACMFitnessComputer::calcDeviations. Each mutator draws the same random
      * numbers as mutate, such that the result of each genome is that of
-     * mutate, except for where the relaxation of the shells starts from,
-     * see ForceComputer::setKeepShells. The mutators must not evaluate the
-     * test set.
+     * mutate, except for where the relaxation of the shells starts from:
+     * each genome starts with the shells on their parents and keeps them
+     * between its own steps only, but the steps on the GPU and those of
+     * mutate compute different molecules again, see ForceComputer::setKeepShells.
+     * The mutators must not evaluate the test set.
      * \param[in]    msghandler  The message and status handler
      * \param[in]    mutators    The mutator of each genome, they share the fitness computer
      * \param[inout] genomes     The genomes

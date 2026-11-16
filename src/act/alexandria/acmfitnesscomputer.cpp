@@ -218,9 +218,24 @@ double ACMFitnessComputer::calcDeviation(MsgHandler   *msghandler,
     return finishDeviation(msghandler, &dt);
 }
 
+void ACMFitnessComputer::forgetKeptShells()
+{
+    if (!molgen_ || !forceComp_->keepShells())
+    {
+        return;
+    }
+    std::vector<ACTMol *> allmols;
+    for (auto &mol : *molgen_->actmolsPtr())
+    {
+        allmols.push_back(&mol);
+    }
+    forceComp_->forgetKeptShells(allmols);
+}
+
 std::vector<double> ACMFitnessComputer::calcDeviations(MsgHandler                                     *msghandler,
                                                        const std::vector<const std::vector<double> *> &params,
-                                                       iMolSelect                                      ims)
+                                                       iMolSelect                                      ims,
+                                                       bool                                            newSets)
 {
     std::vector<double> chi2;
     chainsOk_   = false;
@@ -240,14 +255,14 @@ std::vector<double> ACMFitnessComputer::calcDeviations(MsgHandler               
     // More sets than replicas are computed in parts of as many as there
     // are replicas, for instance if fewer fit into the GPU memory than
     // the individuals of a group, see ForceComputer::setGpuMemoryBudget
-    const auto inParts = [this, msghandler, &params, ims](size_t part)
+    const auto inParts = [this, msghandler, &params, ims, newSets](size_t part)
     {
         std::vector<double> all;
         for (size_t start = 0; start < params.size(); start += part)
         {
             const std::vector<const std::vector<double> *> some(params.begin() + start,
                                                                 params.begin() + std::min(params.size(), start + part));
-            const auto chi2 = calcDeviations(msghandler, some, ims);
+            const auto chi2 = calcDeviations(msghandler, some, ims, newSets);
             all.insert(all.end(), chi2.begin(), chi2.end());
         }
         return all;
@@ -259,6 +274,10 @@ std::vector<double> ACMFitnessComputer::calcDeviations(MsgHandler               
     }
     DeviationTask first;
     bool batch = (params.size() > 1 && params.size() <= asked && !parallel);
+    if (newSets)
+    {
+        forgetKeptShells();
+    }
     if (batch)
     {
         useParameters(params[0]);
@@ -342,6 +361,10 @@ std::vector<double> ACMFitnessComputer::calcDeviations(MsgHandler               
     // One set at a time
     for (auto p : params)
     {
+        if (newSets)
+        {
+            forgetKeptShells();
+        }
         distributeTasks(CalcDev::Parameters);
         distributeParameters(msghandler, p, all);
         auto cd = distributeTasks(CalcDev::Compute);

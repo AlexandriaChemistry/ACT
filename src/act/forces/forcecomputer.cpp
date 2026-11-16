@@ -1315,6 +1315,21 @@ static void keepRelaxedShells(const std::vector<ACTMol *> &allmols)
     }
 }
 
+void ForceComputer::forgetKeptShells(const std::vector<ACTMol *> &allmols) const
+{
+    for(int what : { -2, 2 })
+    {
+        forEachConformation(allmols, what, [](ConformationData *cdata, size_t c, const Topology *)
+        {
+            cdata->confs[c].xkept.clear();
+        });
+    }
+    if (gpuSystem_)
+    {
+        gpuSystem_->forgetShells();
+    }
+}
+
 /*! \brief Put back the shells that keepRelaxedShells kept
  * \param[inout] allmols The molecules
  * \param[in]    what    As for forEachConformation

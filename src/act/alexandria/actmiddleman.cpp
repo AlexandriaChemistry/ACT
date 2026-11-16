@@ -196,6 +196,11 @@ void ACTMiddleMan::computeQueueWork(MsgHandler *msghandler)
     }
     auto train = iMolSelect::Train;
     auto test  = iMolSelect::Test;
+    // The individuals may be others than the ones computed before, so with
+    // -shell_keep the relaxation of each starts from the shells on their
+    // parents, and keeps the shells only between the steps of its own chain.
+    // Then its chi2 does not depend on which individuals the middleman
+    // computed before.
     switch (mode)
     {
     case TrainFFMiddlemanMode::STATISTICS:
@@ -206,7 +211,7 @@ void ACTMiddleMan::computeQueueWork(MsgHandler *msghandler)
         break;
     case TrainFFMiddlemanMode::FITNESS:
         {
-            auto chi2 = fitComp_.calcDeviations(msghandler, params, train);
+            auto chi2 = fitComp_.calcDeviations(msghandler, params, train, true);
             for (int i = 0; i < n; i++)
             {
                 cr->send(master, chi2[i]);
@@ -215,7 +220,7 @@ void ACTMiddleMan::computeQueueWork(MsgHandler *msghandler)
         break;
     case TrainFFMiddlemanMode::INITIAL:
         {
-            auto chi2 = fitComp_.calcDeviations(msghandler, params, train);
+            auto chi2 = fitComp_.calcDeviations(msghandler, params, train, true);
             for (int i = 0; i < n; i++)
             {
                 genomes[i].setFitness(train, chi2[i]);
@@ -262,6 +267,7 @@ void ACTMiddleMan::computeQueueWork(MsgHandler *msghandler)
                     const std::vector<MCMCMutator *> m(mutators.begin() + start, mutators.begin() + end);
                     const std::vector<ga::Genome *> g(gptr.begin() + start, gptr.begin() + end);
                     const std::vector<ga::Genome *> b(bptr.begin() + start, bptr.begin() + end);
+                    fitComp_.forgetKeptShells();
                     MCMCMutator::mutateLockstep(msghandler, m, g, b);
                 }
                 for (int i = 0; i < n; i++)
@@ -273,6 +279,7 @@ void ACTMiddleMan::computeQueueWork(MsgHandler *msghandler)
             {
                 for (int i = 0; i < n; i++)
                 {
+                    fitComp_.forgetKeptShells();
                     mutator_->reseed(seeds[i]);
                     mutator_->setGeneration(generation);
                     mutator_->mutate(msghandler, &genomes[i], &best[i], gach_->prMut());

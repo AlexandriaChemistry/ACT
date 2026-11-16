@@ -863,6 +863,14 @@ private:
     //! \return whether the relaxation starts from the shells of the previous one
     bool keepShells() const { return keepShells_; }
 
+    /*! \brief Forget the shells kept by the previous evaluations, see setKeepShells
+     * The next relaxation of the molecules starts with the shells on their
+     * parents, on the processor and on the GPU, for instance for another
+     * individual than the one computed before.
+     * \param[inout] allmols The molecules
+     */
+    void forgetKeptShells(const std::vector<ACTMol *> &allmols) const;
+
     /*! \brief Plot the potential functions
      * This plots the potential functions corresponding to
      * InteractionType.
