@@ -1778,9 +1778,10 @@ void ForceComputer::fitGpuReplicas(const ForceField *pd, const std::vector<ACTMo
     if (gpuReplicas_ < wanted)
     {
         fprintf(stderr, "Note: the GPU memory of this process, %.0f MB, holds %zu of the %zu individuals of a group\n"
-                "at once (%.0f MB for the first, %.0f MB for each other), so the group is computed in parts.\n"
+                "at once (%.0f MB for the first, %.0f MB for each other), so the group is computed in smaller sets\n"
+                "of at most %zu, one after another.\n"
                 "Fewer processes per GPU, or a smaller -lockstep, avoid that.\n",
-                gpuMemoryBudget_/1e6, gpuReplicas_, wanted, one/1e6, per/1e6);
+                gpuMemoryBudget_/1e6, gpuReplicas_, wanted, one/1e6, per/1e6, gpuReplicas_);
     }
 }
 
