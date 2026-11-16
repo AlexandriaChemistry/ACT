@@ -43,7 +43,7 @@
 #include "act/alexandria/molhandler.h"
 #include "act/basics/msg_handler.h"
 #include "act/forcefield/forcefield.h"
-#include "act/forcefield/forcefield_utils.h"
+#include "act/testutils/forcefield_utils.h"
 #include "act/forcefield/forcefield_xml.h"
 #include "act/properties/thermochemistry.h"
 #include "act/qgen/qgen_acm.h"

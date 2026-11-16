@@ -38,7 +38,7 @@
 #include <gtest/gtest.h>
 
 #include "act/forcefield/forcefield.h"
-#include "act/forcefield/forcefield_utils.h"
+#include "act/testutils/forcefield_utils.h"
 #include "act/import/import.h"
 #include "act/import/import_utils.h"
 

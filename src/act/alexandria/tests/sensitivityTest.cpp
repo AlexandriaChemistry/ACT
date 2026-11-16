@@ -44,7 +44,7 @@
 #include <nlohmann/json.hpp>
 
 #include "act/alexandria/sensitivity.h"
-#include "act/forcefield/forcefield_utils.h"
+#include "act/testutils/forcefield_utils.h"
 
 
 namespace alexandria

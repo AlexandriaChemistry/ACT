@@ -49,7 +49,7 @@
 #include "act/basics/interactiontype.h"
 #include "act/basics/msg_handler.h"
 #include "act/forcefield/forcefield_parametername.h"
-#include "act/forcefield/forcefield_utils.h"
+#include "act/testutils/forcefield_utils.h"
 #include "act/forcefield/potential.h"
 #include "act/import/import.h"
 #include "act/topology/actmol.h"

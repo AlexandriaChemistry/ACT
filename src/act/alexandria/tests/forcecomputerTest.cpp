@@ -46,9 +46,9 @@
 #include <gtest/gtest.h>
 
 #include "act/import/import.h"
-#include "act/forcefield/forcefield_utils.h"
+#include "act/testutils/forcefield_utils.h"
 #include "act/topology/actmol.h"
-#include "act/topology/actmol_util.h"
+#include "act/testutils/actmol_util.h"
 
 #include "testutils/refdata.h"
 #include "testutils/testasserts.h"

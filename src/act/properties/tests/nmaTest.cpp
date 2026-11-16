@@ -40,7 +40,7 @@
 #include "act/alexandria/alex_modules.h"
 #include "act/basics/atomization_energy.h"
 #include "act/basics/msg_handler.h"
-#include "act/forcefield/forcefield_utils.h"
+#include "act/testutils/forcefield_utils.h"
 #include "act/molprop/molprop_xml.h"
 #include "act/properties/thermochemistry.h"
 #include "act/topology/actmol.h"

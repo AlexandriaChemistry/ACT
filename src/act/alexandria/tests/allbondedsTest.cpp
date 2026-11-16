@@ -42,7 +42,7 @@
 #include "act/alexandria/allbondeds.h"
 #include "act/alexandria/molselect.h"
 #include "act/basics/msg_handler.h"
-#include "act/forcefield/forcefield_utils.h"
+#include "act/testutils/forcefield_utils.h"
 #include "act/forcefield/forcefield_xml.h"
 #include "act/import/import.h"
 #include "act/molprop/molprop_xml.h"

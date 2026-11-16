@@ -33,7 +33,7 @@
 #include <gtest/gtest.h>
 
 #include "act/forcefield/act_checksum.h"
-#include "act/forcefield/forcefield_utils.h"
+#include "act/testutils/forcefield_utils.h"
 
 #include "testutils/cmdlinetest.h"
 #include "testutils/refdata.h"

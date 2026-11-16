@@ -46,7 +46,7 @@
 
 #include "act/import/import.h"
 #include "act/forcefield/forcefield_parametername.h"
-#include "act/forcefield/forcefield_utils.h"
+#include "act/testutils/forcefield_utils.h"
 #include "act/forces/forcecomputer.h"
 #include "act/topology/actmol.h"
 #include "act/topology/topology.h"

@@ -51,7 +51,7 @@
 #include <gtest/gtest.h>
 
 #include "act/forcefield/forcefield_parametername.h"
-#include "act/forcefield/forcefield_utils.h"
+#include "act/testutils/forcefield_utils.h"
 #include "act/molprop/topologyentry.h"
 #include "act/topology/coords_energy.h"
 #include "gromacs/utility/stringutil.h"

@@ -39,11 +39,11 @@
 #include "act/constraints/shake.h"
 #include "act/forcefield/forcefield.h"
 #include "act/forcefield/forcefield_parametername.h"
-#include "act/forcefield/forcefield_utils.h"
+#include "act/testutils/forcefield_utils.h"
 #include "act/forces/forcecomputer.h"
 #include "act/forces/forcecomputerutils.h"
 #include "act/topology/actmol.h"
-#include "act/topology/actmol_util.h"
+#include "act/testutils/actmol_util.h"
 #include "act/topology/topology.h"
 #include "gromacs/utility/exceptions.h"
 

@@ -42,3 +42,6 @@ add_subdirectory(alexandria)
 add_subdirectory(constraints)
 # Couple of ACT python scripts, independent of C++ code.
 add_subdirectory(python)
+if (BUILD_TESTING)
+    add_subdirectory(testutils)
+endif()
