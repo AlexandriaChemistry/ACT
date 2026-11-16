@@ -89,7 +89,7 @@ For example, on the GH200 nodes of arrhenius (NAISS), with the GPU toolchain of 
            -DAdaptiveCpp_DIR=<AdaptiveCpp environment>/lib/cmake/AdaptiveCpp \
            -DMPI_C_COMPILER=$(which mpicc) -DMPI_CXX_COMPILER=$(which mpicxx)
 
-and the programs are started with *srun --mpi=pmi2*.
+and the programs are started with *srun --mpi=pmi2*. On these nodes, starting CUDA is slow when the processes can see several GPUs, since they then wait for each other. Let each process see only one GPU: with 128 processes on the 4 GPUs of a node, *srun --mpi=pmi2 --gpu-bind=single:32 -n 128*, where 32 is the number of processes per GPU, started a short *train_ff* job in 56 s instead of 122 s. For a job on one GPU, do not book the node with *--exclusive*, which lets the processes see all four GPUs: with 32 processes, starting CUDA took 1.7 s instead of 21 s.
 
 On a Cray system, such as dardel (PDC), the compiler wrappers *cc* and *CC* of the Cray programming environment include the MPI library of the cluster already. Give them as the compilers and *cmake* finds MPI through them, nothing else is needed. For example, on the AMD MI250X nodes of dardel, with the Cray compilers, the libxml2 of the cluster and the other libraries and AdaptiveCpp from conda::
 
