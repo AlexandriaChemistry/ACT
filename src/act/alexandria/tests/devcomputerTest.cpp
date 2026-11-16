@@ -41,7 +41,7 @@
 
 #include "act/alexandria/devcomputer.h"
 #include "act/alexandria/molgen.h"
-#include "act/forcefield/forcefield_utils.h"
+#include "act/testutils/forcefield_utils.h"
 #include "act/forcefield/forcefield_xml.h"
 #include "act/forcefield/potential.h"
 #include "act/forcefield/generate_dependent.h"

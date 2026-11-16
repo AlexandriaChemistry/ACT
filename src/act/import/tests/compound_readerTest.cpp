@@ -39,7 +39,7 @@
 #include <gtest/gtest.h>
 
 #include "act/basics/msg_handler.h"
-#include "act/forcefield/forcefield_utils.h"
+#include "act/testutils/forcefield_utils.h"
 #include "act/import/compound_reader.h"
 #include "gromacs/utility/stringutil.h"
 

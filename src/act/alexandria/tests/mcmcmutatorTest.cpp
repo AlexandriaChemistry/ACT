@@ -48,7 +48,7 @@
 #include "act/alexandria/confighandler.h"
 #include "act/alexandria/staticindividualinfo.h"
 #include "act/ga/genome.h"
-#include "act/ga/ga_test_helper.h"
+#include "act/testutils/ga_test_helper.h"
 #include "gromacs/utility/stringutil.h"
 
 #include "testutils/cmdlinetest.h"

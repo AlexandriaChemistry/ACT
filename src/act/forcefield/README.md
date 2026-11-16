@@ -16,7 +16,6 @@ This directory implements the force-field data model: parameter storage, combina
 - **combinationrules.h / combinationrules.cpp** — Combination-rule implementations (Lorentz–Berthelot, geometric mean, etc.) for deriving pair interaction parameters.
 - **combruleutil.h / combruleutil.cpp** — Higher-level utilities that apply combination rules across all particle-type pairs.
 - **generate_dependent.h / generate_dependent.cpp** — Generates derived (dependent) parameters (e.g. pair parameters) from the base set using combination rules.
-- **forcefield_utils.h / forcefield_utils.cpp** — Miscellaneous helpers: unit conversion, parameter lookup, validity checks.
 - **forcefield_tables.h / forcefield_tables.cpp** — Builds tabulated parameter tables (e.g. for lookup during simulation).
 - **symcharges.h / symcharges.cpp** — Reads and applies symmetry constraints that force chemically equivalent atoms to carry equal charges.
 

@@ -41,7 +41,7 @@
 
 #include "act/basics/msg_handler.h"
 #include "act/forcefield/forcefield.h"
-#include "act/forcefield/forcefield_utils.h"
+#include "act/testutils/forcefield_utils.h"
 #include "act/forces/forcecomputer.h"
 #include "act/molprop/molprop_xml.h"
 #include "act/qgen/qgen_resp.h"

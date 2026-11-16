@@ -43,9 +43,9 @@
 #include "act/alexandria/pdbwriter.h"
 #include "act/basics/msg_handler.h"
 #include "act/forcefield/forcefield.h"
-#include "act/forcefield/forcefield_utils.h"
+#include "act/testutils/forcefield_utils.h"
 #include "act/forcefield/forcefield_xml.h"
-#include "act/topology/actmol_util.h"
+#include "act/testutils/actmol_util.h"
 
 #include "testutils/cmdlinetest.h"
 #include "testutils/filematchers.h"

@@ -38,7 +38,7 @@
 #include "act/alexandria/acminitializer.h"
 #include "act/ga/gene_pool.h"
 #include "act/ga/penalizer.h"
-#include "act/ga/ga_test_helper.h"
+#include "act/testutils/ga_test_helper.h"
 
 #include "testutils/cmdlinetest.h"
 #include "testutils/refdata.h"

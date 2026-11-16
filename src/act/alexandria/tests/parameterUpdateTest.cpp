@@ -70,7 +70,7 @@
 #include "act/forcefield/parameterrecipes.h"
 #include "act/forcefield/potential.h"
 #include "act/forces/forcecomputer.h"
-#include "act/ga/ga_test_helper.h"
+#include "act/testutils/ga_test_helper.h"
 #include "act/gpu/gpu.h"
 #include "act/topology/topology.h"
 #include "act/molprop/molprop_xml.h"
