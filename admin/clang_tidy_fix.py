@@ -28,7 +28,10 @@ between, actpre.h comes first, then the system includes (<...>) and then
 the others ("..."), each sorted alphabetically and separated by a blank
 line. Includes are not moved across #if or code, a comment on the lines
 right above an include within a block moves with it, and an include that
-occurs twice in a block is kept once.
+occurs twice in a block is kept once. The headers of the C standard library
+are replaced by their C++ variants, for instance <stdio.h> by <cstdio>, or
+removed if the file includes the C++ variant already; POSIX headers such as
+<strings.h> stay.
 
 The exit status is 2 if clang-tidy reported compiler errors, since the
 fixes of those files may be incomplete, and 0 otherwise.
@@ -75,6 +78,11 @@ PRIORITY = ["performance-unnecessary-copy-initialization", "performance-for-rang
 CONST_WIDTH = 6
 # An include line, with its delimiter and file name
 INCLUDE_LINE = re.compile(r'^\s*#\s*include\s*([<"])([^>"]+)[>"]')
+# The headers of the C standard library that have a C++ variant, <cX> for <X.h>
+C_HEADERS = ("assert", "ctype", "errno", "fenv", "float", "inttypes", "limits", "locale", "math",
+             "setjmp", "signal", "stdarg", "stddef", "stdint", "stdio", "stdlib", "string", "time",
+             "uchar", "wchar", "wctype")
+C_INCLUDE = re.compile(r'^(\s*#\s*include\s*)<(' + "|".join(C_HEADERS) + r')\.h>(.*)$')
 
 
 def enumerations(source_dir):
@@ -537,6 +545,24 @@ def sorted_block(items):
     return lines
 
 
+def cxx_headers(text):
+    """Replace the headers of the C standard library by their C++ variants, or remove them if
+    the file includes the C++ variant already."""
+    lines = text.split("\n")
+    present = {m.group(2) for m in (INCLUDE_LINE.match(line) for line in lines) if m and m.group(1) == "<"}
+    result = []
+    for line in lines:
+        match = C_INCLUDE.match(line)
+        if match:
+            cxx = "c" + match.group(2)
+            if cxx in present:
+                continue
+            present.add(cxx)
+            line = f"{match.group(1)}<{cxx}>{match.group(3)}"
+        result.append(line)
+    return "\n".join(result)
+
+
 def order_includes(text):
     """Put the includes of a file in the ACT order, see the description of this script."""
     lines = text.split("\n")
@@ -588,7 +614,7 @@ def order_all_includes(roots, dry_run):
     for path in sorted(set(include_files(roots))):
         with open(path, encoding="utf-8") as handle:
             text = handle.read()
-        ordered = order_includes(text)
+        ordered = order_includes(cxx_headers(text))
         if ordered != text:
             changed.append(path)
             if not dry_run:
