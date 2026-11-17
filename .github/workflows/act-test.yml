@@ -36,6 +36,16 @@ jobs:
           conda install conda-forge::librdkit-dev=2025.09.4 conda-forge::libboost-devel eigen conda-forge::nlohmann_json conda-forge::openmm
           # The location of the environment differs between runner images
           echo "ACT_CONDA_PREFIX=${CONDA_PREFIX}" >> ${GITHUB_ENV}
+      - name: Check out ACT-utilities
+        uses: actions/checkout@v6
+        with:
+          repository: AlexandriaChemistry/ACT-utilities
+          path: ACT-utilities
+      - name: Install ACT-utilities
+        run: |
+          # The Python modules and scripts that ACT requires
+          cmake -S ACT-utilities -B ACT-utilities/build -DBUILD_TESTING=OFF -DCMAKE_INSTALL_PREFIX=${{ github.workspace }}/../tools
+          cmake --install ACT-utilities/build
       - name: Install ACT
         run: |
           cd ${{ github.workspace }}
@@ -102,5 +112,5 @@ jobs:
         shell: bash -el {0}
         run: |
           source ${{ github.workspace }}/../tools/bin/ACTRC
-          cd ${{ github.workspace }}/src/act/python/tests
+          cd ${{ github.workspace }}/ACT-utilities/src/tests
           ACT_REQUIRE_OPENMM=1 ACT_ALEXANDRIA=${{ github.workspace }}/build/bin/alexandria_d python -m unittest -v test_act_openmm

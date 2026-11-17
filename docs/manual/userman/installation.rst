@@ -18,6 +18,7 @@ The following software packages are required for the ACT to work:
 * The LibXml2 is needed for processing the XML data files used by the ACT.
 * The nlohmann/json library is required for JSON I/O and can be installed via conda as ``nlohmann_json``.
 * Python, version 3.8 or better, and a number of Python libraries, namely, NumPy, Matplotlib, and PubChemPy.
+* The Python modules and scripts of `ACT-utilities`_, which *cmake* checks for, see :ref:`act-utilities` below.
 
 
 The following libraries are optional only, but may be useful for developing the ACT:
@@ -58,6 +59,19 @@ For developers, please additionally install these packages::
 
   conda install doxygen graphviz pygments sphinx sphinxcontrib-bibtex nbsphinx
 
+.. _act-utilities:
+
+Installing ACT-utilities
+~~~~~~~~~~~~~~~~~~~~~~~~
+The Python modules and scripts of ACT, for instance *coords2molprop*, *gauss2molprop* and the interface to OpenMM, are in the repository `ACT-utilities`_. ACT requires them, and *cmake* stops if the Python it finds cannot import them. Install them before building ACT, into the conda environment of ACT or into the prefix where ACT will be installed::
+
+  git clone https://github.com/AlexandriaChemistry/ACT-utilities.git
+  cmake -S ACT-utilities -B ACT-utilities/build -DCMAKE_INSTALL_PREFIX=<prefix>
+  cmake --install ACT-utilities/build
+
+The modules go to *<prefix>/lib/pythonX.Y/site-packages/act* and the scripts to *<prefix>/bin*. A Python that uses this site-packages, such as that of a conda environment, finds the modules by itself; otherwise *source <prefix>/bin/ACTRC* adds them to *PYTHONPATH*, which *cmake* also looks at.
+
+.. _ACT-utilities: https://github.com/AlexandriaChemistry/ACT-utilities
 .. _Yml: https://github.com/dspoel/ACT/blob/main/ACT.yml
 .. _GCC: https://gcc.gnu.org
 .. _Xcode: https://developer.apple.com/xcode/ 

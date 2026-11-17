@@ -79,7 +79,7 @@ namespace alexandria
         std::set<std::string> synonyms;
 
         /*! \brief Constructor
-         * \param[in] mol A molecule of alexandria.json, see src/act/python/mol_json.py
+         * \param[in] mol A molecule of alexandria.json, see mol_json.py of ACT-utilities
          */
         explicit AlexandriaMol(const JsonValue &mol);
     };
