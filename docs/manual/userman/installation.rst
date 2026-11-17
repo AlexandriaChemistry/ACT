@@ -18,7 +18,7 @@ The following software packages are required for the ACT to work:
 * The LibXml2 is needed for processing the XML data files used by the ACT.
 * The nlohmann/json library is required for JSON I/O and can be installed via conda as ``nlohmann_json``.
 * Python, version 3.8 or better, and a number of Python libraries, namely, NumPy, Matplotlib, and PubChemPy.
-* The Python modules and scripts of `ACT-utilities`_, which *cmake* checks for, see :ref:`act-utilities` below.
+* The Python modules and scripts of `ACT-utilities`_, which *cmake* checks for, see :ref:`installing-act-utilities` below.
 
 
 The following libraries are optional only, but may be useful for developing the ACT:
@@ -59,7 +59,7 @@ For developers, please additionally install these packages::
 
   conda install doxygen graphviz pygments sphinx sphinxcontrib-bibtex nbsphinx
 
-.. _act-utilities:
+.. _installing-act-utilities:
 
 Installing ACT-utilities
 ~~~~~~~~~~~~~~~~~~~~~~~~
