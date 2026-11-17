@@ -235,3 +235,16 @@ TEST(StringUtilTest, GetOptionCaseInsensitive)
     const char *opts[] = {"hello", "HELLO", "WORLD", nullptr};
     EXPECT_EQ(0, get_option(opts));
 }
+
+// Test: A duration for people to read in seconds, minutes and seconds, or hours and minutes
+TEST(StringUtilTest, DurationString)
+{
+    EXPECT_EQ("0.0 s", durationString(0));
+    EXPECT_EQ("45.3 s", durationString(45.26));
+    EXPECT_EQ("1 min 00 s", durationString(59.96));
+    EXPECT_EQ("13 min 32 s", durationString(812.4));
+    EXPECT_EQ("59 min 59 s", durationString(3599.4));
+    EXPECT_EQ("1 h 00 min", durationString(3600));
+    EXPECT_EQ("2 h 05 min", durationString(7500));
+    EXPECT_EQ("0.0 s", durationString(-1));
+}

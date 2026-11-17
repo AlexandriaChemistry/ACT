@@ -125,5 +125,5 @@ At the end of the log file, *train_ff* prints how much time each part of the pro
 When comparing settings, keep in mind that:
 
 * The run time of the same training on a GPU can vary by about 10% between runs. Compare settings in one job, run them alternately, and repeat them.
-* The training may stop before *-max_generations* when the fitness of the test set no longer improves (*-max_test_generations*). Runs that differ in the last digits, for instance on different computers, may then run a different number of generations. Compare the time per generation, from the lines *Generation n/N* in the log file.
+* The training may stop before *-max_generations* when the fitness of the test set no longer improves (*-max_test_generations*). Runs that differ in the last digits, for instance on different computers, may then run a different number of generations. Compare the time per generation, which the lines *Generation n/N took ...* in the log file report, for instance *Generation 4/10 took 13 min 32 s*.
 * *Wall time of the master* starts after MPI has started. On some clusters starting MPI takes long, so the job takes longer than this time. On the GH200 nodes of arrhenius, for instance, MPICH starts CUDA in *MPI_Init*, which is slow when each process can see several GPUs; let each process see only one GPU, see the installation chapter.

@@ -100,4 +100,11 @@ int my_atoi(const std::string &str, const std::string &description);
  */
 bool stringEqual(const std::string &a, const std::string &b);
 
+/*! \brief A duration for people to read
+ * \param[in] seconds The duration in seconds
+ * \return for instance "45.3 s" below a minute, "13 min 32 s" below an
+ *         hour and "2 h 05 min" above, rounded to the last unit
+ */
+std::string durationString(double seconds);
+
 #endif
