@@ -58,8 +58,15 @@ set(_act_simd_flags_AVX_512  "-mavx512f")
 function(act_detect_simd result)
     if(NOT DEFINED ACT_SIMD_DETECTED)
         set(_detected "NONE")
-        if(CMAKE_CROSSCOMPILING)
-            message(STATUS "Cannot detect the SIMD of the processor when cross-compiling, select it with ACT_SIMD")
+        if(CMAKE_SYSTEM_PROCESSOR MATCHES "^(aarch64|arm64|ARM64)$")
+            # NEON is part of every aarch64 processor, so nothing needs to
+            # run, which also works when cross-compiling, for instance the
+            # conda packages for Macs with Apple silicon
+            set(_detected "ARM_NEON")
+        elseif(CMAKE_CROSSCOMPILING)
+            message(WARNING "Cannot detect the SIMD of the processor when cross-compiling, "
+                            "so no explicit SIMD is used. Select it with ACT_SIMD, for instance "
+                            "-DACT_SIMD=AVX2.")
         else()
             set(_dir ${CMAKE_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/ActDetectSimd)
             file(WRITE ${_dir}/detectsimd.cpp "
