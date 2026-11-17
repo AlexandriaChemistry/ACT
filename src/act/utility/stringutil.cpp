@@ -32,7 +32,9 @@
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
  
+#include <algorithm>
 #include <cctype>
+#include <cmath>
 #include <cstdlib>
 #include <cstring>
 #include <exception>
@@ -144,6 +146,21 @@ int my_atoi(const std::string &str, const std::string &description)
                 description.c_str(), str.c_str());
     }
     return d;
+}
+
+std::string durationString(double seconds)
+{
+    if (seconds < 59.95)
+    {
+        return gmx::formatString("%.1f s", std::max(0.0, seconds));
+    }
+    long rounded = std::lround(seconds);
+    if (rounded < 3600)
+    {
+        return gmx::formatString("%ld min %02ld s", rounded/60, rounded % 60);
+    }
+    long minutes = std::lround(seconds/60);
+    return gmx::formatString("%ld h %02ld min", minutes/60, minutes % 60);
 }
 
 bool stringEqual(const std::string &a, const std::string &b)

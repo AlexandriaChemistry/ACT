@@ -26,6 +26,7 @@
  * Boston, MA  02110-1301, USA.
  */
 #include <algorithm>
+#include <chrono>
 #include <cstdio>
 #include <ctime>
 #include <map>
@@ -53,6 +54,7 @@
 #include "act/ga/gene_pool.h"
 #include "act/utility/communicationrecord.h"
 #include "act/utility/portable_random.h"
+#include "act/utility/stringutil.h"
 #include "act/utility/timings.h"
 
 namespace ga
@@ -403,6 +405,8 @@ bool HybridGAMC::evolve(alexandria::MsgHandler       *msghandler,
 
     // Store starting time
     time_t start_time   = std::time(nullptr);
+    // The start of the current generation, for the time it takes
+    auto   generationStart = std::chrono::steady_clock::now();
     bool   stopTraining = false;
     // Iterate and create new generation
     // Two iterations in the middlemen loops corresponds to one in the master.
@@ -638,8 +642,12 @@ bool HybridGAMC::evolve(alexandria::MsgHandler       *msghandler,
             const std::string t_finish(std::ctime(&finish_time));
             // regex code from https://www.systutorials.com/how-to-remove-newline-characters-from-a-string-in-c/
             const std::regex newlines_re("\n+");
-            msg_start = gmx::formatString("Generation %d/%d. Time: %s, expect to finish at %s",
+            const auto   now     = std::chrono::steady_clock::now();
+            const double seconds = std::chrono::duration<double>(now - generationStart).count();
+            generationStart      = now;
+            msg_start = gmx::formatString("Generation %d/%d took %s. Time: %s, expect to finish at %s",
                                           generation, gach_->maxGenerations(),
+                                          durationString(seconds).c_str(),
                                           std::regex_replace(t_now, newlines_re, "").c_str(),
                                           std::regex_replace(t_finish, newlines_re, "").c_str());
         }
