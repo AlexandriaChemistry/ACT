@@ -861,6 +861,20 @@ TEST_F(TrainFFTest, MinimumData)
     EXPECT_TRUE(hasLine("There are 1 molecules left to optimize"));
 }
 
+// Test: The genetic algorithms hand the individuals to middlemen, so on a
+// single process train_ff stops with an error, rather than crashing later
+TEST_F(TrainFFTest, GeneticAlgorithmNeedsTwoProcesses)
+{
+    for (const char *optimizer : { "GA", "HYBRID" })
+    {
+        SCOPED_TRACE(optimizer);
+        EXPECT_THROW(trainfftest::runTrainFF(&fileManager(), std::string("oneproc") + optimizer, "lj-pc.xml", "booze-inter",
+                                             setOption(setOption(combine(mcmcOptions(1), interOptions()),
+                                                                 "-optimizer", optimizer), "-pop_size", "4")),
+                     gmx::InvalidInputError);
+    }
+}
+
 // Test: Without support for any compound the training set is empty
 TEST_F(TrainFFTest, MinimumDataTooLarge)
 {

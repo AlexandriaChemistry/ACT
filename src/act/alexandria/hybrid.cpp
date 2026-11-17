@@ -210,11 +210,10 @@ bool HybridGAMC::evolve(alexandria::MsgHandler       *msghandler,
     static const size_t timer = alexandria::Timings::instance().index("Genetic algorithm");
     const alexandria::ScopedTimer scoped(timer);
     auto cr = sii_->commRec();
-    //! \todo have we already checked that the number of processors is the correct one?
+    // OptACM::optionsFinished checks this already
     if (cr->nmiddlemen() < 2)
     {
-        fprintf(stderr, "Need at least two cores/processes to run the genetic algorithm.\n");
-        return false; 
+        GMX_THROW(gmx::InvalidInputError("The genetic algorithm needs at least two processes"));
     }
     msghandler->write("\nStarting GA/HYBRID evolution\n");
     // Random number generation
