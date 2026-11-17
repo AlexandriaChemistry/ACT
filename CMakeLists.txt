@@ -52,6 +52,10 @@ set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 
+# The Python first in the PATH or in CMAKE_PREFIX_PATH, for instance that of a
+# conda environment, rather than the framework Python of macOS (Xcode); the
+# same as ACT-utilities, such that both use the same Python
+set(Python3_FIND_FRAMEWORK LAST)
 find_package (Python3 COMPONENTS Interpreter Development)
 if (NOT CMAKE_INSTALL_PYTHON_LIBDIR)
   set(CMAKE_INSTALL_PYTHON_LIBDIR

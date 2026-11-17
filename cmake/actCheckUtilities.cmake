@@ -30,6 +30,17 @@ execute_process(
     ERROR_QUIET
     OUTPUT_STRIP_TRAILING_WHITESPACE)
 if(NOT _act_utilities_result EQUAL 0)
+    # ACT-utilities installed for another version of Python?
+    file(GLOB _act_utilities_other "${CMAKE_INSTALL_PREFIX}/lib/python*/site-packages/act/actutils.py")
+    if(_act_utilities_other)
+        list(GET _act_utilities_other 0 _act_utilities_other)
+        message(FATAL_ERROR
+            "ACT-utilities is installed in ${_act_utilities_other}, but for another "
+            "version of Python than ${Python3_EXECUTABLE} (${Python3_VERSION}), which CMake "
+            "found for ACT. Install ACT-utilities with that Python, for instance with "
+            "-DPython3_EXECUTABLE=${Python3_EXECUTABLE} or with the same CMAKE_PREFIX_PATH "
+            "as ACT, or give ACT the Python of ACT-utilities with -DPython3_EXECUTABLE.")
+    endif()
     message(FATAL_ERROR
         "ACT requires the Python modules and scripts of ACT-utilities, which "
         "${Python3_EXECUTABLE} cannot import. Install them first, either with conda:\n"
