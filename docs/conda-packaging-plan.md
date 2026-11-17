@@ -412,13 +412,35 @@ by hand (`workflow_dispatch`):
    `alexandriachemistry` on anaconda.org. Maintainers: David van der Spoel
    (`dspoel`), Julian Köngeter (`JulianKoengeter`) and Måns Rosenbaum
    (`MansRosenbaum`), listed in the recipe under `extra`.
-2. Is a double precision package needed in the first release?
-3. Should `sycl_cuda` be the default variant on `linux-64`? It is larger,
-   since it pulls in AdaptiveCpp, LLVM and the CUDA runtime, but it also
-   runs without a GPU.
-4. Should the whole code be built for `x86-64-v3` (AVX2 required), or only
-   the explicit SIMD file, so the package also runs on older processors?
-5. Should the Python scripts later become a real Python package
-   (`import act.actutils`) with a `pyproject.toml`? This would also allow
-   installing them with `pip`. For now, `act.pth` keeps the flat imports.
-6. Decided: the first package is version 1.9b.
+2. Decided: no double precision package in the first release. Later, ship
+   both, the double one with the `_d` programs.
+3. Decided: the `linux-64` package always has CUDA support (`sycl_cuda`);
+   there is no variant without it. It also runs without a GPU.
+4. Decided: the whole `linux-64` build is for `x86-64-v3` (AVX2), with
+   `x86_64-microarch-level ==3`. AVX-512 may be added later if it pays off.
+5. Decided: the Python modules and scripts move to the repository
+   [ACT-utilities](https://github.com/AlexandriaChemistry/ACT-utilities),
+   which gets its own conda package. ACT requires it: the package
+   `alexandria` depends on it. This replaces the output `alexandria-python`
+   and the options `ACT_INSTALL_PYTHON` and `ACT_PYTHON_ONLY`. See section 13.
+6. Decided: the package version follows the ACT version, now 1.9b.
+
+## 13. Moving the Python code to ACT-utilities
+
+To be agreed before it is done, since it changes two repositories:
+
+1. Package name for ACT-utilities, for instance `act-utilities` (free on
+   conda-forge), built `noarch: python` from a `pyproject.toml` there, with
+   the modules as a package and the scripts as entry points or plain
+   scripts.
+2. Move `src/act/python` (modules, scripts and the tests
+   `test_act_openmm.py` and `test_coords2molprop.py`) to ACT-utilities, with
+   its history if wanted (`git filter-repo`).
+3. In ACT: remove `src/act/python`, the two Python tests from CTest (or run
+   them in ACT-utilities' CI with an installed `alexandria`), the Python part
+   of `ACTRC`, and the options `ACT_INSTALL_PYTHON` and `ACT_PYTHON_ONLY`.
+4. Source builds of ACT: CMake checks that ACT-utilities can be imported and
+   stops with a message how to install it (`pip install` or `conda install`).
+5. The manual: the chapters that use the scripts say where they come from.
+6. The recipe: `alexandria` depends on the ACT-utilities package instead of
+   `alexandria-python`.
