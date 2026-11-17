@@ -1,0 +1,42 @@
+# Variants of the conda packages, see docs/conda-packaging-plan.md
+mpi:
+  - mpich
+  - openmpi
+
+gpu:
+  - if: osx
+    then: [none]
+  - if: linux and x86_64
+    then: [sycl_cuda]   # also runs without a GPU, on the processor
+
+c_compiler:
+  - if: osx
+    then: [clang]
+  - if: linux
+    then: [gcc]
+cxx_compiler:
+  - if: osx
+    then: [clangxx]
+  - if: linux
+    then: [gxx]
+c_compiler_version:
+  - if: osx
+    then: ["19"]
+  - if: linux
+    then: ["14"]
+cxx_compiler_version:
+  - if: osx
+    then: ["19"]
+  - if: linux
+    then: ["14"]
+
+c_stdlib:
+  - if: osx
+    then: [macosx_deployment_target]
+  - if: linux
+    then: [sysroot]
+c_stdlib_version:
+  - if: osx
+    then: ["11.0"]
+  - if: linux
+    then: ["2.28"]
