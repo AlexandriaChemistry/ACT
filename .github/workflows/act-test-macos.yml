@@ -41,7 +41,8 @@ jobs:
         shell: bash -el {0}
         run: |
           # The Python modules and scripts that ACT requires
-          cmake -S ACT-utilities -B ACT-utilities/build -DBUILD_TESTING=OFF -DCMAKE_INSTALL_PREFIX=${{ github.workspace }}/../tools
+          # With the same CMAKE_PREFIX_PATH as ACT, such that both use the same Python
+          cmake -S ACT-utilities -B ACT-utilities/build -DBUILD_TESTING=OFF -DCMAKE_PREFIX_PATH=${CONDA_PREFIX} -DCMAKE_INSTALL_PREFIX=${{ github.workspace }}/../tools
           cmake --install ACT-utilities/build
       - name: Install ACT
         shell: bash -el {0}
