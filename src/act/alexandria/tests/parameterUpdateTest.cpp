@@ -46,6 +46,7 @@
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  * \ingroup group_alexandria_tests
  */
+#include "actpre.h"
 #include "act/alexandria/sensitivity.h"
 #include "act/basics/chargemodel.h"
 #include "act/basics/dataset.h"
@@ -54,7 +55,6 @@
 #include "act/forcefield/forcefield_parameterlist.h"
 #include "act/molprop/molprop.h"
 #include "act/topology/actmol_low.h"
-#include "actpre.h"
 
 #include <array>
 #include <cmath>

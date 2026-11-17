@@ -33,10 +33,10 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
+#include "actpre.h"
 #include "act/basics/act_particle.h"
 #include "act/basics/atomization_energy.h"
 #include "act/topology/actmol_low.h"
-#include "actpre.h"
 
 #include "thermochemistry.h"
 

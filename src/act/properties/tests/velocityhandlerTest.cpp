@@ -31,8 +31,8 @@
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
 
-#include "act/basics/act_particle.h"
 #include "actpre.h"
+#include "act/basics/act_particle.h"
 
 #include <cstddef>
 #include <vector>

@@ -29,7 +29,6 @@
  * Tests of the explicit SIMD math functions.
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
-#include "act/forces/simd_math.h"
 #include "actpre.h"
 
 #include "../simd_math.h"

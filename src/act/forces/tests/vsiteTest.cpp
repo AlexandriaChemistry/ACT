@@ -33,6 +33,7 @@
  * \author A. Najla Hosseini <atiyeh.hosseini@icm.uu.se>
  * \ingroup group_forces_tests
  */
+#include "actpre.h"
 #include "act/basics/act_particle.h"
 #include "act/basics/coordinate.h"
 #include "act/basics/identifier.h"
@@ -44,7 +45,6 @@
 #include "act/molprop/topologyentry.h"
 #include "act/topology/actatom.h"
 #include "act/topology/actmol_low.h"
-#include "actpre.h"
 
 #include "../vsitehandler.h"
 

@@ -44,12 +44,12 @@
  * same potentials for one conformation and are the reference.
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
+#include "actpre.h"
 #include "act/basics/coordinate.h"
 #include "act/forcefield/potential.h"
 #include "act/molprop/topologyentry.h"
 #include "act/topology/actatom.h"
 #include "act/topology/nonbondedpairs.h"
-#include "actpre.h"
 
 #include "forces_explicit_simd.h"
 

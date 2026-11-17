@@ -33,6 +33,7 @@
  * \author Julian Ramon Marrades Furquet <julian@marrad.es>
  */
 
+#include "actpre.h"
 #include "act/alexandria/acminitializer.h"
 #include "act/alexandria/confighandler.h"
 #include "act/alexandria/molselect.h"
@@ -46,7 +47,6 @@
 #include "act/ga/terminator.h"
 #include "act/import/compound_reader.h"
 #include "act/utility/communicationrecord.h"
-#include "actpre.h"
 
 #include "train_ff.h"
 

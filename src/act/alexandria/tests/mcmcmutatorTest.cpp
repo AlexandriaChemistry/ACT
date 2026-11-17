@@ -37,11 +37,11 @@
  * \ingroup module_alexandria
  */
 
+#include "actpre.h"
 #include "act/alexandria/molgen.h"
 #include "act/basics/chargemodel.h"
 #include "act/basics/dataset.h"
 #include "act/qgen/qgen_resp.h"
-#include "actpre.h"
 
 #include <cmath>
 #include <cstddef>

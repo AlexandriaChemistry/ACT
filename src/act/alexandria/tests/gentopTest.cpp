@@ -30,12 +30,12 @@
  * Tests of the gentop module, in particular the GROMACS topology it writes.
  */
 
+#include "actpre.h"
 #include "act/basics/chargemodel.h"
 #include "act/basics/identifier.h"
 #include "act/forcefield/forcefield_parameter.h"
 #include "act/molprop/experiment.h"
 #include "act/molprop/molprop.h"
-#include "actpre.h"
 
 #include <algorithm>
 #include <array>

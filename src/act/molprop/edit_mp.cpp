@@ -32,6 +32,7 @@
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
  
+#include "actpre.h"
 #include "act/basics/identifier.h"
 #include "act/basics/interactiontype.h"
 #include "act/forcefield/particletype.h"
@@ -39,7 +40,6 @@
 #include "act/molprop/molpropobservable.h"
 #include "act/topology/actmol_low.h"
 #include "act/utility/units.h"
-#include "actpre.h"
 
 #include <algorithm>
 #include <cmath>

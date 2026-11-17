@@ -31,11 +31,11 @@
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
 
+#include "actpre.h"
 #include "act/basics/identifier.h"
 #include "act/forcefield/combinationkernels.h"
 #include "act/forcefield/forcefield_parameter.h"
 #include "act/forcefield/particletype.h"
-#include "actpre.h"
 
 #include <algorithm>
 #include <cmath>

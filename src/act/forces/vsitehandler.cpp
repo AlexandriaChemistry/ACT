@@ -39,10 +39,10 @@
 /*
  * Adapted for ACT by DvdS 2023-05-17
  */
+#include "actpre.h"
 #include "act/basics/coordinate.h"
 #include "act/basics/interactiontype.h"
 #include "act/molprop/topologyentry.h"
-#include "actpre.h"
 
 #include "vsitehandler.h"
 

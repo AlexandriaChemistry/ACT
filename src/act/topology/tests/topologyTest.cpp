@@ -31,10 +31,10 @@
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
 
+#include "actpre.h"
 #include "act/basics/interactiontype.h"
 #include "act/basics/msg_handler.h"
 #include "act/molprop/topologyentry.h"
-#include "actpre.h"
 
 
 #include <cstdlib>
