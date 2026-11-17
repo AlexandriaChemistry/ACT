@@ -42,7 +42,9 @@ jobs:
             mpi: mpich
     env:
       FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
-      CONDA_OUT: ${{ github.workspace }}/../conda-out
+      # Inside the workspace, since upload-artifact refuses paths with ..;
+      # the build of alexandria takes the last commit, not these files
+      CONDA_OUT: ${{ github.workspace }}/conda-out
     steps:
       - name: Check out ACT
         uses: actions/checkout@v6
