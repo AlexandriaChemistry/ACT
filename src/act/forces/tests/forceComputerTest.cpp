@@ -801,6 +801,21 @@ TEST_F(ForceComputerIntegrationTest, VsitesOfManyConformations)
     timings.reset();
 }
 
+// Test: A group that does not fit into the GPU memory is computed in sets of
+// equal size, the largest divisor of the group that fits
+TEST(ReplicasOfEqualSetsTest, LargestDivisorThatFits)
+{
+    EXPECT_EQ(8u, replicasOfEqualSets(8, 8));
+    EXPECT_EQ(8u, replicasOfEqualSets(8, 20));
+    EXPECT_EQ(4u, replicasOfEqualSets(8, 5));
+    EXPECT_EQ(4u, replicasOfEqualSets(32, 5));
+    EXPECT_EQ(3u, replicasOfEqualSets(6, 5));
+    EXPECT_EQ(2u, replicasOfEqualSets(4, 3));
+    // A prime number of individuals is computed one at a time
+    EXPECT_EQ(1u, replicasOfEqualSets(7, 5));
+    EXPECT_EQ(1u, replicasOfEqualSets(16, 1));
+}
+
 }  // namespace
 
 }  // namespace alexandria

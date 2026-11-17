@@ -1798,6 +1798,22 @@ bool ForceComputer::useGpuResident() const
     return (gpuResident_ || gpuResidentCheck()) && !gpuResidentUnavailable_;
 }
 
+size_t replicasOfEqualSets(size_t group, size_t fit)
+{
+    if (fit >= group)
+    {
+        return group;
+    }
+    for (size_t n = fit; n > 1; n--)
+    {
+        if (group % n == 0)
+        {
+            return n;
+        }
+    }
+    return 1;
+}
+
 void ForceComputer::fitGpuReplicas(const ForceField *pd, const std::vector<ACTMol *> &allmols) const
 {
     const size_t wanted   = gpuReplicas_;
@@ -1826,14 +1842,19 @@ void ForceComputer::fitGpuReplicas(const ForceField *pd, const std::vector<ACTMo
     {
         fit = std::max(1.0, 1 + std::floor((gpuMemoryBudget_ - one)/per));
     }
-    gpuReplicas_ = std::min(wanted, fit);
+    // For developers and tests, fewer than fit into the GPU memory
+    if (const char *most = std::getenv("ACT_GPU_REPLICAS_FIT"))
+    {
+        fit = std::min<size_t>(fit, std::max(1, std::atoi(most)));
+    }
+    gpuReplicas_ = replicasOfEqualSets(wanted, fit);
     if (gpuReplicas_ < wanted)
     {
         fprintf(stderr, "Note: the GPU memory of this process, %.0f MB, holds %zu of the %zu individuals of a group\n"
-                "at once (%.0f MB for the first, %.0f MB for each other), so the group is computed in smaller sets\n"
-                "of at most %zu, one after another.\n"
+                "at once (%.0f MB for the first, %.0f MB for each other), so the group is computed in %zu sets\n"
+                "of %zu, one after another.\n"
                 "Fewer processes per GPU, or a smaller -lockstep, avoid that.\n",
-                gpuMemoryBudget_/1e6, gpuReplicas_, wanted, one/1e6, per/1e6, gpuReplicas_);
+                gpuMemoryBudget_/1e6, fit, wanted, one/1e6, per/1e6, wanted/gpuReplicas_, gpuReplicas_);
     }
 }
 

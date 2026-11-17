@@ -49,6 +49,7 @@
 #include "config.h"
 #include "gromacs/utility/basenetwork.h"
 #include "gromacs/utility/gmxmpi.h"
+#include "gromacs/utility/stringutil.h"
 #include "testutils/cmdlinetest.h"
 #include "testutils/gputests.h"
 #include "testutils/refdata.h"
@@ -606,6 +607,56 @@ TEST_F(TrainFFMpiTest, LockstepInPartsGpu)
     options.emplace_back("-noshell_keep", "");
     options.emplace_back("-lockstep", "4");
     compareGpuTrainings(&fileManager(), "lockstep-parts", options, options, "ACT_GPU_MEMORY_BUDGET");
+}
+
+/*! \brief The number of calls of the GPU chain in the time table of a log file
+ * \param[in] log The lines of the log file
+ * \return the number of calls, 0 if the chain did not run
+ */
+double gpuChainCalls(const std::vector<std::string> &log)
+{
+    for (const auto &line : log)
+    {
+        if (line.compare(0, 10, "GPU chain ") == 0)
+        {
+            const auto fields = gmx::splitString(line);
+            return fields.empty() ? 0 : std::stod(fields.back());
+        }
+    }
+    return 0;
+}
+
+// Test: A group of 4 individuals of which only 3 fit into the GPU memory,
+// here set with ACT_GPU_REPLICAS_FIT, is computed in 2 sets of 2, both with
+// the Monte Carlo chains on the GPU, see replicasOfEqualSets: twice the calls
+// of the chain of the whole group at once, with the same result.
+TEST_F(TrainFFMpiTest, LockstepEqualSetsGpu)
+{
+    if (!gmx::test::gpuTestRuns(gpuTraining(), "no GPU or double precision"))
+    {
+        return;
+    }
+    auto options = polarizableOptions(12, 2, "charge");
+    options.emplace_back("-noshell_keep", "");
+    options.emplace_back("-lockstep", "4");
+    auto whole = trainfftest::runTrainFF(&fileManager(), "equal-sets-1", "alc-pol-wbh.xml",
+                                         "booze-inter", options);
+    setenv("ACT_GPU_REPLICAS_FIT", "3", 1);
+    auto sets = trainfftest::runTrainFF(&fileManager(), "equal-sets-2", "alc-pol-wbh.xml",
+                                        "booze-inter", options);
+    unsetenv("ACT_GPU_REPLICAS_FIT");
+    EXPECT_EQ(0, whole.status);
+    EXPECT_EQ(0, sets.status);
+    if (gmx_node_rank() == 0)
+    {
+        ASSERT_GT(whole.finalChi2, 0);
+        // The log has six significant digits
+        EXPECT_NEAR(whole.finalChi2, sets.finalChi2, 2e-5*whole.finalChi2);
+        const double calls = gpuChainCalls(whole.log);
+        ASSERT_GT(calls, 0) << "The GPU chain did not run";
+        EXPECT_EQ(2*calls, gpuChainCalls(sets.log));
+    }
+    trainfftest::barrier();
 }
 
 // Test: The molecules whose parameters did not change are not computed again
