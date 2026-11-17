@@ -249,8 +249,10 @@ void ACTMiddleMan::computeQueueWork(MsgHandler *msghandler)
             // all molecules are computed again rather than those that the
             // changed parameter affects. One after another then gives the same
             // results, much faster.
+            // Sets of one, if no more fit into the GPU memory, are computed
+            // one after another as well, which can use the chain on the GPU.
             if (mcmc && n > 1 && lockstepMutators_.size() + 1 >= static_cast<size_t>(n) &&
-                forceComp_.gpuCharges(ind_->sii()->forcefield()))
+                forceComp_.gpuCharges(ind_->sii()->forcefield()) && forceComp_.gpuReplicas() > 1)
             {
                 std::vector<MCMCMutator *> mutators;
                 std::vector<ga::Genome *>  gptr, bptr;

@@ -169,6 +169,16 @@ const char shellMaxDistanceName[] = "shellmaxdistance";
  */
 double shellMaxDistance(const ForceField *pd);
 
+/*! \brief The number of replicas on the GPU for a group that does not fit
+ * The group is then computed in sets of equal size, as many individuals as
+ * there are replicas, such that the Monte Carlo chains of each set can run
+ * on the GPU, see ACMFitnessComputer::chainsReady.
+ * \param[in] group The individuals of a group
+ * \param[in] fit   How many fit into the GPU memory at once
+ * \return the largest divisor of group that is at most fit, group if all fit
+ */
+size_t replicasOfEqualSets(size_t group, size_t fit);
+
 /*! \brief Class to compute all the forces in a molecule or complex.
  * It is imperative that there is only one force computer in each program,
  * since results may depend on the flags given when initiating.
@@ -194,7 +204,8 @@ private:
     /*! \brief Use as many replicas as fit into the GPU memory of this process
      * The molecules are put on the GPU with one replica and with two, which
      * gives the memory of one replica, and gpuReplicas_ is reduced to the
-     * number that fits gpuMemoryBudget_, with a note if that is fewer.
+     * largest divisor of the group that fits gpuMemoryBudget_, see
+     * replicasOfEqualSets, with a note if that is fewer.
      * \param[in] pd      The force field
      * \param[in] allmols The molecules
      */
