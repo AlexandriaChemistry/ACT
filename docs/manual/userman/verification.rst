@@ -139,7 +139,7 @@ Then *make tidy* puts the includes in order, in all header and source files of t
   #include "gromacs/utility/fatalerror.h"
   #include "molgen.h"
 
-Includes are not moved across *#if* or code, so that includes for other configurations stay where they are, and a comment on the lines right above an include within a block moves with it. An include that occurs twice in a block is kept once. Each file includes what it uses itself, so the order does not matter to the compiler, with one exception: *actpre.h* sets macros that the system headers read and has to come first in every source file.
+Includes are not moved across *#if* or code, so that includes for other configurations stay where they are, and a comment on the lines right above an include within a block moves with it. An include that occurs twice in a block is kept once. The headers of the C standard library are replaced by their C++ variants, for instance *<stdio.h>* by *<cstdio>*, or removed if the file includes the C++ variant already; POSIX headers without a C++ variant, such as *<strings.h>*, stay. Each file includes what it uses itself, so the order does not matter to the compiler, with one exception: *actpre.h* sets macros that the system headers read and has to come first in every source file.
 
 The clean-up can be limited to some files or directories, relative to the directory with the source code, and the options of :numref:`tab-tidy` can be given, with two environment variables::
 
