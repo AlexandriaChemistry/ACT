@@ -114,4 +114,4 @@ jobs:
         run: |
           source ${{ github.workspace }}/../tools/bin/ACTRC
           cd ${{ github.workspace }}/ACT-utilities/src/tests
-          ACT_REQUIRE_OPENMM=1 ACT_ALEXANDRIA=${{ github.workspace }}/build/bin/alexandria_d python -m unittest -v test_act_openmm
+          ACT_REQUIRE_OPENMM=1 ACT_TESTDATA=${{ github.workspace }}/src/act/testdata ACT_ALEXANDRIA=${{ github.workspace }}/build/bin/alexandria_d python -m unittest -v test_act_openmm
