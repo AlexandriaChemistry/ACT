@@ -77,6 +77,10 @@ std::string findLibrary(const std::string &filename,
         dirs.emplace_back(actdata);
     }
     dirs.push_back(installedDataDirectory());
+    // The data files of ACT-utilities, such as atomprops.csv, which are in
+    // the installation if ACT-utilities was installed with ACT, otherwise in
+    // the directory that CMake found
+    dirs.emplace_back(ACT_UTILITIES_DATADIR);
     for (const auto &dir : dirs)
     {
         if (!dir.empty())

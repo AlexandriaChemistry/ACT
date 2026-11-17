@@ -41,3 +41,23 @@ if(NOT _act_utilities_result EQUAL 0)
 endif()
 get_filename_component(_act_utilities_dir "${_act_utilities_file}" DIRECTORY)
 message(STATUS "Found the Python modules of ACT-utilities in ${_act_utilities_dir}")
+
+# The data files of ACT-utilities, which alexandria reads as well, such as
+# atomprops.csv. They are in share/act of the prefix of ACT-utilities, which
+# the programs search after that of ACT, such that ACT-utilities may be
+# installed in another prefix. ACTDATA is not used here, since it may point
+# to an older installation.
+execute_process(
+    COMMAND ${CMAKE_COMMAND} -E env --unset=ACTDATA "PYTHONPATH=${_act_utilities_path}"
+            ${Python3_EXECUTABLE} -c "import actutils; print(actutils.actdata())"
+    RESULT_VARIABLE _act_utilities_result
+    OUTPUT_VARIABLE ACT_UTILITIES_DATADIR
+    ERROR_QUIET
+    OUTPUT_STRIP_TRAILING_WHITESPACE)
+if(NOT _act_utilities_result EQUAL 0 OR NOT EXISTS "${ACT_UTILITIES_DATADIR}/atomprops.csv")
+    message(FATAL_ERROR
+        "The data files of ACT-utilities, such as atomprops.csv, were not found next to "
+        "its Python modules in ${_act_utilities_dir}. Install a version of ACT-utilities "
+        "that has them, see the message above for how.")
+endif()
+message(STATUS "Found the data files of ACT-utilities in ${ACT_UTILITIES_DATADIR}")
