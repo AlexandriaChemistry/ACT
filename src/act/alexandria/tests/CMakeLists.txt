@@ -76,3 +76,16 @@ act_add_gpu_unit_test(
 if (TARGET alexandria-mpi-test)
     target_link_libraries(alexandria-mpi-test actLib ${GMX_EXE_LINKER_FLAGS})
 endif()
+
+# The help of a program on several ranks: only the master rank prints it, but
+# all ranks run the main function of the program, which for train_ff makes
+# collective MPI calls; this hung when the other ranks did not take part
+if (ACT_MPI AND MPIEXEC)
+    add_test(NAME AlexandriaMpiHelp
+             COMMAND ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 2 ${MPIEXEC_PREFLAGS}
+                     $<TARGET_FILE:alexandria> train_ff -h ${MPIEXEC_POSTFLAGS})
+    set_tests_properties(AlexandriaMpiHelp PROPERTIES
+                         TIMEOUT 60
+                         LABELS "MpiTest"
+                         FAIL_REGULAR_EXPRESSION "MPI_ABORT;Assertion failed")
+endif()

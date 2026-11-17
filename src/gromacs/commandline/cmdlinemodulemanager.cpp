@@ -45,6 +45,7 @@
 
 #include <cstdio>
 
+#include <memory>
 #include <string>
 #include <utility>
 
@@ -60,10 +61,13 @@
 #include "gromacs/utility/coolstuff.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/fileredirector.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/gmxassert.h"
+#include "gromacs/utility/stringstream.h"
 #include "gromacs/utility/stringutil.h"
 #include "gromacs/utility/sysinfo.h"
+#include "gromacs/utility/textstream.h"
 
 #include "cmdlinehelpmodule.h"
 #include "cmdlinemodulemanager-impl.h"
@@ -76,6 +80,28 @@ namespace
 
 //! \addtogroup module_commandline
 //! \{
+
+/*! \brief
+ * Output redirector that discards everything.
+ *
+ * The help module writes the help on the master rank only. The other ranks
+ * run it with this redirector, such that they make the same MPI calls, for
+ * instance the collective calls of a program whose main function is run to
+ * write its help, but print nothing.
+ */
+class DiscardingOutputRedirector : public IFileOutputRedirector
+{
+    public:
+        TextOutputStream &standardOutput() override { return stream_; }
+        TextOutputStreamPointer openTextOutputFile(const char * /*filename*/) override
+        {
+            return std::make_shared<StringOutputStream>();
+        }
+
+    private:
+        //! The discarded standard output
+        StringOutputStream stream_;
+};
 
 /********************************************************************
  * CMainCommandLineModule
@@ -589,11 +615,16 @@ int CommandLineModuleManager::run(int argc, char *argv[])
         gmx_feenableexcept();
     }
 
-    int rc = 0;
-    if (!(module == impl_->helpModule_ && !bMaster))
+    // The help is written on the master rank only, but all ranks run the
+    // help module, since writing the help of a program may run its main
+    // function, which may make collective MPI calls before it parses the
+    // options, as train_ff does
+    DiscardingOutputRedirector discardOutput;
+    if (module == impl_->helpModule_ && !bMaster)
     {
-        rc = module->run(argc, argv);
+        impl_->helpModule_->setOutputRedirector(&discardOutput);
     }
+    int rc = module->run(argc, argv);
     if (!bQuiet)
     {
         impl_->printThanks(stderr);

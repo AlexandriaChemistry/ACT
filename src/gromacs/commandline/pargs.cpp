@@ -56,7 +56,6 @@
 #include "gromacs/options/options.h"
 #include "gromacs/options/timeunitmanager.h"
 #include "gromacs/utility/arrayref.h"
-#include "gromacs/utility/basenetwork.h"
 #include "gromacs/utility/classhelpers.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
@@ -546,9 +545,9 @@ gmx_bool parse_common_args(int *argc, char *argv[], unsigned long Flags,
             gmx::GlobalCommandLineHelpContext::get();
         if (context != nullptr)
         {
-            GMX_RELEASE_ASSERT(gmx_node_rank() == 0,
-                               "Help output should be handled higher up and "
-                               "only get called only on the master rank");
+            // All ranks get here, such that they make the same MPI calls
+            // before, but only the help of the master rank is printed, see
+            // CommandLineModuleManager::run()
             gmx::CommandLineHelpWriter(options)
                 .setHelpText(gmx::constArrayRefFromArray<const char *>(desc, ndesc))
                 .setKnownIssues(gmx::constArrayRefFromArray(bugs, nbugs))
