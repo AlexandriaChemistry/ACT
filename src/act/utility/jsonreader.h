@@ -28,7 +28,7 @@
 
 /*! \internal \brief
  * A small reader of JSON (RFC 8259) in UTF-8, for data files such as
- * alexandria.json, see src/act/python/mol_json.py. JsonTree writes JSON.
+ * alexandria.json, see mol_json.py of ACT-utilities. JsonTree writes JSON.
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
 #ifndef ACT_UTILITY_JSONREADER_H

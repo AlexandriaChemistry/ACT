@@ -57,18 +57,6 @@ if (NOT CMAKE_INSTALL_PYTHON_LIBDIR)
   set(CMAKE_INSTALL_PYTHON_LIBDIR
     "lib/python${Python3_VERSION_MAJOR}.${Python3_VERSION_MINOR}/site-packages")
 endif ()
-option(ACT_INSTALL_PYTHON "Install the Python modules and scripts" ON)
-mark_as_advanced(ACT_INSTALL_PYTHON)
-# Only the Python modules and scripts, which need none of the libraries below,
-# for instance for the conda package alexandria-python
-option(ACT_PYTHON_ONLY "Only install the Python modules and scripts" OFF)
-mark_as_advanced(ACT_PYTHON_ONLY)
-if(ACT_PYTHON_ONLY)
-    set(ACT_INSTALL_PYTHON ON)
-    add_subdirectory(src/act/python)
-    return()
-endif()
-
 # make tidy, clean-up of the code with clang-tidy
 include(ACTClangTidy)
 
@@ -85,6 +73,9 @@ endif()
 if("${CMAKE_INSTALL_PREFIX}" STREQUAL "${CMAKE_BINARY_DIR}")
     message(FATAL_ERROR "ACT cannot be installed into the build tree, choose a different location for CMAKE_INSTALL_PREFIX")
 endif()
+
+# The Python modules and scripts of ACT-utilities are required
+include(actCheckUtilities)
 
 include(gmxBuildTypeReference)
 include(gmxBuildTypeProfile)

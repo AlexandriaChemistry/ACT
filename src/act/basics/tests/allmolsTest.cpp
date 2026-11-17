@@ -155,7 +155,7 @@ TEST_F(AllmolsTest, Marsipulami)
 
 TEST(AllmolsJsonTest, ReadJson)
 {
-    // Molecules of alexandria.json, see src/act/python/mol_json.py, with a
+    // Molecules of alexandria.json, see mol_json.py of ACT-utilities, with a
     // plus-minus sign written as UTF-8 and as an escape, and no weight
     const std::string json =
         "[\n"
