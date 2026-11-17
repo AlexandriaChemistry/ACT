@@ -427,7 +427,10 @@ by hand (`workflow_dispatch`):
 
 ## 13. Moving the Python code to ACT-utilities
 
-To be agreed before it is done, since it changes two repositories:
+Decided and done: the package is `act-utilities`, the history of
+`src/act/python` came along (`git filter-repo`), and CMake stops if the
+modules cannot be imported. ACT-utilities must be merged before ACT, since
+the CI of ACT installs it from its main branch. The steps:
 
 1. Package name for ACT-utilities, for instance `act-utilities` (free on
    conda-forge), built `noarch: python` from a `pyproject.toml` there, with
