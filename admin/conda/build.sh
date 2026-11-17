@@ -19,13 +19,13 @@ cmake ${CMAKE_ARGS} --compile-no-warning-as-error -S . -B build \
     -DCMAKE_BUILD_TYPE=Release \
     -DCMAKE_INSTALL_PREFIX="${PREFIX}" \
     -DCMAKE_PREFIX_PATH="${PREFIX}" \
+    -DPython3_EXECUTABLE="${PREFIX}/bin/python" \
     -DBUILD_SHARED_LIBS=ON \
     -DACT_MPI=ON \
     -DACT_SIMD=${SIMD} \
     ${GPU} \
     -DACT_OPENMP=OFF \
     -DACT_DOUBLE=OFF \
-    -DACT_INSTALL_PYTHON=OFF \
     -DACT_BUILD_TARBALL=ON
 
 cmake --build build --parallel ${CPU_COUNT}

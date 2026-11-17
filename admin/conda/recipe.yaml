@@ -1,6 +1,6 @@
-# Recipe for the conda packages alexandria and alexandria-python, built with
-# rattler-build, see README.md in this directory and
-# docs/conda-packaging-plan.md.
+# Recipe for the conda package alexandria, built with rattler-build, see
+# README.md in this directory and docs/conda-packaging-plan.md. It needs the
+# package act-utilities of the repository ACT-utilities.
 #
 # The source is the directory or archive in the environment variable
 # ACT_SOURCE, by default the ACT tree that contains this recipe. The
@@ -49,6 +49,9 @@ outputs:
             - x86_64-microarch-level ==3
       host:
         - ${{ mpi }}
+        # CMake checks that the Python modules of ACT-utilities can be imported
+        - python
+        - act-utilities ==${{ version }}
         - libxml2-devel
         - eigen >=5
         - nlohmann_json
@@ -61,7 +64,7 @@ outputs:
             - adaptivecpp * cuda*
       run:
         - ${{ mpi }}
-        - alexandria-python ==${{ version }}
+        - act-utilities ==${{ version }}
         # The libraries of RDKit change ABI with each release
         - ${{ pin_compatible('librdkit', upper_bound='x.x.x') }}
       # The run_exports of librdkit pin one build string of it
@@ -84,32 +87,6 @@ outputs:
             then: 'alexandria -version | grep "Explicit SIMD: *AVX2"'
           - if: gpu == "sycl_cuda"
             then: 'alexandria -version | grep "GPU support: *SYCL"'
-
-  - package:
-      name: alexandria-python
-    build:
-      noarch: python
-      script:
-        - cmake -S . -B build-python -DACT_PYTHON_ONLY=ON -DCMAKE_INSTALL_PREFIX=$PREFIX
-        - cmake --install build-python
-    requirements:
-      build:
-        - cmake >=3.24
-        - make
-      host:
-        - python >=3.10
-      run:
-        - python >=3.10
-        - numpy
-        - matplotlib-base
-        - rdkit
-        - pyyaml
-    tests:
-      - python:
-          imports:
-            - actutils
-            - molprops
-          pip_check: false
 
 about:
   homepage: https://github.com/AlexandriaChemistry/ACT
