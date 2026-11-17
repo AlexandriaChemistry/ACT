@@ -341,6 +341,12 @@ void OptACM::optionsFinished(const std::vector<t_filenm> &filenames)
     // Update the communication record and do necessary checks.
     commRec_.init(nmiddlemen, nactive, working[myRank] ? 1 : 0);
     commRec_.setGpuSharing(sharing);
+    // The GA and HYBRID optimizers hand the individuals to middlemen
+    if (!commRec_.isIdle() && commRec_.size() < 2 && gach_.optimizer() != OptimizerAlg::MCMC)
+    {
+        GMX_THROW(gmx::InvalidInputError(gmx::formatString("The %s optimizer needs at least two processes, for instance with mpirun -n 2 or srun -n 2, or use -optimizer MCMC",
+                                                           optimizerAlgToString(gach_.optimizer()).c_str()).c_str()));
+    }
     if (commRec_.queue() && gach_.optimizer() == OptimizerAlg::MCMC)
     {
         GMX_THROW(gmx::InvalidInputError(gmx::formatString("The population (%d) is larger than the number of cores/threads (%d), which only the GA and HYBRID optimizers support",
