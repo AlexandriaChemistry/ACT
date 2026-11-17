@@ -35,14 +35,12 @@
 #include <algorithm>
 #include <cctype>
 #include <cmath>
+#include <cstdio>
 #include <cstdlib>
 #include <cstring>
 #include <exception>
-#include <math.h>
 #include <sstream>
-#include <stdio.h>
 #include <string>
-#include <string.h>
 #include <strings.h> // IWYU pragma: keep (strcasecmp)
 #include <vector>
 

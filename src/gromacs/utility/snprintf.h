@@ -48,7 +48,7 @@
 
 #include "config.h"
 
-#include <stdio.h>
+#include <cstdio>
 
 #if GMX_NATIVE_WINDOWS
 #define snprintf _snprintf

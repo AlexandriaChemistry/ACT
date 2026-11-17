@@ -37,7 +37,7 @@
 #ifndef GMX_MATH_MATRIX_H
 #define GMX_MATH_MATRIX_H
 
-#include <stdio.h>
+#include <cstdio>
 
 double **alloc_matrix(int n, int m);
 

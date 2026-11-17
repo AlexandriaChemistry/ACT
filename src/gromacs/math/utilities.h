@@ -37,7 +37,7 @@
 #ifndef GMX_MATH_UTILITIES_H
 #define GMX_MATH_UTILITIES_H
 
-#include <limits.h>
+#include <climits>
 
 #include <cmath>
 

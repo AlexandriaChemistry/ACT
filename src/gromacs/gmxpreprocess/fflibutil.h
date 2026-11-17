@@ -36,7 +36,7 @@
 #ifndef GMX_GMXPREPROCESS_FFLIBUTIL_H
 #define GMX_GMXPREPROCESS_FFLIBUTIL_H
 
-#include <stdio.h>
+#include <cstdio>
 
 #include <string>
 #include <vector>

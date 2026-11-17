@@ -31,11 +31,11 @@
  * \author Mohammad Mehdi Ghahremanpour <mohammad.ghahremanpour@icm.uu.se>
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
+#include <cmath>
 #include <fstream>
 #include <functional>
 #include <gtest/gtest.h>
 #include <map>
-#include <math.h>
 #include <sstream>
 #include <string>
 #include <utility>

@@ -64,7 +64,7 @@
    implementations (OpenMPI + MPICH (+derivates)) use #define and future versions
    should support 2.2. */
 #if (MPI_VERSION == 1 || (MPI_VERSION == 2 && MPI_SUBVERSION < 2)) && !defined MPI_INT64_T
-#include <limits.h>
+#include <climits>
 #if LONG_MAX == 9223372036854775807L
 #define MPI_INT64_T MPI_LONG
 #elif LONG_LONG_MAX == 9223372036854775807L

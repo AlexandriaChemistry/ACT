@@ -37,7 +37,7 @@
 #ifndef GMX_FILEIO_XDRF_H
 #define GMX_FILEIO_XDRF_H
 
-#include <stdio.h>
+#include <cstdio>
 
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"

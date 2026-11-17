@@ -37,7 +37,7 @@
 #ifndef GMX_MATH_3DTRANSFORMS_H
 #define GMX_MATH_3DTRANSFORMS_H
 
-#include <stdio.h>
+#include <cstdio>
 
 #include "gromacs/math/vectypes.h"
 #include "gromacs/utility/real.h"

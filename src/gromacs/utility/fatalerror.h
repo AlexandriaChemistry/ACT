@@ -44,8 +44,8 @@
 #ifndef GMX_UTILITY_FATALERROR_H
 #define GMX_UTILITY_FATALERROR_H
 
-#include <stdarg.h>
-#include <stdio.h>
+#include <cstdarg>
+#include <cstdio>
 
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/stringutil.h"

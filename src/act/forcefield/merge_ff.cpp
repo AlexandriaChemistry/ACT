@@ -34,10 +34,10 @@
 #include "actpre.h"
 
 #include <algorithm>
+#include <cstdio>
+#include <cstdlib>
 #include <map>
 #include <set>
-#include <stdio.h>
-#include <stdlib.h>
 #include <string>
 #include <utility>
 #include <vector>

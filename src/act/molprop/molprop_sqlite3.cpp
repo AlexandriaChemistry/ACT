@@ -32,13 +32,12 @@
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
 
+#include <cmath> 
 #include <cstdio>
+#include <cstdlib>
 #include <cstring>
-#include <math.h> 
 #include <memory>
-#include <stdlib.h>
 #include <string>
-#include <string.h>
 #include <strings.h> // IWYU pragma: keep (strcasecmp)
 #include <utility>
 

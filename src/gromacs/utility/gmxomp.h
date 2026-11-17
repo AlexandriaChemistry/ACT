@@ -51,7 +51,7 @@
 
 #include "config.h"
 
-#include <stdio.h>
+#include <cstdio>
 
 #if !GMX_NATIVE_WINDOWS
 #if defined(__SSE2__)

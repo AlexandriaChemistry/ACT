@@ -37,7 +37,7 @@
 #ifndef GMX_PBCUTIL_MSHIFT_H
 #define GMX_PBCUTIL_MSHIFT_H
 
-#include <stdio.h>
+#include <cstdio>
 
 #include "gromacs/math/vectypes.h"
 #include "gromacs/utility/basedefinitions.h"

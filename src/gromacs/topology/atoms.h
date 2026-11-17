@@ -37,7 +37,7 @@
 #ifndef GMX_TOPOLOGY_ATOMS_H
 #define GMX_TOPOLOGY_ATOMS_H
 
-#include <stdio.h>
+#include <cstdio>
 
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"

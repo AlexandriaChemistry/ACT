@@ -31,9 +31,9 @@
 
 #include "actpre.h"
 
+#include <cmath>
 #include <cstdlib>
 #include <gtest/gtest.h>
-#include <math.h>
 #include <vector>
 
 #include "act/statistics/statistics.h"

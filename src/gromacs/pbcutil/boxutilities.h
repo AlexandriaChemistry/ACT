@@ -35,7 +35,7 @@
 #ifndef GMX_PBCUTIL_BOXUTILITIES_H
 #define GMX_PBCUTIL_BOXUTILITIES_H
 
-#include <stdio.h>
+#include <cstdio>
 
 #include "gromacs/math/vectypes.h"
 

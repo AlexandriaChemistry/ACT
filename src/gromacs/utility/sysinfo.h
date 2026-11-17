@@ -45,8 +45,8 @@
 #ifndef GMX_UTILITY_SYSINFO_H
 #define GMX_UTILITY_SYSINFO_H
 
-#include <stddef.h>
-#include <time.h>
+#include <cstddef>
+#include <ctime>
 
 #include <string>
 
