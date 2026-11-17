@@ -534,6 +534,12 @@ int CommandLineModuleManager::run(int argc, char *argv[])
         }
         throw;
     }
+    // -version prints the information also for a manager that is quiet,
+    // for instance that of the alexandria program
+    if (bMaster && optionsHolder.shouldShowVersion())
+    {
+        bQuiet = false;
+    }
     bQuiet |= optionsHolder.shouldBeQuiet();
     if (!bQuiet)
     {
