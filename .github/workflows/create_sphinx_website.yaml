@@ -53,6 +53,17 @@ jobs:
       - name: Install dependencies
         run: pip install -r requirements.txt
 
+      - name: Check out ACT-utilities
+        uses: actions/checkout@v6
+        with:
+          repository: AlexandriaChemistry/ACT-utilities
+          path: ACT-utilities
+      - name: Install ACT-utilities
+        run: |
+          # The Python modules, scripts and data files that ACT requires
+          # With the same CMAKE_PREFIX_PATH as ACT, such that both use the same Python
+          cmake -S ACT-utilities -B ACT-utilities/build -DBUILD_TESTING=OFF -DCMAKE_PREFIX_PATH=${ACT_CONDA_PREFIX} -DCMAKE_INSTALL_PREFIX=${{ github.workspace }}/../tools
+          cmake --install ACT-utilities/build
       - name: Install ACT
         run: |
           cd ${{ github.workspace }}
