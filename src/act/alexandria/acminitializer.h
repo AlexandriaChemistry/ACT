@@ -36,11 +36,11 @@
 #ifndef ALEXANDRIA_ACMINITIALIZER_H
 #define ALEXANDRIA_ACMINITIALIZER_H
 
-#include <memory>
 #include <random>
 
 #include "act/alexandria/acmindividual.h"
 #include "act/alexandria/staticindividualinfo.h"
+#include "act/ga/genome.h"
 #include "act/ga/initializer.h"
 
 namespace alexandria

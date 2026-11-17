@@ -25,12 +25,15 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor,
  * Boston, MA  02110-1301, USA.
  */
+#include <algorithm>
+#include <cstddef>
 #include <string>
 
 #include "forcecomputerstatistics.h"
 
 #include "act/forces/forcecomputer.h"
 #include "act/utility/communicationrecord.h"
+#include "gromacs/utility/stringutil.h"
 
 namespace alexandria
 {

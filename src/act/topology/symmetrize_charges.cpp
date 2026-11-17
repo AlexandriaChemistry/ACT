@@ -34,9 +34,17 @@
 
 #include "symmetrize_charges.h"
 
+#include <cstddef>
+#include <cstdlib>
+#include <cstring>
 #include <string>
+#include <vector>
 
+#include "act/basics/interactiontype.h"
 #include "act/topology/topology.h"
+#include "gromacs/utility/exceptions.h"
+#include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/stringutil.h"
 
 namespace alexandria
 {

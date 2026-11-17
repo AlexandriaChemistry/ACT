@@ -31,10 +31,13 @@
 #ifndef ACT_GA_GENEPOOL_H
 #define ACT_GA_GENEPOOL_H
 
-#include <algorithm>
+#include <cstddef>
+#include <string>
 #include <vector>
 
 //#include "gromacs/utility/gmxassert.h"
+#include "act/basics/dataset.h"
+#include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/textwriter.h"
 
 #include "genome.h"

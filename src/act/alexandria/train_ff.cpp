@@ -33,18 +33,37 @@
  * \author Julian Ramon Marrades Furquet <julian@marrad.es>
  */
 
+#include "act/alexandria/acminitializer.h"
+#include "act/alexandria/confighandler.h"
+#include "act/alexandria/molselect.h"
+#include "act/basics/chargemodel.h"
+#include "act/basics/dataset.h"
+#include "act/basics/msg_handler.h"
+#include "act/ga/gene_pool.h"
+#include "act/ga/npointcrossover.h"
+#include "act/ga/probability_computer.h"
+#include "act/ga/selector.h"
+#include "act/ga/terminator.h"
+#include "act/import/compound_reader.h"
+#include "act/utility/communicationrecord.h"
 #include "actpre.h"
 
 #include "train_ff.h"
 
+#include <algorithm>
 #include <cctype>
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>
 
 #include <map>
+#include "gromacs/utility/gmxmpi.h"
+#include <numeric>
 #include <set>
 #include <random>
+#include <string>
+#include <utility>
+#include <vector>
 
 #include "config.h"
 
@@ -70,11 +89,19 @@
 #include "act/utility/jsontree.h"
 #include "act/utility/memory_check.h"
 #include "act/utility/portable_random.h"
+#include "gromacs/commandline/filenm.h"
 #include "gromacs/commandline/pargs.h"
 #include "act/forces/simd_information.h"
 #include "act/utility/timings.h"
+#include "gromacs/fileio/filetypes.h"
+#include "gromacs/fileio/oenv.h"
 #include "gromacs/fileio/xvgr.h"
+#include "gromacs/utility/arraysize.h"
+#include "gromacs/utility/basedefinitions.h"
+#include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/futil.h"
+#include "gromacs/utility/gmxassert.h"
+#include "gromacs/utility/stringutil.h"
 
 namespace alexandria
 {

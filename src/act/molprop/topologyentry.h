@@ -36,15 +36,18 @@
 #define ACT_MOLPROP_TOPOLOGYENTRY_H
 
 #include <cstdio>
-#include <any>
 #include <map>
+#include "gromacs/utility/gmxmpi.h"
 #include <span>
 #include <vector>
 
 #include "act/basics/basecontainer.h"
 #include "act/basics/identifier.h"
-#include "act/forcefield/particletype.h"
-#include "act/forcefield/forcefield.h"
+#include "act/forcefield/forcefield_parameter.h"
+#include "act/forcefield/forcefield_parameterlist.h"
+#include "act/utility/communicationrecord.h"
+#include "gromacs/utility/exceptions.h"
+#include "gromacs/utility/stringutil.h"
 
 namespace alexandria
 {

@@ -31,14 +31,21 @@
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
 
+#include "act/basics/interactiontype.h"
+#include "act/basics/msg_handler.h"
+#include "act/molprop/topologyentry.h"
 #include "actpre.h"
 
 
 #include <cstdlib>
 
 #include <gtest/gtest.h>
+#include <string>
+#include <vector>
 
 #include "act/topology/topology.h"
+#include "gromacs/math/vectypes.h"
+#include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/stringutil.h"
 
 #include "testutils/cmdlinetest.h"

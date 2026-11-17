@@ -37,6 +37,10 @@
 #include "initializer.h"
 
 #include "gromacs/fileio/xvgr.h"
+#include <cstddef>
+#include <cstdio>
+#include <random>
+#include <vector>
 
 namespace gmx
 {

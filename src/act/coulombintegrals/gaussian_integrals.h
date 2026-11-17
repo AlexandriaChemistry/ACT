@@ -41,6 +41,8 @@
 
 
 #include "gromacs/math/functions.h"
+#include "gromacs/utility/basedefinitions.h"
+#include <cmath>
 
 //! \brief Precompute a constant
 const double invsqrt_pi = 1.0/std::sqrt(M_PI);

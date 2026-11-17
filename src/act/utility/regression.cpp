@@ -34,7 +34,11 @@
 
 #include "regression.h"
 
+#include <Eigen/Core>
+#include <Eigen/QR>
+#include <algorithm>
 #include <cstring>
+#include <string>
 #include <utility>
 
 #include <vector>

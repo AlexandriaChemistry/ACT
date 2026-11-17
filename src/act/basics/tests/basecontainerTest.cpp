@@ -30,6 +30,7 @@
  * Implements part of the alexandria program.
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
+#include <cstddef>
 #include <gtest/gtest.h>
 
 #include "../basecontainer.h"

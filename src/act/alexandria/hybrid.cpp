@@ -26,9 +26,19 @@
  * Boston, MA  02110-1301, USA.
  */
 #include "hybrid.h"
+#include "act/alexandria/confighandler.h"
+#include "act/alexandria/sensitivity.h"
+#include "act/basics/dataset.h"
+#include "gromacs/utility/exceptions.h"
+#include "gromacs/utility/stringutil.h"
 
 #include <algorithm>
+#include <cstdio>
 #include <ctime>
+#include <map>
+#include <random>
+#include <string>
+#include <vector>
 #pragma GCC diagnostic ignored "-Wpragmas"
 #pragma GCC diagnostic ignored "-Wunknown-warning-option"
 #pragma GCC diagnostic ignored "-Wmaybe-uninitialized"

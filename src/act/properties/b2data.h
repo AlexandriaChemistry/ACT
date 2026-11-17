@@ -33,6 +33,7 @@
 #ifndef ACT_ALEXANDRIA_B2DATA_H
 #define ACT_ALEXANDRIA_B2DATA_H
 
+#include <cstddef>
 #include <limits>
 #include <vector>
 

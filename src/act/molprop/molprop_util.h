@@ -35,6 +35,7 @@
 #ifndef MOLPROP_UTIL_H
 #define MOLPROP_UTIL_H
 
+#include <cstddef>
 #include <set>
 #include <string>
 #include <vector>

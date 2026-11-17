@@ -41,6 +41,7 @@
 #include <vector>
 
 #include "act/basics/coordinate.h"
+#include "act/basics/interactiontype.h"
 #include "act/gpu/gpu.h"
 #include "act/forcefield/potential.h"
 #include "act/molprop/topologyentry.h"

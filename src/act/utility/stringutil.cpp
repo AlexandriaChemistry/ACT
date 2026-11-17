@@ -34,14 +34,20 @@
  
 #include "stringutil.h"
 
+#include <cstring>
+#include <cctype>
+#include <cstdlib>
+#include <exception>
 #include <math.h>
 #include <stdio.h>
 #include <string.h>
 
 #include <sstream>
 #include <string>
+#include <strings.h> // IWYU pragma: keep (strcasecmp)
+#include <vector>
 
-#include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/stringutil.h"
 
 int get_option(const char **opts)
 {

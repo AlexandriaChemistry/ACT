@@ -30,6 +30,8 @@
 #include <cmath>
 
 #include "gromacs/math/vec.h"
+#include "gromacs/math/vectypes.h"
+#include "gromacs/utility/real.h"
     
 real bond_angle(const rvec xi,
                 const rvec xj,

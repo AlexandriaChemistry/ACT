@@ -33,14 +33,20 @@
  */
 
 
+#include "act/molprop/experiment.h"
 #include "actpre.h"
 
+#include <cstdio>
+#include <map>
 #include <math.h>
 
 #include <algorithm>
 #include <cstdlib>
 
 #include <gtest/gtest.h>
+#include <string>
+#include <utility>
+#include <vector>
 
 #include "act/basics/msg_handler.h"
 #include "act/molprop/molprop.h"
@@ -51,6 +57,8 @@
 #include "act/forcefield/forcefield_xml.h"
 #include "act/utility/units.h"
 
+#include "gromacs/math/vectypes.h"
+#include "gromacs/utility/stringutil.h"
 #include "testutils/cmdlinetest.h"
 #include "testutils/refdata.h"
 #include "testutils/testasserts.h"

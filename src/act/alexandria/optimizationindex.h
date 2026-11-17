@@ -36,15 +36,12 @@
 #ifndef ALEXANDRIA_OPTIMIZATIONINDEX_H
 #define ALEXANDRIA_OPTIMIZATIONINDEX_H
 
-#include <map>
-#include <set>
 #include <string>
-#include <vector>
 
-#include "act/ga/genome.h"
+#include "act/basics/identifier.h"
+#include "act/basics/interactiontype.h"
+#include "act/forcefield/forcefield.h"
 #include "act/utility/communicationrecord.h"
-#include "act/basics/mutability.h"
-#include "molgen.h"
 
 namespace alexandria
 {

@@ -29,6 +29,7 @@
 #include <vector>
 
 #include "act/basics/interactiontype.h"
+#include "act/forcefield/potential.h"
 #include "act/molprop/topologyentry.h"
 #include "gromacs/math/vectypes.h"
 

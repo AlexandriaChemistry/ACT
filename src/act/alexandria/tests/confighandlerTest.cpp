@@ -31,6 +31,7 @@
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
 
+#include "act/alexandria/sensitivity.h"
 #include "actpre.h"
 
 #include <string>
@@ -40,10 +41,12 @@
 
 #include "act/alexandria/confighandler.h"
 #include "act/basics/msg_handler.h"
+#include "gromacs/commandline/filenm.h"
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/fileio/oenv.h"
 #include "gromacs/utility/exceptions.h"
 
+#include "gromacs/utility/real.h"
 #include "testutils/cmdlinetest.h"
 #include "testutils/testasserts.h"
 

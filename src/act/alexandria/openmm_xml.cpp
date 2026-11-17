@@ -34,26 +34,42 @@
 
 #include "openmm_xml.h"
 
+#include <cctype>
+#include <cstdio>
 #include <cstdlib>
 #include <cstring>
 #include <cmath>
 
 #include <algorithm>
+#include <libxml/xmlstring.h>
 #include <map>
 #include <set>
 
 #include <libxml/tree.h>
+#include <string>
+#include <vector>
 
 #include "act/alexandria/pdbwriter.h"
+#include "act/basics/act_particle.h"
 #include "act/basics/allmols.h"
+#include "act/basics/identifier.h"
+#include "act/basics/interactiontype.h"
 #include "act/basics/msg_handler.h"
+#include "act/basics/mutability.h"
+#include "act/forcefield/combinationkernels.h"
+#include "act/forcefield/combinationrules.h"
 #include "act/forcefield/forcefield.h"
 #include "act/forcefield/forcefield_parameter.h"
 #include "act/forcefield/forcefield_parameterlist.h"
 #include "act/forcefield/forcefield_parametername.h"
+#include "act/forcefield/particletype.h"
 #include "act/forcefield/potential.h"
 #include "act/topology/actmol.h"
+#include "act/topology/topology.h"
 #include "act/utility/xml_util.h"
+#include "gromacs/utility/exceptions.h"
+#include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/stringutil.h"
 
 namespace alexandria
 {

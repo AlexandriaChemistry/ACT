@@ -34,11 +34,9 @@
 #ifndef CHARGEMODEL_H
 #define CHARGEMODEL_H
 
-#include <map>
 #include <string>
 #include <vector>
 
-#include "gromacs/utility/basedefinitions.h"
 
 namespace alexandria
 {

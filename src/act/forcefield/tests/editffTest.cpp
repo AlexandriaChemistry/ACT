@@ -31,15 +31,21 @@
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
 
+#include "act/basics/identifier.h"
+#include "act/forcefield/combinationkernels.h"
+#include "act/forcefield/forcefield_parameter.h"
+#include "act/forcefield/particletype.h"
 #include "actpre.h"
 
 #include <algorithm>
 #include <cmath>
+#include <cstddef>
 #include <filesystem>
 #include <fstream>
 #include <iterator>
 #include <map>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include <gtest/gtest.h>

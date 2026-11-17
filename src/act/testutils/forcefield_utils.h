@@ -33,6 +33,7 @@
  */
 
 #include "act/forcefield/forcefield.h"
+#include <string>
 
 //! Return testing forcefield structure
 alexandria::ForceField *getForceField(const std::string &qdist);

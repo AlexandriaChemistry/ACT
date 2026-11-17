@@ -37,7 +37,6 @@
 
 #include <random>
 #include <time.h>
-#include <vector>
 
 #include "genome.h"
 #include "act/utility/portable_random.h"

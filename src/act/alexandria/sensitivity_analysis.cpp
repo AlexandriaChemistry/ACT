@@ -33,6 +33,8 @@
  */
 #include "sensitivity_analysis.h"
 
+#include "act/alexandria/sensitivity.h"
+#include "act/basics/dataset.h"
 #include "act/basics/msg_handler.h"
 #include "act/utility/communicationrecord.h"
 #include "act/alexandria/acmfitnesscomputer.h"
@@ -44,7 +46,12 @@
 #include "gromacs/utility/textwriter.h"
 
 #include <algorithm>
+#include <array>
+#include <cstddef>
+#include <cstdio>
+#include <nlohmann/json_fwd.hpp>
 #include <set>
+#include <string>
 #include <utility>
 #include <vector>
 

@@ -39,6 +39,7 @@
 #include <utility>
 
 #include <gtest/gtest.h>
+#include <vector>
 
 #include "testutils/cmdlinetest.h"
 #include "testutils/refdata.h"

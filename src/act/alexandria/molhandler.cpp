@@ -35,6 +35,25 @@
 
 // This include has to come first, to prevent the GROMACS definition of
 // "real" from messing up the library.
+#include "act/alexandria/confighandler.h"
+#include "act/basics/act_particle.h"
+#include "act/basics/interactiontype.h"
+#include "act/basics/msg_handler.h"
+#include "act/forces/forcecomputer.h"
+#include "act/topology/coords_energy.h"
+#include "act/utility/regression.h"
+#include "gromacs/math/functions.h"
+#include "gromacs/utility/exceptions.h"
+#include "gromacs/utility/gmxassert.h"
+#include "gromacs/utility/real.h"
+#include "gromacs/utility/stringutil.h"
+#include <Eigen/Core>
+#include <cstddef>
+#include <cstdio>
+#include <map>
+#include <string>
+#include <utility>
+#include <vector>
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wpragmas"
 #pragma GCC diagnostic ignored "-Wunknown-warning-option"

@@ -34,8 +34,11 @@
 #include "selector.h"
 
 #include <algorithm>
+#include <cstddef>
 #include <random>
+#include <vector>
 
+#include "act/ga/genome.h"
 #include "gromacs/utility/gmxassert.h"
 
 

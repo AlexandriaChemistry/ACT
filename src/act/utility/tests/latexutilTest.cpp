@@ -33,6 +33,7 @@
 
 #include "../latex_util.h"
 
+#include <cstdio>
 #include <fstream>
 #include <string>
 #include <vector>

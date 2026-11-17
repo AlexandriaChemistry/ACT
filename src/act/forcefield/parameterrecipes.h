@@ -54,7 +54,6 @@
 
 #include "act/basics/identifier.h"
 #include "act/basics/interactiontype.h"
-#include "act/forcefield/combinationkernels.h"
 #include "act/forcefield/setrecipe.h"
 
 namespace alexandria

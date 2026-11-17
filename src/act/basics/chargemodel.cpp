@@ -36,8 +36,10 @@
 
 #include <map>
 #include <string>
+#include <vector>
 
 #include "gromacs/utility/exceptions.h"
+#include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/stringutil.h"
 
 namespace alexandria

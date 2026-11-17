@@ -30,10 +30,13 @@
  * Tests of the merge_ff module.
  */
 
+#include "act/basics/identifier.h"
+#include "act/forcefield/forcefield_parameter.h"
 #include "actpre.h"
 
 #include <filesystem>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include <gtest/gtest.h>

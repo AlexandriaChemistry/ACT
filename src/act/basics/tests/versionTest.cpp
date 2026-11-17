@@ -31,6 +31,7 @@
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
 #include <gtest/gtest.h>
+#include <string>
 
 #include "../version.h"
 

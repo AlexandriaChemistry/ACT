@@ -32,6 +32,12 @@
 
 
 #include "percentmutator.h"
+#include "act/basics/msg_handler.h"
+#include "act/ga/genome.h"
+#include "gromacs/utility/basedefinitions.h"
+#include <algorithm>
+#include <cstddef>
+#include <vector>
 
 
 

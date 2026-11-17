@@ -35,14 +35,15 @@
 #ifndef ACT_TOPOLOGY_H
 #define ACT_TOPOLOGY_H
 
+#include <cstddef>
 #include <map>
 #include <set>
+#include <string>
 #include <vector>
 
-#include "act/basics/act_particle.h"
 #include "act/basics/identifier.h"
+#include "act/basics/interactiontype.h"
 #include "act/basics/msg_handler.h"
-#include "act/forcefield/particletype.h"
 #include "act/forcefield/forcefield.h"
 #include "act/forcefield/forcefield_parameterlist.h"
 #include "act/molprop/fragment.h"
@@ -52,7 +53,7 @@
 #include "act/topology/actatomlist.h"
 #include "act/topology/actmol_low.h"
 #include "act/topology/nonbondedpairs.h"
-#include "act/utility/communicationrecord.h"
+#include "gromacs/math/vectypes.h"
 #include "gromacs/utility/exceptions.h"
 
 namespace alexandria

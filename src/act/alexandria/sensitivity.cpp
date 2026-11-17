@@ -34,11 +34,15 @@
 
 #include "sensitivity.h"
 
+#include <Eigen/Core>
 #include <algorithm>
+#include <array>
 #include <cmath>
 #include <cstdlib>
 #include <limits>
 #include <map>
+#include <nlohmann/json_fwd.hpp>
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -49,6 +53,7 @@
 #include "act/utility/stringutil.h"
 #include "gromacs/math/functions.h"
 #include "gromacs/utility/exceptions.h"
+#include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/stringutil.h"
 #include "gromacs/utility/textwriter.h"
 

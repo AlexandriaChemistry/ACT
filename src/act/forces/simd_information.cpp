@@ -29,6 +29,7 @@
  * Runtime detection of the SIMD instructions of the processor.
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
+#include "act/utility/timings.h"
 #include "actpre.h"
 
 #include "simd_information.h"

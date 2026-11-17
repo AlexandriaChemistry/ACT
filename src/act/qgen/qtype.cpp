@@ -34,12 +34,26 @@
 
 #include "qtype.h"
 
+#include <algorithm>
+#include <cmath>
+#include <cstddef>
+#include <cstdio>
 #include <map>
+#include <string>
+#include <utility>
+#include <vector>
 
+#include "act/basics/interactiontype.h"
 #include "act/basics/msg_handler.h"
 #include "act/forces/forcecomputer.h"
+#include "act/molprop/molpropobservable.h"
 #include "act/molprop/multipole_names.h"
 #include "act/topology/topology.h"
+#include "gromacs/math/functions.h"
+#include "gromacs/math/units.h"
+#include "gromacs/math/vec.h"
+#include "gromacs/math/vectypes.h"
+#include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/stringutil.h"
 
 #include "qgen_resp.h"

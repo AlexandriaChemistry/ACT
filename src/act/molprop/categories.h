@@ -37,8 +37,6 @@
 #include <string>
 #include <vector>
 
-#include "act/alexandria/molselect.h"
-#include "gromacs/utility/real.h"
 
 /*! \brief
  * Contains classes related to alexandria force field tools

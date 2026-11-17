@@ -31,14 +31,19 @@
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
 
+#include "act/basics/act_particle.h"
 #include "actpre.h"
 
 
+#include <cstddef>
 #include <gtest/gtest.h>
+#include <vector>
 
 #include "act/properties/princ.h"
-#include "act/topology/topology.h"
+#include "act/topology/actatom.h"
 
+#include "gromacs/math/vectypes.h"
+#include "gromacs/utility/real.h"
 #include "testutils/testasserts.h"
 
 namespace alexandria

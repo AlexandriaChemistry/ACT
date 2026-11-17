@@ -32,24 +32,35 @@
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  * \ingroup group_act_tests
  */
+#include "act/basics/act_particle.h"
+#include "act/basics/interactiontype.h"
+#include "act/basics/msg_handler.h"
+#include "act/topology/actatom.h"
+#include "act/utility/units.h"
 #include "actpre.h"
 
 #include "act/forces/forcecomputer.h"
 
 #include <algorithm>
 #include <cmath>
+#include <cstddef>
 #include <cstdint>
 #include <limits>
 #include <map>
 
 
 #include <gtest/gtest.h>
+#include <string>
+#include <vector>
 
 #include "act/import/import.h"
 #include "act/testutils/forcefield_utils.h"
 #include "act/topology/actmol.h"
 #include "act/testutils/actmol_util.h"
 
+#include "gromacs/math/vectypes.h"
+#include "gromacs/utility/real.h"
+#include "gromacs/utility/stringutil.h"
 #include "testutils/refdata.h"
 #include "testutils/testasserts.h"
 #include "testutils/testfilemanager.h"

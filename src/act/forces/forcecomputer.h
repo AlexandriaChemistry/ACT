@@ -29,12 +29,19 @@
 #define ACT_FORCECOMPUTER_H
 
 #include <algorithm>
+#include <cstddef>
+#include <cstdint>
 #include <functional>
+#include <map>
 #include <memory>
 #include <set>
+#include <string>
+#include <utility>
 #include <vector>
 
+#include "act/basics/interactiontype.h"
 #include "act/basics/msg_handler.h"
+#include "act/forces/conformationdata.h"
 #include "act/forces/gpusystem.h"
 #include "act/forces/vsitehandler.h"
 #include "act/forcefield/forcefield.h"

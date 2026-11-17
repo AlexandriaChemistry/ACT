@@ -32,6 +32,14 @@
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
 
+#include "act/basics/chargemodel.h"
+#include "act/topology/actatom.h"
+#include "act/utility/stringutil.h"
+#include "gromacs/math/functions.h"
+#include "gromacs/math/units.h"
+#include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/real.h"
+#include "gromacs/utility/stringutil.h"
 #include "qgen_resp.h"
 
 #include <algorithm>
@@ -39,10 +47,11 @@
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>
+#include <string>
+#include <vector>
 
 
 #include "act/statistics/statistics.h"
-#include "act/topology/topology.h"
 #include "act/utility/units.h"
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/math/vec.h"

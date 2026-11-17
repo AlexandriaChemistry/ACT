@@ -34,7 +34,11 @@
 
 #include "jsontree.h"
 
+#include <cstddef>
+#include <cstdio>
 #include <nlohmann/json.hpp>
+#include <nlohmann/json_fwd.hpp>
+#include <string>
 
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/stringutil.h"

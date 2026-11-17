@@ -34,17 +34,20 @@
 #ifndef ACT_SECONDVIRIAL_H
 #define ACT_SECONDVIRIAL_H
 
-#include <random>
+#include <map>
+#include <string>
 #include <vector>
 
 #include "act/forcefield/forcefield.h"
 #include "act/forces/forcecomputer.h"
 #include "act/properties/dimergenerator.h"
 #include "act/topology/actmol.h"
+#include "act/utility/communicationrecord.h"
 #include "act/utility/jsontree.h"
+#include "gromacs/commandline/filenm.h"
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/fileio/oenv.h"
-#include "gromacs/math/vectypes.h"
+#include "gromacs/utility/real.h"
 
 namespace alexandria
 {

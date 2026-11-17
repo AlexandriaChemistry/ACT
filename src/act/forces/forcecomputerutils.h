@@ -26,6 +26,7 @@
  * Boston, MA  02110-1301, USA.
  */
 #include "gromacs/math/vectypes.h"
+#include "gromacs/utility/real.h"
 
 /*! \brief Calculate bond-angle. 
  * \param[in] xi The first coordinate i

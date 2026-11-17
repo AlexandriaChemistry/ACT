@@ -33,12 +33,18 @@
  */
 
 #include <cmath>
+#include <cstddef>
+#include <map>
 #include <vector>
 
 #include <gtest/gtest.h>
 
+#include "act/basics/dataset.h"
+#include "act/basics/msg_handler.h"
 #include "act/ga/gene_pool.h"
 #include "act/ga/genetic_algorithm.h"
+#include "act/ga/genome.h"
+#include "act/ga/individual.h"
 #include "act/ga/initializer.h"
 #include "act/ga/npointcrossover.h"
 #include "act/ga/penalizer.h"

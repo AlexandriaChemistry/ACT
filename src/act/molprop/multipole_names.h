@@ -30,10 +30,10 @@
  * Implements part of the alexandria program.
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
+#include <array>
 #include <string>
 #include <vector>
 
-#include <cstdio>
 
 #include "act/molprop/molpropobservable.h"
 

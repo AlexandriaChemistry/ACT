@@ -32,6 +32,7 @@
 #ifndef GA_MUTATOR_H
 #define GA_MUTATOR_H
 
+#include <cstddef>
 #include <random>
 #include <vector>
 

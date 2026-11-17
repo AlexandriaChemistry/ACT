@@ -35,6 +35,9 @@
 #include "../atomization_energy.h"
 
 #include <gtest/gtest.h>
+#include <map>
+#include <string>
+#include <vector>
 
 #include "act/basics/libraryfile.h"
 #include "gromacs/utility/stringutil.h"

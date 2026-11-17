@@ -37,10 +37,12 @@
 
 #include <cstdio>
 
+#include <string>
 #include <vector>
 
 #include "act/basics/chargemodel.h"
 #include "gromacs/math/vectypes.h"
+#include "gromacs/utility/real.h"
 
 struct gmx_output_env_t;
 struct t_symtab;

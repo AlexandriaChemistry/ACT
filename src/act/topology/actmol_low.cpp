@@ -37,18 +37,35 @@
 #include <cstdio>
 #include <cstring>
 #include <cmath>
+#include <map>
+#include <string>
+#include <vector>
 
+#include "act/basics/act_particle.h"
+#include "act/basics/atomization_energy.h"
+#include "act/basics/dataset.h"
+#include "act/basics/identifier.h"
+#include "act/basics/interactiontype.h"
 #include "act/forcefield/forcefield.h"
 #include "act/forcefield/forcefield_parameter.h"
 #include "act/forces/forcecomputer.h"
 #include "act/forces/forcecomputerutils.h"
+#include "act/molprop/molpropobservable.h"
 #include "act/molprop/multipole_names.h"
 #include "act/qgen/qgen_acm.h"
+#include "act/qgen/qtype.h"
 #include "act/topology/actmol.h"
 #include "act/topology/topology.h"
 #include "act/utility/units.h"
+#include "gromacs/math/functions.h"
+#include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/math/vectypes.h"
+#include "gromacs/utility/exceptions.h"
+#include "gromacs/utility/real.h"
 #include "gromacs/utility/strconvert.h"
+#include "gromacs/utility/stringutil.h"
+#include "gromacs/utility/textwriter.h"
 
 namespace alexandria
 {

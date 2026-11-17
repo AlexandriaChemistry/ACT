@@ -32,16 +32,25 @@
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
 
+#include <cmath>
+#include <cstdio>
 #include <cstdlib>
 
 #include <algorithm>
+#include <cstring>
 #include <map>
 #include <set>
+#include <string>
+#include <utility>
+#include <vector>
 
 #include "act/alexandria/alex_modules.h"
+#include "act/basics/identifier.h"
 #include "act/basics/interactiontype.h"
 #include "act/basics/msg_handler.h"
 #include "act/basics/mutability.h"
+#include "act/forcefield/forcefield_parameterlist.h"
+#include "act/forcefield/particletype.h"
 #include "act/forces/forcecomputer.h"
 #include "act/forcefield/act_checksum.h"
 #include "act/forcefield/combruleutil.h"
@@ -50,9 +59,15 @@
 #include "act/forcefield/forcefield_validation.h"
 #include "act/forcefield/forcefield_xml.h"
 #include "act/forcefield/generate_dependent.h"
+#include "gromacs/commandline/filenm.h"
 #include "gromacs/commandline/pargs.h"
+#include "gromacs/fileio/filetypes.h"
 #include "gromacs/fileio/oenv.h"
+#include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/exceptions.h"
+#include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/gmxassert.h"
+#include "gromacs/utility/real.h"
 #include "gromacs/utility/stringutil.h"
 
 namespace alexandria

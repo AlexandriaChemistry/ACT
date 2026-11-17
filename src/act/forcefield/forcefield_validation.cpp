@@ -34,7 +34,11 @@
 #include "act/basics/interactiontype.h"
 #include "act/basics/mutability.h"
 #include "act/forcefield/forcefield.h"
+#include "act/forcefield/forcefield_parameter.h"
 #include "gromacs/utility/stringutil.h"
+#include <cstddef>
+#include <string>
+#include <vector>
 
 namespace alexandria
 {

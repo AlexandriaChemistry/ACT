@@ -36,7 +36,9 @@
 #define FORCEFIELD_TABLES_H
 
 #include <stdio.h>
+#include <string>
 
+#include "act/basics/interactiontype.h"
 #include "forcefield.h"
 
 namespace alexandria

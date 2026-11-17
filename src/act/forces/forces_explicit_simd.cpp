@@ -44,11 +44,22 @@
  * same potentials for one conformation and are the reference.
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
+#include "act/basics/coordinate.h"
+#include "act/forcefield/potential.h"
+#include "act/molprop/topologyentry.h"
+#include "act/topology/actatom.h"
+#include "act/topology/nonbondedpairs.h"
 #include "actpre.h"
 
 #include "forces_explicit_simd.h"
 
 #include "act/forces/simd_math.h"
+#include "config.h"
+#include "gromacs/utility/real.h"
+#include <algorithm>
+#include <cmath>
+#include <cstddef>
+#include <vector>
 
 #ifdef ACT_HAVE_SIMD
 

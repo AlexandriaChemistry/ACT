@@ -32,13 +32,19 @@
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  * \ingroup group_forces_tests
  */
+#include <algorithm>
+#include <cmath>
 #include <config.h>
 
+#include <cstddef>
+#include <cstdio>
+#include <cstdlib>
 #include <math.h>
 
-#include <map>
 
 #include <gtest/gtest.h>
+#include <tuple>
+#include <vector>
 
 #include "act/basics/chargemodel.h"
 #include "act/coulombintegrals/gaussian_integrals.h"
@@ -48,7 +54,6 @@
 #include "testutils/cmdlinetest.h"
 #include "testutils/refdata.h"
 #include "testutils/testasserts.h"
-#include "testutils/testfilemanager.h"
 
 namespace gmx
 {

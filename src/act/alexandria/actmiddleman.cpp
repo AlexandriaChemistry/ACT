@@ -22,13 +22,23 @@
 
 #include <algorithm>
 #include <cstdlib>
+#include <random>
+#include <utility>
+#include <vector>
 
 #include "act/alexandria/acminitializer.h"
+#include "act/alexandria/confighandler.h"
 #include "act/alexandria/mcmcmutator.h"
 #include "act/alexandria/percentmutator.h"
+#include "act/alexandria/sensitivity.h"
 #include "act/alexandria/staticindividualinfo.h"
+#include "act/basics/chargemodel.h"
+#include "act/basics/dataset.h"
+#include "act/basics/msg_handler.h"
 #include "act/forces/forcecomputerstatistics.h"
+#include "act/ga/genome.h"
 #include "act/gpu/gpu.h"
+#include "act/qgen/qgen_resp.h"
 #include "act/utility/portable_random.h"
 #include "act/utility/communicationrecord.h"
 #include "gromacs/utility/gmxassert.h"

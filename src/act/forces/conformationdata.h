@@ -49,16 +49,16 @@
 #include <utility>
 #include <vector>
 
-#include "act/basics/act_particle.h"
+#include "act/basics/coordinate.h"
 #include "act/basics/interactiontype.h"
 #include "act/forcefield/forcefield_parameterlist.h"
 #include "act/forcefield/potential.h"
 #include "act/forces/forces_explicit_simd.h"
-#include "act/topology/actatom.h"
 #include "act/topology/coords_energy.h"
 #include "act/utility/timings.h"
 #include "gromacs/math/vectypes.h"
 #include "gromacs/utility/gmxassert.h"
+#include "gromacs/utility/real.h"
 
 namespace alexandria
 {

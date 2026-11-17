@@ -36,11 +36,13 @@
 #define ALEXANDRIA_SENSITIVITY_H
 
 #include <array>
+#include <cstddef>
+// A member holds the JSON by value, which needs the complete type
+#include <nlohmann/json.hpp> // IWYU pragma: keep
 #include <optional>
 #include <string>
 #include <vector>
 
-#include <nlohmann/json.hpp>
 
 #include "act/alexandria/sensitivity.h"
 #include "act/basics/dataset.h"

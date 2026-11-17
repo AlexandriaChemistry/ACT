@@ -26,6 +26,8 @@
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
 
+#include <cstddef>
+#include <gtest/gtest-message.h>
 #include <gtest/gtest.h>
 #include <algorithm>
 #include <cmath>
@@ -37,10 +39,23 @@
 #include <numeric>
 #include <set>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "act/alexandria/devcomputer.h"
+#include "act/alexandria/confighandler.h"
+#include "act/alexandria/loss_function.h"
 #include "act/alexandria/molgen.h"
+#include "act/alexandria/molhandler.h"
+#include "act/basics/act_particle.h"
+#include "act/basics/chargemodel.h"
+#include "act/basics/dataset.h"
+#include "act/basics/identifier.h"
+#include "act/basics/interactiontype.h"
+#include "act/basics/mutability.h"
+#include "act/molprop/experiment.h"
+#include "act/molprop/molprop.h"
+#include "act/molprop/molpropobservable.h"
 #include "act/testutils/forcefield_utils.h"
 #include "act/forcefield/forcefield_xml.h"
 #include "act/forcefield/potential.h"
@@ -49,10 +64,18 @@
 #include "act/gpu/gpu.h"
 #include "act/qgen/qgen_resp.h"
 #include "act/qgen/qtype.h"
+#include "act/topology/actmol_low.h"
+#include "act/topology/coords_energy.h"
 #include "act/utility/timings.h"
 #include "act/molprop/molprop_xml.h"
 #include "act/topology/actmol.h"
 
+#include "act/utility/units.h"
+#include "gromacs/math/functions.h"
+#include "gromacs/math/units.h"
+#include "gromacs/math/vectypes.h"
+#include "gromacs/utility/exceptions.h"
+#include "gromacs/utility/stringutil.h"
 #include "testutils/cmdlinetest.h"
 #include "testutils/gputests.h"
 #include "testutils/refdata.h"

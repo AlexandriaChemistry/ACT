@@ -34,24 +34,40 @@
 
 #include "forcefield_xml.h"
 
+#include <cstdint>
+#include <cstdio>
 #include <cstdlib>
 #include <cstring>
 
+#include <libxml/xmlstring.h>
 #include <map>
 #include <stack>
 
 #include <libxml/parser.h>
 #include <libxml/tree.h>
+#include <string>
+#include <utility>
 
+#include "act/basics/act_particle.h"
+#include "act/basics/identifier.h"
+#include "act/basics/interactiontype.h"
+#include "act/basics/mutability.h"
+#include "act/forcefield/combinationrules.h"
 #include "act/forcefield/forcefield.h"
 #include "act/forcefield/forcefield_parameter.h"
 #include "act/forcefield/forcefield_parameterlist.h"
 #include "act/forcefield/forcefield_validation.h"
 #include "act/forcefield/generate_dependent.h"
+#include "act/forcefield/particletype.h"
+#include "act/forcefield/potential.h"
 #include "act/forcefield/symcharges.h"
 #include "act/basics/msg_handler.h"
+#include "act/utility/stringutil.h"
 #include "act/utility/xml_util.h"
+#include "gromacs/utility/exceptions.h"
+#include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
+#include "gromacs/utility/stringutil.h"
 
 namespace alexandria
 {

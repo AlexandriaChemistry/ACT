@@ -35,11 +35,13 @@
 #ifndef MOLPROP_H
 #define MOLPROP_H
 
+#include "gromacs/utility/gmxmpi.h"
 #include <string.h>
 
 #include <map>
 #include <memory>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "act/molprop/topologyentry.h"
@@ -47,11 +49,8 @@
 #include "act/molprop/experiment.h"
 #include "act/molprop/fragment.h"
 #include "act/molprop/molpropobservable.h"
-#include "act/molprop/phase.h"
 #include "act/forcefield/forcefield.h"
 #include "act/utility/communicationrecord.h"
-#include "gromacs/math/vectypes.h"
-#include "gromacs/utility/real.h"
 
 /*! \brief
  * Contains all classes related to alexandria force field tools

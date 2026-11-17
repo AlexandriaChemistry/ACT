@@ -34,17 +34,15 @@
 #ifndef ALEXANDRIA_MCMC_H
 #define ALEXANDRIA_MCMC_H
 
-#include <cstdio>
 
-#include <vector>
+#include <map>
 
-#include "act/ga/crossover.h"
+#include "act/basics/dataset.h"
 #include "act/ga/fitness_computer.h"
 #include "act/ga/genetic_algorithm.h"
+#include "act/ga/genome.h"
 #include "act/ga/initializer.h"
-#include "act/ga/probability_computer.h"
-#include "act/ga/selector.h"
-#include "act/ga/terminator.h"
+#include "act/ga/mutator.h"
 
 #include "confighandler.h"
 #include "staticindividualinfo.h"

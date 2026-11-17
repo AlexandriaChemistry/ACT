@@ -36,6 +36,7 @@
 #include <string>
 
 #include <gtest/gtest.h>
+#include <vector>
 
 #include "act/alexandria/optimizationindex.h"
 #include "act/basics/identifier.h"

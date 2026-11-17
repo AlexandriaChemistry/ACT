@@ -33,7 +33,9 @@
 #include "allmols.h"
 
 #include <algorithm>
+#include <cstdio>
 #include <string>
+#include <vector>
 
 #include "act/basics/libraryfile.h"
 #include "act/utility/jsonreader.h"

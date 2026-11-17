@@ -36,29 +36,57 @@
 
 #include <algorithm>
 #include <cctype>
+#include <cinttypes>
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>
 #include <filesystem>
+#include <map>
+#include <string>
+#include <utility>
+#include <vector>
 
+#include "act/alexandria/molgen.h"
+#include "act/alexandria/molhandler.h"
 #include "act/alexandria/pdbwriter.h"
+#include "act/alexandria/staticindividualinfo.h"
+#include "act/basics/act_particle.h"
+#include "act/basics/atomization_energy.h"
+#include "act/basics/dataset.h"
 #include "act/basics/interactiontype.h"
+#include "act/basics/mutability.h"
+#include "act/forcefield/particletype.h"
 #include "act/forces/forcecomputer.h"
+#include "act/molprop/experiment.h"
+#include "act/molprop/molprop.h"
 #include "act/molprop/molprop_xml.h"
+#include "act/molprop/molpropobservable.h"
 #include "act/molprop/multipole_names.h"
 #include "act/properties/thermochemistry.h"
 #include "act/qgen/qtype.h"
+#include "act/statistics/statistics.h"
 #include "act/topology/actmol.h"
+#include "act/topology/actmol_low.h"
+#include "act/topology/coords_energy.h"
 #include "act/utility/jsontree.h"
 #include "act/utility/stringutil.h"
 #include "act/utility/units.h"
+#include "gromacs/commandline/filenm.h"
+#include "gromacs/commandline/pargs.h"
+#include "gromacs/fileio/filetypes.h"
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/fileio/xvgr.h"
+#include "gromacs/math/functions.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/math/vectypes.h"
 #include "gromacs/pbcutil/pbc.h"
+#include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/baseversion.h"
 #include "gromacs/utility/exceptions.h"
+#include "gromacs/utility/futil.h"
 #include "gromacs/utility/gmxassert.h"
+#include "gromacs/utility/real.h"
+#include "gromacs/utility/stringutil.h"
 #include "gromacs/utility/textwriter.h"
 
 void doAddOptions(std::vector<t_pargs> *pargs, size_t npa, t_pargs pa[])

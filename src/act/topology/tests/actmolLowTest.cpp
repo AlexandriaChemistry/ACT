@@ -41,6 +41,8 @@
 #include "act/topology/actmol_low.h"
 #include "act/basics/msg_handler.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/math/vectypes.h"
+#include "gromacs/utility/real.h"
 
 
 namespace alexandria

@@ -36,10 +36,11 @@
 
 #include <array>
 #include <cmath>
+#include <cstddef>
 #include <string>
 #include <vector>
 
-#include "gromacs/math/vec.h"
+#include "gromacs/math/vectypes.h"
 
 namespace alexandria
 {

@@ -35,7 +35,9 @@
 #include <cstdlib>
 #include <filesystem>
 #include <fstream>
+#include <new>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include <unistd.h>

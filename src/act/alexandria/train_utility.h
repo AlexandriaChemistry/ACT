@@ -36,16 +36,29 @@
 #define TRAIN_UTILITY_H
 
 #include <cstdio>
+#include <map>
+#include <string>
 #include <vector>
 
+#include "act/alexandria/confighandler.h"
+#include "act/alexandria/molgen.h"
 #include "act/alexandria/molhandler.h"
 #include "act/alexandria/staticindividualinfo.h"
+#include "act/basics/atomization_energy.h"
+#include "act/basics/dataset.h"
+#include "act/basics/interactiontype.h"
 #include "act/forces/forcecomputer.h"
 #include "act/forcefield/forcefield.h"
+#include "act/molprop/molpropobservable.h"
 #include "act/statistics/statistics.h"
 #include "act/topology/actmol.h"
+#include "act/topology/actmol_low.h"
+#include "act/topology/coords_energy.h"
 #include "act/utility/jsontree.h"
+#include "gromacs/commandline/filenm.h"
 #include "gromacs/commandline/pargs.h"
+#include "gromacs/math/vectypes.h"
+#include "gromacs/utility/real.h"
 
 /*! \brief Utility function to merge command line arguments
  * \param[inout] pargs The complete list of arguments

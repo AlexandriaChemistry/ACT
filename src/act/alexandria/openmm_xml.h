@@ -37,6 +37,9 @@
 
 #include "act/forcefield/forcefield.h"
 #include "act/topology/actmol.h"
+#include <map>
+#include <string>
+#include <vector>
 
 namespace alexandria
 {

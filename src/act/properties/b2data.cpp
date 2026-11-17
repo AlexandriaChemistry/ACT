@@ -35,16 +35,23 @@
 #include <algorithm>
 #include <cmath>
 #include <cstdio>
+#include <cstring>
 #include <sstream>
+#include <string>
+#include <vector>
 
+#include "act/basics/msg_handler.h"
 #include "act/forces/forces_explicit_simd.h"
 #include "act/forces/simd_information.h"
 #include "act/utility/simpson.h"
 #include "act/utility/timings.h"
 #include "gromacs/fileio/oenv.h"
 #include "gromacs/fileio/xvgr.h"
+#include "gromacs/math/functions.h"
 #include "gromacs/math/units.h"
+#include "gromacs/math/vectypes.h"
 #include "gromacs/utility/exceptions.h"
+#include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/stringutil.h"
 
 namespace alexandria

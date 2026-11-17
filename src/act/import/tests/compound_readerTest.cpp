@@ -31,16 +31,24 @@
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
 
+#include "act/basics/chargemodel.h"
+#include "act/forcefield/forcefield.h"
+#include "act/forces/forcecomputer.h"
+#include "act/topology/actmol.h"
 #include "actpre.h"
 
 
 #include <cstdlib>
 
 #include <gtest/gtest.h>
+#include <string>
+#include <vector>
 
 #include "act/basics/msg_handler.h"
 #include "act/testutils/forcefield_utils.h"
 #include "act/import/compound_reader.h"
+#include "gromacs/commandline/filenm.h"
+#include "gromacs/commandline/pargs.h"
 #include "gromacs/utility/stringutil.h"
 
 #include "testutils/cmdlinetest.h"

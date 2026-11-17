@@ -34,7 +34,10 @@
 
 #include <algorithm>
 #include <cmath>
+#include <cstdio>
 #include <cstdlib>
+#include <string>
+#include <vector>
 
 #include "act/basics/libraryfile.h"
 #include "act/basics/msg_handler.h"

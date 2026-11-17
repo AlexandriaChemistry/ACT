@@ -31,8 +31,17 @@
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
 #include "act/molprop/multipole_names.h"
+#include "act/molprop/molpropobservable.h"
 #include "act/utility/units.h"
-#include "gromacs/utility/fatalerror.h"
+#include "gromacs/math/vectypes.h"
+#include "gromacs/utility/exceptions.h"
+#include "gromacs/utility/stringutil.h"
+#include <algorithm>
+#include <array>
+#include <cstddef>
+#include <map>
+#include <string>
+#include <vector>
 
 namespace alexandria
 {

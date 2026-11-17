@@ -30,14 +30,19 @@
 #include <algorithm>
 #include <array>
 #include <cstring>
+#include <map>
 #include <string>
 #include <vector>
 
 #include "act/basics/mutability.h"
+#include "act/forcefield/combinationkernels.h"
+#include "act/forcefield/forcefield_parameter.h"
 #include "act/forcefield/forcefield_parametername.h"
 #include "act/forcefield/potential.h"
 #include "act/utility/units.h"
+#include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/stringutil.h"
 
 namespace alexandria
 {

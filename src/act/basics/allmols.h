@@ -38,7 +38,6 @@
 #include <map>
 #include <set>
 #include <string>
-#include <vector>
 
 #include "act/utility/jsonreader.h"
 

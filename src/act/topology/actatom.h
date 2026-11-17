@@ -34,6 +34,7 @@
 #ifndef ACT_ACTATOM_H
 #define ACT_ACTATOM_H
 
+#include <string>
 #include <vector>
 
 #include "act/basics/act_particle.h"

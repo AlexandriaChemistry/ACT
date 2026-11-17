@@ -28,6 +28,7 @@
 #ifndef ACT_FORCECOMPUTERSTATISTICS_H
 #define ACT_FORCECOMPUTERSTATISTICS_H
 
+#include <cstddef>
 #include <string>
 
 namespace alexandria

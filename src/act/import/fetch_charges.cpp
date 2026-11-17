@@ -34,9 +34,24 @@
 #include "fetch_charges.h"    
 
 #include "act/basics/allmols.h"
+#include "act/basics/chargemodel.h"
+#include "act/basics/identifier.h"
 #include "act/basics/msg_handler.h"
+#include "act/forcefield/forcefield.h"
+#include "act/forces/forcecomputer.h"
+#include "act/import/chargemap.h"
+#include "act/molprop/molprop.h"
 #include "act/molprop/molprop_xml.h"
+#include "act/molprop/molpropobservable.h"
 #include "act/topology/actmol.h"
+#include "act/topology/actmol_low.h"
+#include "gromacs/math/vectypes.h"
+#include <cstddef>
+#include <map>
+#include <set>
+#include <string>
+#include <utility>
+#include <vector>
 
 namespace alexandria
 {

@@ -46,15 +46,16 @@
 #define ACT_FORCES_SIMD_MATH_H
 
 #include "config.h"
+#include <cstddef>
 
 #if ACT_SIMD_AVX_512 && defined(__AVX512F__)
-#    include "act/forces/simd_avx512.h"
+#    include "act/forces/simd_avx512.h" // IWYU pragma: export
 #    define ACT_HAVE_SIMD 1
 #elif ACT_SIMD_AVX2 && defined(__AVX2__) && defined(__FMA__)
-#    include "act/forces/simd_avx2.h"
+#    include "act/forces/simd_avx2.h" // IWYU pragma: export
 #    define ACT_HAVE_SIMD 1
 #elif ACT_SIMD_ARM_NEON && defined(__ARM_NEON) && defined(__aarch64__)
-#    include "act/forces/simd_neon.h"
+#    include "act/forces/simd_neon.h" // IWYU pragma: export
 #    define ACT_HAVE_SIMD 1
 #endif
 

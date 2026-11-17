@@ -28,11 +28,22 @@
 #include "generate_dependent.h"
 
 #include <algorithm>
+#include <cstddef>
 #include <memory>
+#include <set>
+#include <utility>
 #include <vector>
 
+#include "act/basics/act_particle.h"
+#include "act/basics/identifier.h"
+#include "act/basics/interactiontype.h"
 #include "act/forcefield/combinationrules.h"
 #include "act/forcefield/forcefield.h"
+#include "act/forcefield/forcefield_parameter.h"
+#include "act/forcefield/forcefield_parameterlist.h"
+#include "act/forcefield/particletype.h"
+#include "act/forcefield/potential.h"
+#include "gromacs/utility/stringutil.h"
 
 namespace alexandria
 {

@@ -33,11 +33,11 @@
 #ifndef FETCH_CHARGES_H
 #define FETCH_CHARGES_H
 
-#include <map>
 #include <set>
 #include <string>
 #include <vector>
 
+#include "act/basics/chargemodel.h"
 #include "act/basics/msg_handler.h"
 #include "act/import/chargemap.h"
 #include "act/forcefield/forcefield.h"

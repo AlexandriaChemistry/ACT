@@ -33,10 +33,14 @@
 
 #include "identifier.h"
 
+#include <cstddef>
 #include <map>
+#include "gromacs/utility/gmxmpi.h"
 #include <string>
+#include <utility>
 #include <vector>
 
+#include "act/basics/interactiontype.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/stringutil.h"

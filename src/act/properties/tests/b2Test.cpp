@@ -32,6 +32,7 @@
  */
 #include <cmath>
 
+#include <cstddef>
 #include <limits>
 #include <map>
 #include <string>
@@ -44,7 +45,12 @@
 #include "act/properties/b2data.h"
 #include "act/properties/dimergenerator.h"
 #include "act/properties/secondvirial.h"
+#include "act/qgen/qgen_resp.h"
+#include "gromacs/fileio/oenv.h"
+#include "gromacs/math/functions.h"
 #include "gromacs/math/units.h"
+#include "gromacs/math/vectypes.h"
+#include "gromacs/utility/real.h"
 #include "gromacs/utility/stringutil.h"
 
 #include "testutils/cmdlinetest.h"

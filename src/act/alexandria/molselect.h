@@ -35,7 +35,7 @@
 #define MOLSELECT_H
 
 #include <algorithm>
-#include <map>
+#include <cstddef>
 #include <string>
 #include <vector>
 

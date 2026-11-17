@@ -35,11 +35,26 @@
 
 #include "staticindividualinfo.h"
 
+#include <cmath>
+#include <cstddef>
 #include <filesystem>
+#include <map>
+#include <set>
+#include <string>
+#include <utility>
+#include <vector>
 
+#include "act/alexandria/molgen.h"
+#include "act/basics/dataset.h"
+#include "act/basics/interactiontype.h"
+#include "act/basics/msg_handler.h"
+#include "act/basics/mutability.h"
+#include "act/forcefield/forcefield_parameter.h"
 #include "act/utility/memory_check.h"
 #include "act/forcefield/forcefield_xml.h"
 #include "act/forcefield/generate_dependent.h"
+#include "gromacs/utility/exceptions.h"
+#include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/stringutil.h"
 #include "gromacs/utility/textwriter.h"
 #include "act/utility/timings.h"

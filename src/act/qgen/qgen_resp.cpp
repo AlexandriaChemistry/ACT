@@ -40,20 +40,29 @@
 #include <cstdlib>
 
 #include <map>
+#include <string>
 #include <vector>
 
+#include "act/basics/chargemodel.h"
 #include "act/basics/msg_handler.h"
+#include "act/basics/mutability.h"
 #include "act/coulombintegrals/gaussian_integrals.h"
 #include "act/coulombintegrals/slater_integrals.h"
 #include "act/forcefield/forcefield.h"
+#include "act/forcefield/particletype.h"
 #include "act/statistics/statistics.h"
-#include "act/topology/topology.h"
+#include "act/topology/actatom.h"
 #include "act/utility/regression.h"
 #include "act/utility/timings.h"
 #include "act/utility/units.h"
 #include "gromacs/fileio/xvgr.h"
+#include "gromacs/math/functions.h"
+#include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/math/vectypes.h"
+#include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/gmxassert.h"
+#include "gromacs/utility/stringutil.h"
 
 namespace alexandria
 {

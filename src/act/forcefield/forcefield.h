@@ -35,22 +35,25 @@
 #ifndef FORCEFIELD_H
 #define FORCEFIELD_H
 
-#include <algorithm>
+#include <cstddef>
 #include <map>
+#include "gromacs/utility/gmxmpi.h"
 #include <optional>
 #include <set>
+#include <string>
 #include <vector>
 
+#include "act/basics/identifier.h"
+#include "act/forcefield/potential.h"
+#include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/stringutil.h"
 
 #include "act/basics/chargemodel.h"
 #include "act/basics/interactiontype.h"
-#include "act/forcefield/forcefield_parameter.h"
 #include "act/forcefield/forcefield_parameterlist.h"
 #include "act/forcefield/particletype.h"
 #include "act/forcefield/symcharges.h"
 #include "act/utility/communicationrecord.h"
-#include "act/utility/stringutil.h"
 
 namespace alexandria
 {

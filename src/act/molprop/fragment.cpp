@@ -33,8 +33,11 @@
 
 #include "fragment.h"
 
+#include "act/utility/communicationrecord.h"
 #include "gromacs/utility/stringutil.h"
 #include "gromacs/utility/textwriter.h"
+#include <cctype>
+#include "gromacs/utility/gmxmpi.h"
 
 namespace alexandria
 {

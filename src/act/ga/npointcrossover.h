@@ -35,7 +35,12 @@
 #define GA_NPOINTCROSSOVER_H
 
 
+#include "act/ga/genome.h"
 #include "crossover.h"
+#include "gromacs/utility/gmxassert.h"
+#include <cstddef>
+#include <random>
+#include <vector>
 
 
 namespace ga

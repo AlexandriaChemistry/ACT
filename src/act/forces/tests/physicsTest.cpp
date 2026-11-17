@@ -34,10 +34,17 @@
  * data, these do not have to be updated when results change on purpose.
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
+#include "act/basics/act_particle.h"
+#include "act/basics/interactiontype.h"
+#include "act/forcefield/particletype.h"
+#include "act/molprop/experiment.h"
+#include "act/molprop/molprop.h"
+#include "act/topology/actmol_low.h"
 #include "actpre.h"
 
 #include <algorithm>
 #include <cmath>
+#include <cstddef>
 #include <fstream>
 #include <list>
 #include <map>
@@ -58,6 +65,7 @@
 #include "act/topology/actmol.h"
 #include "act/utility/timings.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/math/vectypes.h"
 #include "gromacs/utility/stringutil.h"
 
 #include "testutils/testasserts.h"

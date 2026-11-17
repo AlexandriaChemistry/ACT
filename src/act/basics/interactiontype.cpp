@@ -35,6 +35,7 @@
 #include "interactiontype.h"
 
 #include <map>
+#include <string>
 
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/stringutil.h"

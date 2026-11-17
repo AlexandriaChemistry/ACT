@@ -36,9 +36,15 @@
 #ifndef ALLBONDEDS_H
 #define ALLBONDEDS_H
 
+#include <cstddef>
 #include <map>
+#include <vector>
 
+#include "act/basics/identifier.h"
+#include "act/basics/interactiontype.h"
+#include "act/molprop/molprop.h"
 #include "gromacs/commandline/pargs.h"
+#include "gromacs/math/vectypes.h"
 #include "gromacs/utility/real.h"
 
 #include "act/forcefield/forcefield.h"

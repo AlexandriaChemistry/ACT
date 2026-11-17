@@ -34,16 +34,29 @@
 
 #include "act/molprop/molprop_xml.h"
 
+#include <libxml/xmlstring.h>
+#include <memory>
 #include <stdlib.h>
 #include <string.h>
 
 #include <map>
 #include <set>
+#include <string>
+#include <utility>
 #include <vector>
 
 #include <libxml/parser.h>
 #include <libxml/tree.h>
 
+#include "act/molprop/composition.h"
+#include "act/molprop/experiment.h"
+#include "act/molprop/fragment.h"
+#include "act/molprop/molpropobservable.h"
+#include "act/molprop/phase.h"
+#include "act/molprop/topologyentry.h"
+#include "gromacs/math/vectypes.h"
+#include "gromacs/utility/basedefinitions.h"
+#include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
 #include "act/basics/msg_handler.h"
@@ -53,6 +66,7 @@
 #include "act/utility/stringutil.h"
 #include "act/utility/units.h"
 #include "act/utility/xml_util.h"
+#include "gromacs/utility/stringutil.h"
 
 namespace alexandria 
 {

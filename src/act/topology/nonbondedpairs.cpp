@@ -33,15 +33,29 @@
 
 
 #include <algorithm>
+#include <array>
 #include <cmath>
+#include <cstddef>
+#include <cstdint>
+#include <functional>
+#include <map>
 #include <numeric>
+#include <set>
 #include <string>
+#include <utility>
+#include <vector>
 
+#include "act/basics/identifier.h"
+#include "act/basics/interactiontype.h"
 #include "act/basics/msg_handler.h"
+#include "act/basics/mutability.h"
+#include "act/forcefield/combinationkernels.h"
 #include "act/forcefield/forcefield.h"
+#include "act/forcefield/forcefield_parameterlist.h"
 #include "act/forcefield/forcefield_parametername.h"
 #include "act/forcefield/potential.h"
 #include "act/topology/actatom.h"
+#include "act/topology/actmol_low.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/stringutil.h"
 

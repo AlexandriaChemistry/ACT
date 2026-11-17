@@ -37,16 +37,24 @@
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  * \ingroup group_forces_tests
  */
+#include "act/basics/coordinate.h"
+#include "act/basics/interactiontype.h"
+#include "act/forces/conformationdata.h"
+#include "act/molprop/topologyentry.h"
 #include "actpre.h"
 
 #include "../forces_simd.h"
 
+#include <algorithm>
 #include <cmath>
 #include <cstdio>
 #include <map>
 #include <set>
 
 #include <gtest/gtest.h>
+#include <string>
+#include <utility>
+#include <vector>
 
 #include "act/basics/act_particle.h"
 #include "act/coulombintegrals/gaussian_integrals.h"
@@ -60,6 +68,9 @@
 #include "gromacs/math/functions.h"
 #include "gromacs/math/units.h"
 
+#include "gromacs/math/vectypes.h"
+#include "gromacs/utility/real.h"
+#include "gromacs/utility/stringutil.h"
 #include "testutils/gputests.h"
 #include "testutils/refdata.h"
 #include "testutils/testasserts.h"

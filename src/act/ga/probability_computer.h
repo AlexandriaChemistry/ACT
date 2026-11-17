@@ -32,6 +32,7 @@
 #ifndef GA_PROBABILITYCOMPUTER_H
 #define GA_PROBABILITYCOMPUTER_H
 
+#include <cstddef>
 #include <vector>
 
 #include "genome.h"

@@ -43,11 +43,15 @@
 #include "princ.h"
 
 #include <cmath>
+#include <cstddef>
+#include <vector>
 
 #include "act/topology/actatom.h"
 #include "act/utility/rotation.h"
 #include "gromacs/math/functions.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/math/vectypes.h"
+#include "gromacs/utility/real.h"
 
 namespace alexandria
 {

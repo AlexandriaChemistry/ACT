@@ -35,6 +35,7 @@
 #include "version.h"
 #include "gromacs/utility/baseversion.h"
 #include "gromacs/utility/stringutil.h"
+#include <string>
 
 std::string act_welcome()
 {

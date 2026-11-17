@@ -34,13 +34,9 @@
 #ifndef ACT_IMPORT_IMPORT_UTILS_H
 #define ACT_IMPORT_IMPORT_UTILS_H
 
-#include <map>
 #include <string>
 #include <vector>
 
-#include "act/basics/allmols.h"
-#include "act/molprop/fragment.h"
-#include "act/molprop/topologyentry.h"
 
 namespace alexandria
 {

@@ -34,10 +34,24 @@
 
 #include "experiment.h"
 
+#include "act/molprop/composition.h"
+#include "act/molprop/molpropobservable.h"
+#include "act/utility/communicationrecord.h"
+#include "gromacs/math/vectypes.h"
+#include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/stringutil.h"
 #include "gromacs/utility/textwriter.h"
 #include "act/basics/msg_handler.h"
 #include "act/utility/units.h"
+#include <cstddef>
+#include <cstdio>
+#include <map>
+#include <memory>
+#include "gromacs/utility/gmxmpi.h"
+#include <string>
+#include <utility>
+#include <vector>
 
 namespace alexandria
 {

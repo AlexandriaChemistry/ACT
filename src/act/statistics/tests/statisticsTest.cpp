@@ -36,9 +36,11 @@
 #include <cstdlib>
 
 #include <gtest/gtest.h>
+#include <vector>
 
 #include "act/statistics/statistics.h"
 
+#include "gromacs/utility/real.h"
 #include "testutils/cmdlinetest.h"
 #include "testutils/refdata.h"
 #include "testutils/testasserts.h"

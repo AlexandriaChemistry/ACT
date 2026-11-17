@@ -33,10 +33,9 @@
 #ifndef GA_INITIALIZER_H
 #define GA_INITIALIZER_H
 
+#include "act/ga/genome.h"
 #include "individual.h"
 
-#include <memory>
-#include <random>
 
 namespace ga
 {

@@ -33,6 +33,7 @@
 #define ACT_COMBINATIONRULES_H
 
 #include "act/forcefield/combinationkernels.h"
+#include <cstddef>
 #include <map>
 #include <string>
 #include <vector>

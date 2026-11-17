@@ -28,6 +28,7 @@
 #include "genome.h"
     
 #include <cstdio>
+#include <string>
 
 #include "act/basics/dataset.h"
 #include "act/utility/communicationrecord.h"

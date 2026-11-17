@@ -31,6 +31,7 @@
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
  
+#include <cstdio>
 #include <unistd.h>
 #include <ios>
 #include <iostream>

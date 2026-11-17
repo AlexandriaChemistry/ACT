@@ -35,6 +35,7 @@
 
 
 #include "acmindividual.h"
+#include "act/ga/genome.h"
 
 
 namespace alexandria

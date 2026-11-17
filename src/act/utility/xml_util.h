@@ -35,11 +35,9 @@
 #ifndef XML_UTIL_H
 #define XML_UTIL_H
 
-#include <cstdio>
 #include <string>
 #include <vector>
 
-#include <libxml/parser.h>
 #include <libxml/tree.h>
 
 //! \return the known xmltypes

@@ -35,15 +35,27 @@
 #ifndef MOLGEN_H
 #define MOLGEN_H
 
+#include <cstddef>
 #include <map>
 #include <string>
 #include <vector>
 
 #include "act/alexandria/molselect.h"
+#include "act/basics/chargemodel.h"
+#include "act/basics/dataset.h"
+#include "act/basics/interactiontype.h"
+#include "act/basics/msg_handler.h"
+#include "act/forcefield/forcefield.h"
+#include "act/forces/forcecomputer.h"
+#include "act/import/chargemap.h"
 #include "act/import/compound_reader.h"
+#include "act/molprop/molprop.h"
+#include "act/molprop/molpropobservable.h"
 #include "act/topology/actmol.h"
 #include "act/utility/communicationrecord.h"
+#include "gromacs/commandline/filenm.h"
 #include "gromacs/commandline/pargs.h"
+#include "gromacs/utility/real.h"
 
 namespace alexandria
 {

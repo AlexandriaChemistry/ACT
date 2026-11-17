@@ -46,16 +46,26 @@
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  * \ingroup group_alexandria_tests
  */
+#include "act/alexandria/sensitivity.h"
+#include "act/basics/chargemodel.h"
+#include "act/basics/dataset.h"
+#include "act/basics/interactiontype.h"
+#include "act/basics/mutability.h"
+#include "act/forcefield/forcefield_parameterlist.h"
+#include "act/molprop/molprop.h"
+#include "act/topology/actmol_low.h"
 #include "actpre.h"
 
 #include <array>
 #include <cmath>
+#include <cstdio>
 #include <cstdlib>
 #include <functional>
 #include <map>
 #include <random>
 #include <set>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include <gtest/gtest.h>
@@ -77,6 +87,8 @@
 #include "act/topology/actmol.h"
 #include "act/utility/units.h"
 #include "gromacs/math/units.h"
+#include "gromacs/utility/exceptions.h"
+#include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/stringutil.h"
 
 #include "testutils/gputests.h"

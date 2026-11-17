@@ -35,7 +35,12 @@
 #include <cmath>
 #include <cstdlib>
 #include <fstream>
+#include <ios>
+#include <locale>
 #include <sstream>
+#include <string>
+#include <utility>
+#include <vector>
 
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/stringutil.h"

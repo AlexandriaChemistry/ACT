@@ -34,6 +34,8 @@
 #include "simpson.h"
 
 #include <cmath>
+#include <cstddef>
+#include <vector>
 
 #include "act/basics/msg_handler.h"
 #include "gromacs/utility/stringutil.h"

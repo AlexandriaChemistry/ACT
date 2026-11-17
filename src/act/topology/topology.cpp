@@ -35,17 +35,40 @@
 #include "topology.h"
 
 #include <algorithm>
+#include <any>
+#include <array>
+#include <cstddef>
+#include <iterator>
 #include <map>
 #include <set>
 #include <string>
+#include <utility>
 #include <vector>
 
+#include "act/basics/act_particle.h"
+#include "act/basics/basecontainer.h"
+#include "act/basics/identifier.h"
 #include "act/basics/interactiontype.h"
 #include "act/basics/msg_handler.h"
+#include "act/basics/mutability.h"
+#include "act/forcefield/forcefield.h"
+#include "act/forcefield/forcefield_parameter.h"
+#include "act/forcefield/forcefield_parameterlist.h"
 #include "act/forcefield/forcefield_parametername.h"
+#include "act/forcefield/particletype.h"
+#include "act/forcefield/potential.h"
 #include "act/molprop/experiment.h"
+#include "act/molprop/molprop.h"
 #include "act/molprop/topologyentry.h"
+#include "act/topology/actatom.h"
+#include "act/topology/actatomlist.h"
+#include "act/topology/actmol_low.h"
+#include "act/utility/units.h"
 #include "gromacs/math/vectypes.h"
+#include "gromacs/utility/exceptions.h"
+#include "gromacs/utility/real.h"
+#include "gromacs/utility/stringutil.h"
+#include "gromacs/utility/textwriter.h"
 
 namespace alexandria
 {

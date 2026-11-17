@@ -34,6 +34,7 @@
 #ifndef IDENTIFIER_H
 #define IDENTIFIER_H
 
+#include "gromacs/utility/gmxmpi.h"
 #include <string>
 #include <vector>
 

@@ -33,6 +33,11 @@
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  * \ingroup group_forces_tests
  */
+#include "act/basics/act_particle.h"
+#include "act/basics/interactiontype.h"
+#include "act/forcefield/potential.h"
+#include "act/forces/conformationdata.h"
+#include "act/topology/actatom.h"
 #include "actpre.h"
 
 #include "../forces_simd.h"
@@ -40,8 +45,10 @@
 
 #include <algorithm>
 #include <cmath>
+#include <cstddef>
 #include <cstdint>
 
+#include <cstdio>
 #include <functional>
 #include <map>
 #include <string>
@@ -54,6 +61,8 @@
 #include "act/testutils/forcefield_utils.h"
 #include "act/molprop/topologyentry.h"
 #include "act/topology/coords_energy.h"
+#include "gromacs/math/vectypes.h"
+#include "gromacs/utility/real.h"
 #include "gromacs/utility/stringutil.h"
 
 #include "testutils/cmdlinetest.h"

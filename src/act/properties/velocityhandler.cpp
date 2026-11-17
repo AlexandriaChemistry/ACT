@@ -30,17 +30,22 @@
 #include "velocityhandler.h"
 
 #include <cmath>
+#include <cstddef>
 #include <map>
+#include <string>
+#include <vector>
 
-#include "act/topology/topology.h"
+#include "act/topology/actatom.h"
 #include "act/utility/rotation.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/math/vectypes.h"
+#include "gromacs/random/seed.h"
 #include "gromacs/random/tabulatednormaldistribution.h"
 #include "gromacs/random/threefry.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
+#include "gromacs/utility/real.h"
 #include "gromacs/utility/stringutil.h"
 #include "gromacs/utility/textwriter.h"
 

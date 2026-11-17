@@ -33,7 +33,10 @@
 #include "genetic_algorithm.h"
 
 #include <cstdio>
+#include <string>
 
+#include "act/ga/gene_pool.h"
+#include "gromacs/utility/gmxassert.h"
 #include "terminator.h"
 
 #include "act/basics/dataset.h"

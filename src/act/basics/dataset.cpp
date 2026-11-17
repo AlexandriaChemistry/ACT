@@ -32,6 +32,8 @@
  */
 
 #include "dataset.h"
+#include <map>
+#include <string>
 
 std::map<iMolSelect, const std::string> MolSelect_Names = {
     { iMolSelect::Train,   "Train"   },

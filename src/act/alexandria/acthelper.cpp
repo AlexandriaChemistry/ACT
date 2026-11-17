@@ -27,8 +27,15 @@
  */
 #include "acthelper.h"
 
+#include <cstddef>
+#include <set>
 #include <vector>
     
+#include "act/alexandria/loss_function.h"
+#include "act/basics/chargemodel.h"
+#include "act/basics/msg_handler.h"
+#include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/stringutil.h"
 #include "sensitivity.h"
 #include "act/basics/dataset.h"
 #include "act/utility/timings.h"

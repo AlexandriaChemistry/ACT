@@ -41,10 +41,14 @@
 #include <fstream>
 #include <sstream>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include <gtest/gtest.h>
 
+#include "config.h"
+#include "gromacs/utility/basenetwork.h"
+#include "gromacs/utility/gmxmpi.h"
 #include "trainffTestUtil.h"
 
 #include "act/gpu/gpu.h"

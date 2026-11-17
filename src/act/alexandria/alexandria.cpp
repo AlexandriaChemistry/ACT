@@ -34,7 +34,9 @@
 
 #include "actpre.h"
 
+#include <cstdio>
 #include <cstdlib>
+#include <exception>
 
 #include "act/alexandria/alex_modules.h"
 #include "act/basics/version.h"

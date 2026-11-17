@@ -31,6 +31,9 @@
  * \author Mohammad Mehdi Ghahremanpour <mohammad.ghahremanpour@icm.uu.se>
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
+#include "act/basics/interactiontype.h"
+#include "act/basics/mutability.h"
+#include "act/forcefield/forcefield_parameter.h"
 #include "actpre.h"
 
 #include <algorithm>
@@ -39,6 +42,9 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string>
+#include <utility>
+#include <vector>
 
 #include "act/alexandria/alex_modules.h"
 #include "act/basics/identifier.h"
@@ -46,8 +52,13 @@
 #include "act/forcefield/forcefield_tables.h"
 #include "act/forcefield/forcefield_xml.h"
 #include "act/statistics/statistics.h"
+#include "gromacs/commandline/filenm.h"
 #include "gromacs/commandline/pargs.h"
+#include "gromacs/fileio/filetypes.h"
+#include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/futil.h"
+#include "gromacs/utility/real.h"
+#include "gromacs/utility/stringutil.h"
 
 namespace alexandria
 {

@@ -27,14 +27,18 @@
  */
 #ifndef ACT_TOPOLOGY_FRAGMENTHANDLER_H
 #define ACT_TOPOLOGY_FRAGMENTHANDLER_H
+#include <cstddef>
+#include <string>
 #include <vector>
 
+#include "act/basics/chargemodel.h"
 #include "act/import/chargemap.h"
 #include "act/molprop/fragment.h"
 #include "act/qgen/qgen_acm.h"
 #include "act/topology/actmol_low.h"
 #include "act/topology/polinfo.h"
 #include "act/topology/topology.h"
+#include "gromacs/math/vectypes.h"
 
 namespace alexandria
 {

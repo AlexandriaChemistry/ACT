@@ -37,6 +37,7 @@
 
 #include "actpre.h"
 
+#include "config.h"
 #include "slater_low.h"
 
 #if HAVE_LIBCLN

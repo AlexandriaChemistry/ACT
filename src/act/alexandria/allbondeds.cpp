@@ -33,13 +33,43 @@
 
 #include "allbondeds.h"
 
+#include "act/alexandria/molselect.h"
 #include "act/alexandria/train_utility.h"
+#include "act/basics/dataset.h"
+#include "act/basics/identifier.h"
+#include "act/basics/interactiontype.h"
 #include "act/basics/msg_handler.h"
+#include "act/basics/mutability.h"
+#include "act/forcefield/forcefield.h"
+#include "act/forcefield/forcefield_parameter.h"
 #include "act/forcefield/forcefield_parametername.h"
+#include "act/forcefield/potential.h"
 #include "act/forces/forcecomputerutils.h"
+#include "act/molprop/molprop.h"
+#include "act/statistics/statistics.h"
+#include "act/topology/actmol.h"
+#include "act/topology/actmol_low.h"
 #include "act/utility/units.h"
+#include "gromacs/commandline/pargs.h"
 #include "gromacs/fileio/xvgr.h"
+#include "gromacs/math/functions.h"
+#include "gromacs/math/units.h"
+#include "gromacs/math/vec.h"
+#include "gromacs/math/vectypes.h"
+#include "gromacs/utility/basedefinitions.h"
+#include "gromacs/utility/exceptions.h"
+#include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/real.h"
+#include "gromacs/utility/stringutil.h"
 #include "gromacs/utility/textwriter.h"
+#include <algorithm>
+#include <cmath>
+#include <cstddef>
+#include <cstdio>
+#include <map>
+#include <string>
+#include <utility>
+#include <vector>
 
 static void round_numbers(real *av, real *sig, int power10)
 {

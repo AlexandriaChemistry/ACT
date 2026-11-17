@@ -35,14 +35,13 @@
 #ifndef COMPOSITION_H
 #define COMPOSITION_H
 
-#include <string.h>
 
 #include <map>
+#include "gromacs/utility/gmxmpi.h"
 #include <string>
 #include <vector>
 
 #include "act/utility/communicationrecord.h"
-#include "gromacs/math/vectypes.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/stringutil.h"
 

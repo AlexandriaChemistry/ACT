@@ -34,7 +34,12 @@
 #include "timings.h"
 
 #include <algorithm>
+#include <chrono>
+#include <cstddef>
 #include <map>
+#include <string>
+#include <utility>
+#include <vector>
 
 #include "act/utility/communicationrecord.h"
 #include "act/utility/jsontree.h"

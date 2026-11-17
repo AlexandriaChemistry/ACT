@@ -35,13 +35,7 @@
 #ifndef ALEXANDRIA_ACMINDIVIDUAL_H
 #define ALEXANDRIA_ACMINDIVIDUAL_H
 
-#include <cstdio>
-#include <map>
-#include <vector>
-#include <string>
 
-#include "molgen.h"
-#include "act/forcefield/forcefield.h"
 #include "staticindividualinfo.h"
 
 #include "act/ga/genome.h"

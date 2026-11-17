@@ -28,10 +28,12 @@
 #ifndef ACT_COMMUNICATIONRECORD_H
 #define ACT_COMMUNICATIONRECORD_H
 
+#include <cstddef>
+#include <cstdio>
+#include "gromacs/utility/gmxmpi.h"
 #include <string>
 #include <vector>
 
-#include "act/basics/dataset.h"
 #include "act/basics/msg_handler.h"
 #include "gromacs/mdtypes/commrec.h"
 
