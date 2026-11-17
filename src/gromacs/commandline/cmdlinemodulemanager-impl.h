@@ -174,6 +174,8 @@ class CommandLineCommonOptionsHolder
         }
         //! Returns whether common options specify showing help.
         bool shouldShowHelp() const { return bHelp_; }
+        //! Returns whether common options specify showing the version information.
+        bool shouldShowVersion() const { return bVersion_; }
         //! Returns whether common options specify showing hidden options in help.
         bool shouldShowHidden() const { return bHidden_; }
         //! Returns whether common options specify quiet execution.

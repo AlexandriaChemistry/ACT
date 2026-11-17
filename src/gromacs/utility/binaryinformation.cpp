@@ -226,6 +226,15 @@ void gmx_print_version_info(gmx::TextWriter *writer)
 #else
     writer->writeLine("MPI library:        none");
 #endif
+#if ACT_SIMD_ARM_NEON
+    writer->writeLine("Explicit SIMD:      ARM_NEON");
+#elif ACT_SIMD_AVX_512
+    writer->writeLine("Explicit SIMD:      AVX_512");
+#elif ACT_SIMD_AVX2
+    writer->writeLine("Explicit SIMD:      AVX2");
+#else
+    writer->writeLine("Explicit SIMD:      none");
+#endif
     writer->writeLine(formatString("GPU support:        %s", ACT_GPU_DESCRIPTION));
 
 
