@@ -35,13 +35,41 @@
 #include "devcomputer.h"
 
 #include <algorithm>
+#include <cmath>
+#include <cstddef>
+#include <cstdio>
 #include <map>
 #include <numeric>
 #include <string>
+#include <utility>
 #include <vector>
 
+#include "act/alexandria/loss_function.h"
+#include "act/alexandria/molgen.h"
+#include "act/alexandria/molhandler.h"
+#include "act/basics/act_particle.h"
+#include "act/basics/interactiontype.h"
+#include "act/basics/msg_handler.h"
+#include "act/basics/mutability.h"
+#include "act/forces/conformationdata.h"
+#include "act/forces/forcecomputer.h"
 #include "act/forces/forces_simd.h" 
+#include "act/forces/gpusystem.h"
+#include "act/molprop/experiment.h"
+#include "act/molprop/molpropobservable.h"
+#include "act/qgen/qgen_resp.h"
+#include "act/topology/actatom.h"
+#include "act/topology/actmol.h"
+#include "act/topology/coords_energy.h"
 #include "act/utility/units.h"
+#include "gromacs/math/functions.h"
+#include "gromacs/math/units.h"
+#include "gromacs/math/vec.h"
+#include "gromacs/math/vectypes.h"
+#include "gromacs/utility/basedefinitions.h"
+#include "gromacs/utility/exceptions.h"
+#include "gromacs/utility/real.h"
+#include "gromacs/utility/stringutil.h"
 
 // Precompute max argument for exp function at compile time.
 static const double DOUBLE_MAX_LOG = std::log(GMX_DOUBLE_MAX);

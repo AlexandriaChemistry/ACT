@@ -36,9 +36,11 @@
 #include "act/alexandria/confighandler.h"
 #include "act/alexandria/molhandler.h"
 #include "act/alexandria/train_utility.h"
+#include "act/basics/interactiontype.h"
 #include "act/basics/msg_handler.h"
 #include "act/forcefield/forcefield_xml.h"
 #include "act/import/compound_reader.h"
+#include "act/molprop/molprop.h"
 #include "act/molprop/molprop_xml.h"
 #include "act/properties/secondvirial.h"
 #include "act/topology/actmol.h"
@@ -47,8 +49,20 @@
 #include "act/utility/jsontree.h"
 #include "gromacs/commandline/filenm.h"
 #include "gromacs/commandline/pargs.h"
+#include "gromacs/fileio/filetypes.h"
 #include "gromacs/fileio/oenv.h"
+#include "gromacs/math/vectypes.h"
 #include "gromacs/topology/index.h"
+#include "gromacs/utility/basedefinitions.h"
+#include "gromacs/utility/exceptions.h"
+#include "gromacs/utility/real.h"
+#include "gromacs/utility/stringutil.h"
+#include <cstdio>
+#include <exception>
+#include <map>
+#include <string>
+#include <utility>
+#include <vector>
 
 namespace alexandria
 {

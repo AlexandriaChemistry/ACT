@@ -27,13 +27,26 @@
  */
 #include "fragmenthandler.h"
 
+#include <algorithm>
+#include <cstddef>
+#include <cstdio>
+#include <string>
+#include <utility>
 #include <vector>
 
+#include "act/basics/chargemodel.h"
+#include "act/basics/msg_handler.h"
+#include "act/import/chargemap.h"
 #include "act/molprop/fragment.h"
 #include "act/qgen/qgen_acm.h"
+#include "act/topology/actmol_low.h"
 #include "act/topology/symmetrize_charges.h"
 #include "act/topology/topology.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/math/vectypes.h"
+#include "gromacs/utility/exceptions.h"
+#include "gromacs/utility/gmxassert.h"
+#include "gromacs/utility/stringutil.h"
 
 namespace alexandria
 {    

@@ -35,6 +35,7 @@
 
 #include "act/alexandria/acmfitnesscomputer.h"
 #include "act/alexandria/loss_function.h"
+#include "act/basics/chargemodel.h"
 #include "act/basics/msg_handler.h"
 #include "act/forces/forcecomputer.h"
 

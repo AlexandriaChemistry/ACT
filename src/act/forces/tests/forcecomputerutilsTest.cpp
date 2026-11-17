@@ -42,6 +42,8 @@
 #include <gtest/gtest.h>
 
 
+#include "gromacs/math/vectypes.h"
+#include "gromacs/utility/real.h"
 #include "testutils/cmdlinetest.h"
 #include "testutils/refdata.h"
 #include "testutils/testasserts.h"

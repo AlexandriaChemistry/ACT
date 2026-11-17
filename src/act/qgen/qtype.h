@@ -36,6 +36,7 @@
 
 #include <map>
 #include <string>
+#include <vector>
 
 #include "act/molprop/molpropobservable.h"
 #include "gromacs/math/vec.h"

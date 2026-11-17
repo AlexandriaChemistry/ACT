@@ -35,8 +35,7 @@
 #ifndef MOLPROPOBSERVABLE_H
 #define MOLPROPOBSERVABLE_H
 
-#include <array>
-#include <map>
+#include "gromacs/utility/gmxmpi.h"
 #include <string>
 #include <vector>
 

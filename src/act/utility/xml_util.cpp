@@ -35,6 +35,9 @@
 #include "xml_util.h"
 
 #include <cstring>
+#include <libxml/tree.h>
+#include <libxml/xmlstring.h>
+#include <string>
 #include <vector>
 
 #include "gromacs/utility/fatalerror.h"

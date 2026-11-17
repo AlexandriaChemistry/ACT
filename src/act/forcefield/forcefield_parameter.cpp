@@ -35,9 +35,15 @@
 
 
 
+#include "act/basics/mutability.h"
+#include "act/utility/communicationrecord.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/stringutil.h"
+#include <algorithm>
+#include <cstdio>
+#include "gromacs/utility/gmxmpi.h"
+#include <string>
 
 bool stringToBoolean(const std::string &str)
 {

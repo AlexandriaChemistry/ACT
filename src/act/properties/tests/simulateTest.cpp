@@ -31,8 +31,10 @@
 #include <cstdint>
 #include <fstream>
 #include <map>
+#include <nlohmann/json_fwd.hpp>
 #include <sstream>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include <gtest/gtest.h>
@@ -45,6 +47,8 @@
 
 #include <nlohmann/json.hpp>
 
+#include "gromacs/math/vectypes.h"
+#include "gromacs/utility/stringutil.h"
 #include "testutils/cmdlinetest.h"
 #include "testutils/refdata.h"
 #include "testutils/testasserts.h"

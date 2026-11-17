@@ -27,13 +27,23 @@
  */
 #include "parameterrecipes.h"
 
+#include <cstddef>
+#include <cstdint>
 #include <string>
+#include <utility>
+#include <vector>
 
+#include "act/basics/act_particle.h"
+#include "act/basics/identifier.h"
+#include "act/basics/interactiontype.h"
+#include "act/forcefield/combinationkernels.h"
 #include "act/forcefield/combinationrules.h"
 #include "act/forcefield/forcefield.h"
 #include "act/forcefield/potential.h"
+#include "act/forcefield/setrecipe.h"
 #include "act/utility/units.h"
 #include "gromacs/utility/exceptions.h"
+#include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/stringutil.h"
 
 namespace alexandria

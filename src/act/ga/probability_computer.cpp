@@ -30,12 +30,17 @@
  * \author Julian Ramon Marrades Furquet <julian@marrad.es>
  */
 #include "probability_computer.h"
+#include "act/basics/dataset.h"
+#include "act/ga/genome.h"
+#include "gromacs/utility/basedefinitions.h"
 
+#include <cstddef>
 #include <math.h>
 
 #include <algorithm>
 #include <limits>
 #include <numeric>
+#include <vector>
 
 namespace ga
 {

@@ -33,6 +33,7 @@
 
 #include "combruleutil.h"
 
+#include <cstdio>
 #include <cstring>
 
 #include <set>
@@ -40,9 +41,17 @@
 #include <vector>
 
 #include "act/basics/interactiontype.h"
+#include "act/basics/mutability.h"
+#include "act/forcefield/combinationkernels.h"
 #include "act/forcefield/combinationrules.h"
+#include "act/forcefield/forcefield.h"
+#include "act/forcefield/forcefield_parameter.h"
+#include "act/forcefield/forcefield_parameterlist.h"
+#include "act/forcefield/potential.h"
 #include "act/utility/stringutil.h"
 #include "gromacs/commandline/pargs.h"
+#include "gromacs/utility/basedefinitions.h"
+#include "gromacs/utility/stringutil.h"
 
 namespace alexandria
 {

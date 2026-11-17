@@ -36,16 +36,19 @@
 #ifndef ALEXANDRIA_DEVCOMPUTER_H
 #define ALEXANDRIA_DEVCOMPUTER_H
 
-#include <cstdio>
 #include <string>
 #include <map>
 #include <vector>
 
 #include "act/alexandria/confighandler.h"
 #include "act/alexandria/loss_function.h"
+#include "act/alexandria/molgen.h"
 #include "act/alexandria/molhandler.h"
-#include "act/alexandria/staticindividualinfo.h"
-#include "act/utility/communicationrecord.h"
+#include "act/alexandria/optimizationindex.h"
+#include "act/forcefield/forcefield.h"
+#include "act/forces/forcecomputer.h"
+#include "act/forces/gpusystem.h"
+#include "act/molprop/molpropobservable.h"
 
 namespace gmx
 {

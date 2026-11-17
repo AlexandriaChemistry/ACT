@@ -36,17 +36,19 @@
 #define ACTMOL_LOW_H
 
 #include <cassert>
-#include <cstdio>
 #include <cstring>
+#include <map>
+#include <string>
 #include <vector>
 
 #include "act/basics/atomization_energy.h"
-#include "act/basics/chargemodel.h"
-#include "act/basics/identifier.h"
+#include "act/basics/dataset.h"
 #include "act/basics/msg_handler.h"
 #include "act/molprop/molpropobservable.h"
 #include "act/qgen/qtype.h"
 #include "act/statistics/statistics.h"
+#include "gromacs/math/vectypes.h"
+#include "gromacs/utility/real.h"
 
 namespace alexandria
 {

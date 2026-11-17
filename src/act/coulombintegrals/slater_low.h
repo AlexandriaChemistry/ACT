@@ -228,7 +228,6 @@ extern cl_R DNuclear_5S(cl_R r, cl_R xi);
 extern cl_R DNuclear_6S(cl_R r, cl_R xi);
 
 #else
-#include <cmath>
 
 extern double Slater_1S_1S(double r, double xi, double xj);
 

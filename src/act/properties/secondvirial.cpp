@@ -32,21 +32,35 @@
  */
 #include "secondvirial.h"
 
+#include <algorithm>
 #include <cctype>
 #include <cmath>
+#include <cstdio>
 #include <cstdlib>
+#include <cstring>
+#include <map>
+#include <random>
+#include <string>
+#include <vector>
 
 #include "act/alexandria/alex_modules.h"
 #include "act/alexandria/confighandler.h"
 #include "act/alexandria/molhandler.h"
 #include "act/alexandria/train_utility.h"
+#include "act/basics/act_particle.h"
+#include "act/basics/chargemodel.h"
+#include "act/basics/interactiontype.h"
 #include "act/basics/msg_handler.h"
 #include "act/forcefield/forcefield_xml.h"
+#include "act/forcefield/potential.h"
+#include "act/forces/forcecomputer.h"
 #include "act/import/compound_reader.h"
 #include "act/import/import.h"
 #include "act/molprop/molprop_xml.h"
 #include "act/properties/b2data.h"
+#include "act/properties/dimergenerator.h"
 #include "act/properties/princ.h"
+#include "act/statistics/statistics.h"
 #include "act/topology/actmol.h"
 #include "act/utility/jsontree.h"
 #include "act/forces/forcecomputerstatistics.h"
@@ -56,9 +70,18 @@
 #include "act/utility/stringutil.h"
 #include "gromacs/commandline/filenm.h"
 #include "gromacs/commandline/pargs.h"
+#include "gromacs/fileio/filetypes.h"
 #include "gromacs/fileio/oenv.h"
 #include "gromacs/fileio/xvgr.h"
+#include "gromacs/math/units.h"
+#include "gromacs/math/vec.h"
+#include "gromacs/math/vectypes.h"
 #include "gromacs/mdtypes/md_enums.h"
+#include "gromacs/utility/basedefinitions.h"
+#include "gromacs/utility/exceptions.h"
+#include "gromacs/utility/gmxassert.h"
+#include "gromacs/utility/real.h"
+#include "gromacs/utility/stringutil.h"
 
 namespace alexandria
 {

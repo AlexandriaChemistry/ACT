@@ -35,6 +35,8 @@
 #include "act/basics/libraryfile.h"
 #include "act/utility/stringutil.h"
 #include "gromacs/utility/textreader.h"
+#include <map>
+#include <string>
 
 namespace alexandria
 {

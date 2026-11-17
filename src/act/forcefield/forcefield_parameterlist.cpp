@@ -33,10 +33,20 @@
 
 #include "forcefield_parameterlist.h"
 
+#include <cstddef>
+#include <cstdio>
 #include <map>
+#include "gromacs/utility/gmxmpi.h"
+#include <string>
+#include <utility>
 
 #include "act/basics/chargemodel.h"
+#include "act/basics/identifier.h"
+#include "act/forcefield/combinationkernels.h"
+#include "act/forcefield/combinationrules.h"
+#include "act/forcefield/forcefield_parameter.h"
 #include "act/forcefield/potential.h"
+#include "act/utility/communicationrecord.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/stringutil.h"

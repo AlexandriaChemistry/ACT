@@ -34,6 +34,7 @@
 #ifndef ACT_ACTATOMLIST_H
 #define ACT_ACTATOMLIST_H
 
+#include <cstddef>
 #include <list>
 
 #include "act/topology/actatom.h"

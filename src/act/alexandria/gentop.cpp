@@ -33,19 +33,29 @@
  */
 
 #include <cctype>
+#include <cstdio>
 #include <cstdlib>
+#include <string>
+#include <vector>
 
 
 #include "act/alexandria/alex_modules.h"
 #include "act/alexandria/openmm_xml.h"
+#include "act/basics/chargemodel.h"
 #include "act/basics/msg_handler.h"
 #include "act/forcefield/forcefield_xml.h"
+#include "act/forces/forcecomputer.h"
 #include "act/import/compound_reader.h"
 #include "act/molprop/molprop_xml.h"
 #include "act/topology/actmol.h"
 
 #include "gromacs/commandline/filenm.h"
 #include "gromacs/commandline/pargs.h"
+#include "gromacs/fileio/filetypes.h"
+#include "gromacs/math/vectypes.h"
+#include "gromacs/utility/basedefinitions.h"
+#include "gromacs/utility/exceptions.h"
+#include "gromacs/utility/real.h"
 #include "gromacs/utility/stringutil.h"
 
 namespace alexandria

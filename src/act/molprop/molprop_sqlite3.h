@@ -37,6 +37,7 @@
 #define MOLPROP_SQLITE3_H
 
 #include "act/molprop/molprop.h"
+#include <vector>
 
 namespace alexandria
 {

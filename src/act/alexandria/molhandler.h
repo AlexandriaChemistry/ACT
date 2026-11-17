@@ -36,11 +36,19 @@
 #ifndef ACT_MOLHANDLER_H
 #define ACT_MOLHANDLER_H
 
+#include <map>
+#include <string>
 #include <vector>
 
+#include "act/basics/interactiontype.h"
+#include "act/forcefield/forcefield.h"
 #include "act/forces/forcecomputer.h"
+#include "act/qgen/qgen_resp.h"
+#include "act/topology/actatom.h"
+#include "act/topology/coords_energy.h"
 #include "act/utility/regression.h"
 #include "confighandler.h"
+#include "gromacs/math/vectypes.h"
 
 namespace alexandria
 {

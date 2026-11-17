@@ -34,6 +34,8 @@
 #ifndef ACT_DIMERGENERATOR_H
 #define ACT_DIMERGENERATOR_H
 
+#include <cstddef>
+#include <cstring>
 #include <random>
 #include <vector>
 
@@ -41,10 +43,12 @@
 #include "act/forces/forcecomputer.h"
 #include "act/forcefield/forcefield.h"
 #include "act/properties/rotator.h"
+#include "act/topology/actatom.h"
 #include "act/topology/actmol.h"
+#include "gromacs/commandline/filenm.h"
 #include "gromacs/commandline/pargs.h"
-#include "gromacs/fileio/oenv.h"
 #include "gromacs/math/vectypes.h"
+#include "gromacs/utility/real.h"
 
 namespace alexandria
 {

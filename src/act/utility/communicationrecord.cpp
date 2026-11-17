@@ -28,10 +28,18 @@
 #include "communicationrecord.h"
 
 #include <algorithm>
+#include <cstddef>
+#include <cstdio>
 #include <limits>
 #include <map>
 #include <set>
+#include <string>
+#include <vector>
 
+#include "act/basics/dataset.h"
+#include "act/basics/msg_handler.h"
+#include "gromacs/math/vectypes.h"
+#include "gromacs/mdtypes/commrec.h"
 #include "mpi.h"
 
 #include "gromacs/gmxlib/network.h"

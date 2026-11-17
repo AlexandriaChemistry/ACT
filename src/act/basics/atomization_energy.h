@@ -34,8 +34,6 @@
 #ifndef ACT_ATOMIZATION_ENERGY_H
 #define ACT_ATOMIZATION_ENERGY_H
 
-#include <cstdio>
-#include <map>
 #include <string>
 #include <vector>
 

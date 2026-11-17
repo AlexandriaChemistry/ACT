@@ -36,6 +36,7 @@
 
 #include <cstdio>
 
+#include "gromacs/utility/gmxmpi.h"
 #include <string>
 #include <vector>
 

@@ -36,6 +36,8 @@
 
 #include "actpre.h"
 
+#include <cstddef>
+#include <random>
 #include <vector>
 
 #include <gtest/gtest.h>

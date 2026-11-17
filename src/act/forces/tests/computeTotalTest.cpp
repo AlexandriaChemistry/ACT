@@ -31,15 +31,24 @@
  * which use the SIMD routines, with compute and computeOnce.
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
+#include "act/basics/act_particle.h"
+#include "act/basics/coordinate.h"
+#include "act/forcefield/forcefield.h"
+#include "act/molprop/experiment.h"
+#include "act/molprop/molprop.h"
+#include "act/topology/actmol_low.h"
+#include "act/topology/coords_energy.h"
 #include "actpre.h"
 
 #include "../forcecomputer.h"
 
 #include <algorithm>
 #include <cmath>
+#include <cstddef>
 #include <map>
 #include <set>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include <gtest/gtest.h>
@@ -50,7 +59,10 @@
 #include "act/import/import.h"
 #include "act/topology/actmol.h"
 #include "act/topology/fragmenthandler.h"
+#include "gromacs/math/vec.h"
 #include "gromacs/math/vectypes.h"
+#include "gromacs/utility/real.h"
+#include "gromacs/utility/stringutil.h"
 #include "testutils/testasserts.h"
 #include "testutils/testfilemanager.h"
 

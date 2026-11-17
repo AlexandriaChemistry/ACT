@@ -33,14 +33,21 @@
 #ifndef COMPOUND_READER_H
 #define COMPOUND_READER_H
 
-#include <cstdio>
     
+#include <cstring>
+#include <string>
 #include <vector>
     
 #include "act/alexandria/molselect.h"
+#include "act/basics/chargemodel.h"
+#include "act/basics/msg_handler.h"
+#include "act/forcefield/forcefield.h"
+#include "act/forces/forcecomputer.h"
+#include "act/import/chargemap.h"
 #include "act/topology/actmol.h"
 #include "gromacs/commandline/filenm.h"
 #include "gromacs/commandline/pargs.h"
+#include "gromacs/utility/real.h"
 
 namespace alexandria
 {

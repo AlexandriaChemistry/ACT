@@ -34,12 +34,15 @@
 #ifndef FORCEFIELDPARAMETERLIST_H
 #define FORCEFIELDPARAMETERLIST_H
 
-#include <algorithm>
 #include <atomic>
+#include <cstddef>
 #include <map>
+#include "gromacs/utility/gmxmpi.h"
+#include <string>
 #include <utility>
 #include <vector>
 
+#include "act/utility/communicationrecord.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/stringutil.h"
 
@@ -47,7 +50,6 @@
 #include "act/forcefield/forcefield_parameter.h"
 #include "act/forcefield/potential.h"
 #include "act/basics/identifier.h"
-#include "act/basics/interactiontype.h"
 
 namespace alexandria
 {

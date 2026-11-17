@@ -40,8 +40,15 @@
 #include <set>
 #include <string>
 #include <utility>
+#include <vector>
 
+#include "act/basics/msg_handler.h"
+#include "act/molprop/composition.h"
+#include "act/molprop/experiment.h"
+#include "act/molprop/fragment.h"
+#include "act/molprop/molprop.h"
 #include "act/molprop/molprop_xml.h"
+#include "act/molprop/topologyentry.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/stringutil.h"

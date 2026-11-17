@@ -29,6 +29,7 @@
 #include <vector>
 
 #include "gromacs/fileio/pdbio.h"
+#include "gromacs/math/vectypes.h"
 
 namespace alexandria
 {

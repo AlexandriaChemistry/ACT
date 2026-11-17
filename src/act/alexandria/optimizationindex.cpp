@@ -33,8 +33,13 @@
  */
 
 #include "optimizationindex.h"
+#include "act/basics/interactiontype.h"
 #include "act/forcefield/forcefield.h"
+#include "act/utility/communicationrecord.h"
+#include "gromacs/utility/exceptions.h"
+#include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/stringutil.h"
+#include <string>
 
 namespace alexandria
 {

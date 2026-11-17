@@ -33,6 +33,8 @@
 #include <gtest/gtest.h>
 
 #include <fstream>
+#include <set>
+#include <string>
 
 #include "../allmols.h"
 

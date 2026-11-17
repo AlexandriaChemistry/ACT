@@ -35,17 +35,17 @@
 #define FORCEFIELDPARAMETER_H
 
 #include <algorithm>
+#include <cstddef>
 #include <map>
+#include "gromacs/utility/gmxmpi.h"
 #include <string>
 
-#include "gromacs/math/units.h"
-#include "gromacs/mdtypes/commrec.h"
 #include "gromacs/utility/exceptions.h"
-#include "gromacs/utility/fatalerror.h"
 
 #include "act/utility/communicationrecord.h"
 #include "act/utility/units.h"
 #include "act/basics/mutability.h"
+#include "gromacs/utility/stringutil.h"
 
 /*! \brief Convert string to boolean
  * \param[in] str The string to convert

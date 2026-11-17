@@ -37,12 +37,23 @@
 #define ALEXANDRIA_ACMFITNESSCOMPUTER_H
 
 #include <array>
+#include <cstddef>
 #include <map>
+#include <set>
 #include <vector>
 
+#include "act/alexandria/loss_function.h"
+#include "act/alexandria/staticindividualinfo.h"
+#include "act/basics/chargemodel.h"
+#include "act/basics/dataset.h"
+#include "act/basics/interactiontype.h"
+#include "act/forces/gpusystem.h"
 #include "act/ga/fitness_computer.h"
 #include "act/forces/forcecomputer.h"
-#include "acmindividual.h"
+#include "act/ga/genome.h"
+#include "act/gpu/gpu.h"
+#include "act/molprop/molpropobservable.h"
+#include "act/topology/actmol.h"
 #include "devcomputer.h"
 #include "molgen.h"
 #include "sensitivity.h"

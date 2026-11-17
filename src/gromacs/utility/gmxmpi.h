@@ -58,7 +58,7 @@
 #define OMPI_SKIP_MPICXX 1
 /* disable bindings for SGI MPT also */
 #define MPI_NO_CPPBIND 1
-#include <mpi.h>
+#include <mpi.h> /* IWYU pragma: export */
 /* Starting with 2.2 MPI_INT64_T is required. Earlier version still might have it.
    In theory MPI_Datatype doesn't have to be a #define, but current available MPI
    implementations (OpenMPI + MPICH (+derivates)) use #define and future versions

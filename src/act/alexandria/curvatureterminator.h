@@ -32,7 +32,6 @@
 #ifndef ALEXANDRIA_CURVATURETERMINATOR_H
 #define ALEXANDRIA_CURVATURETERMINATOR_H
 
-#include "act/ga/terminator.h"
 
 namespace gmx
 {

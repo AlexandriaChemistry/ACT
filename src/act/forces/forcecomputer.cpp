@@ -29,26 +29,49 @@
 
 #include <algorithm>
 #include <cmath>
+#include <functional>
+#include <initializer_list>
+#include <map>
+#include <memory>
 #include <set>
+#include <string>
 #include <utility>
 #include <vector>
 
 #include <cstdio>
 #include <cstdlib>
 
+#include "act/basics/act_particle.h"
 #include "act/basics/chargemodel.h"
+#include "act/basics/coordinate.h"
+#include "act/basics/identifier.h"
+#include "act/basics/interactiontype.h"
 #include "act/basics/msg_handler.h"
 #include "act/forcefield/forcefield_parametername.h"
+#include "act/forcefield/particletype.h"
+#include "act/forcefield/potential.h"
 #include "act/forces/conformationdata.h"
 #include "act/forces/forces_simd.h"
+#include "act/forces/gpusystem.h"
+#include "act/forces/vsitehandler.h"
+#include "act/gpu/gpu.h"
+#include "act/molprop/topologyentry.h"
 #include "act/qgen/qtype.h"
 #include "act/topology/actmol.h"
+#include "act/topology/actmol_low.h"
+#include "act/topology/coords_energy.h"
 #include "act/topology/fragmenthandler.h"
 #include "act/topology/topology.h"
 #include "act/utility/timings.h"
+#include "gromacs/math/functions.h"
+#include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/math/vectypes.h"
+#include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/futil.h"
+#include "gromacs/utility/gmxassert.h"
+#include "gromacs/utility/real.h"
+#include "gromacs/utility/stringutil.h"
 
 namespace alexandria
 {

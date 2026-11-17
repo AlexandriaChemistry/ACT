@@ -37,23 +37,32 @@
 
 #include <cstdio>
 
+#include <map>
+#include <string>
 #include <vector>
 
 #include "act/alexandria/acmfitnesscomputer.h"
 #include "act/alexandria/acminitializer.h"
+#include "act/alexandria/confighandler.h"
 #include "act/alexandria/molgen.h"
 #include "act/alexandria/sensitivity.h"
 #include "act/alexandria/staticindividualinfo.h"
+#include "act/basics/chargemodel.h"
+#include "act/basics/dataset.h"
 #include "act/basics/msg_handler.h"
 #include "act/forces/forcecomputer.h"
+#include "act/ga/gene_pool.h"
 #include "act/ga/genetic_algorithm.h"
+#include "act/ga/genome.h"
 #include "act/ga/mutator.h"
 #include "act/ga/npointcrossover.h"
+#include "act/ga/penalizer.h"
+#include "act/ga/probability_computer.h"
+#include "act/ga/selector.h"
+#include "act/ga/terminator.h"
 #include "act/utility/communicationrecord.h"
+#include "gromacs/commandline/filenm.h"
 #include "gromacs/commandline/pargs.h"
-#include "gromacs/utility/arraysize.h"
-#include "gromacs/utility/cstringutil.h"
-#include "gromacs/utility/unique_cptr.h"
 
 namespace alexandria
 {

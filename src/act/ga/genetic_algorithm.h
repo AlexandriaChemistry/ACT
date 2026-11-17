@@ -34,13 +34,18 @@
 #ifndef GA_GENETICALGORITHM_H
 #define GA_GENETICALGORITHM_H
 
+#include <cstdio>
 #include <cstdlib>
 
 #include <map>
+#include <string>
+#include <vector>
 
+#include "act/basics/dataset.h"
 #include "act/basics/msg_handler.h"
 #include "gene_pool.h"
 #include "genome.h"
+#include "gromacs/utility/gmxassert.h"
 #include "initializer.h"
 #include "fitness_computer.h"
 #include "probability_computer.h"

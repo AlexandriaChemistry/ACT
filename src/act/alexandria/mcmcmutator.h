@@ -38,14 +38,21 @@
 
 #include <algorithm>
 #include <cmath>
+#include <cstddef>
+#include <map>
+#include <vector>
 
+#include "act/alexandria/staticindividualinfo.h"
+#include "act/basics/chargemodel.h"
+#include "act/basics/dataset.h"
 #include "act/forces/forcecomputer.h"
 #include "act/ga/genome.h"
 #include "act/ga/mutator.h"
+#include "act/gpu/gpu.h"
+#include "act/qgen/qgen_resp.h"
 #include "gromacs/utility/fileptr.h"
 #include "confighandler.h"
 #include "acmfitnesscomputer.h"
-#include "acmindividual.h"
 
 namespace alexandria
 {

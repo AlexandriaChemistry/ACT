@@ -31,7 +31,9 @@
 #ifndef ACT_GA_GENOME_H
 #define ACT_GA_GENOME_H
 
+#include <cstddef>
 #include <map>
+#include <string>
 #include <vector>
 
 #include "act/basics/dataset.h"

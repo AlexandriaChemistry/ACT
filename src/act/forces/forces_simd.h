@@ -27,11 +27,15 @@
 #ifndef ACT_FORCES_SIMD_H
 #define ACT_FORCES_SIMD_H
 
+#include <cstddef>
 #include <vector>
 
 #include "act/forcefield/potential.h"
+#include "act/forces/conformationdata.h"
 #include "act/molprop/topologyentry.h"
+#include "act/topology/actatom.h"
 #include "act/topology/actmol.h"
+#include "act/topology/topology.h"
 
 namespace alexandria
 {

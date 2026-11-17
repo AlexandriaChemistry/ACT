@@ -35,6 +35,8 @@
 #ifndef ACT_FORCES_GPUSYSTEM_H
 #define ACT_FORCES_GPUSYSTEM_H
 
+#include <cstddef>
+#include <cstdint>
 #include <memory>
 #include <string>
 #include <utility>

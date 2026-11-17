@@ -26,8 +26,15 @@
  * Boston, MA  02110-1301, USA.
  */
 #include "mcmc.h"
+#include "act/alexandria/acmfitnesscomputer.h"
+#include "act/alexandria/acmindividual.h"
+#include "act/basics/dataset.h"
+#include "act/ga/genome.h"
+#include "gromacs/utility/gmxassert.h"
 
 #include <ctime>
+#include <map>
+#include <string>
 #pragma GCC diagnostic ignored "-Wpragmas"
 #pragma GCC diagnostic ignored "-Wunknown-warning-option"
 #pragma GCC diagnostic ignored "-Wmaybe-uninitialized"

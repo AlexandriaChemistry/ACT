@@ -36,6 +36,7 @@
 #define ALEXANDRIA_BAYES_H
 
 #include <array>
+#include <cstddef>
 #include <optional>
 #include <string>
 #include <vector>

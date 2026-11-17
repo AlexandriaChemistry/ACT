@@ -35,10 +35,15 @@
 
 #include "act/alexandria/acmfitnesscomputer.h"
 #include "act/alexandria/confighandler.h"
-#include "act/alexandria/loss_function.h"
 #include "act/alexandria/staticindividualinfo.h"
+#include "act/basics/chargemodel.h"
+#include "act/forces/forcecomputer.h"
+#include "act/ga/genome.h"
 #include "act/ga/mutator.h"
+#include "act/utility/communicationrecord.h"
 #include "gromacs/fileio/oenv.h"
+#include <memory>
+#include <vector>
 
 namespace gmx
 {

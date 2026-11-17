@@ -34,6 +34,7 @@
 #define ACT_COORDS_ENERGY_H
 
 #include <concepts>
+#include <cstddef>
 #include <map>
 #include <string>
 #include <vector>
@@ -43,6 +44,7 @@
 #include "gromacs/math/vectypes.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
+#include "gromacs/utility/real.h"
 
 namespace alexandria
 {

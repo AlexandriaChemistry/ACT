@@ -33,6 +33,7 @@
 
 #include <iostream>
 
+#include "config.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/stringutil.h"
 

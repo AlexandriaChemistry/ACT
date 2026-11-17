@@ -34,11 +34,32 @@
 #include "compound_reader.h"
 
 #include "act/alexandria/molselect.h"
+#include "act/basics/chargemodel.h"
 #include "act/basics/msg_handler.h"
+#include "act/forcefield/forcefield.h"
+#include "act/forces/forcecomputer.h"
 #include "act/import/fetch_charges.h"
 #include "act/import/import.h"
+#include "act/molprop/experiment.h"
+#include "act/molprop/molprop.h"
 #include "act/molprop/molprop_xml.h"
+#include "act/molprop/molpropobservable.h"
+#include "act/topology/actmol.h"
+#include "act/topology/actmol_low.h"
 #include "act/utility/stringutil.h"
+#include "gromacs/commandline/filenm.h"
+#include "gromacs/commandline/pargs.h"
+#include "gromacs/fileio/filetypes.h"
+#include "gromacs/math/vec.h"
+#include "gromacs/math/vectypes.h"
+#include "gromacs/utility/basedefinitions.h"
+#include "gromacs/utility/stringutil.h"
+#include <cstddef>
+#include <cstring>
+#include <set>
+#include <string>
+#include <utility>
+#include <vector>
 
 namespace alexandria
 {

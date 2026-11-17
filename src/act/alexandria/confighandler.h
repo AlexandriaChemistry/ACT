@@ -35,13 +35,16 @@
 #ifndef ALEXANDRIA_CONFIGHANDLER_H
 #define ALEXANDRIA_CONFIGHANDLER_H
 
+#include <string>
 #include <vector>
 
 #include "act/alexandria/loss_function.h"
 #include "act/alexandria/sensitivity.h"
 #include "act/constraints/shake.h"
 #include "act/properties/velocityhandler.h"
+#include "gromacs/commandline/filenm.h"
 #include "gromacs/commandline/pargs.h"
+#include "gromacs/utility/real.h"
 
 namespace alexandria
 {

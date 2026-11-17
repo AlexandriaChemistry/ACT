@@ -29,15 +29,30 @@
 
 #include <algorithm>
 #include <array>
+#include <cmath>
+#include <cstddef>
+#include <cstdint>
+#include <cstdio>
+#include <cstdlib>
 #include <limits>
+#include <map>
 #include <optional>
 #include <set>
 #include <string>
 #include <type_traits>
+#include <utility>
+#include <vector>
 
+#include "act/basics/act_particle.h"
+#include "act/basics/chargemodel.h"
+#include "act/basics/coordinate.h"
+#include "act/basics/interactiontype.h"
 #include "act/basics/msg_handler.h"
+#include "act/basics/mutability.h"
 #include "act/coulombintegrals/gaussian_integrals.h"
 #include "act/coulombintegrals/slater_integrals.h"
+#include "act/forcefield/particletype.h"
+#include "act/forcefield/potential.h"
 #include "act/forces/conformationdata.h"
 #include "act/forcefield/forcefield_parametername.h"
 #include "act/forcefield/parameterrecipes.h"
@@ -48,14 +63,25 @@
 #include "act/forces/simd_information.h"
 #include "act/forces/forcecomputerutils.h"
 #include "act/forces/vsitehandler.h"
+#include "act/gpu/gpu.h"
+#include "act/molprop/molpropobservable.h"
 #include "act/molprop/topologyentry.h"
+#include "act/qgen/qgen_acm.h"
+#include "act/topology/actatom.h"
 #include "act/topology/actmol.h"
 #include "act/topology/coords_energy.h"
+#include "act/topology/nonbondedpairs.h"
+#include "act/topology/polinfo.h"
 #include "act/topology/topology.h"
 #include "act/utility/timings.h"
+#include "gromacs/math/functions.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/math/units.h"
+#include "gromacs/math/vectypes.h"
 #include "gromacs/utility/basedefinitions.h"
+#include "gromacs/utility/gmxassert.h"
+#include "gromacs/utility/real.h"
+#include "gromacs/utility/stringutil.h"
 
 namespace alexandria
 {

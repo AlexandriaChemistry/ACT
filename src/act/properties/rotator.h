@@ -34,12 +34,12 @@
 #ifndef ACT_ROTATOR_H
 #define ACT_ROTATOR_H
 
-#include <random>
+#include <cstddef>
 #include <vector>
 
 #include "act/basics/msg_handler.h"
 #include "act/statistics/statistics.h"
-#include "gromacs/math/vec.h"
+#include "gromacs/math/vectypes.h"
 
 namespace alexandria
 {

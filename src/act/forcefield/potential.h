@@ -33,7 +33,9 @@
 #ifndef POTENTIAL_H
 #define POTENTIAL_H
 
+#include <map>
 #include <string>
+#include <vector>
 
 #include "act/basics/chargemodel.h"
 #include "act/basics/interactiontype.h"

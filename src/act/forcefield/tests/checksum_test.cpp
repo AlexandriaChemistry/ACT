@@ -30,7 +30,9 @@
  * Implements part of the alexandria program.
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
+#include <cstdio>
 #include <gtest/gtest.h>
+#include <string>
 
 #include "act/forcefield/act_checksum.h"
 #include "act/testutils/forcefield_utils.h"

@@ -32,11 +32,12 @@
 #ifndef ALEXANDRIA_PERCENT_MUTATOR
 #define ALEXANDRIA_PERCENT_MUTATOR
 
+#include "act/alexandria/staticindividualinfo.h"
+#include "act/basics/chargemodel.h"
 #include "act/basics/msg_handler.h"
 #include "act/ga/genome.h"
 #include "act/ga/mutator.h"
 
-#include "acmindividual.h"
 
 namespace alexandria
 {

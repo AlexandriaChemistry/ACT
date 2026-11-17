@@ -29,6 +29,13 @@
  * Implements the potentials on a GPU of forces_gpu.h.
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
+#include "act/basics/coordinate.h"
+#include "act/basics/interactiontype.h"
+#include "act/forcefield/potential.h"
+#include "act/gpu/gpu.h"
+#include "act/molprop/topologyentry.h"
+#include "act/topology/actatom.h"
+#include "act/topology/nonbondedpairs.h"
 #include "actpre.h"
 
 #include "forces_gpu.h"
@@ -38,6 +45,7 @@
 #include <cstdint>
 #include <cstdlib>
 #include <type_traits>
+#include <vector>
 
 #include "act/forcefield/forcefield_parametername.h"
 #include "act/gpu/pairrows.h"

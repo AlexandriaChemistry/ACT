@@ -34,7 +34,9 @@
 #ifndef FRAGMENT_H
 #define FRAGMENT_H
 
-#include <cstdio>
+#include <algorithm>
+#include "gromacs/utility/gmxmpi.h"
+#include <string>
 #include <vector>
 
 #include "act/utility/communicationrecord.h"

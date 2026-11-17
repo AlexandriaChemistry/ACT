@@ -32,11 +32,13 @@
 
 #include "actpre.h"
 
+#include <cstddef>
 #include <filesystem>
 #include <fstream>
 #include <map>
 #include <sstream>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include <gtest/gtest.h>

@@ -37,11 +37,13 @@
 
 #include <cstdio>
 
+#include <string>
 #include <vector>
 
 #include "act/basics/chargemodel.h"
 #include "act/forcefield/forcefield_parameter.h"
 #include "gromacs/math/vectypes.h"
+#include "gromacs/utility/basedefinitions.h"
 
 /*! \brief Charge generation status
  */

@@ -33,11 +33,14 @@
 #include "forcefield_utils.h"
 
 #include <map>
+#include <string>
+#include <utility>
 
 #include "gromacs/utility/exceptions.h"
 #include "act/forcefield/forcefield.h"
 #include "act/forcefield/forcefield_xml.h"
 
+#include "gromacs/utility/stringutil.h"
 #include "testutils/testfilemanager.h"
 
 static std::map<std::string, alexandria::ForceField> pdTest;

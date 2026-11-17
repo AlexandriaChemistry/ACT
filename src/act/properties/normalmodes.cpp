@@ -31,24 +31,40 @@
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
 #include <cctype>
+#include <cstdio>
 #include <cstdlib>
+#include <exception>
+#include <map>
+#include <string>
+#include <vector>
 
 #include "act/alexandria/alex_modules.h"
 #include "act/alexandria/confighandler.h"
 #include "act/alexandria/molhandler.h"
 #include "act/alexandria/train_utility.h"
+#include "act/basics/atomization_energy.h"
+#include "act/basics/interactiontype.h"
+#include "act/basics/msg_handler.h"
 #include "act/forcefield/forcefield_xml.h"
+#include "act/forces/forcecomputer.h"
 #include "act/import/compound_reader.h"
 #include "act/import/import.h"
 #include "act/molprop/molprop_xml.h"
 #include "act/properties/secondvirial.h"
 #include "act/topology/actmol.h"
+#include "act/utility/communicationrecord.h"
 #include "act/utility/jsontree.h"
 #include "act/utility/stringutil.h"
 #include "gromacs/commandline/filenm.h"
 #include "gromacs/commandline/pargs.h"
+#include "gromacs/fileio/filetypes.h"
 #include "gromacs/fileio/oenv.h"
 #include "gromacs/fileio/xvgr.h"
+#include "gromacs/math/vectypes.h"
+#include "gromacs/utility/basedefinitions.h"
+#include "gromacs/utility/exceptions.h"
+#include "gromacs/utility/real.h"
+#include "gromacs/utility/stringutil.h"
 
 namespace alexandria
 {

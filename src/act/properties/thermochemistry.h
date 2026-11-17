@@ -43,12 +43,11 @@
 #define ALEXANDRIA_THERMOCHEMISTRY_H
 
 #include <map>
+#include <string>
 #include <vector>
 
 #include "act/basics/atomization_energy.h"
-#include "gromacs/math/units.h"
-#include "gromacs/math/vec.h"
-#include "gromacs/utility/basedefinitions.h"
+#include "gromacs/math/vectypes.h"
 
 namespace alexandria
 {

@@ -35,6 +35,7 @@
 #include "phase.h"
 
 #include <map>
+#include <string>
 
 #include "gromacs/utility/exceptions.h"
 

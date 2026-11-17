@@ -45,6 +45,7 @@
 #define ACT_UTILITY_TIMINGS_H
 
 #include <chrono>
+#include <cstddef>
 #include <string>
 #include <vector>
 

@@ -31,6 +31,8 @@
 #include <gtest/gtest.h>
 
 #include "act/properties/symmetrynumber.h"
+#include "gromacs/math/vectypes.h"
+#include "gromacs/utility/real.h"
 
 namespace alexandria
 {

@@ -33,9 +33,14 @@
 
 
 #include <gtest/gtest.h>
+#include <string>
+#include <vector>
 
+#include "act/basics/dataset.h"
 #include "act/ga/gene_pool.h"
+#include "act/ga/genome.h"
 #include "gromacs/utility/basenetwork.h"
+#include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/stringutil.h"
 
 #include "testutils/cmdlinetest.h"

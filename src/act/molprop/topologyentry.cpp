@@ -34,12 +34,20 @@
 
 #include "topologyentry.h"
 
+#include <cstddef>
+#include <cstdio>
+#include "gromacs/utility/gmxmpi.h"
 #include <mutex>
 #include <set>
 #include <tuple>
 #include <vector>
 
+#include "act/basics/identifier.h"
 #include "act/basics/msg_handler.h"
+#include "act/utility/communicationrecord.h"
+#include "gromacs/utility/exceptions.h"
+#include "gromacs/utility/gmxassert.h"
+#include "gromacs/utility/stringutil.h"
 
 namespace alexandria
 {

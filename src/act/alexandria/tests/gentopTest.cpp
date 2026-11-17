@@ -30,17 +30,24 @@
  * Tests of the gentop module, in particular the GROMACS topology it writes.
  */
 
+#include "act/basics/chargemodel.h"
+#include "act/basics/identifier.h"
+#include "act/forcefield/forcefield_parameter.h"
+#include "act/molprop/experiment.h"
+#include "act/molprop/molprop.h"
 #include "actpre.h"
 
 #include <algorithm>
 #include <array>
 #include <cmath>
+#include <cstddef>
 #include <filesystem>
 #include <fstream>
 #include <map>
 #include <set>
 #include <sstream>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include <gtest/gtest.h>
@@ -51,6 +58,8 @@
 #include "act/forcefield/forcefield_xml.h"
 #include "act/molprop/molprop_xml.h"
 
+#include "gromacs/utility/exceptions.h"
+#include "gromacs/utility/stringutil.h"
 #include "testutils/cmdlinetest.h"
 #include "testutils/testfilemanager.h"
 

@@ -39,9 +39,13 @@
 
 #include "statistics.h"
 
+#include <algorithm>
 #include <cmath>
 
+#include <cstddef>
+#include <cstdio>
 #include <map>
+#include <vector>
 
 #include "gromacs/math/functions.h"
 #include "gromacs/utility/real.h"

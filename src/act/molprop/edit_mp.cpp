@@ -32,12 +32,23 @@
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
  
+#include "act/basics/identifier.h"
+#include "act/basics/interactiontype.h"
+#include "act/forcefield/particletype.h"
+#include "act/molprop/experiment.h"
+#include "act/molprop/molpropobservable.h"
+#include "act/topology/actmol_low.h"
+#include "act/utility/units.h"
 #include "actpre.h"
 
 #include <algorithm>
+#include <cmath>
 #include <cstdio>
 
+#include <map>
 #include <set>
+#include <string>
+#include <utility>
 #include <vector>
 
 #include "act/alexandria/alex_modules.h"
@@ -53,8 +64,14 @@
 #include "act/molprop/topologyentry.h"
 #include "act/statistics/statistics.h"
 #include "act/topology/actmol.h"
+#include "gromacs/commandline/filenm.h"
 #include "gromacs/commandline/pargs.h"
+#include "gromacs/fileio/filetypes.h"
 #include "gromacs/fileio/xvgr.h"
+#include "gromacs/math/functions.h"
+#include "gromacs/math/vectypes.h"
+#include "gromacs/utility/basedefinitions.h"
+#include "gromacs/utility/real.h"
 #include "gromacs/utility/stringutil.h"
 #include "gromacs/utility/exceptions.h"
 

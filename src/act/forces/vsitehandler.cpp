@@ -39,6 +39,9 @@
 /*
  * Adapted for ACT by DvdS 2023-05-17
  */
+#include "act/basics/coordinate.h"
+#include "act/basics/interactiontype.h"
+#include "act/molprop/topologyentry.h"
 #include "actpre.h"
 
 #include "vsitehandler.h"
@@ -53,8 +56,13 @@
 #include "act/utility/timings.h"
 #include "gromacs/math/functions.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/math/vectypes.h"
+#include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/gmxassert.h"
+#include "gromacs/utility/real.h"
+#include "gromacs/utility/stringutil.h"
 
 using gmx::RVec;
 

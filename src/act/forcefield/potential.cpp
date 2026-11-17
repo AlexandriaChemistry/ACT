@@ -34,10 +34,14 @@
 
 #include <cstring>
 #include <map>
+#include <string>
+#include <vector>
 
+#include "act/basics/chargemodel.h"
+#include "act/basics/interactiontype.h"
 #include "gromacs/topology/ifunc.h"
 #include "gromacs/utility/exceptions.h"
-#include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/stringutil.h"
 
 namespace alexandria
 {

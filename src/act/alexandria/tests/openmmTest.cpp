@@ -38,9 +38,11 @@
 #include <string>
 
 #include <gtest/gtest.h>
+#include <vector>
 
 #include "act/alexandria/openmm_xml.h"
 #include "act/alexandria/pdbwriter.h"
+#include "act/basics/act_particle.h"
 #include "act/basics/msg_handler.h"
 #include "act/forcefield/forcefield.h"
 #include "act/testutils/forcefield_utils.h"

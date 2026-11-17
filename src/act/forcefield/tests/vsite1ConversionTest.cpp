@@ -35,10 +35,16 @@
 
 #include <gtest/gtest.h>
 
+#include "act/basics/identifier.h"
+#include "act/basics/interactiontype.h"
 #include "act/basics/msg_handler.h"
+#include "act/basics/mutability.h"
 #include "act/forcefield/forcefield.h"
+#include "act/forcefield/forcefield_parameter.h"
+#include "act/forcefield/forcefield_parameterlist.h"
 #include "act/forcefield/forcefield_xml.h"
 
+#include "act/forcefield/potential.h"
 #include "testutils/testfilemanager.h"
 
 namespace alexandria

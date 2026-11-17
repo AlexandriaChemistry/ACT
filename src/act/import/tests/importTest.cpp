@@ -32,16 +32,24 @@
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
 
+#include <cstddef>
 #include <fstream>
 #include <sstream>
 
 #include <gtest/gtest.h>
+#include <string>
+#include <tuple>
+#include <vector>
 
+#include "act/basics/msg_handler.h"
 #include "act/forcefield/forcefield.h"
+#include "act/molprop/experiment.h"
+#include "act/molprop/molprop.h"
 #include "act/testutils/forcefield_utils.h"
 #include "act/import/import.h"
 #include "act/import/import_utils.h"
 
+#include "gromacs/utility/stringutil.h"
 #include "testutils/cmdlinetest.h"
 #include "testutils/refdata.h"
 #include "testutils/testfilemanager.h"

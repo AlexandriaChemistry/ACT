@@ -35,6 +35,8 @@
 #include "../forcefield_parameter.h"
 
 
+#include "act/basics/mutability.h"
+#include "gromacs/utility/exceptions.h"
 #include "testutils/cmdlinetest.h"
 #include "testutils/refdata.h"
 #include "testutils/testasserts.h"

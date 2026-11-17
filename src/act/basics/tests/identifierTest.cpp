@@ -31,10 +31,12 @@
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
 #include <gtest/gtest.h>
+#include <string>
+#include <vector>
 
 #include "../identifier.h"
 
-#include "testutils/testasserts.h"
+#include "gromacs/utility/exceptions.h"
 
 namespace alexandria
 {

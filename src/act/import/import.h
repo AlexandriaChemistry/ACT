@@ -35,8 +35,11 @@
 #ifndef ACT_IMPORT_IMPORT_H
 #define ACT_IMPORT_IMPORT_H
 
+#include <string>
 #include <vector>
 
+#include "act/forcefield/forcefield.h"
+#include "act/molprop/experiment.h"
 #include "act/molprop/molprop.h"
 
 namespace alexandria

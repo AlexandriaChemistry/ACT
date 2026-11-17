@@ -37,12 +37,15 @@
 #include <cstdlib>
 
 #include <map>
+#include "gromacs/utility/gmxmpi.h"
 #include <string>
 #include <vector>
 
 #include "act/basics/act_particle.h"
 #include "act/basics/identifier.h"
+#include "act/basics/interactiontype.h"
 #include "act/forcefield/forcefield_parameter.h"
+#include "act/utility/communicationrecord.h"
 
 namespace alexandria
 {

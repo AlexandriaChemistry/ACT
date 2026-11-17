@@ -36,12 +36,19 @@
 
 #include <cstdio>
 
+#include <map>
+#include <random>
 #include <vector>
 
+#include "act/basics/dataset.h"
 #include "act/ga/crossover.h"
 #include "act/ga/fitness_computer.h"
+#include "act/ga/gene_pool.h"
 #include "act/ga/genetic_algorithm.h"
+#include "act/ga/genome.h"
 #include "act/ga/initializer.h"
+#include "act/ga/mutator.h"
+#include "act/ga/penalizer.h"
 #include "act/ga/probability_computer.h"
 #include "act/ga/selector.h"
 #include "act/ga/terminator.h"

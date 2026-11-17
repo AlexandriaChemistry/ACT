@@ -42,7 +42,8 @@
 #include <string>
 #include <vector>
 
-#include "gromacs/math/vec.h"
+#include "gromacs/math/vectypes.h"
+#include "gromacs/utility/real.h"
 
 namespace gmx
 {

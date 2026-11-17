@@ -29,11 +29,14 @@
 
 #include <algorithm>
 #include <stdexcept>
+#include <string>
+#include <utility>
 #include <vector>
 
 #include <cstdio>
 #include <cmath>
 
+#include "act/basics/dataset.h"
 #include "act/ga/genome.h"
 #include "act/utility/stringutil.h"
 #include "gromacs/utility/textreader.h"

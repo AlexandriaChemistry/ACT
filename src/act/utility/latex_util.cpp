@@ -36,6 +36,11 @@
 
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/utility/exceptions.h"
+#include "gromacs/utility/gmxassert.h"
+#include <cctype>
+#include <cstdio>
+#include <string>
+#include <vector>
 
 namespace alexandria
 {

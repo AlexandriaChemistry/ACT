@@ -37,15 +37,21 @@
 #define ALEXANDRIA_STATICINDIVIDUALINFO_H
 
 #include <algorithm>
+#include <cstddef>
 #include <map>
 #include <set>
 #include <string>
 #include <vector>
 
 #include "act/alexandria/optimizationindex.h"
-#include "act/ga/genome.h"
+#include "act/basics/dataset.h"
+#include "act/basics/interactiontype.h"
+#include "act/basics/msg_handler.h"
+#include "act/forcefield/forcefield.h"
 #include "act/utility/communicationrecord.h"
 #include "act/basics/mutability.h"
+#include "gromacs/utility/gmxassert.h"
+#include "gromacs/utility/stringutil.h"
 #include "molgen.h"
 
 namespace gmx

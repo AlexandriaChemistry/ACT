@@ -40,8 +40,10 @@
 #include <cstdlib>
 #include <filesystem>
 #include <fstream>
+#include <string>
 #include <system_error>
 #include <utility>
+#include <vector>
 
 namespace alexandria
 {

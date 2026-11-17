@@ -39,6 +39,7 @@
 #define COULOMB_GAUSSIAN_H
 
 #include "act/coulombintegrals/gaussian_integrals.h"
+#include "gromacs/utility/real.h"
 
 /*! \brief Compute Coulomb interaction energy and force
  * \param[in] qq     Product of charges

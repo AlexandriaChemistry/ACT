@@ -37,8 +37,11 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <map>
+#include <string>
 #include <vector>
 
+#include "act/basics/dataset.h"
 #include "act/molprop/molprop.h"
 #include "act/utility/stringutil.h"
 #include "gromacs/utility/textreader.h"

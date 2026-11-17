@@ -35,7 +35,6 @@
 #define GA_TERMINATOR_H
 
 
-#include <vector>
 #include <limits>
 
 #include "gene_pool.h"

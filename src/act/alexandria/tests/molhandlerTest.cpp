@@ -31,13 +31,28 @@
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
 
+#include "act/alexandria/confighandler.h"
+#include "act/basics/act_particle.h"
+#include "act/basics/atomization_energy.h"
+#include "act/basics/interactiontype.h"
+#include "act/forces/forcecomputer.h"
+#include "act/molprop/experiment.h"
+#include "act/molprop/molprop.h"
+#include "act/molprop/molpropobservable.h"
+#include "act/topology/actmol_low.h"
+#include "act/utility/regression.h"
 #include "actpre.h"
 
 #include <cmath>
 
+#include <cstddef>
+#include <cstdint>
 #include <map>
 
 #include <gtest/gtest.h>
+#include <string>
+#include <utility>
+#include <vector>
 
 #include "act/import/import.h"
 #include "act/alexandria/molhandler.h"
@@ -50,6 +65,10 @@
 #include "act/topology/actmol.h"
 #include "act/utility/units.h"
 
+#include "gromacs/math/vec.h"
+#include "gromacs/math/vectypes.h"
+#include "gromacs/utility/real.h"
+#include "gromacs/utility/stringutil.h"
 #include "testutils/cmdlinetest.h"
 #include "testutils/refdata.h"
 #include "testutils/testasserts.h"

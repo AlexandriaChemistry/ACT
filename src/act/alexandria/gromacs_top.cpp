@@ -34,19 +34,31 @@
 
 #include "gromacs_top.h"
 
+#include <algorithm>
 #include <cmath>
+#include <cstddef>
+#include <cstdio>
 #include <map>
 #include <set>
+#include <string>
 #include <vector>
 
 #include "act/alexandria/pdbwriter.h"
+#include "act/basics/act_particle.h"
+#include "act/basics/chargemodel.h"
+#include "act/basics/identifier.h"
+#include "act/basics/interactiontype.h"
 #include "act/basics/msg_handler.h"
 #include "act/forcefield/forcefield.h"
 #include "act/forcefield/forcefield_parametername.h"
+#include "act/forcefield/potential.h"
+#include "act/molprop/topologyentry.h"
 #include "act/topology/topology.h"
+#include "gromacs/gmxpreprocess/grompp-impl.h"
 #include "gromacs/gmxpreprocess/topdirs.h"
 #include "gromacs/math/units.h"
 #include "gromacs/topology/ifunc.h"
+#include "gromacs/utility/stringutil.h"
 
 namespace alexandria
 {

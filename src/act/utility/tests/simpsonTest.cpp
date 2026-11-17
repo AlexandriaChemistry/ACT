@@ -32,10 +32,13 @@
  */
  
 #include "../simpson.h"
+#include "act/basics/msg_handler.h"
 
 #include <cmath>
 
+#include <cstddef>
 #include <gtest/gtest.h>
+#include <vector>
 
 
 TEST(SimpsonTest, OddVectorExp)

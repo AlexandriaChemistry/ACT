@@ -37,6 +37,7 @@
 #ifndef ACT_PORTABLE_RANDOM_H
 #define ACT_PORTABLE_RANDOM_H
 
+#include <cstddef>
 #include <cstdint>
 #include <random>
 #include <utility>

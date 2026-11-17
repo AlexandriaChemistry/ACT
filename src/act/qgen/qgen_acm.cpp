@@ -34,9 +34,22 @@
 
 #include "qgen_acm.h"
 
+#include <algorithm>
 #include <cctype>
+#include <cmath>
+#include <cstddef>
+#include <map>
 #include <numeric>
+#include <string>
+#include <vector>
 
+#include "act/basics/act_particle.h"
+#include "act/basics/chargemodel.h"
+#include "act/basics/identifier.h"
+#include "act/basics/interactiontype.h"
+#include "act/basics/mutability.h"
+#include "act/forcefield/particletype.h"
+#include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
 
 #include "act/basics/msg_handler.h"
@@ -45,8 +58,11 @@
 #include "act/molprop/molprop.h"
 #include "act/forcefield/forcefield.h"
 #include "act/forcefield/forcefield_parameter.h"
-#include "act/topology/topology.h"
+#include "act/topology/actatom.h"
 #include "act/utility/regression.h"
+#include "gromacs/math/vectypes.h"
+#include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/stringutil.h"
 
 namespace alexandria
 {

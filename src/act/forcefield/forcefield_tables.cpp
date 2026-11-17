@@ -35,9 +35,15 @@
 #include "forcefield_tables.h"
 
 #include <cstdlib>
+#include <string>
+#include <vector>
 
 
+#include "act/basics/interactiontype.h"
+#include "act/basics/mutability.h"
+#include "act/forcefield/particletype.h"
 #include "act/utility/latex_util.h"
+#include "gromacs/utility/stringutil.h"
 
 namespace alexandria
 {

@@ -30,11 +30,23 @@
  * Implements part of the alexandria program.
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
+#include "act/basics/identifier.h"
+#include "act/basics/interactiontype.h"
+#include "act/forcefield/particletype.h"
+#include "act/molprop/composition.h"
+#include "act/molprop/experiment.h"
+#include "act/molprop/fragment.h"
+#include "act/molprop/topologyentry.h"
 #include "actpre.h"
 
 #include "import.h"
 
+#include <algorithm>
+#include <cctype>
+#include <cstddef>
 #include <limits>
+#include <string>
+#include <utility>
 #include <vector>
 
 #pragma GCC diagnostic push

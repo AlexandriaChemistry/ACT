@@ -30,6 +30,7 @@
  * Tests of the geometry_ff module.
  */
 
+#include "act/forcefield/forcefield_parameter.h"
 #include "actpre.h"
 
 #include <string>

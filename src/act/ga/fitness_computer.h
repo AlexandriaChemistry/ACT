@@ -34,7 +34,7 @@
 #ifndef GA_FITNESSCOMPUTER_H
 #define GA_FITNESSCOMPUTER_H
 
-#include "act/basics/chargemodel.h"
+#include "act/basics/dataset.h"
 #include "act/basics/msg_handler.h"
 #include "genome.h"
 

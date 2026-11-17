@@ -32,9 +32,7 @@
 #ifndef GA_INDIVIDUAL_H
 #define GA_INDIVIDUAL_H
 
-#include <cstdio>
 
-#include <map>
 
 #include "genome.h"
 

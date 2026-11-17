@@ -30,11 +30,13 @@
  * Tests of reading molecular properties from an SQLite3 database.
  */
 
+#include "act/molprop/molpropobservable.h"
 #include "actpre.h"
 
 #include "config.h"
 
-#include <cmath>
+#include <cstddef>
+#include <cstdio>
 #include <string>
 #include <vector>
 

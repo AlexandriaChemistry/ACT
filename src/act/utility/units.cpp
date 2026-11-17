@@ -36,6 +36,7 @@
 
 #include <map>
 #include <string>
+#include <utility>
 
 #include "gromacs/math/units.h"
 #include "gromacs/utility/exceptions.h"

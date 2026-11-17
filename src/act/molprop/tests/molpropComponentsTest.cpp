@@ -35,9 +35,11 @@
 
 #include "actpre.h"
 
+#include <cstddef>
 #include <memory>
 #include <set>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include <gtest/gtest.h>
@@ -55,6 +57,7 @@
 #include "act/molprop/multipole_names.h"
 #include "act/molprop/phase.h"
 #include "act/molprop/topologyentry.h"
+#include "gromacs/utility/stringutil.h"
 
 namespace alexandria
 {

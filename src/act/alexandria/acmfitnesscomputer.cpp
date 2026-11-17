@@ -35,17 +35,37 @@
 
 #include "acmfitnesscomputer.h"
 
+#include <algorithm>
+#include <array>
 #include <cstdio>
 #include <cstdlib>
 #include <functional>
 #include <limits>
+#include <map>
 #include <set>
+#include <string>
+#include <utility>
+#include <vector>
 
+#include "act/alexandria/devcomputer.h"
+#include "act/alexandria/molgen.h"
+#include "act/alexandria/sensitivity.h"
 #include "act/basics/dataset.h"
+#include "act/basics/interactiontype.h"
 #include "act/basics/msg_handler.h"
+#include "act/basics/mutability.h"
+#include "act/forces/gpusystem.h"
 #include "act/ga/genome.h"
+#include "act/gpu/gpu.h"
+#include "act/molprop/molpropobservable.h"
+#include "act/topology/actmol.h"
+#include "act/topology/actmol_low.h"
 #include "act/utility/communicationrecord.h"
 #include "act/utility/timings.h"
+#include "gromacs/math/vectypes.h"
+#include "gromacs/utility/exceptions.h"
+#include "gromacs/utility/gmxassert.h"
+#include "gromacs/utility/stringutil.h"
 
 namespace alexandria
 {

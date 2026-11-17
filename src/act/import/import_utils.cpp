@@ -36,10 +36,18 @@
 
 #include <libxml/parser.h>
 #include <libxml/tree.h>
+#include <libxml/xmlstring.h>
+#include <map>
+#include <string>
+#include <utility>
+#include <vector>
 
 #include "act/basics/libraryfile.h"
 #include "act/basics/msg_handler.h"
+#include "act/utility/stringutil.h"
 #include "act/utility/xml_util.h"
+#include "gromacs/utility/basedefinitions.h"
+#include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/stringutil.h"
 
 namespace alexandria

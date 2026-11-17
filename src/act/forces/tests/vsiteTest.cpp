@@ -33,6 +33,17 @@
  * \author A. Najla Hosseini <atiyeh.hosseini@icm.uu.se>
  * \ingroup group_forces_tests
  */
+#include "act/basics/act_particle.h"
+#include "act/basics/coordinate.h"
+#include "act/basics/identifier.h"
+#include "act/basics/interactiontype.h"
+#include "act/basics/msg_handler.h"
+#include "act/forcefield/potential.h"
+#include "act/molprop/experiment.h"
+#include "act/molprop/molprop.h"
+#include "act/molprop/topologyentry.h"
+#include "act/topology/actatom.h"
+#include "act/topology/actmol_low.h"
 #include "actpre.h"
 
 #include "../vsitehandler.h"
@@ -40,9 +51,13 @@
 #include <algorithm>
 #include <cmath>
 
+#include <cstddef>
 #include <set>
 
 #include <gtest/gtest.h>
+#include <string>
+#include <utility>
+#include <vector>
 
 #include "act/import/import.h"
 #include "act/forcefield/forcefield_parametername.h"
@@ -51,6 +66,10 @@
 #include "act/topology/actmol.h"
 #include "act/topology/topology.h"
 
+#include "gromacs/math/vec.h"
+#include "gromacs/math/vectypes.h"
+#include "gromacs/utility/real.h"
+#include "gromacs/utility/stringutil.h"
 #include "testutils/cmdlinetest.h"
 #include "testutils/refdata.h"
 #include "testutils/testasserts.h"

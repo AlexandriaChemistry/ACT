@@ -32,13 +32,24 @@
  */
 
 #include "shake.h"
+#include "act/basics/interactiontype.h"
+#include "act/forcefield/potential.h"
+#include "gromacs/math/vec.h"
+#include "gromacs/math/vectypes.h"
+#include "gromacs/utility/basedefinitions.h"
 
+#include <Eigen/Core>
 #include <algorithm>
+#include <array>
 #include <cmath>
+#include <cstddef>
 #include <limits>
 #include <map>
 #include <set>
+#include <string>
 #include <type_traits>
+#include <utility>
+#include <vector>
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wpragmas"

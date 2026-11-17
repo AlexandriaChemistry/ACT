@@ -36,12 +36,19 @@
 
 #include <cstdio>
 #include <cstdlib>
+#include <ctime>
+#include <map>
+#include <string>
+#include <vector>
 
 #include "act/basics/version.h"
 #include "act/forces/simd_information.h"
 #include "act/gpu/gpu.h"
 #include "act/utility/communicationrecord.h"
 #include "gromacs/commandline/filenm.h"
+#include "gromacs/commandline/pargs.h"
+#include "gromacs/fileio/filetypes.h"
+#include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/binaryinformation.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/futil.h"

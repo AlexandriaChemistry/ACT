@@ -29,7 +29,8 @@
  * Implements testing of the genetic algorithm
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
-#include "config.h"
+#include "act/alexandria/molgen.h"
+#include "act/basics/dataset.h"
 
 #include "ga_test_helper.h"
 
@@ -39,7 +40,11 @@
 #include "act/alexandria/molselect.h"
 #include "act/basics/msg_handler.h"
 #include "act/forces/forcecomputer.h"
+#include "gromacs/commandline/filenm.h"
+#include "gromacs/commandline/pargs.h"
 #include "testutils/testfilemanager.h"
+#include <string>
+#include <vector>
 
 namespace alexandria
 {

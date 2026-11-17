@@ -33,12 +33,19 @@
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  * \ingroup group_forces_tests
  */
+#include "act/basics/act_particle.h"
+#include "act/basics/coordinate.h"
+#include "act/forces/vsitehandler.h"
+#include "act/molprop/experiment.h"
+#include "act/molprop/molprop.h"
+#include "act/topology/actmol_low.h"
 #include "actpre.h"
 
 #include "../forcecomputer.h"
 
 #include <algorithm>
 #include <cmath>
+#include <cstddef>
 #include <map>
 #include <tuple>
 #include <string>
@@ -55,6 +62,8 @@
 #include "act/topology/actmol.h"
 #include "act/utility/timings.h"
 #include "gromacs/math/vectypes.h"
+#include "gromacs/utility/real.h"
+#include "gromacs/utility/stringutil.h"
 #include "testutils/testasserts.h"
 #include "testutils/testfilemanager.h"
 

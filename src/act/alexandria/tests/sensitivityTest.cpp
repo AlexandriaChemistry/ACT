@@ -33,10 +33,13 @@
 
 #include "actpre.h"
 
+#include <algorithm>
 #include <array>
 #include <cmath>
+#include <cstddef>
 #include <functional>
 #include <limits>
+#include <nlohmann/json_fwd.hpp>
 #include <string>
 #include <vector>
 
