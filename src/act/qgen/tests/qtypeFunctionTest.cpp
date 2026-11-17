@@ -33,15 +33,13 @@
  */
 
 #include <cmath>
-
 #include <gtest/gtest.h>
 #include <vector>
 
 #include "act/basics/msg_handler.h"
 #include "act/molprop/molpropobservable.h"
-#include "act/qgen/qtype.h"
 #include "act/molprop/multipole_names.h"
-
+#include "act/qgen/qtype.h"
 #include "gromacs/math/vectypes.h"
 #include "gromacs/utility/exceptions.h"
 

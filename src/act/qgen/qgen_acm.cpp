@@ -32,8 +32,6 @@
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
 
-#include "qgen_acm.h"
-
 #include <algorithm>
 #include <cctype>
 #include <cmath>
@@ -47,22 +45,22 @@
 #include "act/basics/chargemodel.h"
 #include "act/basics/identifier.h"
 #include "act/basics/interactiontype.h"
-#include "act/basics/mutability.h"
-#include "act/forcefield/particletype.h"
-#include "gromacs/math/units.h"
-#include "gromacs/math/vec.h"
-
 #include "act/basics/msg_handler.h"
+#include "act/basics/mutability.h"
 #include "act/coulombintegrals/gaussian_integrals.h"
 #include "act/coulombintegrals/slater_integrals.h"
-#include "act/molprop/molprop.h"
 #include "act/forcefield/forcefield.h"
 #include "act/forcefield/forcefield_parameter.h"
+#include "act/forcefield/particletype.h"
+#include "act/molprop/molprop.h"
 #include "act/topology/actatom.h"
 #include "act/utility/regression.h"
+#include "gromacs/math/units.h"
+#include "gromacs/math/vec.h"
 #include "gromacs/math/vectypes.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/stringutil.h"
+#include "qgen_acm.h"
 
 namespace alexandria
 {

@@ -32,8 +32,6 @@
  */
 #include "actpre.h" 
 
-#include "msg_handler.h"
-
 #include <cstdio>
 #include <cstdlib>
 #include <ctime>
@@ -54,6 +52,7 @@
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/programcontext.h"
 #include "gromacs/utility/stringutil.h"
+#include "msg_handler.h"
 
 namespace alexandria
 {

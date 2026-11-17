@@ -25,8 +25,6 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor,
  * Boston, MA  02110-1301, USA.
  */
-#include "combinationrules.h"
-
 #include <algorithm>
 #include <array>
 #include <cstring>
@@ -40,6 +38,7 @@
 #include "act/forcefield/forcefield_parametername.h"
 #include "act/forcefield/potential.h"
 #include "act/utility/units.h"
+#include "combinationrules.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/stringutil.h"

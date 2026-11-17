@@ -30,13 +30,13 @@
  * Implements part of the alexandria program.
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
-#include "atomprops.h"
+#include <map>
+#include <string>
 
 #include "act/basics/libraryfile.h"
 #include "act/utility/stringutil.h"
+#include "atomprops.h"
 #include "gromacs/utility/textreader.h"
-#include <map>
-#include <string>
 
 namespace alexandria
 {

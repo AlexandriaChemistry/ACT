@@ -36,7 +36,6 @@
 #define QGEN_ACM_H
 
 #include <cstdio>
-
 #include <string>
 #include <vector>
 

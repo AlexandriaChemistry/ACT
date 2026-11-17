@@ -40,17 +40,16 @@
 #include <map>
 #include <vector>
 
+#include "act/alexandria/molselect.h"
 #include "act/basics/identifier.h"
 #include "act/basics/interactiontype.h"
+#include "act/forcefield/forcefield.h"
 #include "act/molprop/molprop.h"
+#include "act/statistics/statistics.h"
+#include "act/topology/actmol.h"
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/math/vectypes.h"
 #include "gromacs/utility/real.h"
-
-#include "act/forcefield/forcefield.h"
-#include "act/statistics/statistics.h"
-#include "act/topology/actmol.h"
-#include "act/alexandria/molselect.h"
 
 namespace gmx
 {

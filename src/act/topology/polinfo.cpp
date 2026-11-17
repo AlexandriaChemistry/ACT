@@ -26,12 +26,11 @@
  * Boston, MA  02110-1301, USA.
  */
  
-#include "polinfo.h"
-
 #include "act/basics/act_particle.h"
 #include "act/basics/interactiontype.h"
 #include "act/forcefield/forcefield.h"
 #include "act/topology/topology.h"
+#include "polinfo.h"
 
 namespace alexandria
 {

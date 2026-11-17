@@ -42,8 +42,8 @@
 
 #include "act/basics/coordinate.h"
 #include "act/basics/interactiontype.h"
-#include "act/gpu/gpu.h"
 #include "act/forcefield/potential.h"
+#include "act/gpu/gpu.h"
 #include "act/molprop/topologyentry.h"
 #include "act/topology/actatom.h"
 #include "act/topology/nonbondedpairs.h"

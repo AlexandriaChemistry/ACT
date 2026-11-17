@@ -35,17 +35,15 @@
 
 #include <cmath>
 #include <cstdlib>
-
 #include <gtest/gtest.h>
 
 #include "act/basics/msg_handler.h"
 #include "act/forcefield/forcefield.h"
-#include "act/testutils/forcefield_utils.h"
 #include "act/forcefield/forcefield_xml.h"
 #include "act/import/import.h"
 #include "act/qgen/qgen_resp.h"
+#include "act/testutils/forcefield_utils.h"
 #include "act/topology/actmol.h"
-
 #include "testutils/cmdlinetest.h"
 #include "testutils/refdata.h"
 #include "testutils/testasserts.h"

@@ -37,7 +37,7 @@
 #include <cstring>
 #include <string>
 #include <vector>
-    
+
 #include "act/alexandria/molselect.h"
 #include "act/basics/chargemodel.h"
 #include "act/basics/msg_handler.h"

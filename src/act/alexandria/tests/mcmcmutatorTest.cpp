@@ -38,25 +38,23 @@
  */
 
 #include "actpre.h"
-#include "act/alexandria/molgen.h"
-#include "act/basics/chargemodel.h"
-#include "act/basics/dataset.h"
-#include "act/qgen/qgen_resp.h"
 
 #include <cmath>
 #include <cstddef>
+#include <gtest/gtest.h>
 #include <string>
 #include <vector>
 
-#include <gtest/gtest.h>
-
-#include "act/alexandria/mcmcmutator.h"
 #include "act/alexandria/confighandler.h"
+#include "act/alexandria/mcmcmutator.h"
+#include "act/alexandria/molgen.h"
 #include "act/alexandria/staticindividualinfo.h"
+#include "act/basics/chargemodel.h"
+#include "act/basics/dataset.h"
 #include "act/ga/genome.h"
+#include "act/qgen/qgen_resp.h"
 #include "act/testutils/ga_test_helper.h"
 #include "gromacs/utility/stringutil.h"
-
 #include "testutils/cmdlinetest.h"
 #include "testutils/refdata.h"
 #include "testutils/testasserts.h"

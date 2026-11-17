@@ -25,10 +25,9 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor,
  * Boston, MA  02110-1301, USA.
  */
-#include "forcecomputerutils.h"
-
 #include <cmath>
 
+#include "forcecomputerutils.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/math/vectypes.h"
 #include "gromacs/utility/real.h"

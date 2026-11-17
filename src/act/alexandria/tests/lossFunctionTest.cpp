@@ -34,7 +34,6 @@
 #include "actpre.h"
 
 #include <cmath>
-
 #include <gtest/gtest.h>
 
 #include "act/alexandria/loss_function.h"

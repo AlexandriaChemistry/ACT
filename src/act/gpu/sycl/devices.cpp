@@ -30,18 +30,16 @@
  * cmake/actManageGpu.cmake, and includes no ACT headers but gpu.h.
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
-#include "gpu.h"
-
 #include <algorithm>
 #include <cstdio>
 #include <cstdlib>
 #include <filesystem>
 #include <fstream>
+#include <sycl/sycl.hpp>
 #include <system_error>
 #include <vector>
 
-#include <sycl/sycl.hpp>
-
+#include "gpu.h"
 #include "sycl/context.h"
 
 namespace alexandria

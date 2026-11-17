@@ -42,7 +42,6 @@
 #include "gromacs/utility/basenetwork.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/stringutil.h"
-
 #include "testutils/cmdlinetest.h"
 #include "testutils/refdata.h"
 #include "testutils/testasserts.h"

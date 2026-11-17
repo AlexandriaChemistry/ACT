@@ -26,9 +26,8 @@
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
 #include <cmath>
-#include <vector>
-
 #include <gtest/gtest.h>
+#include <vector>
 
 #include "act/properties/symmetrynumber.h"
 #include "gromacs/math/vectypes.h"

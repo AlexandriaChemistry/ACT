@@ -32,8 +32,9 @@
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
 
-#include "act/forcefield/forcefield.h"
 #include <string>
+
+#include "act/forcefield/forcefield.h"
 
 //! Return testing forcefield structure
 alexandria::ForceField *getForceField(const std::string &qdist);

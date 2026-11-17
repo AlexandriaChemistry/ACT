@@ -36,7 +36,6 @@
 #include <vector>
 
 #include "../forcefield_parameterlist.h"
-
 #include "act/basics/identifier.h"
 #include "act/basics/mutability.h"
 #include "act/forcefield/forcefield_parameter.h"

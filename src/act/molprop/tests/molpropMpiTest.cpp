@@ -33,19 +33,17 @@
 #include "actpre.h"
 
 #include <fstream>
+#include <gtest/gtest.h>
 #include <sstream>
 #include <string>
 #include <utility>
 #include <vector>
-
-#include <gtest/gtest.h>
 
 #include "act/basics/msg_handler.h"
 #include "act/molprop/molprop.h"
 #include "act/molprop/molprop_xml.h"
 #include "act/utility/communicationrecord.h"
 #include "gromacs/utility/stringutil.h"
-
 #include "testutils/testfilemanager.h"
 
 namespace alexandria

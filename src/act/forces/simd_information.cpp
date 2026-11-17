@@ -30,9 +30,6 @@
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
 #include "actpre.h"
-#include "act/utility/timings.h"
-
-#include "simd_information.h"
 
 #include <algorithm>
 #include <cstdint>
@@ -45,8 +42,10 @@
 
 #include "act/forces/forces_explicit_simd.h"
 #include "act/gpu/gpu.h"
+#include "act/utility/timings.h"
 #include "gromacs/utility/stringutil.h"
 #include "gromacs/utility/textwriter.h"
+#include "simd_information.h"
 
 #if (defined(__x86_64__) || defined(__i386__)) && defined(__GNUC__)
 #    include <cpuid.h>

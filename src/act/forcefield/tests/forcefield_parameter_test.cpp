@@ -33,8 +33,6 @@
 #include <gtest/gtest.h>
 
 #include "../forcefield_parameter.h"
-
-
 #include "act/basics/mutability.h"
 #include "gromacs/utility/exceptions.h"
 #include "testutils/cmdlinetest.h"

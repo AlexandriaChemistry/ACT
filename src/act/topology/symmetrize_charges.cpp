@@ -32,8 +32,6 @@
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
 
-#include "symmetrize_charges.h"
-
 #include <cstddef>
 #include <cstdlib>
 #include <cstring>
@@ -45,6 +43,7 @@
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/stringutil.h"
+#include "symmetrize_charges.h"
 
 namespace alexandria
 {

@@ -33,8 +33,6 @@
  */
 
 
-#include "staticindividualinfo.h"
-
 #include <cmath>
 #include <cstddef>
 #include <filesystem>
@@ -50,14 +48,15 @@
 #include "act/basics/msg_handler.h"
 #include "act/basics/mutability.h"
 #include "act/forcefield/forcefield_parameter.h"
-#include "act/utility/memory_check.h"
 #include "act/forcefield/forcefield_xml.h"
 #include "act/forcefield/generate_dependent.h"
+#include "act/utility/memory_check.h"
+#include "act/utility/timings.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/stringutil.h"
 #include "gromacs/utility/textwriter.h"
-#include "act/utility/timings.h"
+#include "staticindividualinfo.h"
 
 namespace alexandria
 {

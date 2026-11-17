@@ -32,22 +32,19 @@
  */
 
 #include "actpre.h"
-#include "act/basics/interactiontype.h"
-#include "act/basics/msg_handler.h"
-#include "act/molprop/topologyentry.h"
-
 
 #include <cstdlib>
-
 #include <gtest/gtest.h>
 #include <string>
 #include <vector>
 
+#include "act/basics/interactiontype.h"
+#include "act/basics/msg_handler.h"
+#include "act/molprop/topologyentry.h"
 #include "act/topology/topology.h"
 #include "gromacs/math/vectypes.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/stringutil.h"
-
 #include "testutils/cmdlinetest.h"
 #include "testutils/refdata.h"
 

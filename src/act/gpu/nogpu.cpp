@@ -29,11 +29,12 @@
  * The GPU interface of gpu.h for ACT built without GPU support.
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
-#include "gpu.h"
 #include <cstddef>
 #include <cstdint>
 #include <string>
 #include <vector>
+
+#include "gpu.h"
 
 namespace alexandria
 {

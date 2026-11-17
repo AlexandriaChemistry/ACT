@@ -32,11 +32,10 @@
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
 
+#include <algorithm>
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>
-
-#include <algorithm>
 #include <cstring>
 #include <map>
 #include <set>
@@ -49,16 +48,16 @@
 #include "act/basics/interactiontype.h"
 #include "act/basics/msg_handler.h"
 #include "act/basics/mutability.h"
-#include "act/forcefield/forcefield_parameterlist.h"
-#include "act/forcefield/particletype.h"
-#include "act/forces/forcecomputer.h"
 #include "act/forcefield/act_checksum.h"
 #include "act/forcefield/combruleutil.h"
-#include "act/forcefield/forcefield_parameter.h"
 #include "act/forcefield/forcefield.h"
+#include "act/forcefield/forcefield_parameter.h"
+#include "act/forcefield/forcefield_parameterlist.h"
 #include "act/forcefield/forcefield_validation.h"
 #include "act/forcefield/forcefield_xml.h"
 #include "act/forcefield/generate_dependent.h"
+#include "act/forcefield/particletype.h"
+#include "act/forces/forcecomputer.h"
 #include "gromacs/commandline/filenm.h"
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/fileio/filetypes.h"

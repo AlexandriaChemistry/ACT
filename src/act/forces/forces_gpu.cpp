@@ -30,15 +30,6 @@
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
 #include "actpre.h"
-#include "act/basics/coordinate.h"
-#include "act/basics/interactiontype.h"
-#include "act/forcefield/potential.h"
-#include "act/gpu/gpu.h"
-#include "act/molprop/topologyentry.h"
-#include "act/topology/actatom.h"
-#include "act/topology/nonbondedpairs.h"
-
-#include "forces_gpu.h"
 
 #include <algorithm>
 #include <cmath>
@@ -47,9 +38,17 @@
 #include <type_traits>
 #include <vector>
 
+#include "act/basics/coordinate.h"
+#include "act/basics/interactiontype.h"
 #include "act/forcefield/forcefield_parametername.h"
+#include "act/forcefield/potential.h"
+#include "act/gpu/gpu.h"
 #include "act/gpu/pairrows.h"
+#include "act/molprop/topologyentry.h"
+#include "act/topology/actatom.h"
+#include "act/topology/nonbondedpairs.h"
 #include "act/utility/timings.h"
+#include "forces_gpu.h"
 #include "gromacs/math/units.h"
 #include "gromacs/utility/gmxassert.h"
 

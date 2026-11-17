@@ -25,8 +25,6 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor,
  * Boston, MA  02110-1301, USA.
  */
-#include "generate_dependent.h"
-
 #include <algorithm>
 #include <cstddef>
 #include <memory>
@@ -43,6 +41,7 @@
 #include "act/forcefield/forcefield_parameterlist.h"
 #include "act/forcefield/particletype.h"
 #include "act/forcefield/potential.h"
+#include "generate_dependent.h"
 #include "gromacs/utility/stringutil.h"
 
 namespace alexandria

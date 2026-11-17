@@ -32,8 +32,6 @@
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
 
-#include "act/molprop/molprop_util.h"
-
 #include <algorithm>
 #include <cstdio>
 #include <map>
@@ -47,6 +45,7 @@
 #include "act/molprop/experiment.h"
 #include "act/molprop/fragment.h"
 #include "act/molprop/molprop.h"
+#include "act/molprop/molprop_util.h"
 #include "act/molprop/molprop_xml.h"
 #include "act/molprop/topologyentry.h"
 #include "gromacs/utility/arrayref.h"

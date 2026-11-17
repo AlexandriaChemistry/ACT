@@ -32,17 +32,13 @@
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
 
-#include "actmol.h"
-
-#include <cstring>
+#include <algorithm>
 #include <cmath>
 #include <cstdio>
-
-#include <algorithm>
+#include <cstring>
 #include <filesystem>
 #include <map>
 #include <memory>
-#include "gromacs/utility/gmxmpi.h"
 #include <random>
 #include <set>
 #include <string>
@@ -74,6 +70,7 @@
 #include "act/topology/symmetrize_charges.h"
 #include "act/utility/communicationrecord.h"
 #include "act/utility/units.h"
+#include "actmol.h"
 #include "gromacs/fileio/pdbio.h"
 #include "gromacs/gmxpreprocess/grompp-impl.h"
 #include "gromacs/math/functions.h"
@@ -84,6 +81,7 @@
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/gmxassert.h"
+#include "gromacs/utility/gmxmpi.h"
 #include "gromacs/utility/real.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/stringutil.h"

@@ -36,15 +36,13 @@
 #include <random>
 #include <vector>
 
-#include "penalizer.h"
-
 #include "act/ga/gene_pool.h"
 #include "act/ga/initializer.h"
 #include "act/utility/portable_random.h"
-
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/utility/textwriter.h"
+#include "penalizer.h"
 
 namespace ga
 {

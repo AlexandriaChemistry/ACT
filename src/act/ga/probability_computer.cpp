@@ -29,18 +29,17 @@
  * Implements part of the alexandria program.
  * \author Julian Ramon Marrades Furquet <julian@marrad.es>
  */
-#include "probability_computer.h"
+#include <algorithm>
+#include <cstddef>
+#include <limits>
+#include <math.h>
+#include <numeric>
+#include <vector>
+
 #include "act/basics/dataset.h"
 #include "act/ga/genome.h"
 #include "gromacs/utility/basedefinitions.h"
-
-#include <cstddef>
-#include <math.h>
-
-#include <algorithm>
-#include <limits>
-#include <numeric>
-#include <vector>
+#include "probability_computer.h"
 
 namespace ga
 {

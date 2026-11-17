@@ -35,7 +35,6 @@
 #define ALEXANDRIA_HYBRID_GAMC_H
 
 #include <cstdio>
-
 #include <map>
 #include <random>
 #include <vector>
@@ -52,7 +51,6 @@
 #include "act/ga/probability_computer.h"
 #include "act/ga/selector.h"
 #include "act/ga/terminator.h"
-
 #include "act/utility/communicationrecord.h"
 #include "confighandler.h"
 #include "staticindividualinfo.h"

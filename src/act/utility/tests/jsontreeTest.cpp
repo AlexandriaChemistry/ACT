@@ -31,14 +31,12 @@
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
 
-#include "../jsontree.h"
-
 #include <fstream>
+#include <gtest/gtest.h>
 #include <iterator>
 #include <string>
 
-#include <gtest/gtest.h>
-
+#include "../jsontree.h"
 #include "testutils/cmdlinetest.h"
 #include "testutils/testfilemanager.h"
 

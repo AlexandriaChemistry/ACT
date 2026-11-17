@@ -30,9 +30,8 @@
  * Implements part of the alexandria program.
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
-#include <math.h>
-
 #include <gtest/gtest.h>
+#include <math.h>
 
 #include "act/forcefield/potential.h"
 

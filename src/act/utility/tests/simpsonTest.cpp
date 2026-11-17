@@ -31,14 +31,13 @@
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
  
-#include "../simpson.h"
-#include "act/basics/msg_handler.h"
-
 #include <cmath>
-
 #include <cstddef>
 #include <gtest/gtest.h>
 #include <vector>
+
+#include "../simpson.h"
+#include "act/basics/msg_handler.h"
 
 
 TEST(SimpsonTest, OddVectorExp)

@@ -30,13 +30,11 @@
 
 #include <cmath>
 #include <cstdio>
-
 #include <iostream>
 
 #include "config.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/stringutil.h"
-
 #include "slater_integrals.h"
 #include "slater_low.h"
 

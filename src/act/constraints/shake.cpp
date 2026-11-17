@@ -31,18 +31,11 @@
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
 
-#include "shake.h"
-#include "act/basics/interactiontype.h"
-#include "act/forcefield/potential.h"
-#include "gromacs/math/vec.h"
-#include "gromacs/math/vectypes.h"
-#include "gromacs/utility/basedefinitions.h"
-
-#include <Eigen/Core>
 #include <algorithm>
 #include <array>
 #include <cmath>
 #include <cstddef>
+#include <Eigen/Core>
 #include <limits>
 #include <map>
 #include <set>
@@ -50,6 +43,13 @@
 #include <type_traits>
 #include <utility>
 #include <vector>
+
+#include "act/basics/interactiontype.h"
+#include "act/forcefield/potential.h"
+#include "gromacs/math/vec.h"
+#include "gromacs/math/vectypes.h"
+#include "gromacs/utility/basedefinitions.h"
+#include "shake.h"
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wpragmas"

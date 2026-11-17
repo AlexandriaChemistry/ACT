@@ -31,14 +31,13 @@
  */
 #include "actpre.h"
 
-#include "../simd_math.h"
-
 #include <algorithm>
 #include <cmath>
-
 #include <cstddef>
-#include <limits>
 #include <gtest/gtest.h>
+#include <limits>
+
+#include "../simd_math.h"
 
 #ifdef ACT_HAVE_SIMD
 

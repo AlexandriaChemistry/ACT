@@ -36,24 +36,23 @@
 
 #include <cstdio>
 #include <cstdlib>
-
 #include <map>
 #include <string>
 #include <vector>
 
 #include "act/basics/dataset.h"
 #include "act/basics/msg_handler.h"
+#include "crossover.h"
+#include "fitness_computer.h"
 #include "gene_pool.h"
 #include "genome.h"
 #include "gromacs/utility/gmxassert.h"
 #include "initializer.h"
-#include "fitness_computer.h"
+#include "mutator.h"
+#include "penalizer.h"
 #include "probability_computer.h"
 #include "selector.h"
-#include "crossover.h"
-#include "mutator.h"
 #include "terminator.h"
-#include "penalizer.h"
 
 namespace gmx
 {

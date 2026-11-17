@@ -32,22 +32,19 @@
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
 
-#include "sensitivity.h"
-
-#include <Eigen/Core>
 #include <algorithm>
 #include <array>
 #include <cmath>
 #include <cstdlib>
+#include <Eigen/Core>
+#include <Eigen/Eigenvalues>
 #include <limits>
 #include <map>
+#include <nlohmann/json.hpp>
 #include <nlohmann/json_fwd.hpp>
 #include <optional>
 #include <string>
 #include <vector>
-
-#include <Eigen/Eigenvalues>
-#include <nlohmann/json.hpp>
 
 #include "act/utility/regression.h"
 #include "act/utility/stringutil.h"
@@ -56,6 +53,7 @@
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/stringutil.h"
 #include "gromacs/utility/textwriter.h"
+#include "sensitivity.h"
 
 namespace alexandria
 {

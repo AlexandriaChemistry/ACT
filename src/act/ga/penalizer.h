@@ -33,14 +33,14 @@
  * \author Julian Ramon Marrades Furquet <julian@marrad.es>
  */
 
-#include "gene_pool.h"
-#include "initializer.h"
-
-#include "gromacs/fileio/xvgr.h"
 #include <cstddef>
 #include <cstdio>
 #include <random>
 #include <vector>
+
+#include "gene_pool.h"
+#include "gromacs/fileio/xvgr.h"
+#include "initializer.h"
 
 namespace gmx
 {

@@ -33,22 +33,23 @@
  * \ingroup group_act_tests
  */
 #include "actpre.h"
-#include "act/molprop/experiment.h"
-#include "act/molprop/molprop.h"
-#include "act/molprop/molpropobservable.h"
-#include "act/topology/actmol_low.h"
 
-#include "actmol_util.h"
-#include "act/import/import.h"
-#include "act/basics/msg_handler.h"
-#include "act/testutils/forcefield_utils.h"
-#include "act/topology/actmol.h"
-#include "gromacs/math/vectypes.h"
 #include <cstdio>
 #include <map>
 #include <string>
 #include <utility>
 #include <vector>
+
+#include "act/basics/msg_handler.h"
+#include "act/import/import.h"
+#include "act/molprop/experiment.h"
+#include "act/molprop/molprop.h"
+#include "act/molprop/molpropobservable.h"
+#include "act/testutils/forcefield_utils.h"
+#include "act/topology/actmol.h"
+#include "act/topology/actmol_low.h"
+#include "actmol_util.h"
+#include "gromacs/math/vectypes.h"
 
 namespace alexandria
 {

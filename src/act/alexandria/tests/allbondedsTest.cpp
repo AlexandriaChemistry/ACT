@@ -31,13 +31,11 @@
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
 #include <cmath>
-
 #include <cstdio>
+#include <gtest/gtest.h>
 #include <map>
 #include <string>
 #include <vector>
-
-#include <gtest/gtest.h>
 
 #include "act/alexandria/allbondeds.h"
 #include "act/alexandria/molselect.h"
@@ -46,21 +44,20 @@
 #include "act/basics/interactiontype.h"
 #include "act/basics/msg_handler.h"
 #include "act/forcefield/forcefield_parameter.h"
+#include "act/forcefield/forcefield_xml.h"
 #include "act/forcefield/potential.h"
+#include "act/import/import.h"
 #include "act/molprop/experiment.h"
 #include "act/molprop/molprop.h"
+#include "act/molprop/molprop_xml.h"
 #include "act/statistics/statistics.h"
 #include "act/testutils/forcefield_utils.h"
-#include "act/forcefield/forcefield_xml.h"
-#include "act/import/import.h"
-#include "act/molprop/molprop_xml.h"
 #include "act/topology/actmol.h"
 #include "gromacs/math/vectypes.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/real.h"
 #include "gromacs/utility/stringstream.h"
 #include "gromacs/utility/textwriter.h"
-
 #include "testutils/cmdlinetest.h"
 #include "testutils/refdata.h"
 #include "testutils/testasserts.h"

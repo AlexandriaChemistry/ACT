@@ -30,7 +30,7 @@
 #define _SLATER_LOW_H
 
 #ifdef HAVE_CONFIG_H
-#include <config.h>
+#include "config.h"
 #endif
 
 #if HAVE_LIBCLN

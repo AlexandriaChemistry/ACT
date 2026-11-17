@@ -18,8 +18,6 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, 
  * Boston, MA  02110-1301, USA.
  */
-#include "actmiddleman.h" 
-
 #include <algorithm>
 #include <cstdlib>
 #include <random>
@@ -39,10 +37,11 @@
 #include "act/ga/genome.h"
 #include "act/gpu/gpu.h"
 #include "act/qgen/qgen_resp.h"
-#include "act/utility/portable_random.h"
 #include "act/utility/communicationrecord.h"
-#include "gromacs/utility/gmxassert.h"
+#include "act/utility/portable_random.h"
 #include "act/utility/timings.h"
+#include "actmiddleman.h" 
+#include "gromacs/utility/gmxassert.h"
 
 namespace alexandria
 {

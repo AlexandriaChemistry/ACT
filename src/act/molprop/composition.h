@@ -37,12 +37,12 @@
 
 
 #include <map>
-#include "gromacs/utility/gmxmpi.h"
 #include <string>
 #include <vector>
 
 #include "act/utility/communicationrecord.h"
 #include "gromacs/utility/exceptions.h"
+#include "gromacs/utility/gmxmpi.h"
 #include "gromacs/utility/stringutil.h"
 
 namespace alexandria

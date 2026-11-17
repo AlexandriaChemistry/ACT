@@ -30,20 +30,16 @@
  * Implements part of the alexandria program.
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
-#include "act_checksum.h"
-
-#include <unistd.h>
-
 #include <cstdio>
 #include <cstdlib>
-
 #include <string>
+#include <unistd.h>
 
-#include "gromacs/fileio/md5.h"
-#include "gromacs/utility/stringutil.h"
-
+#include "act_checksum.h"
 #include "forcefield.h"
 #include "forcefield_xml.h"
+#include "gromacs/fileio/md5.h"
+#include "gromacs/utility/stringutil.h"
 
 namespace alexandria
 {

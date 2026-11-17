@@ -34,10 +34,9 @@
 
 #include <cmath>
 #include <cstddef>
+#include <gtest/gtest.h>
 #include <map>
 #include <vector>
-
-#include <gtest/gtest.h>
 
 #include "act/basics/dataset.h"
 #include "act/basics/msg_handler.h"
@@ -51,7 +50,6 @@
 #include "act/ga/probability_computer.h"
 #include "act/ga/selector.h"
 #include "act/ga/terminator.h"
-
 #include "gromacs/utility/exceptions.h"
 
 namespace ga

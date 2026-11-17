@@ -32,21 +32,22 @@
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
 
+#include <cstdio>
+#include <cstring>
+#include <math.h> 
+#include <memory>
+#include <stdlib.h>
+#include <string>
+#include <string.h>
+#include <strings.h> // IWYU pragma: keep (strcasecmp)
+#include <utility>
+
 #include "act/molprop/experiment.h"
 #include "act/molprop/molprop.h"
 #include "act/molprop/phase.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/stringutil.h"
-#include <cstring>
-#include <cstdio>
-#include <math.h> 
-#include <memory>
-#include <stdlib.h>
-#include <string.h>
-#include <string>
-#include <strings.h> // IWYU pragma: keep (strcasecmp)
-#include <utility>
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
@@ -58,8 +59,8 @@
 #include <sqlite3.h>
 #endif
 #include "act/basics/msg_handler.h"
-#include "act/molprop/molpropobservable.h"
 #include "act/molprop/molprop_sqlite3.h"
+#include "act/molprop/molpropobservable.h"
 
 namespace alexandria
 {

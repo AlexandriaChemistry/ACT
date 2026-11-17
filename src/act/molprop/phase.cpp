@@ -32,12 +32,11 @@
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
 
-#include "phase.h"
-
 #include <map>
 #include <string>
 
 #include "gromacs/utility/exceptions.h"
+#include "phase.h"
 
 namespace alexandria
 {

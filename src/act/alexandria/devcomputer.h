@@ -36,8 +36,8 @@
 #ifndef ALEXANDRIA_DEVCOMPUTER_H
 #define ALEXANDRIA_DEVCOMPUTER_H
 
-#include <string>
 #include <map>
+#include <string>
 #include <vector>
 
 #include "act/alexandria/confighandler.h"

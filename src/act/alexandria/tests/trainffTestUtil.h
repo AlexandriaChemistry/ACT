@@ -37,21 +37,19 @@
 #include <cstddef>
 #include <filesystem>
 #include <fstream>
+#include <gtest/gtest.h>
 #include <map>
+#include <nlohmann/json.hpp>
 #include <nlohmann/json_fwd.hpp>
 #include <sstream>
 #include <string>
 #include <utility>
 #include <vector>
 
-#include <gtest/gtest.h>
-#include <nlohmann/json.hpp>
-
 #include "act/alexandria/alex_modules.h"
 #include "config.h"
 #include "gromacs/utility/basenetwork.h"
 #include "gromacs/utility/gmxmpi.h"
-
 #include "testutils/cmdlinetest.h"
 #include "testutils/refdata.h"
 #include "testutils/testasserts.h"

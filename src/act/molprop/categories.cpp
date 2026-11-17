@@ -32,11 +32,11 @@
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
 
-#include "categories.h"
-
 #include <algorithm>
 #include <cstdlib>
 #include <string>
+
+#include "categories.h"
 
 
 

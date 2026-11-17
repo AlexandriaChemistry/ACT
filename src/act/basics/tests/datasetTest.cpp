@@ -35,7 +35,6 @@
 #include <vector>
 
 #include "../dataset.h"
-
 #include "testutils/cmdlinetest.h"
 #include "testutils/refdata.h"
 

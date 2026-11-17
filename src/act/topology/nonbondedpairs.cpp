@@ -29,9 +29,6 @@
  * Compact storage of the non-bonded pairs of a topology, see nonbondedpairs.h.
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
-#include "nonbondedpairs.h"
-
-
 #include <algorithm>
 #include <array>
 #include <cmath>
@@ -58,6 +55,7 @@
 #include "act/topology/actmol_low.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/stringutil.h"
+#include "nonbondedpairs.h"
 
 namespace alexandria
 {

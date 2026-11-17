@@ -31,12 +31,11 @@
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
 
-#include "../stringutil.h"
-
+#include <gtest/gtest.h>
 #include <string>
 #include <vector>
 
-#include <gtest/gtest.h>
+#include "../stringutil.h"
 
 // ---- split() tests ----
 

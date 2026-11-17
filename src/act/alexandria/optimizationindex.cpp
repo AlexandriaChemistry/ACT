@@ -32,14 +32,15 @@
  * \author Julian Ramon Marrades Furquet <julian@marrad.es>
  */
 
-#include "optimizationindex.h"
+#include <string>
+
 #include "act/basics/interactiontype.h"
 #include "act/forcefield/forcefield.h"
 #include "act/utility/communicationrecord.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/stringutil.h"
-#include <string>
+#include "optimizationindex.h"
 
 namespace alexandria
 {

@@ -30,31 +30,29 @@
  */
 
 #include "actpre.h"
-#include "act/basics/identifier.h"
-#include "act/basics/interactiontype.h"
-#include "act/basics/mutability.h"
-#include "act/forcefield/combinationkernels.h"
-#include "act/forcefield/forcefield_parameter.h"
-#include "act/forcefield/forcefield_parameterlist.h"
 
 #include <cmath>
+#include <gtest/gtest.h>
 #include <map>
 #include <string>
 #include <utility>
 #include <vector>
 
-#include <gtest/gtest.h>
-
+#include "act/basics/identifier.h"
+#include "act/basics/interactiontype.h"
 #include "act/basics/msg_handler.h"
+#include "act/basics/mutability.h"
+#include "act/forcefield/combinationkernels.h"
 #include "act/forcefield/combinationrules.h"
 #include "act/forcefield/combruleutil.h"
 #include "act/forcefield/forcefield.h"
+#include "act/forcefield/forcefield_parameter.h"
+#include "act/forcefield/forcefield_parameterlist.h"
 #include "act/forcefield/forcefield_xml.h"
 #include "act/forcefield/generate_dependent.h"
 #include "act/forcefield/potential.h"
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/utility/exceptions.h"
-
 #include "testutils/cmdlinetest.h"
 #include "testutils/refdata.h"
 #include "testutils/testasserts.h"

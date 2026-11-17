@@ -31,16 +31,15 @@
  */
 
 #include "actpre.h"
-#include "act/molprop/molpropobservable.h"
-
-#include "config.h"
 
 #include <cstddef>
 #include <cstdio>
+#include <gtest/gtest.h>
 #include <string>
 #include <vector>
 
-#include <gtest/gtest.h>
+#include "act/molprop/molpropobservable.h"
+#include "config.h"
 
 #if HAVE_LIBSQLITE3
 #include <sqlite3.h>
@@ -50,7 +49,6 @@
 #include "act/molprop/molprop.h"
 #include "act/molprop/molprop_sqlite3.h"
 #include "act/utility/units.h"
-
 #include "testutils/testfilemanager.h"
 
 namespace alexandria

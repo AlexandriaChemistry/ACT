@@ -34,11 +34,11 @@
 #ifndef SYMCHARGES_H
 #define SYMCHARGES_H
 
-#include "gromacs/utility/gmxmpi.h"
 #include <string>
 #include <vector>
 
 #include "act/utility/communicationrecord.h"
+#include "gromacs/utility/gmxmpi.h"
 
 namespace alexandria
 {

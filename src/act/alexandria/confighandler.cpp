@@ -33,8 +33,6 @@
  * \author Oskar Tegby <oskar.tegby@it.uu.se>
  */
 
-#include "confighandler.h"
-
 #include <algorithm>
 #include <cstring>
 #include <ctime>
@@ -47,6 +45,7 @@
 #include "act/basics/msg_handler.h"
 #include "act/constraints/shake.h"
 #include "act/properties/velocityhandler.h"
+#include "confighandler.h"
 #include "gromacs/commandline/filenm.h"
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/utility/arraysize.h"

@@ -32,8 +32,6 @@
  * \author Julian Ramon Marrades Furquet <julian@marrad.es>
  * \author Oskar Tegby <oskar.tegby@it.uu.se>
  */
-#include "mcmcmutator.h"
-
 #include <algorithm>
 #include <cmath>
 #include <cstddef>
@@ -48,6 +46,7 @@
 
 #include "act/alexandria/acmfitnesscomputer.h"
 #include "act/alexandria/confighandler.h"
+#include "act/alexandria/sensitivity.h"
 #include "act/alexandria/staticindividualinfo.h"
 #include "act/basics/chargemodel.h"
 #include "act/basics/dataset.h"
@@ -56,17 +55,16 @@
 #include "act/ga/genome.h"
 #include "act/ga/mutator.h"
 #include "act/gpu/gpu.h"
+#include "act/utility/memory_check.h"
+#include "act/utility/timings.h"
+#include "gromacs/fileio/xvgr.h"
 #include "gromacs/math/functions.h"
 #include "gromacs/utility/basedefinitions.h"
-
-#include "act/alexandria/sensitivity.h"
-#include "act/utility/memory_check.h"
-#include "gromacs/fileio/xvgr.h"
 #include "gromacs/utility/fileptr.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/stringutil.h"
 #include "gromacs/utility/textwriter.h"
-#include "act/utility/timings.h"
+#include "mcmcmutator.h"
 
 namespace alexandria
 {

@@ -32,45 +32,42 @@
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
 
-#include "forcefield.h"
-
+#include <algorithm>
+#include <chrono>
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
 #include <ctime>
-
-#include <algorithm>
-#include <chrono>
 #include <map>
-#include "gromacs/utility/gmxmpi.h"
 #include <set>
 #include <stdexcept>
 #include <string>
 #include <strings.h> // IWYU pragma: keep (strcasecmp)
 #include <vector>
 
-
 #include "act/basics/act_particle.h"
 #include "act/basics/chargemodel.h"
 #include "act/basics/identifier.h"
 #include "act/basics/interactiontype.h"
+#include "act/basics/msg_handler.h"
 #include "act/basics/mutability.h"
 #include "act/forcefield/act_checksum.h"
 #include "act/forcefield/combinationrules.h"
 #include "act/forcefield/forcefield_parameter.h"
 #include "act/forcefield/forcefield_parameterlist.h"
-#include "act/forcefield/forcefield_xml.h"
 #include "act/forcefield/forcefield_parametername.h"
+#include "act/forcefield/forcefield_xml.h"
 #include "act/forcefield/generate_dependent.h"
 #include "act/forcefield/particletype.h"
 #include "act/forcefield/potential.h"
-#include "act/basics/msg_handler.h"
 #include "act/forcefield/symcharges.h"
 #include "act/utility/communicationrecord.h"
 #include "act/utility/stringutil.h"
+#include "forcefield.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
+#include "gromacs/utility/gmxmpi.h"
 #include "gromacs/utility/stringutil.h"
 
 namespace alexandria

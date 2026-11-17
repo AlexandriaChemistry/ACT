@@ -37,7 +37,6 @@
 #define ACT_FORCES_SIMD_NEON_H
 
 #include <arm_neon.h>
-
 #include <cstddef>
 #include <cstdint>
 

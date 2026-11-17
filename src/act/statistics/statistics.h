@@ -46,7 +46,6 @@
 #define GMX_STATISTICS_H
 
 #include <cstdio>
-
 #include <vector>
 
 #include "gromacs/utility/real.h"

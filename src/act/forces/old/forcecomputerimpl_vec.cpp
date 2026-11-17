@@ -25,16 +25,15 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor,
  * Boston, MA  02110-1301, USA.
  */
-#include "forcecomputerimpl_vec.h"
-
 #include "act/basics/msg_handler.h"
 #include "act/coulombintegrals/gaussian_integrals.h"
 #include "act/coulombintegrals/slater_integrals.h"
 #include "act/forcefield/forcefield_parametername.h"
 #include "act/forces/forcecomputerutils.h"
 #include "act/topology/topology.h"
-#include "gromacs/math/vec.h"
+#include "forcecomputerimpl_vec.h"
 #include "gromacs/math/units.h"
+#include "gromacs/math/vec.h"
 
 namespace alexandria
 {

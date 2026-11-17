@@ -32,8 +32,6 @@
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
 
-#include "qtype.h"
-
 #include <algorithm>
 #include <cmath>
 #include <cstddef>
@@ -55,8 +53,8 @@
 #include "gromacs/math/vectypes.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/stringutil.h"
-
 #include "qgen_resp.h"
+#include "qtype.h"
 
 namespace alexandria
 {

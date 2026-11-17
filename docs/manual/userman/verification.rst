@@ -128,6 +128,19 @@ runs *clang-tidy* on all source files of *src/act* that are compiled in that bui
 
 The fixes are applied in the layout of the ACT code, with 4 spaces of indentation: *const* is written in front of the type (*const auto it*), aligned declarations stay aligned, braces that are added get lines of their own, and *= default* follows the parameter list. Only the lines that are fixed change, the rest of each file is left as it is. Fixes that overlap with another fix are left for the next run, and fixes that cannot be written in this layout, such as braces in a function written on one line, are left out; the output lists how many fixes of each check were applied or left. Run *make tidy* until it reports no more fixes.
 
+Then *make tidy* puts the includes in order, in all header and source files of the selected files or directories, also those that are not compiled in the build directory. Each block of consecutive includes, with only blank lines and comments in between, gets *actpre.h* first, then the system includes (*<...>*) and then the includes of ACT and GROMACS (*"..."*), each sorted alphabetically and separated by a blank line::
+
+  #include "actpre.h"
+
+  #include <cstdio>
+  #include <vector>
+
+  #include "act/forcefield/forcefield.h"
+  #include "gromacs/utility/fatalerror.h"
+  #include "molgen.h"
+
+Includes are not moved across *#if* or code, so that includes for other configurations stay where they are, and a comment on the lines right above an include within a block moves with it. An include that occurs twice in a block is kept once. Each file includes what it uses itself, so the order does not matter to the compiler, with one exception: *actpre.h* sets macros that the system headers read and has to come first in every source file.
+
 The clean-up can be limited to some files or directories, relative to the directory with the source code, and the options of :numref:`tab-tidy` can be given, with two environment variables::
 
   make tidy ACT_TIDY_PATHS=src/act/forces

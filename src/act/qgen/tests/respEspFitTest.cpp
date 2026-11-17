@@ -34,27 +34,25 @@
  */
 
 #include <cstddef>
+#include <gtest/gtest.h>
 #include <map>
 #include <string>
 #include <vector>
-
-#include <gtest/gtest.h>
 
 #include "act/basics/act_particle.h"
 #include "act/basics/chargemodel.h"
 #include "act/basics/interactiontype.h"
 #include "act/basics/msg_handler.h"
 #include "act/forcefield/forcefield.h"
-#include "act/molprop/molprop.h"
-#include "act/molprop/molpropobservable.h"
-#include "act/testutils/forcefield_utils.h"
 #include "act/forces/forcecomputer.h"
+#include "act/molprop/molprop.h"
 #include "act/molprop/molprop_xml.h"
+#include "act/molprop/molpropobservable.h"
 #include "act/qgen/qgen_resp.h"
+#include "act/testutils/forcefield_utils.h"
 #include "act/topology/actmol.h"
 #include "act/topology/actmol_low.h"
 #include "act/topology/symmetrize_charges.h"
-
 #include "gromacs/math/vectypes.h"
 #include "testutils/cmdlinetest.h"
 #include "testutils/refdata.h"

@@ -30,8 +30,6 @@
  * Implements part of the alexandria program.
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
-#include "rotator.h"
-
 #include <cctype>
 #include <cmath>
 #include <cstdio>
@@ -46,6 +44,7 @@
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/real.h"
 #include "gromacs/utility/stringutil.h"
+#include "rotator.h"
 
 namespace alexandria
 {

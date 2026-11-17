@@ -30,8 +30,6 @@
  * Implements the JSON reader, see jsonreader.h.
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
-#include "jsonreader.h"
-
 #include <cmath>
 #include <cstdlib>
 #include <fstream>
@@ -44,6 +42,7 @@
 
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/stringutil.h"
+#include "jsonreader.h"
 
 namespace alexandria
 {

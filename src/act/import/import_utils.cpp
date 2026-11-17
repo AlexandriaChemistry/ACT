@@ -32,8 +32,6 @@
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
     
-#include "import_utils.h"
-
 #include <libxml/parser.h>
 #include <libxml/tree.h>
 #include <libxml/xmlstring.h>
@@ -49,6 +47,7 @@
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/stringutil.h"
+#include "import_utils.h"
 
 namespace alexandria
 {

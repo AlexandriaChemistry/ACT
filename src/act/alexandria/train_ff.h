@@ -36,7 +36,6 @@
 #define ALEXANDRIA_TRAIN_FF_H
 
 #include <cstdio>
-
 #include <map>
 #include <string>
 #include <vector>

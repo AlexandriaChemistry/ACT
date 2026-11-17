@@ -32,20 +32,16 @@
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
 
-#include "openmm_xml.h"
-
+#include <algorithm>
 #include <cctype>
+#include <cmath>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
-#include <cmath>
-
-#include <algorithm>
+#include <libxml/tree.h>
 #include <libxml/xmlstring.h>
 #include <map>
 #include <set>
-
-#include <libxml/tree.h>
 #include <string>
 #include <vector>
 
@@ -70,6 +66,7 @@
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/stringutil.h"
+#include "openmm_xml.h"
 
 namespace alexandria
 {

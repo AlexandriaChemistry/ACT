@@ -25,10 +25,10 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor,
  * Boston, MA  02110-1301, USA.
  */
-#include "forcecomputer.h"
-
 #include <algorithm>
 #include <cmath>
+#include <cstdio>
+#include <cstdlib>
 #include <functional>
 #include <initializer_list>
 #include <map>
@@ -37,9 +37,6 @@
 #include <string>
 #include <utility>
 #include <vector>
-
-#include <cstdio>
-#include <cstdlib>
 
 #include "act/basics/act_particle.h"
 #include "act/basics/chargemodel.h"
@@ -63,6 +60,7 @@
 #include "act/topology/fragmenthandler.h"
 #include "act/topology/topology.h"
 #include "act/utility/timings.h"
+#include "forcecomputer.h"
 #include "gromacs/math/functions.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"

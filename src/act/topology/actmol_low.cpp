@@ -32,11 +32,9 @@
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
 
-#include "actmol_low.h"
-
+#include <cmath>
 #include <cstdio>
 #include <cstring>
-#include <cmath>
 #include <map>
 #include <string>
 #include <vector>
@@ -57,6 +55,7 @@
 #include "act/topology/actmol.h"
 #include "act/topology/topology.h"
 #include "act/utility/units.h"
+#include "actmol_low.h"
 #include "gromacs/math/functions.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"

@@ -40,18 +40,15 @@
  * Adapted for ACT by DvdS 2023-05-17
  */
 #include "actpre.h"
-#include "act/basics/coordinate.h"
-#include "act/basics/interactiontype.h"
-#include "act/molprop/topologyentry.h"
-
-#include "vsitehandler.h"
-
-#include <cstdio>
 
 #include <array>
+#include <cstdio>
 #include <vector>
 
+#include "act/basics/coordinate.h"
+#include "act/basics/interactiontype.h"
 #include "act/forcefield/forcefield_parametername.h"
+#include "act/molprop/topologyentry.h"
 #include "act/topology/topology.h"
 #include "act/utility/timings.h"
 #include "gromacs/math/functions.h"
@@ -63,6 +60,7 @@
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/real.h"
 #include "gromacs/utility/stringutil.h"
+#include "vsitehandler.h"
 
 using gmx::RVec;
 

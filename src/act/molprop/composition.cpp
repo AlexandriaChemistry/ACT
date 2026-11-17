@@ -32,15 +32,13 @@
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
 
-#include "composition.h"
-
 #include <cstdio>
-
-#include "gromacs/utility/gmxmpi.h"
 #include <string>
 #include <vector>
 
 #include "act/utility/communicationrecord.h"
+#include "composition.h"
+#include "gromacs/utility/gmxmpi.h"
 #include "gromacs/utility/stringutil.h"
 
 namespace alexandria

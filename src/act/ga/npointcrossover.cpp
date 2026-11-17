@@ -32,10 +32,9 @@
 #include <algorithm>
 #include <cstddef>
 
-#include "npointcrossover.h"
-
 #include "act/ga/genome.h"
 #include "act/utility/portable_random.h"
+#include "npointcrossover.h"
 
 namespace ga
 {

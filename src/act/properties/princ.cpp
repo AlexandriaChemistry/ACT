@@ -40,8 +40,6 @@
 
 #include "actpre.h"
 
-#include "princ.h"
-
 #include <cmath>
 #include <cstddef>
 #include <vector>
@@ -52,6 +50,7 @@
 #include "gromacs/math/vec.h"
 #include "gromacs/math/vectypes.h"
 #include "gromacs/utility/real.h"
+#include "princ.h"
 
 namespace alexandria
 {

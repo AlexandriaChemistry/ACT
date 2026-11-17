@@ -33,17 +33,15 @@
 #include "actpre.h"
 
 #include <fstream>
+#include <gtest/gtest.h>
 #include <sstream>
 #include <string>
-
-#include <gtest/gtest.h>
 
 #include "act/forcefield/act_checksum.h"
 #include "act/forcefield/forcefield.h"
 #include "act/forcefield/forcefield_xml.h"
 #include "act/utility/communicationrecord.h"
 #include "gromacs/utility/stringutil.h"
-
 #include "testutils/testfilemanager.h"
 
 namespace alexandria

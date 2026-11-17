@@ -31,7 +31,12 @@
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
     
-#include "compound_reader.h"
+#include <cstddef>
+#include <cstring>
+#include <set>
+#include <string>
+#include <utility>
+#include <vector>
 
 #include "act/alexandria/molselect.h"
 #include "act/basics/chargemodel.h"
@@ -47,6 +52,7 @@
 #include "act/topology/actmol.h"
 #include "act/topology/actmol_low.h"
 #include "act/utility/stringutil.h"
+#include "compound_reader.h"
 #include "gromacs/commandline/filenm.h"
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/fileio/filetypes.h"
@@ -54,12 +60,6 @@
 #include "gromacs/math/vectypes.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/stringutil.h"
-#include <cstddef>
-#include <cstring>
-#include <set>
-#include <string>
-#include <utility>
-#include <vector>
 
 namespace alexandria
 {

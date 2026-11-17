@@ -35,22 +35,19 @@
 #include <cstdio>
 #include <filesystem>
 #include <fstream>
+#include <gtest/gtest.h>
 #include <map>
 #include <sstream>
 #include <string>
 #include <utility>
 #include <vector>
 
-#include <gtest/gtest.h>
-
 #include "act/alexandria/alex_modules.h"
 #include "act/molprop/molprop.h"
 #include "act/molprop/molprop_xml.h"
-
-#include "trainffTestUtil.h"
-
 #include "testutils/cmdlinetest.h"
 #include "testutils/testfilemanager.h"
+#include "trainffTestUtil.h"
 
 namespace alexandria
 {

@@ -34,9 +34,10 @@
  */
 #include "actpre.h"
 
+#include <cmath>
+
 #include "config.h"
 #include "slater_low.h"
-#include <cmath>
 
 #if HAVE_LIBCLN
 cl_R DSlater_3S_3S(cl_R r, cl_R xi, cl_R xj)

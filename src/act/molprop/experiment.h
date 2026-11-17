@@ -37,7 +37,6 @@
 
 #include <map>
 #include <memory>
-#include "gromacs/utility/gmxmpi.h"
 #include <string>
 #include <vector>
 
@@ -45,6 +44,7 @@
 #include "act/molprop/molpropobservable.h"
 #include "act/utility/communicationrecord.h"
 #include "gromacs/math/vectypes.h"
+#include "gromacs/utility/gmxmpi.h"
 #include "gromacs/utility/textwriter.h"
 
 namespace alexandria

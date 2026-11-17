@@ -36,7 +36,6 @@
 #define ACT_QGEN_RESP_H
 
 #include <cstdio>
-
 #include <string>
 #include <vector>
 

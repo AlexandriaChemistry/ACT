@@ -34,8 +34,6 @@
 #include <gtest/gtest.h>
 
 #include "../chargemodel.h"
-
-
 #include "gromacs/utility/exceptions.h"
 
 namespace alexandria

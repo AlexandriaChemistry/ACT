@@ -32,8 +32,6 @@
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
 
-#include "topology.h"
-
 #include <algorithm>
 #include <any>
 #include <array>
@@ -69,6 +67,7 @@
 #include "gromacs/utility/real.h"
 #include "gromacs/utility/stringutil.h"
 #include "gromacs/utility/textwriter.h"
+#include "topology.h"
 
 namespace alexandria
 {

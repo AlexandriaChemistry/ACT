@@ -31,8 +31,6 @@
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
 
-#include "libraryfile.h"
-
 #include <cstdlib>
 #include <string>
 #include <vector>
@@ -42,6 +40,7 @@
 #include "gromacs/utility/path.h"
 #include "gromacs/utility/programcontext.h"
 #include "gromacs/utility/stringutil.h"
+#include "libraryfile.h"
 
 namespace alexandria
 {

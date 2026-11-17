@@ -36,7 +36,6 @@
 #define LATEX_UTIL_H
 
 #include <cstdio>
-
 #include <string>
 #include <vector>
 

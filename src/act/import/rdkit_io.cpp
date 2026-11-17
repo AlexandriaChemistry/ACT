@@ -31,15 +31,6 @@
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
 #include "actpre.h"
-#include "act/basics/identifier.h"
-#include "act/basics/interactiontype.h"
-#include "act/forcefield/particletype.h"
-#include "act/molprop/composition.h"
-#include "act/molprop/experiment.h"
-#include "act/molprop/fragment.h"
-#include "act/molprop/topologyentry.h"
-
-#include "import.h"
 
 #include <algorithm>
 #include <cctype>
@@ -49,6 +40,15 @@
 #include <utility>
 #include <vector>
 
+#include "act/basics/identifier.h"
+#include "act/basics/interactiontype.h"
+#include "act/forcefield/particletype.h"
+#include "act/molprop/composition.h"
+#include "act/molprop/experiment.h"
+#include "act/molprop/fragment.h"
+#include "act/molprop/topologyentry.h"
+#include "import.h"
+
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wpragmas"
 #pragma GCC diagnostic ignored "-Wdeprecated-copy"
@@ -56,11 +56,11 @@
 #pragma GCC diagnostic ignored "-Wdeprecated-copy-with-user-provided-dtor"
 #pragma GCC diagnostic ignored "-Wdeprecated-literal-operator"
 #pragma GCC diagnostic ignored "-Wdeprecated-redundant-constexpr-static-def"
-#include <GraphMol/FilterCatalog/FilterMatchers.h>
 #include <GraphMol/Descriptors/MolDescriptors.h>
 #include <GraphMol/DetermineBonds/DetermineBonds.h>
 #include <GraphMol/FileParsers/MolSupplier.h>
 #include <GraphMol/FileParsers/MolWriters.h>
+#include <GraphMol/FilterCatalog/FilterMatchers.h>
 #include <GraphMol/GeneralizedSubstruct/XQMol.h>
 #include <GraphMol/GraphMol.h>
 #include <GraphMol/inchi.h>

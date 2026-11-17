@@ -40,14 +40,12 @@
  * the same kernels, each work-item finds its block by bisection.
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
-#include "gpu.h"
-
 #include <algorithm>
+#include <sycl/sycl.hpp>
 #include <utility>
 #include <vector>
 
-#include <sycl/sycl.hpp>
-
+#include "gpu.h"
 #include "sycl/context.h"
 #include "sycl/pairkernels.h"
 

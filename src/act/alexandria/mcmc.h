@@ -43,7 +43,6 @@
 #include "act/ga/genome.h"
 #include "act/ga/initializer.h"
 #include "act/ga/mutator.h"
-
 #include "confighandler.h"
 #include "staticindividualinfo.h"
 

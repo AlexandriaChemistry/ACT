@@ -38,36 +38,33 @@
  * \ingroup group_forces_tests
  */
 #include "actpre.h"
-#include "act/basics/coordinate.h"
-#include "act/basics/interactiontype.h"
-#include "act/forces/conformationdata.h"
-#include "act/molprop/topologyentry.h"
-
-#include "../forces_simd.h"
 
 #include <algorithm>
 #include <cmath>
 #include <cstdio>
+#include <gtest/gtest.h>
 #include <map>
 #include <set>
-
-#include <gtest/gtest.h>
 #include <string>
 #include <utility>
 #include <vector>
 
+#include "../forces_simd.h"
 #include "act/basics/act_particle.h"
+#include "act/basics/coordinate.h"
+#include "act/basics/interactiontype.h"
 #include "act/coulombintegrals/gaussian_integrals.h"
 #include "act/forcefield/potential.h"
+#include "act/forces/conformationdata.h"
 #include "act/forces/forces_explicit_simd.h"
 #include "act/forces/forces_gpu.h"
 #include "act/forces/simd_information.h"
+#include "act/gpu/gpu.h"
+#include "act/molprop/topologyentry.h"
 #include "act/topology/actatom.h"
 #include "act/topology/coords_energy.h"
-#include "act/gpu/gpu.h"
 #include "gromacs/math/functions.h"
 #include "gromacs/math/units.h"
-
 #include "gromacs/math/vectypes.h"
 #include "gromacs/utility/real.h"
 #include "gromacs/utility/stringutil.h"

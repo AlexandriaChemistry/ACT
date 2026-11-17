@@ -35,14 +35,13 @@
  */
 
 #include "actpre.h"
-#include "act/basics/mutability.h"
-#include "act/forcefield/forcefield_parameter.h"
 
 #include <algorithm>
 #include <cmath>
 #include <cstddef>
 #include <filesystem>
 #include <fstream>
+#include <gtest/gtest.h>
 #include <limits>
 #include <map>
 #include <nlohmann/json_fwd.hpp>
@@ -52,20 +51,18 @@
 #include <utility>
 #include <vector>
 
-#include <gtest/gtest.h>
-
-#include "trainffTestUtil.h"
-
+#include "act/basics/mutability.h"
 #include "act/forcefield/forcefield.h"
+#include "act/forcefield/forcefield_parameter.h"
 #include "act/forcefield/forcefield_xml.h"
 #include "act/forcefield/particletype.h"
 #include "act/gpu/gpu.h"
 #include "gromacs/utility/exceptions.h"
-
 #include "testutils/cmdlinetest.h"
 #include "testutils/gputests.h"
 #include "testutils/refdata.h"
 #include "testutils/testasserts.h"
+#include "trainffTestUtil.h"
 
 namespace alexandria
 {

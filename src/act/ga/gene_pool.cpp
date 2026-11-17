@@ -25,24 +25,22 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor,
  * Boston, MA  02110-1301, USA.
  */
-#include "gene_pool.h"
-
 #include <algorithm>
+#include <cmath>
+#include <cstdio>
 #include <stdexcept>
 #include <string>
 #include <utility>
 #include <vector>
 
-#include <cstdio>
-#include <cmath>
-
 #include "act/basics/dataset.h"
 #include "act/ga/genome.h"
 #include "act/utility/stringutil.h"
-#include "gromacs/utility/textreader.h"
-#include "gromacs/utility/textwriter.h"
+#include "gene_pool.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/stringutil.h"
+#include "gromacs/utility/textreader.h"
+#include "gromacs/utility/textwriter.h"
 
 namespace ga
 {

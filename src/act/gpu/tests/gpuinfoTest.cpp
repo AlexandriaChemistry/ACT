@@ -30,19 +30,17 @@
  * of why no GPU was found, and that what the log file shows is consistent.
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
-#include "../gpu.h"
-
 #include <cstdlib>
 #include <filesystem>
 #include <fstream>
+#include <gtest/gtest.h>
 #include <new>
 #include <string>
+#include <unistd.h>
 #include <utility>
 #include <vector>
 
-#include <unistd.h>
-
-#include <gtest/gtest.h>
+#include "../gpu.h"
 
 namespace alexandria
 {

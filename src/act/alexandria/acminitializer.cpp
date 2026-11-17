@@ -34,13 +34,13 @@
  */
 
 
-#include "acminitializer.h"
-
-#include "acmindividual.h"
-#include "act/alexandria/staticindividualinfo.h"
-#include "act/ga/genome.h"
 #include <cstddef>
 #include <random>
+
+#include "acmindividual.h"
+#include "acminitializer.h"
+#include "act/alexandria/staticindividualinfo.h"
+#include "act/ga/genome.h"
 
 
 namespace alexandria

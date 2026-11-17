@@ -31,14 +31,12 @@
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
 
-#include "../memory_check.h"
-
 #include <cstdio>
 #include <fstream>
+#include <gtest/gtest.h>
 #include <string>
 
-#include <gtest/gtest.h>
-
+#include "../memory_check.h"
 #include "testutils/testfilemanager.h"
 
 // ---- memory_usage_low() tests ----

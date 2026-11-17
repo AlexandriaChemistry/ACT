@@ -34,14 +34,10 @@
  */
 #include "actpre.h"
 
-#include "../forcecomputerutils.h"
-
-
+#include <gtest/gtest.h>
 #include <vector>
 
-#include <gtest/gtest.h>
-
-
+#include "../forcecomputerutils.h"
 #include "gromacs/math/vectypes.h"
 #include "gromacs/utility/real.h"
 #include "testutils/cmdlinetest.h"

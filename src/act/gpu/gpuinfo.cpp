@@ -32,8 +32,6 @@
  * GPU support, and into the ACT library without.
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
-#include "gpu.h"
-
 #include <algorithm>
 #include <cctype>
 #include <cstdio>
@@ -44,6 +42,8 @@
 #include <system_error>
 #include <utility>
 #include <vector>
+
+#include "gpu.h"
 
 namespace alexandria
 {

@@ -25,8 +25,6 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, 
  * Boston, MA  02110-1301, USA.
  */
-#include "communicationrecord.h"
-
 #include <algorithm>
 #include <cstddef>
 #include <cstdio>
@@ -38,14 +36,14 @@
 
 #include "act/basics/dataset.h"
 #include "act/basics/msg_handler.h"
+#include "act/utility/timings.h"
+#include "communicationrecord.h"
+#include "gromacs/gmxlib/network.h"
 #include "gromacs/math/vectypes.h"
 #include "gromacs/mdtypes/commrec.h"
-#include "mpi.h"
-
-#include "gromacs/gmxlib/network.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/stringutil.h"
-#include "act/utility/timings.h"
+#include "mpi.h"
 
 namespace alexandria
 {

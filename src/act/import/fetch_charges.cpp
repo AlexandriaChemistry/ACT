@@ -31,7 +31,12 @@
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
     
-#include "fetch_charges.h"    
+#include <cstddef>
+#include <map>
+#include <set>
+#include <string>
+#include <utility>
+#include <vector>
 
 #include "act/basics/allmols.h"
 #include "act/basics/chargemodel.h"
@@ -45,13 +50,8 @@
 #include "act/molprop/molpropobservable.h"
 #include "act/topology/actmol.h"
 #include "act/topology/actmol_low.h"
+#include "fetch_charges.h"    
 #include "gromacs/math/vectypes.h"
-#include <cstddef>
-#include <map>
-#include <set>
-#include <string>
-#include <utility>
-#include <vector>
 
 namespace alexandria
 {

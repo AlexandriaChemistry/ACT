@@ -32,31 +32,29 @@
  */
 
 #include "actpre.h"
-#include "act/basics/identifier.h"
-#include "act/forcefield/combinationkernels.h"
-#include "act/forcefield/forcefield_parameter.h"
-#include "act/forcefield/particletype.h"
 
 #include <algorithm>
 #include <cmath>
 #include <cstddef>
 #include <filesystem>
 #include <fstream>
+#include <gtest/gtest.h>
 #include <iterator>
 #include <map>
 #include <string>
 #include <utility>
 #include <vector>
 
-#include <gtest/gtest.h>
-
 #include "act/alexandria/alex_modules.h"
+#include "act/basics/identifier.h"
 #include "act/basics/interactiontype.h"
 #include "act/basics/mutability.h"
+#include "act/forcefield/combinationkernels.h"
 #include "act/forcefield/forcefield.h"
+#include "act/forcefield/forcefield_parameter.h"
 #include "act/forcefield/forcefield_validation.h"
 #include "act/forcefield/forcefield_xml.h"
-
+#include "act/forcefield/particletype.h"
 #include "testutils/cmdlinetest.h"
 #include "testutils/testfilemanager.h"
 

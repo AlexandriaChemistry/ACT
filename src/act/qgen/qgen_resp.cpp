@@ -32,13 +32,10 @@
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
 
-#include "qgen_resp.h"
-
 #include <cctype>
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>
-
 #include <map>
 #include <string>
 #include <vector>
@@ -63,6 +60,7 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/stringutil.h"
+#include "qgen_resp.h"
 
 namespace alexandria
 {

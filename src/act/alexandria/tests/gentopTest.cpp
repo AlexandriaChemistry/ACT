@@ -31,11 +31,6 @@
  */
 
 #include "actpre.h"
-#include "act/basics/chargemodel.h"
-#include "act/basics/identifier.h"
-#include "act/forcefield/forcefield_parameter.h"
-#include "act/molprop/experiment.h"
-#include "act/molprop/molprop.h"
 
 #include <algorithm>
 #include <array>
@@ -43,6 +38,7 @@
 #include <cstddef>
 #include <filesystem>
 #include <fstream>
+#include <gtest/gtest.h>
 #include <map>
 #include <set>
 #include <sstream>
@@ -50,14 +46,16 @@
 #include <utility>
 #include <vector>
 
-#include <gtest/gtest.h>
-
 #include "act/alexandria/alex_modules.h"
+#include "act/basics/chargemodel.h"
+#include "act/basics/identifier.h"
 #include "act/basics/interactiontype.h"
 #include "act/forcefield/forcefield.h"
+#include "act/forcefield/forcefield_parameter.h"
 #include "act/forcefield/forcefield_xml.h"
+#include "act/molprop/experiment.h"
+#include "act/molprop/molprop.h"
 #include "act/molprop/molprop_xml.h"
-
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/stringutil.h"
 #include "testutils/cmdlinetest.h"

@@ -32,12 +32,11 @@
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
 
-#include "chargemodel.h"
-
 #include <map>
 #include <string>
 #include <vector>
 
+#include "chargemodel.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/stringutil.h"

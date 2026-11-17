@@ -36,7 +36,6 @@
 
 #include "act/basics/chargemodel.h"
 #include "act/qgen/qgen_resp.h"
-
 #include "gromacs/math/vectypes.h"
 
 

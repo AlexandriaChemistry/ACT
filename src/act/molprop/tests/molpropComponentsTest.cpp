@@ -36,15 +36,12 @@
 #include "actpre.h"
 
 #include <cstddef>
+#include <gtest/gtest.h>
 #include <memory>
 #include <set>
 #include <string>
 #include <utility>
 #include <vector>
-
-#include <gtest/gtest.h>
-
-#include "gromacs/utility/exceptions.h"
 
 #include "act/basics/msg_handler.h"
 #include "act/molprop/categories.h"
@@ -52,11 +49,12 @@
 #include "act/molprop/experiment.h"
 #include "act/molprop/fragment.h"
 #include "act/molprop/molprop.h"
-#include "act/molprop/molpropobservable.h"
 #include "act/molprop/molprop_util.h"
+#include "act/molprop/molpropobservable.h"
 #include "act/molprop/multipole_names.h"
 #include "act/molprop/phase.h"
 #include "act/molprop/topologyentry.h"
+#include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/stringutil.h"
 
 namespace alexandria

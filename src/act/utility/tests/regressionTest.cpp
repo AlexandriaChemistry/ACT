@@ -33,14 +33,12 @@
  */
  
  
-#include "../regression.h"
-
 #include <cstdlib>
-#include <utility>
-
 #include <gtest/gtest.h>
+#include <utility>
 #include <vector>
 
+#include "../regression.h"
 #include "testutils/cmdlinetest.h"
 #include "testutils/refdata.h"
 #include "testutils/testasserts.h"

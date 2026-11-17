@@ -36,10 +36,9 @@
 #define ALEXANDRIA_ACMINDIVIDUAL_H
 
 
-#include "staticindividualinfo.h"
-
 #include "act/ga/genome.h"
 #include "act/ga/individual.h"
+#include "staticindividualinfo.h"
 
 namespace alexandria
 {

@@ -37,11 +37,8 @@
  */
 #include "actpre.h"
 
-#include "statistics.h"
-
 #include <algorithm>
 #include <cmath>
-
 #include <cstddef>
 #include <cstdio>
 #include <map>
@@ -49,6 +46,7 @@
 
 #include "gromacs/math/functions.h"
 #include "gromacs/utility/real.h"
+#include "statistics.h"
 
 /*! \brief Round to the nearest integer
  * \param[in] x The number to round

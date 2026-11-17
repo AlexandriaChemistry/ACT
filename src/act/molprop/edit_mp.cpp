@@ -33,18 +33,10 @@
  */
  
 #include "actpre.h"
-#include "act/basics/identifier.h"
-#include "act/basics/interactiontype.h"
-#include "act/forcefield/particletype.h"
-#include "act/molprop/experiment.h"
-#include "act/molprop/molpropobservable.h"
-#include "act/topology/actmol_low.h"
-#include "act/utility/units.h"
 
 #include <algorithm>
 #include <cmath>
 #include <cstdio>
-
 #include <map>
 #include <set>
 #include <string>
@@ -53,17 +45,24 @@
 
 #include "act/alexandria/alex_modules.h"
 #include "act/basics/allmols.h"
+#include "act/basics/identifier.h"
+#include "act/basics/interactiontype.h"
 #include "act/basics/msg_handler.h"
 #include "act/forcefield/forcefield.h"
 #include "act/forcefield/forcefield_xml.h"
+#include "act/forcefield/particletype.h"
 #include "act/forces/forcecomputer.h"
+#include "act/molprop/experiment.h"
 #include "act/molprop/molprop.h"
 #include "act/molprop/molprop_sqlite3.h"
 #include "act/molprop/molprop_util.h"
 #include "act/molprop/molprop_xml.h"
+#include "act/molprop/molpropobservable.h"
 #include "act/molprop/topologyentry.h"
 #include "act/statistics/statistics.h"
 #include "act/topology/actmol.h"
+#include "act/topology/actmol_low.h"
+#include "act/utility/units.h"
 #include "gromacs/commandline/filenm.h"
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/fileio/filetypes.h"
@@ -71,9 +70,9 @@
 #include "gromacs/math/functions.h"
 #include "gromacs/math/vectypes.h"
 #include "gromacs/utility/basedefinitions.h"
+#include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/real.h"
 #include "gromacs/utility/stringutil.h"
-#include "gromacs/utility/exceptions.h"
 
 namespace alexandria
 {

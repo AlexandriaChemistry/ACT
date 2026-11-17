@@ -31,12 +31,9 @@
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
 
-#include "forcefield_parameterlist.h"
-
 #include <cstddef>
 #include <cstdio>
 #include <map>
-#include "gromacs/utility/gmxmpi.h"
 #include <string>
 #include <utility>
 
@@ -47,8 +44,10 @@
 #include "act/forcefield/forcefield_parameter.h"
 #include "act/forcefield/potential.h"
 #include "act/utility/communicationrecord.h"
+#include "forcefield_parameterlist.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/gmxmpi.h"
 #include "gromacs/utility/stringutil.h"
 
 namespace alexandria
