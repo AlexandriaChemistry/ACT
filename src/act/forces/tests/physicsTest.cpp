@@ -34,13 +34,13 @@
  * data, these do not have to be updated when results change on purpose.
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
+#include "actpre.h"
 #include "act/basics/act_particle.h"
 #include "act/basics/interactiontype.h"
 #include "act/forcefield/particletype.h"
 #include "act/molprop/experiment.h"
 #include "act/molprop/molprop.h"
 #include "act/topology/actmol_low.h"
-#include "actpre.h"
 
 #include <algorithm>
 #include <cmath>

@@ -34,9 +34,9 @@
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
 
+#include "actpre.h"
 #include "act/basics/mutability.h"
 #include "act/forcefield/forcefield_parameter.h"
-#include "actpre.h"
 
 #include <algorithm>
 #include <cmath>

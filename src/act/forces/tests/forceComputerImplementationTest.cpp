@@ -33,12 +33,12 @@
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  * \ingroup group_forces_tests
  */
+#include "actpre.h"
 #include "act/basics/act_particle.h"
 #include "act/basics/interactiontype.h"
 #include "act/forcefield/potential.h"
 #include "act/forces/conformationdata.h"
 #include "act/topology/actatom.h"
-#include "actpre.h"
 
 #include "../forces_simd.h"
 #include "../forces_explicit_simd.h"

@@ -32,12 +32,12 @@
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  * \ingroup group_act_tests
  */
+#include "actpre.h"
 #include "act/basics/act_particle.h"
 #include "act/basics/interactiontype.h"
 #include "act/basics/msg_handler.h"
 #include "act/topology/actatom.h"
 #include "act/utility/units.h"
-#include "actpre.h"
 
 #include "act/forces/forcecomputer.h"
 

@@ -34,10 +34,10 @@
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
 
+#include "actpre.h"
 #include "act/alexandria/loss_function.h"
 #include "act/alexandria/sensitivity.h"
 #include "act/basics/dataset.h"
-#include "actpre.h"
 
 #include <Eigen/Core>
 #include <algorithm>

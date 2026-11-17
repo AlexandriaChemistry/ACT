@@ -31,10 +31,10 @@
  * the hydrogen halides.
  */
 
+#include "actpre.h"
 #include "act/basics/chargemodel.h"
 #include "act/basics/mutability.h"
 #include "act/forcefield/forcefield_parameter.h"
-#include "actpre.h"
 
 #include <cstddef>
 #include <filesystem>

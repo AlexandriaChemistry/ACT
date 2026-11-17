@@ -31,6 +31,7 @@
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
 
+#include "actpre.h"
 #include "act/alexandria/confighandler.h"
 #include "act/basics/act_particle.h"
 #include "act/basics/atomization_energy.h"
@@ -41,7 +42,6 @@
 #include "act/molprop/molpropobservable.h"
 #include "act/topology/actmol_low.h"
 #include "act/utility/regression.h"
-#include "actpre.h"
 
 #include <cmath>
 

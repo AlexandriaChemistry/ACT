@@ -31,8 +31,8 @@
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
 
-#include "act/alexandria/sensitivity.h"
 #include "actpre.h"
+#include "act/alexandria/sensitivity.h"
 
 #include <string>
 #include <vector>

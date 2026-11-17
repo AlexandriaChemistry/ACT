@@ -31,11 +31,11 @@
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
 
+#include "actpre.h"
 #include "act/basics/chargemodel.h"
 #include "act/forcefield/forcefield.h"
 #include "act/forces/forcecomputer.h"
 #include "act/topology/actmol.h"
-#include "actpre.h"
 
 
 #include <cstdlib>

@@ -30,6 +30,7 @@
  * Implements part of the alexandria program.
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
+#include "actpre.h"
 #include "act/basics/identifier.h"
 #include "act/basics/interactiontype.h"
 #include "act/forcefield/particletype.h"
@@ -37,7 +38,6 @@
 #include "act/molprop/experiment.h"
 #include "act/molprop/fragment.h"
 #include "act/molprop/topologyentry.h"
-#include "actpre.h"
 
 #include "import.h"
 

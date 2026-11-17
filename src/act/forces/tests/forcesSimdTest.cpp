@@ -37,11 +37,11 @@
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  * \ingroup group_forces_tests
  */
+#include "actpre.h"
 #include "act/basics/coordinate.h"
 #include "act/basics/interactiontype.h"
 #include "act/forces/conformationdata.h"
 #include "act/molprop/topologyentry.h"
-#include "actpre.h"
 
 #include "../forces_simd.h"
 

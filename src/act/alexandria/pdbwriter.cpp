@@ -36,9 +36,9 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 /* Adapted to ACT by DvdS, 2023-06-03 */
+#include "actpre.h"
 #include "act/basics/act_particle.h"
 #include "act/topology/actatom.h"
-#include "actpre.h"
 
 #include "pdbwriter.h"
 
