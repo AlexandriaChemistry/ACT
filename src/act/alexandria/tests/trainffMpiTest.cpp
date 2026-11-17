@@ -639,11 +639,11 @@ TEST_F(TrainFFMpiTest, LockstepEqualSetsGpu)
     auto options = polarizableOptions(12, 2, "charge");
     options.emplace_back("-noshell_keep", "");
     options.emplace_back("-lockstep", "4");
-    auto whole = trainfftest::runTrainFF(&fileManager(), "equal-sets-1", "alc-pol-wbh.xml",
-                                         "booze-inter", options);
+    const auto whole = trainfftest::runTrainFF(&fileManager(), "equal-sets-1", "alc-pol-wbh.xml",
+                                               "booze-inter", options);
     setenv("ACT_GPU_REPLICAS_FIT", "3", 1);
-    auto sets = trainfftest::runTrainFF(&fileManager(), "equal-sets-2", "alc-pol-wbh.xml",
-                                        "booze-inter", options);
+    const auto sets = trainfftest::runTrainFF(&fileManager(), "equal-sets-2", "alc-pol-wbh.xml",
+                                              "booze-inter", options);
     unsetenv("ACT_GPU_REPLICAS_FIT");
     EXPECT_EQ(0, whole.status);
     EXPECT_EQ(0, sets.status);
