@@ -25,20 +25,19 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, 
  * Boston, MA  02110-1301, USA.
  */
-#include "acthelper.h"
-
 #include <cstddef>
 #include <set>
 #include <vector>
-    
+
 #include "act/alexandria/loss_function.h"
 #include "act/basics/chargemodel.h"
+#include "act/basics/dataset.h"
 #include "act/basics/msg_handler.h"
+#include "act/utility/timings.h"
+#include "acthelper.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/stringutil.h"
 #include "sensitivity.h"
-#include "act/basics/dataset.h"
-#include "act/utility/timings.h"
 
 namespace alexandria
 {

@@ -33,8 +33,6 @@
  * \author Oskar Tegby <oskar.tegby@it.uu.se>
  */
 
-#include "acmfitnesscomputer.h"
-
 #include <algorithm>
 #include <array>
 #include <cstdio>
@@ -47,6 +45,7 @@
 #include <utility>
 #include <vector>
 
+#include "acmfitnesscomputer.h"
 #include "act/alexandria/devcomputer.h"
 #include "act/alexandria/molgen.h"
 #include "act/alexandria/sensitivity.h"

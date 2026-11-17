@@ -34,23 +34,19 @@
  */
 #include <algorithm>
 #include <cmath>
-#include <config.h>
-
 #include <cstddef>
 #include <cstdio>
 #include <cstdlib>
-#include <math.h>
-
-
 #include <gtest/gtest.h>
+#include <math.h>
 #include <tuple>
 #include <vector>
 
 #include "act/basics/chargemodel.h"
 #include "act/coulombintegrals/gaussian_integrals.h"
 #include "act/coulombintegrals/slater_integrals.h"
+#include "config.h"
 #include "gromacs/utility/stringutil.h"
-
 #include "testutils/cmdlinetest.h"
 #include "testutils/refdata.h"
 #include "testutils/testasserts.h"

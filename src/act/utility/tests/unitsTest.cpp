@@ -35,7 +35,6 @@
 #include <vector>
 
 #include "../units.h"
-
 #include "gromacs/utility/exceptions.h"
 #include "testutils/cmdlinetest.h"
 #include "testutils/refdata.h"

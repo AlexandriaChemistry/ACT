@@ -29,16 +29,16 @@
  * Checks of the parameters of a force field, see forcefield_validation.h.
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
-#include "forcefield_validation.h"
+#include <cstddef>
+#include <string>
+#include <vector>
 
 #include "act/basics/interactiontype.h"
 #include "act/basics/mutability.h"
 #include "act/forcefield/forcefield.h"
 #include "act/forcefield/forcefield_parameter.h"
+#include "forcefield_validation.h"
 #include "gromacs/utility/stringutil.h"
-#include <cstddef>
-#include <string>
-#include <vector>
 
 namespace alexandria
 {

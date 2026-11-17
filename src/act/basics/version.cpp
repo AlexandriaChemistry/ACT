@@ -32,10 +32,11 @@
  */
 #include "actpre.h" 
 
-#include "version.h"
+#include <string>
+
 #include "gromacs/utility/baseversion.h"
 #include "gromacs/utility/stringutil.h"
-#include <string>
+#include "version.h"
 
 std::string act_welcome()
 {

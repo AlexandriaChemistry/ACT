@@ -39,24 +39,21 @@
 #include <cstdio>
 #include <cstdlib>
 #include <fstream>
+#include <gtest/gtest.h>
 #include <sstream>
 #include <string>
 #include <utility>
 #include <vector>
 
-#include <gtest/gtest.h>
-
+#include "act/gpu/gpu.h"
 #include "config.h"
 #include "gromacs/utility/basenetwork.h"
 #include "gromacs/utility/gmxmpi.h"
-#include "trainffTestUtil.h"
-
-#include "act/gpu/gpu.h"
-
 #include "testutils/cmdlinetest.h"
 #include "testutils/gputests.h"
 #include "testutils/refdata.h"
 #include "testutils/testasserts.h"
+#include "trainffTestUtil.h"
 
 namespace alexandria
 {

@@ -31,8 +31,6 @@
  */
 
 
-#include "selector.h"
-
 #include <algorithm>
 #include <cstddef>
 #include <random>
@@ -40,6 +38,7 @@
 
 #include "act/ga/genome.h"
 #include "gromacs/utility/gmxassert.h"
+#include "selector.h"
 
 
 namespace ga

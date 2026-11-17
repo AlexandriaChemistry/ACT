@@ -51,20 +51,18 @@
  * molecules.
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
-#include "gpu.h"
-
 #include <algorithm>
 #include <cfloat>
 #include <chrono>
+#include <cstdint>
 #include <cstdio>
 #include <cstdlib>
-#include <string>
-#include <cstdint>
 #include <limits>
+#include <string>
+#include <sycl/sycl.hpp>
 #include <vector>
 
-#include <sycl/sycl.hpp>
-
+#include "gpu.h"
 #include "sycl/context.h"
 #include "sycl/pairkernels.h"
 

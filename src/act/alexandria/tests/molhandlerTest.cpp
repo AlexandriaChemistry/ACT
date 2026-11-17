@@ -32,39 +32,36 @@
  */
 
 #include "actpre.h"
-#include "act/alexandria/confighandler.h"
-#include "act/basics/act_particle.h"
-#include "act/basics/atomization_energy.h"
-#include "act/basics/interactiontype.h"
-#include "act/forces/forcecomputer.h"
-#include "act/molprop/experiment.h"
-#include "act/molprop/molprop.h"
-#include "act/molprop/molpropobservable.h"
-#include "act/topology/actmol_low.h"
-#include "act/utility/regression.h"
 
 #include <cmath>
-
 #include <cstddef>
 #include <cstdint>
-#include <map>
-
 #include <gtest/gtest.h>
+#include <map>
 #include <string>
 #include <utility>
 #include <vector>
 
-#include "act/import/import.h"
+#include "act/alexandria/confighandler.h"
 #include "act/alexandria/molhandler.h"
+#include "act/basics/act_particle.h"
+#include "act/basics/atomization_energy.h"
+#include "act/basics/interactiontype.h"
 #include "act/basics/msg_handler.h"
 #include "act/forcefield/forcefield.h"
-#include "act/testutils/forcefield_utils.h"
 #include "act/forcefield/forcefield_xml.h"
+#include "act/forces/forcecomputer.h"
+#include "act/import/import.h"
+#include "act/molprop/experiment.h"
+#include "act/molprop/molprop.h"
+#include "act/molprop/molpropobservable.h"
 #include "act/properties/thermochemistry.h"
 #include "act/qgen/qgen_acm.h"
+#include "act/testutils/forcefield_utils.h"
 #include "act/topology/actmol.h"
+#include "act/topology/actmol_low.h"
+#include "act/utility/regression.h"
 #include "act/utility/units.h"
-
 #include "gromacs/math/vec.h"
 #include "gromacs/math/vectypes.h"
 #include "gromacs/utility/real.h"

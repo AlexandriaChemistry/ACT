@@ -35,39 +35,37 @@
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
 #include "actpre.h"
-#include "act/basics/act_particle.h"
-#include "act/basics/interactiontype.h"
-#include "act/forcefield/particletype.h"
-#include "act/molprop/experiment.h"
-#include "act/molprop/molprop.h"
-#include "act/topology/actmol_low.h"
 
 #include <algorithm>
 #include <cmath>
 #include <cstddef>
 #include <fstream>
+#include <gtest/gtest.h>
 #include <list>
 #include <map>
 #include <sstream>
 #include <string>
 #include <vector>
 
-#include <gtest/gtest.h>
-
+#include "act/basics/act_particle.h"
 #include "act/basics/chargemodel.h"
+#include "act/basics/interactiontype.h"
 #include "act/basics/msg_handler.h"
-#include "act/testutils/forcefield_utils.h"
+#include "act/forcefield/particletype.h"
 #include "act/forces/conformationdata.h"
 #include "act/forces/forcecomputer.h"
 #include "act/forces/forces_simd.h"
 #include "act/forces/simd_information.h"
 #include "act/import/import.h"
+#include "act/molprop/experiment.h"
+#include "act/molprop/molprop.h"
+#include "act/testutils/forcefield_utils.h"
 #include "act/topology/actmol.h"
+#include "act/topology/actmol_low.h"
 #include "act/utility/timings.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/math/vectypes.h"
 #include "gromacs/utility/stringutil.h"
-
 #include "testutils/testasserts.h"
 #include "testutils/testfilemanager.h"
 

@@ -33,11 +33,10 @@
 
 #include <cstring>
 #include <fstream>
+#include <gtest/gtest.h>
 #include <map>
 #include <set>
 #include <string>
-
-#include <gtest/gtest.h>
 #include <vector>
 
 #include "act/alexandria/openmm_xml.h"
@@ -45,10 +44,9 @@
 #include "act/basics/act_particle.h"
 #include "act/basics/msg_handler.h"
 #include "act/forcefield/forcefield.h"
-#include "act/testutils/forcefield_utils.h"
 #include "act/forcefield/forcefield_xml.h"
 #include "act/testutils/actmol_util.h"
-
+#include "act/testutils/forcefield_utils.h"
 #include "testutils/cmdlinetest.h"
 #include "testutils/filematchers.h"
 #include "testutils/refdata.h"

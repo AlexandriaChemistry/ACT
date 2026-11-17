@@ -32,25 +32,22 @@
  */
 
 #include "actpre.h"
-#include "act/basics/chargemodel.h"
-#include "act/forcefield/forcefield.h"
-#include "act/forces/forcecomputer.h"
-#include "act/topology/actmol.h"
-
 
 #include <cstdlib>
-
 #include <gtest/gtest.h>
 #include <string>
 #include <vector>
 
+#include "act/basics/chargemodel.h"
 #include "act/basics/msg_handler.h"
-#include "act/testutils/forcefield_utils.h"
+#include "act/forcefield/forcefield.h"
+#include "act/forces/forcecomputer.h"
 #include "act/import/compound_reader.h"
+#include "act/testutils/forcefield_utils.h"
+#include "act/topology/actmol.h"
 #include "gromacs/commandline/filenm.h"
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/utility/stringutil.h"
-
 #include "testutils/cmdlinetest.h"
 #include "testutils/refdata.h"
 #include "testutils/testasserts.h"

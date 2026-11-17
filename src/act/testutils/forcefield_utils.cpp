@@ -30,16 +30,14 @@
  * Implements test utilities for the alexandria program.
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
-#include "forcefield_utils.h"
-
 #include <map>
 #include <string>
 #include <utility>
 
-#include "gromacs/utility/exceptions.h"
 #include "act/forcefield/forcefield.h"
 #include "act/forcefield/forcefield_xml.h"
-
+#include "forcefield_utils.h"
+#include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/stringutil.h"
 #include "testutils/testfilemanager.h"
 

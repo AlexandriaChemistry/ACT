@@ -32,8 +32,6 @@
  */
 #include <algorithm>
 #include <cmath>
-
-
 #include <cstddef>
 #include <gtest/gtest.h>
 #include <string>
@@ -45,16 +43,15 @@
 #include "act/constraints/shake.h"
 #include "act/forcefield/forcefield.h"
 #include "act/forcefield/forcefield_parametername.h"
-#include "act/testutils/forcefield_utils.h"
 #include "act/forces/forcecomputer.h"
 #include "act/forces/forcecomputerutils.h"
-#include "act/topology/actmol.h"
 #include "act/testutils/actmol_util.h"
+#include "act/testutils/forcefield_utils.h"
+#include "act/topology/actmol.h"
 #include "act/topology/topology.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/math/vectypes.h"
 #include "gromacs/utility/exceptions.h"
-
 #include "gromacs/utility/real.h"
 #include "testutils/cmdlinetest.h"
 #include "testutils/refdata.h"

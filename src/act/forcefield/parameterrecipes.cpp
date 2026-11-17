@@ -25,8 +25,6 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor,
  * Boston, MA  02110-1301, USA.
  */
-#include "parameterrecipes.h"
-
 #include <cstddef>
 #include <cstdint>
 #include <string>
@@ -45,6 +43,7 @@
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/stringutil.h"
+#include "parameterrecipes.h"
 
 namespace alexandria
 {

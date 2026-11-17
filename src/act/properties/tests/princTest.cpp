@@ -32,16 +32,14 @@
  */
 
 #include "actpre.h"
-#include "act/basics/act_particle.h"
-
 
 #include <cstddef>
 #include <gtest/gtest.h>
 #include <vector>
 
+#include "act/basics/act_particle.h"
 #include "act/properties/princ.h"
 #include "act/topology/actatom.h"
-
 #include "gromacs/math/vectypes.h"
 #include "gromacs/utility/real.h"
 #include "testutils/testasserts.h"

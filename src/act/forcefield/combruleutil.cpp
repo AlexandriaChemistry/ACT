@@ -31,11 +31,8 @@
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
 
-#include "combruleutil.h"
-
 #include <cstdio>
 #include <cstring>
-
 #include <set>
 #include <string>
 #include <vector>
@@ -49,6 +46,7 @@
 #include "act/forcefield/forcefield_parameterlist.h"
 #include "act/forcefield/potential.h"
 #include "act/utility/stringutil.h"
+#include "combruleutil.h"
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/stringutil.h"

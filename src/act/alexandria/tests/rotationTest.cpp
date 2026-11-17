@@ -35,12 +35,10 @@
 
 #include <cmath>
 #include <cstdlib>
-
 #include <gtest/gtest.h>
 
-#include "gromacs/math/functions.h"
 #include "alexandria/regression.h"
-
+#include "gromacs/math/functions.h"
 #include "testutils/cmdlinetest.h"
 #include "testutils/refdata.h"
 #include "testutils/testasserts.h"

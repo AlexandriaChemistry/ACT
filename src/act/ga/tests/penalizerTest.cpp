@@ -31,8 +31,6 @@
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
 #include <cmath>
-
-
 #include <cstddef>
 #include <gtest/gtest.h>
 #include <string>
@@ -44,10 +42,9 @@
 #include "act/alexandria/staticindividualinfo.h"
 #include "act/basics/dataset.h"
 #include "act/ga/gene_pool.h"
-#include "act/ga/penalizer.h"
 #include "act/ga/initializer.h"
+#include "act/ga/penalizer.h"
 #include "act/testutils/ga_test_helper.h"
-
 #include "testutils/cmdlinetest.h"
 #include "testutils/refdata.h"
 #include "testutils/testasserts.h"

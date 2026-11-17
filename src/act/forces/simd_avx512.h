@@ -36,10 +36,9 @@
 #ifndef ACT_FORCES_SIMD_AVX512_H
 #define ACT_FORCES_SIMD_AVX512_H
 
-#include <immintrin.h>
-
 #include <cstddef>
 #include <cstdint>
+#include <immintrin.h>
 
 namespace alexandria
 {

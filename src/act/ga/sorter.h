@@ -39,7 +39,6 @@
 #include <vector>
 
 #include "genome.h"
-
 #include "gromacs/utility/basedefinitions.h"
 
 

@@ -30,8 +30,6 @@
  * Implements part of the alexandria program.
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
-#include "allmols.h"
-
 #include <algorithm>
 #include <cstdio>
 #include <string>
@@ -40,6 +38,7 @@
 #include "act/basics/libraryfile.h"
 #include "act/utility/jsonreader.h"
 #include "act/utility/stringutil.h"
+#include "allmols.h"
 #include "gromacs/utility/stringutil.h"
 
 namespace alexandria

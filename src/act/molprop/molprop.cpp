@@ -32,19 +32,15 @@
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
 
-#include "act/molprop/molprop.h"
-
-#include <cstring>
 #include <algorithm>
 #include <cctype>
 #include <cmath>
-
 #include <cstddef>
 #include <cstdio>
+#include <cstring>
 #include <iterator>
 #include <map>
 #include <memory>
-#include "gromacs/utility/gmxmpi.h"
 #include <set>
 #include <string>
 #include <strings.h> // IWYU pragma: keep (strcasecmp)
@@ -56,11 +52,13 @@
 #include "act/molprop/composition.h"
 #include "act/molprop/experiment.h"
 #include "act/molprop/fragment.h"
+#include "act/molprop/molprop.h"
 #include "act/molprop/molpropobservable.h"
 #include "act/molprop/topologyentry.h"
 #include "act/utility/communicationrecord.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/gmxmpi.h"
 #include "gromacs/utility/stringutil.h"
 #include "gromacs/utility/textwriter.h"
 

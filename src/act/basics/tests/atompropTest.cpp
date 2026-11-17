@@ -33,7 +33,6 @@
 #include <gtest/gtest.h>
 
 #include "../atomprops.h"
-
 #include "testutils/cmdlinetest.h"
 #include "testutils/refdata.h"
 

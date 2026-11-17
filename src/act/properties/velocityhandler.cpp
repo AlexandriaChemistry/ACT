@@ -27,8 +27,6 @@
  */
 #include "actpre.h"
 
-#include "velocityhandler.h"
-
 #include <cmath>
 #include <cstddef>
 #include <map>
@@ -48,6 +46,7 @@
 #include "gromacs/utility/real.h"
 #include "gromacs/utility/stringutil.h"
 #include "gromacs/utility/textwriter.h"
+#include "velocityhandler.h"
 
 namespace alexandria
 {

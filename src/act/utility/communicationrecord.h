@@ -30,12 +30,12 @@
 
 #include <cstddef>
 #include <cstdio>
-#include "gromacs/utility/gmxmpi.h"
 #include <string>
 #include <vector>
 
 #include "act/basics/msg_handler.h"
 #include "gromacs/mdtypes/commrec.h"
+#include "gromacs/utility/gmxmpi.h"
 
 namespace alexandria
 {

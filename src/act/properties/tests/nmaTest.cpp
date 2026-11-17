@@ -31,27 +31,25 @@
 #include <cstdint>
 #include <filesystem>
 #include <fstream>
+#include <gtest/gtest.h>
 #include <map>
+#include <nlohmann/json.hpp>
 #include <nlohmann/json_fwd.hpp>
 #include <sstream>
 #include <string>
 #include <utility>
 #include <vector>
 
-#include <gtest/gtest.h>
-#include <nlohmann/json.hpp>
-
 #include "act/alexandria/alex_modules.h"
 #include "act/basics/atomization_energy.h"
 #include "act/basics/msg_handler.h"
 #include "act/molprop/molprop.h"
-#include "act/testutils/forcefield_utils.h"
 #include "act/molprop/molprop_xml.h"
 #include "act/properties/thermochemistry.h"
+#include "act/testutils/forcefield_utils.h"
 #include "act/topology/actmol.h"
 #include "act/topology/actmol_low.h"
 #include "act/utility/units.h"
-
 #include "gromacs/math/units.h"
 #include "gromacs/utility/stringutil.h"
 #include "testutils/cmdlinetest.h"

@@ -31,12 +31,10 @@
  */
 
 
-#include "terminator.h"
-
 #include "act/basics/dataset.h"
-#include "gromacs/utility/textwriter.h"
-
 #include "gene_pool.h"
+#include "gromacs/utility/textwriter.h"
+#include "terminator.h"
 
 namespace ga
 {

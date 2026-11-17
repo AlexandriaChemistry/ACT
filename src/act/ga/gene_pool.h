@@ -37,10 +37,9 @@
 
 //#include "gromacs/utility/gmxassert.h"
 #include "act/basics/dataset.h"
+#include "genome.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/textwriter.h"
-
-#include "genome.h"
 
 namespace ga
 {

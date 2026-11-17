@@ -45,34 +45,33 @@
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
 #include "actpre.h"
-#include "act/basics/coordinate.h"
-#include "act/forcefield/potential.h"
-#include "act/molprop/topologyentry.h"
-#include "act/topology/actatom.h"
-#include "act/topology/nonbondedpairs.h"
 
-#include "forces_explicit_simd.h"
-
-#include "act/forces/simd_math.h"
-#include "config.h"
-#include "gromacs/utility/real.h"
 #include <algorithm>
 #include <cmath>
 #include <cstddef>
 #include <vector>
+
+#include "act/basics/coordinate.h"
+#include "act/forcefield/potential.h"
+#include "act/forces/simd_math.h"
+#include "act/molprop/topologyentry.h"
+#include "act/topology/actatom.h"
+#include "act/topology/nonbondedpairs.h"
+#include "config.h"
+#include "forces_explicit_simd.h"
+#include "gromacs/utility/real.h"
 
 #ifdef ACT_HAVE_SIMD
 
 #include <type_traits>
 #include <utility>
 
-#include "pairunroll.h"
-
 #include "act/coulombintegrals/gaussian_integrals.h"
 #include "act/forcefield/forcefield_parametername.h"
 #include "gromacs/math/functions.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/vectypes.h"
+#include "pairunroll.h"
 
 namespace alexandria
 {

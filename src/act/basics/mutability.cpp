@@ -31,10 +31,10 @@
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
 
-#include "mutability.h"
-
 #include <map>
 #include <string>
+
+#include "mutability.h"
 
 namespace alexandria
 {

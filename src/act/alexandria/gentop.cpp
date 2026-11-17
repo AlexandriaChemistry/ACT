@@ -38,7 +38,6 @@
 #include <string>
 #include <vector>
 
-
 #include "act/alexandria/alex_modules.h"
 #include "act/alexandria/openmm_xml.h"
 #include "act/basics/chargemodel.h"
@@ -48,7 +47,6 @@
 #include "act/import/compound_reader.h"
 #include "act/molprop/molprop_xml.h"
 #include "act/topology/actmol.h"
-
 #include "gromacs/commandline/filenm.h"
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/fileio/filetypes.h"

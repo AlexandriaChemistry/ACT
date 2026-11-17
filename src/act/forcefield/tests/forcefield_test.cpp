@@ -31,14 +31,12 @@
  * \author Mohammad Mehdi Ghahremanpour <mohammad.ghahremanpour@icm.uu.se>
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
-#include <math.h>
-
 #include <fstream>
 #include <functional>
-#include <map>
-#include <sstream>
-
 #include <gtest/gtest.h>
+#include <map>
+#include <math.h>
+#include <sstream>
 #include <string>
 #include <utility>
 #include <vector>
@@ -50,11 +48,10 @@
 #include "act/basics/mutability.h"
 #include "act/forcefield/forcefield.h"
 #include "act/forcefield/forcefield_parameter.h"
+#include "act/forcefield/forcefield_xml.h"
 #include "act/forcefield/particletype.h"
 #include "act/forcefield/potential.h"
 #include "act/testutils/forcefield_utils.h"
-#include "act/forcefield/forcefield_xml.h"
-
 #include "gromacs/utility/exceptions.h"
 #include "testutils/cmdlinetest.h"
 #include "testutils/refdata.h"

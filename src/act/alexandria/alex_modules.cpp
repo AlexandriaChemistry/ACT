@@ -36,8 +36,6 @@
 #include "actpre.h"
 
 #include "alex_modules.h"
-
-
 #include "gromacs/commandline/cmdlinemodule.h"
 #include "gromacs/commandline/cmdlinemodulemanager.h"
 

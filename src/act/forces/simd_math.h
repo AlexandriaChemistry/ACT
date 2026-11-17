@@ -45,8 +45,9 @@
 #ifndef ACT_FORCES_SIMD_MATH_H
 #define ACT_FORCES_SIMD_MATH_H
 
-#include "config.h"
 #include <cstddef>
+
+#include "config.h"
 
 #if ACT_SIMD_AVX_512 && defined(__AVX512F__)
 #    include "act/forces/simd_avx512.h" // IWYU pragma: export

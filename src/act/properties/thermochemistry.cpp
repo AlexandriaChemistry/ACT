@@ -34,25 +34,22 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 #include "actpre.h"
-#include "act/basics/act_particle.h"
-#include "act/basics/atomization_energy.h"
-#include "act/topology/actmol_low.h"
-
-#include "thermochemistry.h"
 
 #include <algorithm>
-#include <map>
-
 #include <cmath>
 #include <cstdio>
+#include <map>
 #include <string>
 #include <vector>
 
-#include "act/molprop/molpropobservable.h"
+#include "act/basics/act_particle.h"
+#include "act/basics/atomization_energy.h"
 #include "act/basics/msg_handler.h"
+#include "act/molprop/molpropobservable.h"
 #include "act/properties/princ.h"
 #include "act/properties/symmetrynumber.h"
 #include "act/topology/actmol.h"
+#include "act/topology/actmol_low.h"
 #include "act/topology/topology.h"
 #include "act/utility/units.h"
 #include "gromacs/math/functions.h"
@@ -62,6 +59,7 @@
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/real.h"
 #include "gromacs/utility/stringutil.h"
+#include "thermochemistry.h"
 
 #define universalGasConstant RGAS
 

@@ -30,10 +30,10 @@
  * Implements part of the alexandria program.
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
-#include "act_particle.h"
-
 #include <map>
 #include <string>
+
+#include "act_particle.h"
 
 namespace alexandria
 {

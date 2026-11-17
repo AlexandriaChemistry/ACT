@@ -32,15 +32,14 @@
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
 
-#include "symcharges.h"
-
 #include <cstdio>
-#include "gromacs/utility/gmxmpi.h"
 #include <string>
 
 #include "act/utility/communicationrecord.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/gmxmpi.h"
+#include "symcharges.h"
 
 namespace alexandria
 {

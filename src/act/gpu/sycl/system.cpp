@@ -40,8 +40,6 @@
  * used, such that the results are the same in every run.
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
-#include "gpu.h"
-
 #include <algorithm>
 #include <cfloat>
 #include <cstdint>
@@ -51,12 +49,12 @@
 #include <memory>
 #include <stdexcept>
 #include <string>
-#include <vector>
-
 #include <sycl/sycl.hpp>
+#include <vector>
 
 #include "act/forcefield/setrecipe.h"
 #include "act/gpu/pairrows.h"
+#include "gpu.h"
 #include "sycl/bondedkernels.h"
 #include "sycl/context.h"
 #include "sycl/pairkernels.h"

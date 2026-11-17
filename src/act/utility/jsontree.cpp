@@ -32,8 +32,6 @@
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
 
-#include "jsontree.h"
-
 #include <cstddef>
 #include <cstdio>
 #include <nlohmann/json.hpp>
@@ -42,6 +40,7 @@
 
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/stringutil.h"
+#include "jsontree.h"
 
 namespace alexandria
 {

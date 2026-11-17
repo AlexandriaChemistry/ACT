@@ -38,13 +38,12 @@
 #include <cmath>
 #include <cstddef>
 #include <functional>
+#include <gtest/gtest.h>
 #include <limits>
+#include <nlohmann/json.hpp>
 #include <nlohmann/json_fwd.hpp>
 #include <string>
 #include <vector>
-
-#include <gtest/gtest.h>
-#include <nlohmann/json.hpp>
 
 #include "act/alexandria/sensitivity.h"
 #include "act/testutils/forcefield_utils.h"

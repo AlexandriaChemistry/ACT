@@ -35,6 +35,14 @@
 
 // This include has to come first, to prevent the GROMACS definition of
 // "real" from messing up the library.
+#include <cstddef>
+#include <cstdio>
+#include <Eigen/Core>
+#include <map>
+#include <string>
+#include <utility>
+#include <vector>
+
 #include "act/alexandria/confighandler.h"
 #include "act/basics/act_particle.h"
 #include "act/basics/interactiontype.h"
@@ -47,13 +55,6 @@
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/real.h"
 #include "gromacs/utility/stringutil.h"
-#include <Eigen/Core>
-#include <cstddef>
-#include <cstdio>
-#include <map>
-#include <string>
-#include <utility>
-#include <vector>
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wpragmas"
 #pragma GCC diagnostic ignored "-Wunknown-warning-option"
@@ -64,13 +65,11 @@
 #include "Eigen/Eigenvalues"
 #pragma GCC diagnostic pop
 
-#include "molhandler.h"
-
 #include <algorithm>
-#include <functional>
 #include <array>
 #include <cmath>
 #include <deque>
+#include <functional>
 #include <limits>
 #include <numeric>
 #include <random>
@@ -78,8 +77,8 @@
 #include "act/alexandria/pdbwriter.h"
 #include "act/basics/coordinate.h"
 #include "act/constraints/shake.h"
-#include "act/properties/velocityhandler.h"
 #include "act/molprop/molpropobservable.h"
+#include "act/properties/velocityhandler.h"
 #include "act/topology/actmol.h"
 #include "act/utility/rotation.h"
 #include "act/utility/timings.h"
@@ -91,6 +90,7 @@
 #include "gromacs/math/vectypes.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/utility/futil.h"
+#include "molhandler.h"
 
 namespace alexandria
 {

@@ -32,12 +32,12 @@
 #ifndef ACT_COMBINATIONRULES_H
 #define ACT_COMBINATIONRULES_H
 
-#include "act/forcefield/combinationkernels.h"
 #include <cstddef>
 #include <map>
 #include <string>
 #include <vector>
 
+#include "act/forcefield/combinationkernels.h"
 #include "act/forcefield/forcefield_parameter.h"
 #include "act/forcefield/potential.h"
 

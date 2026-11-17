@@ -32,22 +32,20 @@
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
  
-#include "stringutil.h"
-
-#include <cstring>
 #include <cctype>
 #include <cstdlib>
+#include <cstring>
 #include <exception>
 #include <math.h>
-#include <stdio.h>
-#include <string.h>
-
 #include <sstream>
+#include <stdio.h>
 #include <string>
+#include <string.h>
 #include <strings.h> // IWYU pragma: keep (strcasecmp)
 #include <vector>
 
 #include "gromacs/utility/stringutil.h"
+#include "stringutil.h"
 
 int get_option(const char **opts)
 {

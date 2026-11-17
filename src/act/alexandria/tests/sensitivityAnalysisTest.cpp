@@ -35,31 +35,30 @@
  */
 
 #include "actpre.h"
-#include "act/alexandria/loss_function.h"
-#include "act/alexandria/sensitivity.h"
-#include "act/basics/dataset.h"
 
-#include <Eigen/Core>
 #include <algorithm>
 #include <cmath>
 #include <cstdio>
+#include <Eigen/Core>
+#include <Eigen/Eigenvalues>
 #include <fstream>
+#include <gtest/gtest.h>
+#include <nlohmann/json.hpp>
 #include <nlohmann/json_fwd.hpp>
 #include <set>
 #include <string>
 #include <vector>
 
-#include <Eigen/Eigenvalues>
-#include <gtest/gtest.h>
-#include <nlohmann/json.hpp>
-
 #include "act/alexandria/acmfitnesscomputer.h"
 #include "act/alexandria/acmindividual.h"
 #include "act/alexandria/acminitializer.h"
+#include "act/alexandria/loss_function.h"
 #include "act/alexandria/molgen.h"
 #include "act/alexandria/molselect.h"
+#include "act/alexandria/sensitivity.h"
 #include "act/alexandria/sensitivity_analysis.h"
 #include "act/alexandria/staticindividualinfo.h"
+#include "act/basics/dataset.h"
 #include "act/basics/msg_handler.h"
 #include "act/forces/forcecomputer.h"
 #include "act/ga/genome.h"
@@ -67,7 +66,6 @@
 #include "act/utility/communicationrecord.h"
 #include "gromacs/commandline/filenm.h"
 #include "gromacs/fileio/filetypes.h"
-
 #include "testutils/cmdlinetest.h"
 #include "testutils/testfilemanager.h"
 

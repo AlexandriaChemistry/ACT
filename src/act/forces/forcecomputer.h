@@ -41,11 +41,11 @@
 
 #include "act/basics/interactiontype.h"
 #include "act/basics/msg_handler.h"
+#include "act/forcefield/forcefield.h"
+#include "act/forcefield/potential.h"
 #include "act/forces/conformationdata.h"
 #include "act/forces/gpusystem.h"
 #include "act/forces/vsitehandler.h"
-#include "act/forcefield/forcefield.h"
-#include "act/forcefield/potential.h"
 #include "act/topology/actmol.h"
 #include "act/topology/coords_energy.h"
 #include "act/topology/topology.h"

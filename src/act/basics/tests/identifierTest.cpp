@@ -35,7 +35,6 @@
 #include <vector>
 
 #include "../identifier.h"
-
 #include "gromacs/utility/exceptions.h"
 
 namespace alexandria

@@ -31,7 +31,14 @@
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
 
-#include "allbondeds.h"
+#include <algorithm>
+#include <cmath>
+#include <cstddef>
+#include <cstdio>
+#include <map>
+#include <string>
+#include <utility>
+#include <vector>
 
 #include "act/alexandria/molselect.h"
 #include "act/alexandria/train_utility.h"
@@ -50,6 +57,7 @@
 #include "act/topology/actmol.h"
 #include "act/topology/actmol_low.h"
 #include "act/utility/units.h"
+#include "allbondeds.h"
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/math/functions.h"
@@ -62,14 +70,6 @@
 #include "gromacs/utility/real.h"
 #include "gromacs/utility/stringutil.h"
 #include "gromacs/utility/textwriter.h"
-#include <algorithm>
-#include <cmath>
-#include <cstddef>
-#include <cstdio>
-#include <map>
-#include <string>
-#include <utility>
-#include <vector>
 
 static void round_numbers(real *av, real *sig, int power10)
 {

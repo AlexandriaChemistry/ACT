@@ -30,8 +30,6 @@
  * Implements part of the alexandria program.
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
-#include "atomization_energy.h"
-
 #include <algorithm>
 #include <cmath>
 #include <cstdio>
@@ -42,6 +40,7 @@
 #include "act/basics/libraryfile.h"
 #include "act/basics/msg_handler.h"
 #include "act/utility/stringutil.h"
+#include "atomization_energy.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/stringutil.h"
 #include "gromacs/utility/textreader.h"

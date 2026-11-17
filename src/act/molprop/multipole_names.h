@@ -34,7 +34,6 @@
 #include <string>
 #include <vector>
 
-
 #include "act/molprop/molpropobservable.h"
 
 namespace alexandria

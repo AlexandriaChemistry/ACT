@@ -34,32 +34,30 @@
  * \ingroup group_forces_tests
  */
 #include "actpre.h"
-#include "act/basics/act_particle.h"
-#include "act/basics/coordinate.h"
-#include "act/forces/vsitehandler.h"
-#include "act/molprop/experiment.h"
-#include "act/molprop/molprop.h"
-#include "act/topology/actmol_low.h"
-
-#include "../forcecomputer.h"
 
 #include <algorithm>
 #include <cmath>
 #include <cstddef>
+#include <gtest/gtest.h>
 #include <map>
-#include <tuple>
 #include <string>
+#include <tuple>
 #include <vector>
 
-#include <gtest/gtest.h>
-
+#include "../forcecomputer.h"
+#include "act/basics/act_particle.h"
+#include "act/basics/coordinate.h"
 #include "act/basics/interactiontype.h"
 #include "act/basics/msg_handler.h"
 #include "act/forcefield/forcefield_parametername.h"
-#include "act/testutils/forcefield_utils.h"
 #include "act/forcefield/potential.h"
+#include "act/forces/vsitehandler.h"
 #include "act/import/import.h"
+#include "act/molprop/experiment.h"
+#include "act/molprop/molprop.h"
+#include "act/testutils/forcefield_utils.h"
 #include "act/topology/actmol.h"
+#include "act/topology/actmol_low.h"
 #include "act/utility/timings.h"
 #include "gromacs/math/vectypes.h"
 #include "gromacs/utility/real.h"

@@ -32,20 +32,18 @@
  */
 
 #include "actpre.h"
-#include "act/alexandria/sensitivity.h"
 
+#include <gtest/gtest.h>
 #include <string>
 #include <vector>
 
-#include <gtest/gtest.h>
-
 #include "act/alexandria/confighandler.h"
+#include "act/alexandria/sensitivity.h"
 #include "act/basics/msg_handler.h"
 #include "gromacs/commandline/filenm.h"
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/fileio/oenv.h"
 #include "gromacs/utility/exceptions.h"
-
 #include "gromacs/utility/real.h"
 #include "testutils/cmdlinetest.h"
 #include "testutils/testasserts.h"

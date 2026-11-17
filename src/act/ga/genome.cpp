@@ -25,13 +25,12 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor,
  * Boston, MA  02110-1301, USA.
  */
-#include "genome.h"
-    
 #include <cstdio>
 #include <string>
 
 #include "act/basics/dataset.h"
 #include "act/utility/communicationrecord.h"
+#include "genome.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/stringutil.h"
 

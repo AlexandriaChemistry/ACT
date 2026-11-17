@@ -31,21 +31,19 @@
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
 
-#include "identifier.h"
-
 #include <cstddef>
 #include <map>
-#include "gromacs/utility/gmxmpi.h"
 #include <string>
 #include <utility>
 #include <vector>
 
 #include "act/basics/interactiontype.h"
+#include "act/utility/communicationrecord.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/gmxmpi.h"
 #include "gromacs/utility/stringutil.h"
-
-#include "act/utility/communicationrecord.h"
+#include "identifier.h"
 
 namespace alexandria
 {

@@ -32,11 +32,8 @@
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
 
-#include "topologyentry.h"
-
 #include <cstddef>
 #include <cstdio>
-#include "gromacs/utility/gmxmpi.h"
 #include <mutex>
 #include <set>
 #include <tuple>
@@ -47,7 +44,9 @@
 #include "act/utility/communicationrecord.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
+#include "gromacs/utility/gmxmpi.h"
 #include "gromacs/utility/stringutil.h"
+#include "topologyentry.h"
 
 namespace alexandria
 {

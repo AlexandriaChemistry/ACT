@@ -32,8 +32,6 @@
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
 
-#include "molselect.h"
-
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -45,6 +43,7 @@
 #include "act/molprop/molprop.h"
 #include "act/utility/stringutil.h"
 #include "gromacs/utility/textreader.h"
+#include "molselect.h"
 
 namespace alexandria
 {

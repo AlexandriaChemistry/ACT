@@ -35,11 +35,12 @@
 #ifndef OPENMM_XML_H
 #define OPENMM_XML_H
 
-#include "act/forcefield/forcefield.h"
-#include "act/topology/actmol.h"
 #include <map>
 #include <string>
 #include <vector>
+
+#include "act/forcefield/forcefield.h"
+#include "act/topology/actmol.h"
 
 namespace alexandria
 {

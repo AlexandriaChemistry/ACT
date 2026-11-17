@@ -38,8 +38,8 @@
 #include <random>
 #include <time.h>
 
-#include "genome.h"
 #include "act/utility/portable_random.h"
+#include "genome.h"
 
 namespace ga
 {

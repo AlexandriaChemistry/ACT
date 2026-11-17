@@ -32,14 +32,10 @@
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
 #include "actpre.h"
-#include "act/basics/interactiontype.h"
-#include "act/basics/mutability.h"
-#include "act/forcefield/forcefield_parameter.h"
 
 #include <algorithm>
 #include <map>
 #include <set>
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string>
@@ -48,7 +44,10 @@
 
 #include "act/alexandria/alex_modules.h"
 #include "act/basics/identifier.h"
+#include "act/basics/interactiontype.h"
+#include "act/basics/mutability.h"
 #include "act/forcefield/forcefield.h"
+#include "act/forcefield/forcefield_parameter.h"
 #include "act/forcefield/forcefield_tables.h"
 #include "act/forcefield/forcefield_xml.h"
 #include "act/statistics/statistics.h"

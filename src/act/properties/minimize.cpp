@@ -30,7 +30,12 @@
  * Implements part of the alexandria program.
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
-#include "minimize.h"
+#include <cstdio>
+#include <exception>
+#include <map>
+#include <string>
+#include <utility>
+#include <vector>
 
 #include "act/alexandria/alex_modules.h"
 #include "act/alexandria/confighandler.h"
@@ -57,12 +62,7 @@
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/real.h"
 #include "gromacs/utility/stringutil.h"
-#include <cstdio>
-#include <exception>
-#include <map>
-#include <string>
-#include <utility>
-#include <vector>
+#include "minimize.h"
 
 namespace alexandria
 {

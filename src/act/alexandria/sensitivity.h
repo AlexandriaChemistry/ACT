@@ -37,11 +37,10 @@
 
 #include <array>
 #include <cstddef>
+#include <nlohmann/json_fwd.hpp>
 #include <optional>
 #include <string>
 #include <vector>
-
-#include <nlohmann/json_fwd.hpp>
 
 namespace gmx
 {

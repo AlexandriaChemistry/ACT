@@ -30,15 +30,13 @@
  * act/topology/nonbondedpairs.h, against their definition.
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
-#include "act/topology/nonbondedpairs.h"
-#include <cstring>
 #include <algorithm>
+#include <cstring>
+#include <gtest/gtest.h>
 #include <set>
 #include <string>
 #include <utility>
 #include <vector>
-
-#include <gtest/gtest.h>
 
 #include "act/basics/act_particle.h"
 #include "act/basics/interactiontype.h"
@@ -49,8 +47,8 @@
 #include "act/molprop/molprop.h"
 #include "act/molprop/molprop_xml.h"
 #include "act/topology/actmol.h"
-
 #include "act/topology/actmol_low.h"
+#include "act/topology/nonbondedpairs.h"
 #include "act/topology/topology.h"
 #include "testutils/cmdlinetest.h"
 #include "testutils/testfilemanager.h"

@@ -32,15 +32,15 @@
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
  
-#include "latex_util.h"
-
-#include "gromacs/fileio/gmxfio.h"
-#include "gromacs/utility/exceptions.h"
-#include "gromacs/utility/gmxassert.h"
 #include <cctype>
 #include <cstdio>
 #include <string>
 #include <vector>
+
+#include "gromacs/fileio/gmxfio.h"
+#include "gromacs/utility/exceptions.h"
+#include "gromacs/utility/gmxassert.h"
+#include "latex_util.h"
 
 namespace alexandria
 {

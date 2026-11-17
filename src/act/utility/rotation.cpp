@@ -33,19 +33,17 @@
  */
 #include "actpre.h"
 
-#include "rotation.h"
-
-
+#include <cstddef>
 #include <Eigen/Core>
 #include <Eigen/Dense>
 #include <Eigen/Eigenvalues>
 #include <Eigen/SVD>
-#include <cstddef>
 #include <vector>
 
 #include "gromacs/math/vectypes.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/real.h"
+#include "rotation.h"
 
 namespace alexandria
 {

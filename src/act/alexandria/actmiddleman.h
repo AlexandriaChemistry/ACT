@@ -33,6 +33,9 @@
 #ifndef ACT_ACTMIDDLEMAN_H
 #define ACT_ACTMIDDLEMAN_H
 
+#include <memory>
+#include <vector>
+
 #include "act/alexandria/acmfitnesscomputer.h"
 #include "act/alexandria/confighandler.h"
 #include "act/alexandria/staticindividualinfo.h"
@@ -42,8 +45,6 @@
 #include "act/ga/mutator.h"
 #include "act/utility/communicationrecord.h"
 #include "gromacs/fileio/oenv.h"
-#include <memory>
-#include <vector>
 
 namespace gmx
 {

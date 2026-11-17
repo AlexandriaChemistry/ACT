@@ -35,10 +35,9 @@
 #ifndef XML_UTIL_H
 #define XML_UTIL_H
 
+#include <libxml/tree.h>
 #include <string>
 #include <vector>
-
-#include <libxml/tree.h>
 
 //! \return the known xmltypes
 const std::vector<const char *> &xmltypes();

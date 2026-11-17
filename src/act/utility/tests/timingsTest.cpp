@@ -36,9 +36,8 @@
 
 #include <chrono>
 #include <cstdlib>
-#include <string>
-
 #include <gtest/gtest.h>
+#include <string>
 
 #include "act/forces/simd_information.h"
 #include "act/utility/communicationrecord.h"

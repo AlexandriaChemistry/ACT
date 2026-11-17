@@ -32,27 +32,25 @@
  */
 
 #include "actpre.h"
-#include "act/basics/chargemodel.h"
-#include "act/basics/mutability.h"
-#include "act/forcefield/forcefield_parameter.h"
 
 #include <cstddef>
 #include <filesystem>
 #include <fstream>
+#include <gtest/gtest.h>
 #include <map>
 #include <string>
 #include <utility>
 #include <vector>
 
-#include <gtest/gtest.h>
-
 #include "act/alexandria/alex_modules.h"
+#include "act/basics/chargemodel.h"
 #include "act/basics/interactiontype.h"
+#include "act/basics/mutability.h"
 #include "act/forcefield/forcefield.h"
+#include "act/forcefield/forcefield_parameter.h"
 #include "act/forcefield/forcefield_xml.h"
 #include "act/forcefield/potential.h"
 #include "gromacs/utility/exceptions.h"
-
 #include "testutils/cmdlinetest.h"
 #include "testutils/testfilemanager.h"
 

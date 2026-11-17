@@ -47,20 +47,13 @@
  * \ingroup group_alexandria_tests
  */
 #include "actpre.h"
-#include "act/alexandria/sensitivity.h"
-#include "act/basics/chargemodel.h"
-#include "act/basics/dataset.h"
-#include "act/basics/interactiontype.h"
-#include "act/basics/mutability.h"
-#include "act/forcefield/forcefield_parameterlist.h"
-#include "act/molprop/molprop.h"
-#include "act/topology/actmol_low.h"
 
 #include <array>
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>
 #include <functional>
+#include <gtest/gtest.h>
 #include <map>
 #include <random>
 #include <set>
@@ -68,29 +61,34 @@
 #include <utility>
 #include <vector>
 
-#include <gtest/gtest.h>
-
 #include "act/alexandria/acmfitnesscomputer.h"
 #include "act/alexandria/molgen.h"
 #include "act/alexandria/optimizationindex.h"
+#include "act/alexandria/sensitivity.h"
 #include "act/alexandria/staticindividualinfo.h"
+#include "act/basics/chargemodel.h"
+#include "act/basics/dataset.h"
+#include "act/basics/interactiontype.h"
 #include "act/basics/msg_handler.h"
+#include "act/basics/mutability.h"
 #include "act/forcefield/forcefield.h"
+#include "act/forcefield/forcefield_parameterlist.h"
 #include "act/forcefield/forcefield_xml.h"
 #include "act/forcefield/parameterrecipes.h"
 #include "act/forcefield/potential.h"
 #include "act/forces/forcecomputer.h"
-#include "act/testutils/ga_test_helper.h"
 #include "act/gpu/gpu.h"
-#include "act/topology/topology.h"
+#include "act/molprop/molprop.h"
 #include "act/molprop/molprop_xml.h"
+#include "act/testutils/ga_test_helper.h"
 #include "act/topology/actmol.h"
+#include "act/topology/actmol_low.h"
+#include "act/topology/topology.h"
 #include "act/utility/units.h"
 #include "gromacs/math/units.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/stringutil.h"
-
 #include "testutils/gputests.h"
 #include "testutils/testfilemanager.h"
 

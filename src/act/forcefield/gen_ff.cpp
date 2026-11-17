@@ -35,12 +35,10 @@
 #include <cstdio>
 #include <cstdlib>
 #include <fstream>
-
 #include <map>
+#include <nlohmann/json.hpp>
 #include <nlohmann/json_fwd.hpp>
 #include <set>
-
-#include <nlohmann/json.hpp>
 #include <string>
 #include <vector>
 
@@ -51,16 +49,16 @@
 #include "act/basics/interactiontype.h"
 #include "act/basics/libraryfile.h"
 #include "act/basics/mutability.h"
+#include "act/forcefield/act_checksum.h"
+#include "act/forcefield/combruleutil.h"
+#include "act/forcefield/forcefield.h"
+#include "act/forcefield/forcefield_parameter.h"
 #include "act/forcefield/forcefield_parameterlist.h"
+#include "act/forcefield/forcefield_parametername.h"
+#include "act/forcefield/forcefield_xml.h"
 #include "act/forcefield/particletype.h"
 #include "act/forcefield/potential.h"
 #include "act/forces/forcecomputer.h"
-#include "act/forcefield/act_checksum.h"
-#include "act/forcefield/combruleutil.h"
-#include "act/forcefield/forcefield_parameter.h"
-#include "act/forcefield/forcefield_parametername.h"
-#include "act/forcefield/forcefield.h"
-#include "act/forcefield/forcefield_xml.h"
 #include "act/utility/stringutil.h"
 #include "gromacs/commandline/filenm.h"
 #include "gromacs/commandline/pargs.h"

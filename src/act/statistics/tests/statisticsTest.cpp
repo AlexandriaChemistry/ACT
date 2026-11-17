@@ -31,15 +31,12 @@
 
 #include "actpre.h"
 
-#include <math.h>
-
 #include <cstdlib>
-
 #include <gtest/gtest.h>
+#include <math.h>
 #include <vector>
 
 #include "act/statistics/statistics.h"
-
 #include "gromacs/utility/real.h"
 #include "testutils/cmdlinetest.h"
 #include "testutils/refdata.h"

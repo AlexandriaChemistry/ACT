@@ -32,8 +32,6 @@
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
 
-#include "gromacs_top.h"
-
 #include <algorithm>
 #include <cmath>
 #include <cstddef>
@@ -59,6 +57,7 @@
 #include "gromacs/math/units.h"
 #include "gromacs/topology/ifunc.h"
 #include "gromacs/utility/stringutil.h"
+#include "gromacs_top.h"
 
 namespace alexandria
 {

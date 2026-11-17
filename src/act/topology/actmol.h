@@ -38,7 +38,6 @@
 #include <cstddef>
 #include <cstdio>
 #include <map>
-#include "gromacs/utility/gmxmpi.h"
 #include <string>
 #include <utility>
 #include <vector>
@@ -47,12 +46,12 @@
 #include "act/basics/dataset.h"
 #include "act/basics/interactiontype.h"
 #include "act/basics/msg_handler.h"
+#include "act/forcefield/forcefield.h"
 #include "act/forces/conformationdata.h"
 #include "act/forces/forcecomputer.h"
 #include "act/import/chargemap.h"
 #include "act/molprop/experiment.h"
 #include "act/molprop/molprop.h"
-#include "act/forcefield/forcefield.h"
 #include "act/molprop/molpropobservable.h"
 #include "act/qgen/qgen_acm.h"
 #include "act/qgen/qgen_resp.h"
@@ -64,6 +63,7 @@
 #include "act/topology/topology.h"
 #include "act/utility/communicationrecord.h"
 #include "gromacs/math/vectypes.h"
+#include "gromacs/utility/gmxmpi.h"
 #include "gromacs/utility/real.h"
 namespace alexandria
 {

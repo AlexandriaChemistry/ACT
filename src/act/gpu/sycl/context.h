@@ -34,7 +34,6 @@
 #define ACT_GPU_SYCL_CONTEXT_H
 
 #include <cstddef>
-
 #include <sycl/sycl.hpp>
 
 #include "gpu.h"

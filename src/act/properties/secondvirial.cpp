@@ -30,8 +30,6 @@
  * Implements part of the alexandria program.
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
-#include "secondvirial.h"
-
 #include <algorithm>
 #include <cctype>
 #include <cmath>
@@ -54,6 +52,8 @@
 #include "act/forcefield/forcefield_xml.h"
 #include "act/forcefield/potential.h"
 #include "act/forces/forcecomputer.h"
+#include "act/forces/forcecomputerstatistics.h"
+#include "act/forces/simd_information.h"
 #include "act/import/compound_reader.h"
 #include "act/import/import.h"
 #include "act/molprop/molprop_xml.h"
@@ -63,11 +63,9 @@
 #include "act/statistics/statistics.h"
 #include "act/topology/actmol.h"
 #include "act/utility/jsontree.h"
-#include "act/forces/forcecomputerstatistics.h"
-#include "act/forces/simd_information.h"
-#include "act/utility/timings.h"
 #include "act/utility/memory_check.h"
 #include "act/utility/stringutil.h"
+#include "act/utility/timings.h"
 #include "gromacs/commandline/filenm.h"
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/fileio/filetypes.h"
@@ -82,6 +80,7 @@
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/real.h"
 #include "gromacs/utility/stringutil.h"
+#include "secondvirial.h"
 
 namespace alexandria
 {

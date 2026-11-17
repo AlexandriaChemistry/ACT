@@ -37,7 +37,6 @@
 
 #include <cstdio>
 #include <map>
-#include "gromacs/utility/gmxmpi.h"
 #include <span>
 #include <vector>
 
@@ -47,6 +46,7 @@
 #include "act/forcefield/forcefield_parameterlist.h"
 #include "act/utility/communicationrecord.h"
 #include "gromacs/utility/exceptions.h"
+#include "gromacs/utility/gmxmpi.h"
 #include "gromacs/utility/stringutil.h"
 
 namespace alexandria

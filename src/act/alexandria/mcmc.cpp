@@ -25,16 +25,16 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, 
  * Boston, MA  02110-1301, USA.
  */
-#include "mcmc.h"
+#include <ctime>
+#include <map>
+#include <string>
+
 #include "act/alexandria/acmfitnesscomputer.h"
 #include "act/alexandria/acmindividual.h"
 #include "act/basics/dataset.h"
 #include "act/ga/genome.h"
 #include "gromacs/utility/gmxassert.h"
-
-#include <ctime>
-#include <map>
-#include <string>
+#include "mcmc.h"
 #pragma GCC diagnostic ignored "-Wpragmas"
 #pragma GCC diagnostic ignored "-Wunknown-warning-option"
 #pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
@@ -44,8 +44,8 @@
 #include "act/forces/forcecomputerstatistics.h"
 #include "act/ga/gene_pool.h"
 #include "act/utility/communicationrecord.h"
-#include "mcmcmutator.h"
 #include "act/utility/timings.h"
+#include "mcmcmutator.h"
 
 namespace ga
 {

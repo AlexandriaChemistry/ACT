@@ -35,7 +35,6 @@
 #define JSONTREE_H
 
 #include <cstdlib>
-
 #include <string>
 #include <vector>
 

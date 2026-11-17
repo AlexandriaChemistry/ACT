@@ -31,15 +31,13 @@
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
 
-#include "../latex_util.h"
-
 #include <cstdio>
 #include <fstream>
+#include <gtest/gtest.h>
 #include <string>
 #include <vector>
 
-#include <gtest/gtest.h>
-
+#include "../latex_util.h"
 #include "gromacs/utility/exceptions.h"
 #include "testutils/testfilemanager.h"
 

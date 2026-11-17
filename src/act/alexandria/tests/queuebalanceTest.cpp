@@ -30,14 +30,13 @@
  * generation, see queuebalance.h.
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
-#include "act/alexandria/queuebalance.h"
-
 #include <algorithm>
 #include <array>
 #include <cstddef>
+#include <gtest/gtest.h>
 #include <vector>
 
-#include <gtest/gtest.h>
+#include "act/alexandria/queuebalance.h"
 
 namespace alexandria
 {

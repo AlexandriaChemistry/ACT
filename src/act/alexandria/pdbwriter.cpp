@@ -37,10 +37,6 @@
  */
 /* Adapted to ACT by DvdS, 2023-06-03 */
 #include "actpre.h"
-#include "act/basics/act_particle.h"
-#include "act/topology/actatom.h"
-
-#include "pdbwriter.h"
 
 #include <algorithm>
 #include <cctype>
@@ -48,11 +44,12 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
-
 #include <map>
 #include <string>
 #include <vector>
 
+#include "act/basics/act_particle.h"
+#include "act/topology/actatom.h"
 #include "gromacs/fileio/pdbio.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
@@ -62,6 +59,7 @@
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 #include "gromacs/utility/stringutil.h"
+#include "pdbwriter.h"
 
 typedef struct {
     //! Indices of the two atoms in a CONECT record

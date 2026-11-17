@@ -32,16 +32,15 @@
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
 
-#include "regression.h"
-
-#include <Eigen/Core>
-#include <Eigen/QR>
 #include <algorithm>
 #include <cstring>
+#include <Eigen/Core>
+#include <Eigen/QR>
 #include <string>
 #include <utility>
-
 #include <vector>
+
+#include "regression.h"
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wpragmas"

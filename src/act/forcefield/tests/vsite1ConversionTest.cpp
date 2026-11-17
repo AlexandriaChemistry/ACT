@@ -31,9 +31,8 @@
  * see ForceField::convertVsite1.
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
-#include <string>
-
 #include <gtest/gtest.h>
+#include <string>
 
 #include "act/basics/identifier.h"
 #include "act/basics/interactiontype.h"
@@ -43,7 +42,6 @@
 #include "act/forcefield/forcefield_parameter.h"
 #include "act/forcefield/forcefield_parameterlist.h"
 #include "act/forcefield/forcefield_xml.h"
-
 #include "act/forcefield/potential.h"
 #include "testutils/testfilemanager.h"
 

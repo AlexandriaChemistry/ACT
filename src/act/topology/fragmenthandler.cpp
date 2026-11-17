@@ -25,8 +25,6 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, 
  * Boston, MA  02110-1301, USA.
  */
-#include "fragmenthandler.h"
-
 #include <algorithm>
 #include <cstddef>
 #include <cstdio>
@@ -42,6 +40,7 @@
 #include "act/topology/actmol_low.h"
 #include "act/topology/symmetrize_charges.h"
 #include "act/topology/topology.h"
+#include "fragmenthandler.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/math/vectypes.h"
 #include "gromacs/utility/exceptions.h"

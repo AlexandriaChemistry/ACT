@@ -30,19 +30,17 @@
  * \author Julian Ramon Marrades Furquet <julian@marrad.es>
  */
 
-#include "genetic_algorithm.h"
-
 #include <cstdio>
 #include <string>
 
-#include "act/ga/gene_pool.h"
-#include "gromacs/utility/gmxassert.h"
-#include "terminator.h"
-
 #include "act/basics/dataset.h"
+#include "act/ga/gene_pool.h"
+#include "genetic_algorithm.h"
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/utility/exceptions.h"
+#include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/stringutil.h"
+#include "terminator.h"
 
 namespace ga
 {

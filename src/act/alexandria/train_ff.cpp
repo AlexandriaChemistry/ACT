@@ -34,65 +34,60 @@
  */
 
 #include "actpre.h"
-#include "act/alexandria/acminitializer.h"
-#include "act/alexandria/confighandler.h"
-#include "act/alexandria/molselect.h"
-#include "act/basics/chargemodel.h"
-#include "act/basics/dataset.h"
-#include "act/basics/msg_handler.h"
-#include "act/ga/gene_pool.h"
-#include "act/ga/npointcrossover.h"
-#include "act/ga/probability_computer.h"
-#include "act/ga/selector.h"
-#include "act/ga/terminator.h"
-#include "act/import/compound_reader.h"
-#include "act/utility/communicationrecord.h"
-
-#include "train_ff.h"
 
 #include <algorithm>
 #include <cctype>
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>
-
 #include <map>
-#include "gromacs/utility/gmxmpi.h"
 #include <numeric>
-#include <set>
 #include <random>
+#include <set>
 #include <string>
 #include <utility>
 #include <vector>
 
-#include "config.h"
-
+#include "act/alexandria/acminitializer.h"
 #include "act/alexandria/acthelper.h"
-#include "act/alexandria/devcomputer.h"
 #include "act/alexandria/actmiddleman.h"
 #include "act/alexandria/alex_modules.h"
+#include "act/alexandria/confighandler.h"
+#include "act/alexandria/devcomputer.h"
 #include "act/alexandria/hybrid.h"
 #include "act/alexandria/mcmc.h"
 #include "act/alexandria/mcmcmutator.h"
 #include "act/alexandria/molgen.h"
+#include "act/alexandria/molselect.h"
 #include "act/alexandria/percentmutator.h"
 #include "act/alexandria/queuebalance.h"
 #include "act/alexandria/sensitivity.h"
 #include "act/alexandria/sensitivity_analysis.h"
 #include "act/alexandria/train_utility.h"
+#include "act/basics/chargemodel.h"
+#include "act/basics/dataset.h"
+#include "act/basics/msg_handler.h"
 #include "act/forcefield/forcefield.h"
 #include "act/forcefield/forcefield_xml.h"
 #include "act/forces/forcecomputer.h"
-#include "act/gpu/gpu.h"
+#include "act/forces/simd_information.h"
+#include "act/ga/gene_pool.h"
+#include "act/ga/npointcrossover.h"
 #include "act/ga/penalizer.h"
+#include "act/ga/probability_computer.h"
+#include "act/ga/selector.h"
+#include "act/ga/terminator.h"
+#include "act/gpu/gpu.h"
+#include "act/import/compound_reader.h"
 #include "act/topology/actmol_low.h"
+#include "act/utility/communicationrecord.h"
 #include "act/utility/jsontree.h"
 #include "act/utility/memory_check.h"
 #include "act/utility/portable_random.h"
+#include "act/utility/timings.h"
+#include "config.h"
 #include "gromacs/commandline/filenm.h"
 #include "gromacs/commandline/pargs.h"
-#include "act/forces/simd_information.h"
-#include "act/utility/timings.h"
 #include "gromacs/fileio/filetypes.h"
 #include "gromacs/fileio/oenv.h"
 #include "gromacs/fileio/xvgr.h"
@@ -101,7 +96,9 @@
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/gmxassert.h"
+#include "gromacs/utility/gmxmpi.h"
 #include "gromacs/utility/stringutil.h"
+#include "train_ff.h"
 
 namespace alexandria
 {

@@ -36,9 +36,10 @@
 #ifndef MOLPROP_XML_H
 #define MOLPROP_XML_H
 
+#include <vector>
+
 #include "act/molprop/molprop.h"
 #include "gromacs/utility/basedefinitions.h"
-#include <vector>
 
 namespace alexandria
 {

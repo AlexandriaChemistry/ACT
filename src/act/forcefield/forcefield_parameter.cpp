@@ -31,19 +31,17 @@
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
 
-#include "forcefield_parameter.h"
-
-
+#include <algorithm>
+#include <cstdio>
+#include <string>
 
 #include "act/basics/mutability.h"
 #include "act/utility/communicationrecord.h"
+#include "forcefield_parameter.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
-#include "gromacs/utility/stringutil.h"
-#include <algorithm>
-#include <cstdio>
 #include "gromacs/utility/gmxmpi.h"
-#include <string>
+#include "gromacs/utility/stringutil.h"
 
 bool stringToBoolean(const std::string &str)
 {

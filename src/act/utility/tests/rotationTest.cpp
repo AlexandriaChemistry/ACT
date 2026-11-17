@@ -35,10 +35,9 @@
 #include "actpre.h"
 
 #include <cmath>
+#include <gtest/gtest.h>
 #include <random>
 #include <vector>
-
-#include <gtest/gtest.h>
 
 #include "act/utility/rotation.h"
 #include "gromacs/math/vec.h"

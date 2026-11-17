@@ -33,9 +33,8 @@
 
 #include "actpre.h"
 
-#include <vector>
-
 #include <gtest/gtest.h>
+#include <vector>
 
 #include "act/topology/symmetrize_charges.h"
 #include "gromacs/utility/exceptions.h"

@@ -32,18 +32,16 @@
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
 
-#include "act/molprop/molpropobservable.h"
-
-#include <cstring>
 #include <cstddef>
+#include <cstring>
 #include <map>
-#include "gromacs/utility/gmxmpi.h"
 #include <string>
 #include <strings.h> // IWYU pragma: keep (strcasecmp)
 #include <typeinfo>
 #include <vector>
 
 #include "act/basics/msg_handler.h"
+#include "act/molprop/molpropobservable.h"
 #include "act/molprop/multipole_names.h"
 #include "act/molprop/phase.h"
 #include "act/utility/communicationrecord.h"
@@ -52,6 +50,7 @@
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/gmxmpi.h"
 #include "gromacs/utility/real.h"
 #include "gromacs/utility/stringutil.h"
 #include "gromacs/utility/textwriter.h"

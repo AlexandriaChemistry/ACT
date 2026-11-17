@@ -32,13 +32,12 @@
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
 
-#include "interactiontype.h"
-
 #include <map>
 #include <string>
 
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/stringutil.h"
+#include "interactiontype.h"
 
 namespace alexandria
 {

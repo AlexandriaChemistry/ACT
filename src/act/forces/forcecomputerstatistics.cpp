@@ -29,10 +29,9 @@
 #include <cstddef>
 #include <string>
 
-#include "forcecomputerstatistics.h"
-
 #include "act/forces/forcecomputer.h"
 #include "act/utility/communicationrecord.h"
+#include "forcecomputerstatistics.h"
 #include "gromacs/utility/stringutil.h"
 
 namespace alexandria

@@ -40,8 +40,8 @@
 #include <vector>
 
 #include "act/basics/msg_handler.h"
-#include "act/forces/forcecomputer.h"
 #include "act/forcefield/forcefield.h"
+#include "act/forces/forcecomputer.h"
 #include "act/properties/rotator.h"
 #include "act/topology/actatom.h"
 #include "act/topology/actmol.h"

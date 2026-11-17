@@ -31,14 +31,12 @@
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
 #include <cmath>
-
 #include <cstddef>
+#include <gtest/gtest.h>
 #include <limits>
 #include <map>
 #include <string>
 #include <vector>
-
-#include <gtest/gtest.h>
 
 #include "act/basics/msg_handler.h"
 #include "act/forces/simd_information.h"
@@ -52,7 +50,6 @@
 #include "gromacs/math/vectypes.h"
 #include "gromacs/utility/real.h"
 #include "gromacs/utility/stringutil.h"
-
 #include "testutils/cmdlinetest.h"
 #include "testutils/refdata.h"
 #include "testutils/testasserts.h"

@@ -27,26 +27,23 @@
  */
 #include <algorithm>
 #include <cmath>
-#include <cstdio>
 #include <cstdint>
+#include <cstdio>
 #include <fstream>
+#include <gtest/gtest.h>
 #include <map>
+#include <nlohmann/json.hpp>
 #include <nlohmann/json_fwd.hpp>
 #include <sstream>
 #include <string>
 #include <utility>
 #include <vector>
 
-#include <gtest/gtest.h>
-
 #include "act/alexandria/alex_modules.h"
 #include "act/basics/msg_handler.h"
 #include "act/molprop/molprop.h"
 #include "act/molprop/molprop_xml.h"
 #include "gromacs/math/units.h"
-
-#include <nlohmann/json.hpp>
-
 #include "gromacs/math/vectypes.h"
 #include "gromacs/utility/stringutil.h"
 #include "testutils/cmdlinetest.h"

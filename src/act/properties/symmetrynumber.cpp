@@ -27,10 +27,11 @@
  */
 // This include has to come first, to prevent the GROMACS definition of
 // "real" from messing up the library.
-#include "gromacs/math/vectypes.h"
-#include <Eigen/Core>
 #include <cstddef>
+#include <Eigen/Core>
 #include <vector>
+
+#include "gromacs/math/vectypes.h"
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wpragmas"
 #pragma GCC diagnostic ignored "-Wunknown-warning-option"
@@ -42,13 +43,12 @@
 #include <Eigen/SVD>
 #pragma GCC diagnostic pop
 
-#include "symmetrynumber.h"
-
 #include <algorithm>
 #include <cmath>
 #include <numeric>
 
 #include "gromacs/utility/gmxassert.h"
+#include "symmetrynumber.h"
 
 namespace alexandria
 {

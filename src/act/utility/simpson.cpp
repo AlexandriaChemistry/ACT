@@ -31,14 +31,13 @@
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
 
-#include "simpson.h"
-
 #include <cmath>
 #include <cstddef>
 #include <vector>
 
 #include "act/basics/msg_handler.h"
 #include "gromacs/utility/stringutil.h"
+#include "simpson.h"
 
 double simpsonIntegrate(alexandria::MsgHandler    *msghandler,
                         bool                       spherical,

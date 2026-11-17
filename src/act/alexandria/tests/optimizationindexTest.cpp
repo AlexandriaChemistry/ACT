@@ -33,9 +33,8 @@
 
 #include "actpre.h"
 
-#include <string>
-
 #include <gtest/gtest.h>
+#include <string>
 #include <vector>
 
 #include "act/alexandria/optimizationindex.h"

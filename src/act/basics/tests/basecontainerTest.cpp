@@ -32,11 +32,9 @@
  */
 #include <cstddef>
 #include <gtest/gtest.h>
-
-#include "../basecontainer.h"
-
 #include <vector>
 
+#include "../basecontainer.h"
 #include "testutils/cmdlinetest.h"
 
 namespace alexandria

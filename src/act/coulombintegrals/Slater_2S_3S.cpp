@@ -35,9 +35,10 @@
  
 #include "actpre.h"
 
+#include <cmath>
+
 #include "config.h"
 #include "slater_low.h"
-#include <cmath>
 
 #if HAVE_LIBCLN
 

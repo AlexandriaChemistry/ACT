@@ -31,20 +31,6 @@
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  * \author Julian Ramon Marrades Furquet <julian@marrad.es>
  */
-#include "sensitivity_analysis.h"
-
-#include "act/alexandria/sensitivity.h"
-#include "act/basics/dataset.h"
-#include "act/basics/msg_handler.h"
-#include "act/utility/communicationrecord.h"
-#include "act/alexandria/acmfitnesscomputer.h"
-#include "act/alexandria/actmiddleman.h"
-#include "act/alexandria/staticindividualinfo.h"
-#include "act/ga/genome.h"
-#include "act/utility/timings.h"
-#include "gromacs/utility/futil.h"
-#include "gromacs/utility/textwriter.h"
-
 #include <algorithm>
 #include <array>
 #include <cstddef>
@@ -54,6 +40,19 @@
 #include <string>
 #include <utility>
 #include <vector>
+
+#include "act/alexandria/acmfitnesscomputer.h"
+#include "act/alexandria/actmiddleman.h"
+#include "act/alexandria/sensitivity.h"
+#include "act/alexandria/staticindividualinfo.h"
+#include "act/basics/dataset.h"
+#include "act/basics/msg_handler.h"
+#include "act/ga/genome.h"
+#include "act/utility/communicationrecord.h"
+#include "act/utility/timings.h"
+#include "gromacs/utility/futil.h"
+#include "gromacs/utility/textwriter.h"
+#include "sensitivity_analysis.h"
 
 namespace alexandria
 {

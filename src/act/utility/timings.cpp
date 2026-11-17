@@ -31,8 +31,6 @@
  */
 #include "actpre.h"
 
-#include "timings.h"
-
 #include <algorithm>
 #include <chrono>
 #include <cstddef>
@@ -47,6 +45,7 @@
 #include "gromacs/utility/gmxmpi.h"
 #include "gromacs/utility/stringutil.h"
 #include "gromacs/utility/textwriter.h"
+#include "timings.h"
 
 namespace alexandria
 {

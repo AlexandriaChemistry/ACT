@@ -43,7 +43,6 @@
 #include <string>
 #include <vector>
 
-
 #include "act/alexandria/sensitivity.h"
 #include "act/basics/dataset.h"
 

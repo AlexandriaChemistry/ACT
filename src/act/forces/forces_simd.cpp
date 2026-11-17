@@ -25,8 +25,6 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor,
  * Boston, MA  02110-1301, USA.
  */
-#include "forces_simd.h"
-
 #include <algorithm>
 #include <array>
 #include <cmath>
@@ -51,17 +49,17 @@
 #include "act/basics/mutability.h"
 #include "act/coulombintegrals/gaussian_integrals.h"
 #include "act/coulombintegrals/slater_integrals.h"
+#include "act/forcefield/forcefield_parametername.h"
+#include "act/forcefield/parameterrecipes.h"
 #include "act/forcefield/particletype.h"
 #include "act/forcefield/potential.h"
 #include "act/forces/conformationdata.h"
-#include "act/forcefield/forcefield_parametername.h"
-#include "act/forcefield/parameterrecipes.h"
-#include "act/forces/forces_explicit_simd.h"
 #include "act/forces/forcecomputer.h"
+#include "act/forces/forcecomputerutils.h"
+#include "act/forces/forces_explicit_simd.h"
 #include "act/forces/forces_gpu.h"
 #include "act/forces/gpusystem.h"
 #include "act/forces/simd_information.h"
-#include "act/forces/forcecomputerutils.h"
 #include "act/forces/vsitehandler.h"
 #include "act/gpu/gpu.h"
 #include "act/molprop/molpropobservable.h"
@@ -74,9 +72,10 @@
 #include "act/topology/polinfo.h"
 #include "act/topology/topology.h"
 #include "act/utility/timings.h"
+#include "forces_simd.h"
 #include "gromacs/math/functions.h"
-#include "gromacs/math/vec.h"
 #include "gromacs/math/units.h"
+#include "gromacs/math/vec.h"
 #include "gromacs/math/vectypes.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/gmxassert.h"

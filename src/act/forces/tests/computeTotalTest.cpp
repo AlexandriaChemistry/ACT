@@ -32,32 +32,30 @@
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
 #include "actpre.h"
-#include "act/basics/act_particle.h"
-#include "act/basics/coordinate.h"
-#include "act/forcefield/forcefield.h"
-#include "act/molprop/experiment.h"
-#include "act/molprop/molprop.h"
-#include "act/topology/actmol_low.h"
-#include "act/topology/coords_energy.h"
-
-#include "../forcecomputer.h"
 
 #include <algorithm>
 #include <cmath>
 #include <cstddef>
+#include <gtest/gtest.h>
 #include <map>
 #include <set>
 #include <string>
 #include <utility>
 #include <vector>
 
-#include <gtest/gtest.h>
-
+#include "../forcecomputer.h"
+#include "act/basics/act_particle.h"
+#include "act/basics/coordinate.h"
 #include "act/basics/interactiontype.h"
 #include "act/basics/msg_handler.h"
-#include "act/testutils/forcefield_utils.h"
+#include "act/forcefield/forcefield.h"
 #include "act/import/import.h"
+#include "act/molprop/experiment.h"
+#include "act/molprop/molprop.h"
+#include "act/testutils/forcefield_utils.h"
 #include "act/topology/actmol.h"
+#include "act/topology/actmol_low.h"
+#include "act/topology/coords_energy.h"
 #include "act/topology/fragmenthandler.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/math/vectypes.h"

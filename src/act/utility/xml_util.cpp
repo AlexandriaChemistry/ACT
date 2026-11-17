@@ -32,8 +32,6 @@
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
 
-#include "xml_util.h"
-
 #include <cstring>
 #include <libxml/tree.h>
 #include <libxml/xmlstring.h>
@@ -42,6 +40,7 @@
 
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/stringutil.h"
+#include "xml_util.h"
 
 //! \brief string for XML file
 const std::vector<const char *> xml_types = {

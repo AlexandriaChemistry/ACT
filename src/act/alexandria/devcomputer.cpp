@@ -32,8 +32,6 @@
  * \author Julian Ramon Marrades Furquet <julian@marrad.es>
  * \author Oskar Tegby <oskar.tegby@it.uu.se>
  */
-#include "devcomputer.h"
-
 #include <algorithm>
 #include <cmath>
 #include <cstddef>
@@ -62,6 +60,7 @@
 #include "act/topology/actmol.h"
 #include "act/topology/coords_energy.h"
 #include "act/utility/units.h"
+#include "devcomputer.h"
 #include "gromacs/math/functions.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"

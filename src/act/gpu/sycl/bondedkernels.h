@@ -35,7 +35,6 @@
 #define ACT_GPU_SYCL_BONDEDKERNELS_H
 
 #include <cfloat>
-
 #include <sycl/sycl.hpp>
 
 #include "gpu.h"

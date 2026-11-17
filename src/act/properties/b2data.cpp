@@ -30,8 +30,6 @@
  * Implements part of the alexandria program.
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
-#include "b2data.h"
-
 #include <algorithm>
 #include <cmath>
 #include <cstdio>
@@ -45,6 +43,7 @@
 #include "act/forces/simd_information.h"
 #include "act/utility/simpson.h"
 #include "act/utility/timings.h"
+#include "b2data.h"
 #include "gromacs/fileio/oenv.h"
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/math/functions.h"

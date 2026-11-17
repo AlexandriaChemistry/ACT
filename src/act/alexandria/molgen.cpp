@@ -32,14 +32,10 @@
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
 
-#include "molgen.h"
-
-
 #include <algorithm>
 #include <cstddef>
 #include <cstdio>
 #include <map>
-#include "gromacs/utility/gmxmpi.h"
 #include <set>
 #include <string>
 #include <utility>
@@ -77,7 +73,9 @@
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
+#include "gromacs/utility/gmxmpi.h"
 #include "gromacs/utility/stringutil.h"
+#include "molgen.h"
 
 namespace alexandria
 {

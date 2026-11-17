@@ -36,8 +36,8 @@
 #ifndef ALEXANDRIA_REGRESSION_H
 #define ALEXANDRIA_REGRESSION_H
 
-#include <vector>
 #include <string>
+#include <vector>
 
 class MatrixWrapper
 {

@@ -33,13 +33,11 @@
  */
 #include <algorithm>
 #include <cmath>
-
 #include <cstddef>
 #include <cstdio>
+#include <gtest/gtest.h>
 #include <map>
 #include <numeric>
-
-#include <gtest/gtest.h>
 #include <string>
 #include <utility>
 #include <vector>
@@ -48,18 +46,17 @@
 #include "act/basics/chargemodel.h"
 #include "act/basics/identifier.h"
 #include "act/basics/interactiontype.h"
+#include "act/basics/msg_handler.h"
+#include "act/forcefield/forcefield.h"
+#include "act/forcefield/forcefield_xml.h"
 #include "act/forces/forcecomputer.h"
 #include "act/import/chargemap.h"
 #include "act/import/import.h"
-#include "act/basics/msg_handler.h"
-#include "act/forcefield/forcefield.h"
 #include "act/molprop/experiment.h"
 #include "act/molprop/molprop.h"
-#include "act/testutils/forcefield_utils.h"
-#include "act/forcefield/forcefield_xml.h"
 #include "act/qgen/qgen_acm.h"
+#include "act/testutils/forcefield_utils.h"
 #include "act/topology/actmol.h"
-
 #include "act/topology/actmol_low.h"
 #include "act/topology/fragmenthandler.h"
 #include "gromacs/math/vectypes.h"

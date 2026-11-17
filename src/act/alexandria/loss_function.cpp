@@ -31,14 +31,13 @@
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
 
-#include "loss_function.h"
-
 #include <cstdlib>
 #include <map>
 #include <string>
 
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/stringutil.h"
+#include "loss_function.h"
 
 namespace alexandria
 {

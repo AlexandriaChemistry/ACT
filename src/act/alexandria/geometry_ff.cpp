@@ -39,8 +39,6 @@
 #include <string>
 #include <vector>
 
-
-
 #include "act/alexandria/alex_modules.h"
 #include "act/alexandria/allbondeds.h"
 #include "act/alexandria/molselect.h"

@@ -31,21 +31,19 @@
  */
 
 #include "actpre.h"
-#include "act/basics/identifier.h"
-#include "act/forcefield/forcefield_parameter.h"
 
 #include <filesystem>
+#include <gtest/gtest.h>
 #include <string>
 #include <utility>
 #include <vector>
 
-#include <gtest/gtest.h>
-
 #include "act/alexandria/alex_modules.h"
+#include "act/basics/identifier.h"
 #include "act/basics/interactiontype.h"
 #include "act/forcefield/forcefield.h"
+#include "act/forcefield/forcefield_parameter.h"
 #include "act/forcefield/forcefield_xml.h"
-
 #include "testutils/cmdlinetest.h"
 #include "testutils/testfilemanager.h"
 

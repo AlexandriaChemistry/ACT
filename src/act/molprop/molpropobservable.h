@@ -35,14 +35,13 @@
 #ifndef MOLPROPOBSERVABLE_H
 #define MOLPROPOBSERVABLE_H
 
-#include "gromacs/utility/gmxmpi.h"
 #include <string>
 #include <vector>
 
+#include "act/utility/communicationrecord.h"
 #include "gromacs/math/vectypes.h"
 #include "gromacs/utility/exceptions.h"
-
-#include "act/utility/communicationrecord.h"
+#include "gromacs/utility/gmxmpi.h"
 #include "phase.h"
 
 namespace alexandria

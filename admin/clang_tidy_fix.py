@@ -21,6 +21,15 @@ pointers) const are left out, unless --const-scalars is given.
 Fixes that overlap with another fix are left for the next run, so run
 make tidy until it reports no more fixes.
 
+After that the includes of all header and source files in the selected
+paths are put in order, also of the files that are not compiled: in each
+block of consecutive includes, with only blank lines and comments in
+between, actpre.h comes first, then the system includes (<...>) and then
+the others ("..."), each sorted alphabetically and separated by a blank
+line. Includes are not moved across #if or code, a comment on the lines
+right above an include within a block moves with it, and an include that
+occurs twice in a block is kept once.
+
 The exit status is 2 if clang-tidy reported compiler errors, since the
 fixes of those files may be incomplete, and 0 otherwise.
 
@@ -64,6 +73,8 @@ CONTROL_STATEMENT = re.compile(rb"\s*(\}\s*)?(else\s+if\b|if\b|for\b|while\b|els
 PRIORITY = ["performance-unnecessary-copy-initialization", "performance-for-range-copy"]
 # Width of "const "
 CONST_WIDTH = 6
+# An include line, with its delimiter and file name
+INCLUDE_LINE = re.compile(r'^\s*#\s*include\s*([<"])([^>"]+)[>"]')
 
 
 def enumerations(source_dir):
@@ -499,6 +510,93 @@ def apply_fixes(contents, fixes, dry_run):
     return applied, skipped, unsupported, changed
 
 
+def is_comment(line):
+    """Whether a line is only a comment of one line."""
+    stripped = line.strip()
+    return stripped.startswith("//") or (stripped.startswith("/*") and stripped.endswith("*/"))
+
+
+def sorted_block(items):
+    """The lines of a block of includes in the ACT order. items are (comments, include line)."""
+    groups = ([], [], [])
+    seen = set()
+    for comments, line in items:
+        delimiter, name = INCLUDE_LINE.match(line).groups()
+        if (delimiter, name) in seen:
+            continue
+        seen.add((delimiter, name))
+        group = 0 if delimiter == '"' and name == "actpre.h" else (1 if delimiter == "<" else 2)
+        groups[group].append(((name.lower(), name), comments, line))
+    lines = []
+    for group in groups:
+        if group and lines:
+            lines.append("")
+        for _, comments, line in sorted(group):
+            lines.extend(comments)
+            lines.append(line)
+    return lines
+
+
+def order_includes(text):
+    """Put the includes of a file in the ACT order, see the description of this script."""
+    lines = text.split("\n")
+    result = []
+    i = 0
+    while i < len(lines):
+        if not INCLUDE_LINE.match(lines[i]):
+            result.append(lines[i])
+            i += 1
+            continue
+        # The comments above the first include of a block stay where they
+        # are, they are often about the file rather than the include
+        pending = []
+        items = []
+        last = i
+        j = i
+        while j < len(lines) and (INCLUDE_LINE.match(lines[j]) or not lines[j].strip() or is_comment(lines[j])):
+            if INCLUDE_LINE.match(lines[j]):
+                items.append((pending, lines[j]))
+                pending = []
+                last = j
+            elif is_comment(lines[j]):
+                pending.append(lines[j])
+            else:
+                # A blank line separates a comment from the next include
+                pending = []
+            j += 1
+        result.extend(sorted_block(items))
+        # The lines after the last include stay as they are
+        i = last + 1
+    return "\n".join(result)
+
+
+def include_files(roots):
+    """The header and source files in the selected paths."""
+    for root in roots:
+        if os.path.isfile(root):
+            yield root
+            continue
+        for directory, _, names in os.walk(root):
+            for name in sorted(names):
+                if name.endswith((".h", ".cpp")):
+                    yield os.path.join(directory, name)
+
+
+def order_all_includes(roots, dry_run):
+    """Put the includes of all files in the selected paths in order. Returns the changed files."""
+    changed = []
+    for path in sorted(set(include_files(roots))):
+        with open(path, encoding="utf-8") as handle:
+            text = handle.read()
+        ordered = order_includes(text)
+        if ordered != text:
+            changed.append(path)
+            if not dry_run:
+                with open(path, "w", encoding="utf-8") as handle:
+                    handle.write(ordered)
+    return changed
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("paths", nargs="*",
@@ -563,10 +661,14 @@ def main():
         print(f"Compiler errors in {os.path.relpath(source, source_dir)}, its fixes may be incomplete:")
         for line in errors[:3]:
             print(f"    {line}")
-    if args.dry_run or not applied:
+    ordered = order_all_includes(roots, args.dry_run)
+    if ordered:
+        print(f"Includes {'would be ' if args.dry_run else ''}put in order in {len(ordered)} files")
+    if args.dry_run or (not applied and not ordered):
         print("Nothing changed")
     else:
-        print(f"Changed {changed} files, check them with git diff and rebuild")
+        print(f"Changed {changed} files with fixes and the includes of {len(ordered)} files, "
+              "check them with git diff and rebuild")
     # The fixes of files with compiler errors may be incomplete
     return 2 if failed else 0
 

@@ -31,9 +31,10 @@
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
 
-#include "dataset.h"
 #include <map>
 #include <string>
+
+#include "dataset.h"
 
 std::map<iMolSelect, const std::string> MolSelect_Names = {
     { iMolSelect::Train,   "Train"   },

@@ -37,10 +37,9 @@
 #include "actpre.h"
 
 #include <cstddef>
+#include <gtest/gtest.h>
 #include <random>
 #include <vector>
-
-#include <gtest/gtest.h>
 
 #include "act/utility/portable_random.h"
 

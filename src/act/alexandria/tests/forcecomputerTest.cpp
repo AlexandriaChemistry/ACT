@@ -33,31 +33,27 @@
  * \ingroup group_act_tests
  */
 #include "actpre.h"
-#include "act/basics/act_particle.h"
-#include "act/basics/interactiontype.h"
-#include "act/basics/msg_handler.h"
-#include "act/topology/actatom.h"
-#include "act/utility/units.h"
-
-#include "act/forces/forcecomputer.h"
 
 #include <algorithm>
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
+#include <gtest/gtest.h>
 #include <limits>
 #include <map>
-
-
-#include <gtest/gtest.h>
 #include <string>
 #include <vector>
 
+#include "act/basics/act_particle.h"
+#include "act/basics/interactiontype.h"
+#include "act/basics/msg_handler.h"
+#include "act/forces/forcecomputer.h"
 #include "act/import/import.h"
-#include "act/testutils/forcefield_utils.h"
-#include "act/topology/actmol.h"
 #include "act/testutils/actmol_util.h"
-
+#include "act/testutils/forcefield_utils.h"
+#include "act/topology/actatom.h"
+#include "act/topology/actmol.h"
+#include "act/utility/units.h"
 #include "gromacs/math/vectypes.h"
 #include "gromacs/utility/real.h"
 #include "gromacs/utility/stringutil.h"

@@ -31,9 +31,6 @@
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
 
-#include "units.h"
-
-
 #include <map>
 #include <string>
 #include <utility>
@@ -41,6 +38,7 @@
 #include "gromacs/math/units.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/stringutil.h"
+#include "units.h"
 
 namespace alexandria
 {

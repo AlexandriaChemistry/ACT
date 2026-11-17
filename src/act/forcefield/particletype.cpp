@@ -32,25 +32,23 @@
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
 
-#include "particletype.h"
-
 #include <algorithm>
 #include <cstdio>
 #include <cstdlib>
-
 #include <list>
 #include <map>
-#include "gromacs/utility/gmxmpi.h"
 #include <string>
 
 #include "act/basics/act_particle.h"
+#include "act/basics/identifier.h"
 #include "act/basics/interactiontype.h"
 #include "act/forcefield/forcefield_parameter.h"
-#include "gromacs/utility/exceptions.h"
 #include "act/utility/communicationrecord.h"
-#include "act/basics/identifier.h"
+#include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/gmxmpi.h"
 #include "gromacs/utility/stringutil.h"
+#include "particletype.h"
 
 namespace alexandria
 {

@@ -35,7 +35,6 @@
 #define ACT_GROMACS_TOP_H
 
 #include <cstdio>
-
 #include <string>
 #include <vector>
 

@@ -31,13 +31,12 @@
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
 #include "actpre.h"
-#include "gromacs/utility/exceptions.h"
-
-#include "act/basics/coordinate.h"
 
 #include <cmath>
-
 #include <gtest/gtest.h>
+
+#include "act/basics/coordinate.h"
+#include "gromacs/utility/exceptions.h"
 
 namespace alexandria
 {
