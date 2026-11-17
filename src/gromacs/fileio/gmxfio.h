@@ -38,7 +38,7 @@
 #ifndef GMX_FILEIO_GMXFIO_H
 #define GMX_FILEIO_GMXFIO_H
 
-#include <stdio.h>
+#include <cstdio>
 
 #include <array>
 #include <vector>

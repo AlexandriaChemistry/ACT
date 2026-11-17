@@ -36,11 +36,11 @@
 #include "actpre.h"
 
 #include <algorithm>
+#include <cmath>
 #include <cstdio>
 #include <cstdlib>
 #include <gtest/gtest.h>
 #include <map>
-#include <math.h>
 #include <string>
 #include <utility>
 #include <vector>

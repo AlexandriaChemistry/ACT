@@ -40,7 +40,7 @@
 
 #include "config.h"
 
-#include <stdio.h>
+#include <cstdio>
 
 #include "gromacs/utility/smalloc.h"
 

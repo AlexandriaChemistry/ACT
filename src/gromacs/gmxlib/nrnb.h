@@ -38,7 +38,7 @@
 #ifndef GMX_GMXLIB_NRNB_H
 #define GMX_GMXLIB_NRNB_H
 
-#include <stdio.h>
+#include <cstdio>
 
 #include "gromacs/utility/basedefinitions.h"
 

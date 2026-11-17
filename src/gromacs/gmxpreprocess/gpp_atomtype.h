@@ -38,7 +38,7 @@
 #ifndef GMX_GMXPREPROCESS_GPP_ATOMTYPE_H
 #define GMX_GMXPREPROCESS_GPP_ATOMTYPE_H
 
-#include <stdio.h>
+#include <cstdio>
 
 #include "gromacs/gmxpreprocess/grompp-impl.h"
 

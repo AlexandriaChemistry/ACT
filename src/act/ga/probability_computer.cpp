@@ -30,9 +30,9 @@
  * \author Julian Ramon Marrades Furquet <julian@marrad.es>
  */
 #include <algorithm>
+#include <cmath>
 #include <cstddef>
 #include <limits>
-#include <math.h>
 #include <numeric>
 #include <vector>
 

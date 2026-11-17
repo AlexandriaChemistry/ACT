@@ -32,10 +32,10 @@
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
 
+#include <cstdio>
+#include <cstdlib>
 #include <ctime>
 #include <map>
-#include <stdio.h>
-#include <stdlib.h>
 #include <string>
 #include <vector>
 

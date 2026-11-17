@@ -38,7 +38,6 @@
 #include <cstdio>
 #include <cstdlib>
 #include <gtest/gtest.h>
-#include <math.h>
 #include <tuple>
 #include <vector>
 

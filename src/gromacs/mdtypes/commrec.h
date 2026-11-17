@@ -37,7 +37,7 @@
 #ifndef GMX_MDTYPES_COMMREC_H
 #define GMX_MDTYPES_COMMREC_H
 
-#include <stddef.h>
+#include <cstddef>
 
 #include "gromacs/math/vectypes.h"
 #include "gromacs/utility/basedefinitions.h"

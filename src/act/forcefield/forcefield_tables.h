@@ -35,7 +35,7 @@
 #ifndef FORCEFIELD_TABLES_H
 #define FORCEFIELD_TABLES_H
 
-#include <stdio.h>
+#include <cstdio>
 #include <string>
 
 #include "act/basics/interactiontype.h"

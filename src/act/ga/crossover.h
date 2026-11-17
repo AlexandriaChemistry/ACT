@@ -35,8 +35,8 @@
 #define GA_CROSSOVER_H
 
 
+#include <ctime>
 #include <random>
-#include <time.h>
 
 #include "act/utility/portable_random.h"
 #include "genome.h"

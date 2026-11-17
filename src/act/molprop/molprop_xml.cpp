@@ -32,15 +32,15 @@
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
 
+#include <cstdlib>
+#include <cstring>
 #include <libxml/parser.h>
 #include <libxml/tree.h>
 #include <libxml/xmlstring.h>
 #include <map>
 #include <memory>
 #include <set>
-#include <stdlib.h>
 #include <string>
-#include <string.h>
 #include <utility>
 #include <vector>
 

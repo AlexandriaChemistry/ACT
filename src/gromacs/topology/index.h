@@ -37,7 +37,7 @@
 #ifndef GMX_TOPOLOGY_INDEX_H
 #define GMX_TOPOLOGY_INDEX_H
 
-#include <stdio.h>
+#include <cstdio>
 
 #include "gromacs/utility/basedefinitions.h"
 

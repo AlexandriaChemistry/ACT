@@ -44,7 +44,7 @@
 #ifndef GMX_UTILITY_BASEDEFINITIONS_H
 #define GMX_UTILITY_BASEDEFINITIONS_H
 
-#include <stdint.h>
+#include <cstdint>
 
 #include <cinttypes>
 #include <cstddef>

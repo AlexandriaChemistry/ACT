@@ -46,7 +46,7 @@
 
 #include "config.h" /* for GMX_MAX_OPENMP_THREADS */
 
-#include <string.h>
+#include <cstring>
 
 #include <algorithm>
 #include <array>

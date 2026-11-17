@@ -34,8 +34,8 @@
 #ifndef GA_SELECTOR_H
 #define GA_SELECTOR_H
 
+#include <ctime>
 #include <random>
-#include <time.h>
 #include <vector>
 
 #include "genome.h"
