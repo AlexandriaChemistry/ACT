@@ -6,24 +6,10 @@
 #
 # See License file in top level directory for license info. 
 #
-install(FILES 
-         ACTlogo2.png
-         alexandria.json
-         atomization-energies-dft.csv
-         atomization-energies.csv
-         atomprops.csv
-         atomprops.csv
-         atom_bond.xml
-         atomtypes_gui.csv
-         excluded_molecules.csv
-         residuetypes.dat 
+# The other data files, which the Python tools use as well, are in
+# ACT-utilities, which installs them in share/act too.
+install(FILES
+         residuetypes.dat
          symmetric_charges.csv
-         vsite2_halogen_sigma_holes.json
-         vsite2_water_sigma_holes.json
-         vsite3_water_bisector.json
-         vsite3_water_lone_pairs.json
-         vsite3_alcohol_bisector.json
-         vsite3_alcohol_lone_pairs.json
-         vsite4_amine.json
     DESTINATION ${ACT_INSTALL_ACTDATADIR}
     COMPONENT data)

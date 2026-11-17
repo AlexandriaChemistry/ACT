@@ -27,7 +27,7 @@ When importing structure files (SDF, PDB, or XYZ), ACT uses RDKit for the initia
 .. attention:: If bond information is present in the PDB or SDF file, it will be used by ACT. That means the user is responsible for providing correct information, unless the compound is a special case, see below. If there is no bond information in the PDB (or a XYZ) file, it will be generated using RDKit. 
    There is no guarantee that the output from RDKit is correct in all cases, however. Please check your output.
 
-Atom typing in ACT is based on SMARTS patterns stored in *share/atom_bond.xml* :cite:p:`daylight_smarts_theory`. The distributed *atom_bond.xml* file assigns atom types for carbon, nitrogen, oxygen, phosphorus, and sulfur according to their hybridization state, adding 1,2,3 behind the element symbol. 
+Atom typing in ACT is based on SMARTS patterns stored in *atom_bond.xml*, which ACT-utilities installs in *share/act* :cite:p:`daylight_smarts_theory`. The distributed *atom_bond.xml* file assigns atom types for carbon, nitrogen, oxygen, phosphorus, and sulfur according to their hybridization state, adding 1,2,3 behind the element symbol. 
 For all other elements, atom types are assigned based on formal charge. For neutral atoms, the default atom type is the lowercase element symbol. 
 
 The file also contains special cases, such as resonance structures or situations where RDKit assigns bond orders or hybridizations that differ from those required by the ACT force fields.  

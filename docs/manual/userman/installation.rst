@@ -128,7 +128,7 @@ Once you have download ACT either as a release version or by cloning the git rep
 where the *CMAKE_INSTALL_PREFIX* flag points to the location where ACT will be installed and the *-j 8* flag instructs the make command to utilize 8 cores to speed up compilation.
 
 
-The programs and python scripts find the data files of ACT, in *share/act* of the installation, by themselves, also when started from the build directory, in which case they use those in *share* of the source code. To use other data files, set the environment variable *ACTDATA* to their directory; files that are not there are still taken from the installation. All that remains is to add the directory of the programs to your *PATH*, or to run the following command, which does that as well::
+The programs and python scripts find the data files of ACT, in *share/act* of the installation, by themselves, also when started from the build directory, in which case they use those in *share* of the source code. Most data files, such as *atomprops.csv* and *alexandria.json*, come with ACT-utilities, which installs them in *share/act* as well; the programs also look for them in the installation of ACT-utilities that *cmake* found, if it is in another prefix. To use other data files, set the environment variable *ACTDATA* to their directory; files that are not there are still taken from the installation. All that remains is to add the directory of the programs to your *PATH*, or to run the following command, which does that as well::
 
   source $HOME/tools/bin/ACTRC
 

@@ -67,6 +67,9 @@
 /** Location of ACT-specific data files */
 #define ACT_INSTALL_ACTDATADIR  "@ACT_INSTALL_ACTDATADIR@"
 
+/** Directory of the data files of ACT-utilities, such as atomprops.csv */
+#define ACT_UTILITIES_DATADIR   "@ACT_UTILITIES_DATADIR@"
+
 
 /** CUDA compiler version information */
 #define CUDA_COMPILER_INFO "@CUDA_COMPILER_INFO@"
