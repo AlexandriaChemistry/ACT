@@ -1,0 +1,93 @@
+name: Conda packages
+run-name: ${{ github.actor }} builds the conda packages of ACT
+# Builds the conda packages act-utilities and alexandria with the recipes in
+# admin/conda of ACT and conda of ACT-utilities, see admin/conda/README.md.
+# Pull requests that change the recipe only build and test them. A tag v*
+# uploads them to the channel alexandriachemistry on anaconda.org with the
+# label main, a run by hand with the label that is given, dev by default.
+on:
+  push:
+    tags:
+      - "v*"
+  pull_request:
+    paths:
+      - "admin/conda/**"
+      - ".github/workflows/act-conda.yml"
+  workflow_dispatch:
+    inputs:
+      upload:
+        description: "Upload the packages to anaconda.org"
+        type: boolean
+        default: false
+      label:
+        description: "Label of the uploaded packages"
+        type: string
+        default: "dev"
+jobs:
+  build:
+    name: ${{ matrix.platform }} ${{ matrix.mpi }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 180
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # Apple silicon, ARM NEON, no GPU
+          - os: macos-latest
+            platform: osx-arm64
+            mpi: mpich
+          # x86-64 with AVX2, SYCL with the CUDA backend
+          - os: ubuntu-latest
+            platform: linux-64
+            mpi: mpich
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
+      CONDA_OUT: ${{ github.workspace }}/../conda-out
+    steps:
+      - name: Check out ACT
+        uses: actions/checkout@v6
+      - name: Check out ACT-utilities
+        uses: actions/checkout@v6
+        with:
+          repository: AlexandriaChemistry/ACT-utilities
+          path: ACT-utilities
+      - uses: conda-incubator/setup-miniconda@v4
+        with:
+          auto-update-conda: true
+          channels: conda-forge
+          conda-remove-defaults: "true"
+      - name: Install rattler-build and anaconda-client
+        shell: bash -el {0}
+        run: |
+          conda install rattler-build anaconda-client
+          rattler-build --version
+      - name: Build act-utilities
+        shell: bash -el {0}
+        run: |
+          mkdir -p ${CONDA_OUT}
+          ACT_UTILITIES_SOURCE=${{ github.workspace }}/ACT-utilities \
+            rattler-build build --recipe ACT-utilities/conda/recipe.yaml \
+                                --channel conda-forge --output-dir ${CONDA_OUT}
+      - name: Build alexandria
+        shell: bash -el {0}
+        run: |
+          # From the last commit, with act-utilities from the step above
+          admin/conda/build-local.sh ${CONDA_OUT} --variant mpi=${{ matrix.mpi }} \
+                                     --channel file://$(cd ${CONDA_OUT} && pwd)
+          ls -l ${CONDA_OUT}/*/*.conda
+      - name: Keep the packages
+        uses: actions/upload-artifact@v7
+        with:
+          name: conda-${{ matrix.platform }}-${{ matrix.mpi }}
+          path: ${{ env.CONDA_OUT }}/*/*.conda
+      - name: Upload to anaconda.org
+        if: startsWith(github.ref, 'refs/tags/v') || (github.event_name == 'workflow_dispatch' && inputs.upload)
+        shell: bash -el {0}
+        env:
+          ANACONDA_API_TOKEN: ${{ secrets.ANACONDA_API_TOKEN }}
+          LABEL: ${{ startsWith(github.ref, 'refs/tags/v') && 'main' || inputs.label }}
+        run: |
+          # act-utilities is noarch and built by every job, so the second
+          # upload of the same file is skipped
+          anaconda upload --user alexandriachemistry --label ${LABEL} --skip-existing \
+                   ${CONDA_OUT}/*/*.conda

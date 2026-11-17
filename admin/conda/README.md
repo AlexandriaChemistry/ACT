@@ -36,6 +36,16 @@ label `dev`, releases with the label `main`:
 
     anaconda -t <token> upload -u alexandriachemistry -l dev output-conda/*/alexandria-*.conda
 
-The GitHub workflow does this with the secret `ANACONDA_API_TOKEN`.
+The workflow `.github/workflows/act-conda.yml` builds `act-utilities` and
+`alexandria` on macOS (Apple silicon) and Linux (x86-64), and uploads them
+with the secret `ANACONDA_API_TOKEN`:
+
+- a pull request that changes the recipe builds and tests the packages,
+  without uploading them;
+- a tag `v*` uploads them with the label `main`;
+- a run by hand (Actions, Conda packages, Run workflow) uploads them if
+  *upload* is ticked, with the label given, `dev` by default.
+
+The packages of each run are also kept as artifacts of the run.
 Releases on conda-forge are built by the feedstock `alexandria-feedstock`
 from the archive of the release tag.
