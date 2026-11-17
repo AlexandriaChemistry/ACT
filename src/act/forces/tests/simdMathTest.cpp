@@ -37,6 +37,7 @@
 #include <cmath>
 
 #include <cstddef>
+#include <limits>
 #include <gtest/gtest.h>
 
 #ifdef ACT_HAVE_SIMD
@@ -48,6 +49,57 @@ namespace
 {
 
 using simd::SimdDouble;
+
+/*! \brief The difference of a value from its reference in units in the last place
+ * The unit is that of the reference rounded to T. Both are scaled by the same
+ * power of two, such that the unit is one, before they are subtracted. Then
+ * no subnormal number occurs, which would be zero with flush to zero, as the
+ * programs of the Cray compilers set it when they start (crtfastmath.o):
+ * near the smallest normal number the unit itself is subnormal.
+ * \tparam    T    float or double
+ * \param[in] y    The value
+ * \param[in] yref The reference
+ * \return the difference in units in the last place
+ */
+template <typename T>
+double ulpDifference(double y, double yref)
+{
+    const int digits = std::numeric_limits<T>::digits;
+    const int minExp = std::numeric_limits<T>::min_exponent;
+    const T   fref   = static_cast<T>(std::abs(yref));
+    // fref = m 2^e with 1/2 <= m < 1, and one unit is 2^(e - digits)
+    int       e      = fref == 0 ? minExp : std::max(std::ilogb(fref) + 1, minExp);
+    return std::abs(std::ldexp(y, digits - e) - std::ldexp(yref, digits - e));
+}
+
+/*! \brief The point at angle phi on a circle around the origin
+ * The SIMD functions and their references compute their arguments with
+ * this, such that they get the same: a loop that the compiler vectorizes
+ * may compute cos and sin with other functions that round differently,
+ * for instance those of libmvec with -fveclib=libmvec, as on dardel, and
+ * a call that is not inlined keeps it from vectorizing the loop.
+ * \tparam     T      float or double
+ * \param[in]  radius The radius
+ * \param[in]  phi    The angle
+ * \param[out] x      The x coordinate
+ * \param[out] y      The y coordinate
+ */
+template <typename T>
+[[gnu::noinline]] static void pointOnCircle(double radius, T phi, T *x, T *y)
+{
+    *x = radius*std::cos(phi);
+    *y = radius*std::sin(phi);
+}
+
+/*! \brief The larger of two errors, an error that is not a number counts as infinite
+ * \param[in] maxErr The largest error so far
+ * \param[in] err    The next error
+ * \return the larger error
+ */
+static double largerError(double maxErr, double err)
+{
+    return std::isnan(err) ? INFINITY : std::max(maxErr, err);
+}
 
 /*! \brief Largest error of a SIMD function compared to the library
  * \param[in] func     The SIMD function
@@ -73,12 +125,8 @@ double maxError(Func func, Ref ref, double xmin, double xmax, bool relative)
         for (size_t k = 0; k < simd::simdWidth; k++)
         {
             double yref = ref(x[k]);
-            double err  = std::abs(y[k] - yref);
-            if (relative)
-            {
-                err /= std::nextafter(std::abs(yref), INFINITY) - std::abs(yref);
-            }
-            maxErr = std::max(maxErr, err);
+            double err  = relative ? ulpDifference<double>(y[k], yref) : std::abs(y[k] - yref);
+            maxErr      = largerError(maxErr, err);
         }
     }
     return maxErr;
@@ -161,14 +209,15 @@ TEST(SimdMathTest, Atan2)
             simd::store(p, phi);
             for (size_t k = 0; k < simd::simdWidth; k++)
             {
-                x[k] = radius*std::cos(p[k]);
-                y[k] = radius*std::sin(p[k]);
+                pointOnCircle(radius, p[k], &x[k], &y[k]);
             }
             return simd::atan2(simd::load(y), simd::load(x));
         };
         const auto ref  = [radius](double phi)
         {
-            return std::atan2(radius*std::sin(phi), radius*std::cos(phi));
+            double x, y;
+            pointOnCircle(radius, phi, &x, &y);
+            return std::atan2(y, x);
         };
         EXPECT_LE(maxError(func, ref, -M_PI, M_PI, true), 2) << "radius " << radius;
     }
@@ -220,13 +269,8 @@ double maxErrorFloat(Func func, Ref ref, double xmin, double xmax, bool relative
         for (size_t k = 0; k < width; k++)
         {
             double yref = ref(static_cast<double>(x[k]));
-            double err  = std::abs(y[k] - yref);
-            if (relative)
-            {
-                float fref = std::abs(static_cast<float>(yref));
-                err /= std::nextafter(fref, INFINITY) - fref;
-            }
-            maxErr = std::max(maxErr, err);
+            double err  = relative ? ulpDifference<float>(y[k], yref) : std::abs(y[k] - yref);
+            maxErr      = largerError(maxErr, err);
         }
     }
     return maxErr;
@@ -307,15 +351,14 @@ TEST(SimdMathFloatTest, Atan2)
             simd::store(p, phi);
             for (size_t k = 0; k < width; k++)
             {
-                x[k] = radius*std::cos(p[k]);
-                y[k] = radius*std::sin(p[k]);
+                pointOnCircle(radius, p[k], &x[k], &y[k]);
             }
             return simd::atan2(simd::load(y), simd::load(x));
         };
         const auto ref = [radius](double phi)
         {
-            float x = radius*std::cos(static_cast<float>(phi));
-            float y = radius*std::sin(static_cast<float>(phi));
+            float x, y;
+            pointOnCircle(radius, static_cast<float>(phi), &x, &y);
             return std::atan2(static_cast<double>(y), static_cast<double>(x));
         };
         EXPECT_LE(maxErrorFloat(func, ref, -M_PI, M_PI, true), 2) << "radius " << radius;
