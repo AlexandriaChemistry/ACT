@@ -11,7 +11,8 @@ Installing ACT from a conda package
 ACT is available as the conda package *alexandria*, built for
 
 * macOS on Apple silicon (M1 and later), with explicit SIMD for ARM NEON and without GPU support;
-* Linux on x86-64 processors with AVX2 (Intel since Haswell, AMD since Zen), with GPU support for NVIDIA GPUs through SYCL with AdaptiveCpp; without a GPU, the programs compute on the processor.
+* Linux on x86-64 processors with AVX2 (Intel since Haswell, AMD since Zen), with GPU support for NVIDIA GPUs through SYCL with AdaptiveCpp; without a GPU, the programs compute on the processor;
+* Linux on 64-bit ARM processors (aarch64), such as NVIDIA Grace in the GH200 nodes of clusters, with explicit SIMD for ARM NEON and GPU support for NVIDIA GPUs as on x86-64.
 
 The package is built in single precision with MPI (MPICH). It requires the package *act-utilities*, which conda installs with it: the Python modules and scripts of `ACT-utilities`_ and the data files of ACT, such as *alexandria.json* and *atomprops.csv*.
 

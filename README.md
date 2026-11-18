@@ -9,7 +9,7 @@ The ACT manual, containing installation instructions, user and reference documen
 
 ## Installation
 
-ACT is available as the conda package `alexandria`, for Macs with Apple silicon and for Linux on x86-64 processors with AVX2, with support for NVIDIA GPUs. With [Miniforge](https://conda-forge.org/download/) installed:
+ACT is available as the conda package `alexandria`, for Macs with Apple silicon and for Linux on x86-64 processors with AVX2 and on 64-bit ARM processors, with support for NVIDIA GPUs on Linux. With [Miniforge](https://conda-forge.org/download/) installed:
 
 ```
 conda create -n act -c alexandriachemistry -c conda-forge alexandria
