@@ -1,12 +1,54 @@
 ***********************
 Installation of the ACT
 ***********************
-The Alexandria Chemistry Toolkit (ACT) relies on a number of libraries. Even though we tried to keep it to a minimum, some more or less standard libraries are needed. ACT should compile fine on any UNIX (including MacOs) or Linux machine. 
-%Most of the libraries can be installed using Anaconda or even Miniconda which has the advantage of running in user-space entirely, that is you do not super-user access to install it. 
+The Alexandria Chemistry Toolkit (ACT) can be installed in two ways: as a conda package, which is the simplest and is enough for most users, or from the source code, which is needed for double precision, for AMD GPUs, for other processors than those of the packages, and for developing ACT.
 
-=============
+.. _install-conda-package:
+
+=================================
+Installing ACT as a conda package
+=================================
+ACT is available as the conda package *alexandria*, built for
+
+* macOS on Apple silicon (M1 and later), with explicit SIMD for ARM NEON and without GPU support;
+* Linux on x86-64 processors with AVX2 (Intel since Haswell, AMD since Zen), with GPU support for NVIDIA GPUs through SYCL with AdaptiveCpp; without a GPU, the programs compute on the processor.
+
+The package is built in single precision with MPI (MPICH). It requires the package *act-utilities*, which conda installs with it: the Python modules and scripts of `ACT-utilities`_ and the data files of ACT, such as *alexandria.json* and *atomprops.csv*.
+
+Install `Miniforge <https://conda-forge.org/download/>`_, or another conda that uses the channel conda-forge, and create an environment for ACT with the channel *alexandriachemistry* of ACT::
+
+  conda create -n act -c alexandriachemistry -c conda-forge alexandria
+  conda activate act
+  alexandria -version
+
+Test builds, made between the releases, have the label *dev*: replace *-c alexandriachemistry* by *-c alexandriachemistry/label/dev* to install them. The output of *alexandria -version* tells the version, the precision, the explicit SIMD (*ARM_NEON* or *AVX2*) and the GPU support of the installed programs. Nothing else needs to be set up: the programs and scripts are in the *PATH* of the environment, Python finds the modules of ACT-utilities, and the programs find the data files in *share/act* of the environment, so *ACTRC* is not needed. The interface to OpenMM, *act_openmm.py*, needs OpenMM, which is not installed with ACT::
+
+  conda install -n act -c conda-forge openmm
+
+Programs that run on several processes are started with the *mpirun* of the environment, for instance::
+
+  mpirun -n 4 alexandria train_ff ...
+
+On some computers, for instance virtual machines in a cloud, MPICH cannot start because its communication library UCX fails to open the network devices (an error from *MPI_Init* that mentions *ucx* or *uct_iface_open*). On one computer only shared memory is needed, which the following setting selects::
+
+  export UCX_TLS=self,sm,tcp
+
+On a cluster, the MPI library of the cluster is faster than that of conda, since it uses the network of the cluster and works with its queue system. conda-forge provides *external* builds of MPICH that contain no library but use the MPICH-compatible library of the system (for instance Cray MPICH or Intel MPI) when it is in the library path, for instance after *module load*; see the documentation of conda-forge on MPI. Start the programs with the launcher of the queue system, as described in :ref:`building-on-a-cluster`.
+
+The Linux package uses an NVIDIA GPU if there is one, with a driver that supports the CUDA version of the AdaptiveCpp it was built with. The log file tells which GPU each process uses, or why none was found. :ref:`gpu-support-sycl` describes how the GPU is used, and why several processes per GPU need the NVIDIA multi-process service.
+
+The conda package is not available in double precision, nor for AMD GPUs, for other processors, or with other options of the build. For these, install ACT from the source code, as described in the next section.
+
+.. _install-from-source:
+
+=====================================
+Installation of the ACT from source
+=====================================
+ACT relies on a number of libraries. Even though we tried to keep it to a minimum, some more or less standard libraries are needed. ACT should compile fine on any UNIX (including macOS) or Linux machine.
+
+-------------
 Prerequisites
-=============
+-------------
 The following software packages are required for the ACT to work:
 
 * C and C++ compilers supporting C++20 at least. On Linux a GNU c++ version newer than 12.0 is recommended.
@@ -38,9 +80,9 @@ For developers, the following additional packages are needed:
 .. _Zenodo: https://doi.org/10.5281/zenodo.1004710
 .. _Jupyter: https://jupyter.org/
 
-=================
+-----------------
 Conda Environment
-=================
+-----------------
 There are multiple ways to fulfill the prerequisites.
 The simplest way that should suffice on a single computer (i.e. not a cluster), is to first install miniconda on your computer, download the ACT conda environment file `Yml`_ and create and activate a new conda environment.::
 
@@ -77,6 +119,8 @@ The modules go to *<prefix>/lib/pythonX.Y/site-packages/act* and the scripts to 
 .. _Xcode: https://developer.apple.com/xcode/ 
 
 .. attention:: If you are installing ACT in a cluster we recommend to use the cluster-provided compilers and in particular the MPI library since it may be tuned to make optimal use of the communication hardware. High-performance computer centers typically provide compilers libraries using some kind of module system.
+
+.. _building-on-a-cluster:
 
 Building on a cluster
 ~~~~~~~~~~~~~~~~~~~~~
@@ -115,9 +159,9 @@ On a Cray system, such as dardel (PDC), the compiler wrappers *cc* and *CC* of t
 
 The programs are started with plain *srun*. This libxml2 needs the ICU libraries of the cluster, so load them with *module load icu/74.1* in the job script as well.
 
-========================
+------------------------
 Running the Installation
-========================
+------------------------
 Once you have download ACT either as a release version or by cloning the git repository, enter the directory where the ACT source code is installed, and issue the following commands::
 
   mkdir build-Release
@@ -324,6 +368,8 @@ The loops over conformations of the explicit SIMD routines for pair interactions
 
 The last command returns to the default. The results do not depend on the unroll factor.
 
+.. _gpu-support-sycl:
+
 GPU support with SYCL
 ~~~~~~~~~~~~~~~~~~~~~
 GPU support uses SYCL with `AdaptiveCpp <https://adaptivecpp.github.io>`_, which compiles the GPU code at run time for the GPU found, such that the same build runs on NVIDIA and AMD GPUs. AdaptiveCpp is available from conda-forge, in its own environment, for instance for NVIDIA GPUs::
@@ -353,9 +399,9 @@ With a population larger than the number of processes, each process can take sev
 
 The GPU gives the same results as the processor, within single precision. The option *-nogpu*, which all programs have, turns the GPU off, for instance to compare the run time with and without the GPU. The programs set *ACPP_DEBUG_LEVEL* to 1, unless it is set already, such that AdaptiveCpp does not warn about the GPU backends it cannot load. Set it to 2 to see the messages of AdaptiveCpp.
 
-============================
+----------------------------
 Troubleshooting Installation
-============================
+----------------------------
 Sometimes, the *cmake* process or building using *make* does not work as described above.
 For instance, there may be library mismatches like this::
 
@@ -365,9 +411,9 @@ which is caused by the fact that conda libraries expect specific versions of sys
 In that case you can instruct cmake to change the order of libraries by adding the flags to the cmake command line according to :numref:`tab-cmake`.
 
 
-===============
+---------------
 Testing the ACT
-===============
+---------------
 
 To start testing, you first want to familiarize yourself with the test set. If the ACT is in your home directory, you can::
 
