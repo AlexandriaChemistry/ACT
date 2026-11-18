@@ -67,10 +67,20 @@ outputs:
         - act-utilities ==${{ version }}
         # The libraries of RDKit change ABI with each release
         - ${{ pin_compatible('librdkit', upper_bound='x.x.x') }}
-      # The run_exports of librdkit pin one build string of it
+        # A build of AdaptiveCpp with the CUDA backend, for any CUDA version:
+        # the solver takes the newest that the NVIDIA driver supports, for
+        # instance cuda129 with driver 550, since cuda130 needs driver 580
+        - if: gpu == "sycl_cuda"
+          then:
+            - ${{ pin_compatible('adaptivecpp', upper_bound='x.x', build='cuda*') }}
+      # The run_exports of librdkit pin one build string of it, python only
+      # serves the check of CMake for ACT-utilities and would pin the Python
+      # version of the environment
       ignore_run_exports:
         by_name:
           - librdkit
+          - python
+          - python_abi
       run_constraints:
         - if: gpu == "sycl_cuda"
           then:
