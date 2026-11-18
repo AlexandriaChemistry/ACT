@@ -18,7 +18,7 @@ conda activate act
 
 For other platforms, double precision or AMD GPUs, build ACT from source. The [installation chapter](https://alexandriachemistry.github.io/ACT/userman/installation.html) of the manual describes both ways.
 
-ACT is begin developed by
+ACT is being developed by
 
 + [David van der Spoel](https://github.com/dspoel) (team leader),
 + [Mohammad Ghahremanpour](https://github.com/mmghahremanpour) and
