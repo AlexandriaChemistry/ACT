@@ -96,11 +96,11 @@ libc++ feature of a newer macOS. If it does, raise `c_stdlib_version` in
   without a GPU.
 - Does conda-forge have a HIP (ROCm) variant of AdaptiveCpp? If yes, add
   `gpu: sycl_hip` the same way, for AMD GPUs such as the MI250X on dardel.
-  If not, AMD GPU users build from source, as now (manual, section 2.4).
+  If not, AMD GPU users build from source, as now (manual, section "GPU support with SYCL").
 - At run time, the programs already set `ACPP_DEBUG_LEVEL=1`, bind each
   process to one GPU (`CUDA_VISIBLE_DEVICES`), and say in the log file why
   they found no GPU. The package needs no further code for this.
-- The manual (section 2.4) says that the multi-process service of NVIDIA is
+- The manual (section "GPU support with SYCL") says that the multi-process service of NVIDIA is
   needed when several ranks share a GPU. This also goes into the conda
   section of the manual.
 
