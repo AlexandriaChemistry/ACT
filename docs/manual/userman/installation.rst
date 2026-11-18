@@ -14,13 +14,13 @@ ACT is available as the conda package *alexandria*, built for
 
 The package is built in single precision with MPI (MPICH). It requires the package *act-utilities*, which conda installs with it: the Python modules and scripts of `ACT-utilities`_ and the data files of ACT, such as *alexandria.json* and *atomprops.csv*.
 
-The packages are in the channel `alexandriachemistry <https://anaconda.org/alexandriachemistry>`_ on anaconda.org. Version 1.9b is available for both platforms as a test build, which has the label *dev*; releases will have the label *main*, which is the default. Install `Miniforge <https://conda-forge.org/download/>`_, or another conda that uses the channel conda-forge, and create an environment for ACT::
+The packages are in the channel `alexandriachemistry <https://anaconda.org/alexandriachemistry>`_ on anaconda.org. Releases, such as version 1.9b, have the label *main*, which conda uses by default; test builds between the releases have the label *dev*. Install `Miniforge <https://conda-forge.org/download/>`_, or another conda that uses the channel conda-forge, and create an environment for ACT::
 
-  conda create -n act -c alexandriachemistry/label/dev -c conda-forge alexandria
+  conda create -n act -c alexandriachemistry -c conda-forge alexandria
   conda activate act
   alexandria -version
 
-conda chooses the package for the platform of the computer. For a release, leave out */label/dev*. The output of *alexandria -version* tells the version, the precision, the explicit SIMD (*ARM_NEON* or *AVX2*) and the GPU support of the installed programs. Nothing else needs to be set up: the programs and scripts are in the *PATH* of the environment, Python finds the modules of ACT-utilities, and the programs find the data files in *share/act* of the environment, so *ACTRC* is not needed. The interface to OpenMM, *act_openmm.py*, needs OpenMM, which is not installed with ACT::
+conda chooses the package for the platform of the computer. For a test build, use *-c alexandriachemistry/label/dev* instead. The output of *alexandria -version* tells the version, the precision, the explicit SIMD (*ARM_NEON* or *AVX2*) and the GPU support of the installed programs. Nothing else needs to be set up: the programs and scripts are in the *PATH* of the environment, Python finds the modules of ACT-utilities, and the programs find the data files in *share/act* of the environment, so *ACTRC* is not needed. The interface to OpenMM, *act_openmm.py*, needs OpenMM, which is not installed with ACT::
 
   conda install -n act -c conda-forge openmm
 
@@ -36,7 +36,7 @@ On a cluster, the MPI library of the cluster is faster than that of conda, since
 
 The Linux package uses an NVIDIA GPU if there is one. conda installs a build of AdaptiveCpp for the newest CUDA version that the NVIDIA driver of the computer supports, for instance CUDA 12.9 with driver 550, since CUDA 13 needs driver 580 or newer. On a computer without a GPU, such as the login node of a cluster, conda does not know the driver and takes the newest CUDA version, with which the programs on the GPU nodes may find no GPU and compute on the processor. Then give conda the CUDA version of the driver of the GPU nodes, which *nvidia-smi* shows there, when creating the environment::
 
-  CONDA_OVERRIDE_CUDA=12.4 conda create -n act --override-channels -c alexandriachemistry/label/dev -c conda-forge alexandria
+  CONDA_OVERRIDE_CUDA=12.4 conda create -n act --override-channels -c alexandriachemistry -c conda-forge alexandria
 
 The option *--override-channels* makes conda use only the channels given, also if *~/.condarc* lists others, such as *defaults*, which make solving slow. *conda list -n act adaptivecpp* shows the CUDA version of AdaptiveCpp, for instance *cuda129*. The log file tells which GPU each process uses, or why none was found. :ref:`gpu-support-sycl` describes how the GPU is used, and why several processes per GPU need the NVIDIA multi-process service.
 
