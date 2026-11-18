@@ -40,6 +40,11 @@ jobs:
           - os: ubuntu-latest
             platform: linux-64
             mpi: mpich
+          # 64-bit ARM, such as NVIDIA Grace, ARM NEON, SYCL with the CUDA
+          # backend; a native runner, so all tests run
+          - os: ubuntu-24.04-arm
+            platform: linux-aarch64
+            mpi: mpich
     env:
       FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
       # Inside the workspace, since upload-artifact refuses paths with ..;

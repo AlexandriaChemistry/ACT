@@ -37,7 +37,8 @@ label `dev`, releases with the label `main`:
     anaconda -t <token> upload -u alexandriachemistry -l dev output-conda/*/alexandria-*.conda
 
 The workflow `.github/workflows/act-conda.yml` builds `act-utilities` and
-`alexandria` on macOS (Apple silicon) and Linux (x86-64), and uploads them
+`alexandria` on macOS (Apple silicon) and Linux (x86-64 and 64-bit ARM),
+and uploads them
 with the secret `ANACONDA_API_TOKEN`:
 
 - a pull request that changes the recipe builds and tests the packages,

@@ -21,7 +21,7 @@ source:
 build:
   number: 1
   skip:
-    - not ((osx and arm64) or (linux and x86_64))
+    - not ((osx and arm64) or (linux and (x86_64 or aarch64)))
 
 outputs:
   - package:
@@ -94,9 +94,9 @@ outputs:
           - alexandria train_ff -h
           - test -f $PREFIX/share/act/alexandria.json
           - 'alexandria -version | grep "Precision: *single"'
-          - if: osx
+          - if: (osx and arm64) or (linux and aarch64)
             then: 'alexandria -version | grep "Explicit SIMD: *ARM_NEON"'
-          - if: linux
+          - if: linux and x86_64
             then: 'alexandria -version | grep "Explicit SIMD: *AVX2"'
           - if: gpu == "sycl_cuda"
             then: 'alexandria -version | grep "GPU support: *SYCL"'
