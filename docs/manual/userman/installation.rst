@@ -34,7 +34,11 @@ On some computers, for instance virtual machines in a cloud, MPICH cannot start 
 
 On a cluster, the MPI library of the cluster is faster than that of conda, since it uses the network of the cluster and works with its queue system. conda-forge provides *external* builds of MPICH that contain no library but use the MPICH-compatible library of the system (for instance Cray MPICH or Intel MPI) when it is in the library path, for instance after *module load*; see the documentation of conda-forge on MPI. Start the programs with the launcher of the queue system, as described in :ref:`building-on-a-cluster`.
 
-The Linux package uses an NVIDIA GPU if there is one, with a driver that supports the CUDA version of the AdaptiveCpp it was built with. The log file tells which GPU each process uses, or why none was found. :ref:`gpu-support-sycl` describes how the GPU is used, and why several processes per GPU need the NVIDIA multi-process service.
+The Linux package uses an NVIDIA GPU if there is one. conda installs a build of AdaptiveCpp for the newest CUDA version that the NVIDIA driver of the computer supports, for instance CUDA 12.9 with driver 550, since CUDA 13 needs driver 580 or newer. On a computer without a GPU, such as the login node of a cluster, conda does not know the driver and takes the newest CUDA version, with which the programs on the GPU nodes may find no GPU and compute on the processor. Then give conda the CUDA version of the driver of the GPU nodes, which *nvidia-smi* shows there, when creating the environment::
+
+  CONDA_OVERRIDE_CUDA=12.4 conda create -n act --override-channels -c alexandriachemistry/label/dev -c conda-forge alexandria
+
+The option *--override-channels* makes conda use only the channels given, also if *~/.condarc* lists others, such as *defaults*, which make solving slow. *conda list -n act adaptivecpp* shows the CUDA version of AdaptiveCpp, for instance *cuda129*. The log file tells which GPU each process uses, or why none was found. :ref:`gpu-support-sycl` describes how the GPU is used, and why several processes per GPU need the NVIDIA multi-process service.
 
 The conda package is not available in double precision, nor for AMD GPUs, for other processors, or with other options of the build. For these, install ACT from the source code, as described in the next section.
 
