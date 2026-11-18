@@ -1,13 +1,13 @@
 ***********************
 Installation of the ACT
 ***********************
-The Alexandria Chemistry Toolkit (ACT) can be installed in two ways: as a conda package, which is the simplest and is enough for most users, or from the source code, which is needed for double precision, for AMD GPUs, for other processors than those of the packages, and for developing ACT.
+The Alexandria Chemistry Toolkit (ACT) can be installed in two ways: from a conda package, which is the simplest and is enough for most users, or from the source code, which is needed for double precision, for AMD GPUs, for other processors than those of the packages, and for developing ACT.
 
 .. _install-conda-package:
 
-=================================
-Installing ACT as a conda package
-=================================
+====================================
+Installing ACT from a conda package
+====================================
 ACT is available as the conda package *alexandria*, built for
 
 * macOS on Apple silicon (M1 and later), with explicit SIMD for ARM NEON and without GPU support;
@@ -41,9 +41,9 @@ The conda package is not available in double precision, nor for AMD GPUs, for ot
 
 .. _install-from-source:
 
-=====================================
-Installation of the ACT from source
-=====================================
+==========================
+Installing ACT from source
+==========================
 ACT relies on a number of libraries. Even though we tried to keep it to a minimum, some more or less standard libraries are needed. ACT should compile fine on any UNIX (including macOS) or Linux machine.
 
 -------------
