@@ -7,6 +7,17 @@ The paper describing this software is available at [Digital Discovery 4 (2025) 1
 
 The ACT manual, containing installation instructions, user and reference documentation as well as developer information is [on-line here](https://alexandriachemistry.github.io/ACT/).
 
+## Installation
+
+ACT is available as the conda package `alexandria`, for Macs with Apple silicon and for Linux on x86-64 processors with AVX2, with support for NVIDIA GPUs. With [Miniforge](https://conda-forge.org/download/) installed:
+
+```
+conda create -n act -c alexandriachemistry -c conda-forge alexandria
+conda activate act
+```
+
+For other platforms, double precision or AMD GPUs, build ACT from source. The [installation chapter](https://alexandriachemistry.github.io/ACT/userman/installation.html) of the manual describes both ways.
+
 ACT is begin developed by
 
 + [David van der Spoel](https://github.com/dspoel) (team leader),
