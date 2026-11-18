@@ -43,8 +43,15 @@ if [[ "${target_platform}" == linux-* ]]; then
     # No library may need a newer glibc than that of the sysroot, which the
     # package requires (__glibc)
     SYSROOT=$(${CXX} -print-sysroot)
-    LIMIT=$(awk '/define __GLIBC__ /{a=$3} /define __GLIBC_MINOR__ /{b=$3} END{print a "." b}' \
+    # features.h separates the words with tabs
+    LIMIT=$(awk '$1 == "#define" && $2 == "__GLIBC__" {a=$3}
+                 $1 == "#define" && $2 == "__GLIBC_MINOR__" {b=$3}
+                 END {if (a != "" && b != "") print a "." b}' \
             "${SYSROOT}/usr/include/features.h")
+    if [[ -z "${LIMIT}" ]]; then
+        echo "No glibc version in ${SYSROOT}/usr/include/features.h"
+        exit 1
+    fi
     NEEDED=$(for f in build/lib/*.so* build/bin/alexandria; do ${OBJDUMP:-objdump} -T "$f"; done |
              grep -oE 'GLIBC_[0-9]+\.[0-9]+' | sed 's/GLIBC_//' | sort -V -u | tail -1)
     echo "glibc of the sysroot ${LIMIT}, newest needed ${NEEDED}"
