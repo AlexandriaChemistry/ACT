@@ -15,13 +15,13 @@ ACT is available as the conda package *alexandria*, built for
 
 The package is built in single precision with MPI (MPICH). It requires the package *act-utilities*, which conda installs with it: the Python modules and scripts of `ACT-utilities`_ and the data files of ACT, such as *alexandria.json* and *atomprops.csv*.
 
-Install `Miniforge <https://conda-forge.org/download/>`_, or another conda that uses the channel conda-forge, and create an environment for ACT with the channel *alexandriachemistry* of ACT::
+The packages are in the channel `alexandriachemistry <https://anaconda.org/alexandriachemistry>`_ on anaconda.org. Version 1.9b is available for both platforms as a test build, which has the label *dev*; releases will have the label *main*, which is the default. Install `Miniforge <https://conda-forge.org/download/>`_, or another conda that uses the channel conda-forge, and create an environment for ACT::
 
-  conda create -n act -c alexandriachemistry -c conda-forge alexandria
+  conda create -n act -c alexandriachemistry/label/dev -c conda-forge alexandria
   conda activate act
   alexandria -version
 
-Test builds, made between the releases, have the label *dev*: replace *-c alexandriachemistry* by *-c alexandriachemistry/label/dev* to install them. The output of *alexandria -version* tells the version, the precision, the explicit SIMD (*ARM_NEON* or *AVX2*) and the GPU support of the installed programs. Nothing else needs to be set up: the programs and scripts are in the *PATH* of the environment, Python finds the modules of ACT-utilities, and the programs find the data files in *share/act* of the environment, so *ACTRC* is not needed. The interface to OpenMM, *act_openmm.py*, needs OpenMM, which is not installed with ACT::
+conda chooses the package for the platform of the computer. For a release, leave out */label/dev*. The output of *alexandria -version* tells the version, the precision, the explicit SIMD (*ARM_NEON* or *AVX2*) and the GPU support of the installed programs. Nothing else needs to be set up: the programs and scripts are in the *PATH* of the environment, Python finds the modules of ACT-utilities, and the programs find the data files in *share/act* of the environment, so *ACTRC* is not needed. The interface to OpenMM, *act_openmm.py*, needs OpenMM, which is not installed with ACT::
 
   conda install -n act -c conda-forge openmm
 
