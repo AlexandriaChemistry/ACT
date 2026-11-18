@@ -33,7 +33,10 @@ cmake --build build --parallel ${CPU_COUNT}
 if [[ "${CONDA_BUILD_CROSS_COMPILATION:-0}" != "1" ]]; then
     # The test programs are not part of the default target
     cmake --build build --parallel ${CPU_COUNT} --target tests
-    (cd build && ctest --output-on-failure --parallel ${CPU_COUNT})
+    # MPICH of conda-forge uses UCX, which may fail to open the network
+    # devices of a build machine, for instance on the GitHub runners. The tests
+    # run on one machine, which needs only shared memory and TCP.
+    (cd build && UCX_TLS=self,sm,tcp ctest --output-on-failure --parallel ${CPU_COUNT})
 fi
 
 cmake --install build

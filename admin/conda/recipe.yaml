@@ -77,6 +77,9 @@ outputs:
             - __cuda
     tests:
       - script:
+          # MPICH may fail to open the network devices of the test machine,
+          # see build.sh
+          - export UCX_TLS=self,sm,tcp
           - alexandria -h
           - alexandria train_ff -h
           - test -f $PREFIX/share/act/alexandria.json
