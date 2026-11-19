@@ -40,6 +40,7 @@
 #include <fstream>
 #include <gtest/gtest.h>
 #include <map>
+#include <nlohmann/json.hpp>
 #include <set>
 #include <sstream>
 #include <string>
@@ -446,6 +447,70 @@ TEST_F(GentopTest, GromacsTopology)
 
 // Test: The shells are excluded from their core and have the same
 // exclusions as their core
+// Test: The particles with their charges and coordinates in JSON format,
+// for programs that show the molecule and its charge distribution
+TEST_F(GentopTest, Json)
+{
+    std::map<std::string, std::string> files = { { "-json", "acetone.json" }, { "-c", "acetone.pdb" } };
+    run("forcefields/ACS-pg1.xml", "acetone.sdf", &files);
+    std::ifstream in(files["-json"]);
+    ASSERT_TRUE(in.good()) << "Cannot open " << files["-json"];
+    const auto doc = nlohmann::json::parse(in, nullptr, false);
+    ASSERT_TRUE(doc.is_object());
+    ASSERT_TRUE(doc.contains("gentop"));
+    const auto &mols = doc["gentop"]["molecules"];
+    ASSERT_TRUE(mols.is_array());
+    ASSERT_EQ(1U, mols.size());
+    const auto &mol = mols[0];
+    EXPECT_EQ("C3H6O", mol["molecule"].value("formula", ""));
+    const auto &particles = mol["molecule"]["particles"];
+    // Ten atoms, each with a shell
+    ASSERT_EQ(20U, particles.size());
+    EXPECT_EQ(9U, mol["molecule"]["bonds"].size());
+    EXPECT_EQ("nm", mol["coordinates"].value("unit", ""));
+    const auto &x = mol["coordinates"]["positions"];
+    ASSERT_TRUE(x.is_array());
+    ASSERT_EQ(particles.size(), x.size());
+    double qtot = 0;
+    for (size_t i = 0; i < particles.size(); i++)
+    {
+        ASSERT_TRUE(particles[i]["charge"].is_number());
+        qtot += particles[i]["charge"].get<double>();
+        ASSERT_EQ(3U, x[i].size());
+        if (particles[i].value("particletype", "") == "Shell")
+        {
+            // A shell is close to its atom
+            const int parent = particles[i]["parents"][0].get<int>();
+            double    d2     = 0;
+            for (int m = 0; m < 3; m++)
+            {
+                d2 += std::pow(x[i][m].get<double>() - x[parent][m].get<double>(), 2);
+            }
+            EXPECT_LT(std::sqrt(d2), 0.05) << "shell " << i;
+        }
+    }
+    EXPECT_NEAR(0.0, qtot, 1e-4);
+    // The charges are those of the topology
+    std::map<std::string, std::string> topFiles = { { "-p", "acetone.top" } };
+    run("forcefields/ACS-pg1.xml", "acetone.sdf", &topFiles);
+    const auto atoms = section(readTopology(topFiles["-p"]), "atoms");
+    ASSERT_EQ(particles.size(), atoms.size());
+    for (size_t i = 0; i < atoms.size(); i++)
+    {
+        // The charge is the seventh field of a line in the atoms section
+        EXPECT_NEAR(std::stod(atoms[i].fields[6]), particles[i]["charge"].get<double>(), 1e-5) << "particle " << i;
+    }
+}
+
+// Test: Without the option no JSON file is written
+TEST_F(GentopTest, NoJsonByDefault)
+{
+    std::remove("gentop.json");
+    std::map<std::string, std::string> files = { { "-c", "acetone.pdb" } };
+    run("forcefields/ACS-g1.xml", "acetone.sdf", &files);
+    EXPECT_FALSE(std::ifstream("gentop.json").good());
+}
+
 TEST_F(GentopTest, GromacsTopologyShells)
 {
     std::map<std::string, std::string> files = { { "-p", "acetone.top" } };

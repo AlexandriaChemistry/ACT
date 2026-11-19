@@ -47,6 +47,8 @@
 #include "act/import/compound_reader.h"
 #include "act/molprop/molprop_xml.h"
 #include "act/topology/actmol.h"
+#include "act/topology/actmol_json.h"
+#include "act/utility/jsontree.h"
 #include "gromacs/commandline/filenm.h"
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/fileio/filetypes.h"
@@ -80,7 +82,11 @@ int gentop(int argc, char *argv[])
         "in a PDB file without CONECT records, for instance one with many molecules",
         "made by another program, from the residue and atom names. The residue names",
         "can be given with [TT]-resnames[tt], otherwise they are made from the",
-        "IUPAC names of the compounds."
+        "IUPAC names of the compounds.[PAR]",
+        "With [TT]-json[tt], the compounds are written in json format to the",
+        "given file, gentop.json by default: for each compound the particles",
+        "(atoms, shells and virtual sites) with their types, masses and",
+        "charges, the bonds and the coordinates of all particles."
     };
     gmx_output_env_t *oenv;
 
@@ -99,7 +105,8 @@ int gentop(int argc, char *argv[])
         { efXVG, "-diffhist",   "diffpot",   ffOPTWR },
         { efXVG, "-his",        "pot-histo", ffOPTWR },
         { efXVG, "-pc",         "pot-comp",  ffOPTWR },
-        { efPDB, "-pdbdiff",    "pdbdiff",   ffOPTWR }
+        { efPDB, "-pdbdiff",    "pdbdiff",   ffOPTWR },
+        { efJSON, "-json",      "gentop",    ffOPTWR }
     };
 
     int                              nsymm          = 0;
@@ -238,12 +245,25 @@ int gentop(int argc, char *argv[])
         }
     }
     int mp_index   = 1;
+    // The compounds in json format, in the file of -json if it is given
+    const char *jsonFile   = opt2fn_null("-json", fnm.size(), fnm.data());
+    JsonTree    jmolecules = JsonTree::array("molecules");
     for(auto actmol = actmols.begin(); actmol < actmols.end(); ++actmol)
     {
         std::vector<gmx::RVec> forces(actmol->atomsConst().size());
         std::vector<gmx::RVec> coords = actmol->xOriginal();
         forceComp->generateVsites(actmol->topology(), &coords);
         actmol->updateQprops(&pd, forceComp, &forces);
+        if (jsonFile)
+        {
+            JsonTree jmol("compound");
+            jmol.addObject(moleculeToJson(&(*actmol)));
+            JsonTree jcoords("coordinates");
+            jcoords.addObject("unit", "nm");
+            jcoords.addObject(coordinatesToJson("positions", coords));
+            jmol.addObject(jcoords);
+            jmolecules.addObject(jmol);
+        }
         actmol->GenerateCube(&msghandler, &pd, coords, forceComp,
                              spacing, border,
                              opt2fn_null("-ref",      fnm.size(), fnm.data()),
@@ -298,6 +318,12 @@ int gentop(int argc, char *argv[])
                         &pd, actmols, mDrude, ntrain, addNumbersToAtoms,
                         residueNames);
         }
+    }
+    if (jsonFile)
+    {
+        JsonTree jtree("gentop");
+        jtree.addObject(jmolecules);
+        jtree.write(jsonFile, true);
     }
     if (!msghandler.ok())
     {
