@@ -2,8 +2,10 @@
 
 Status: in progress. The decisions of 2026-11-19 on the package name, the
 repository, the default force field, Slurm and the login are in section 1.
-Implemented so far, on the branch `python-api`: step A1, the first three
-items of step A2 and the first version of step A4 (section 5).
+Implemented so far, on the branch `python-api`: steps A1 and A3, step A2
+for `minimize`, `nma`, `simulate` and `gentop`, and the first version of
+step A4 (section 5). With these the molecule workspace of the interface
+(steps B0 to B6) can be built.
 
 This plan answers [issue 59](https://github.com/AlexandriaChemistry/ACT/issues/59)
 ("Python binder for ACT") and the specification for a new user interface. It
@@ -212,8 +214,8 @@ ACT with its test written first.
 | `JsonTree` writes numbers as JSON numbers; also booleans and arrays | Everything; removes conversions in Python and JavaScript | done |
 | `minimize`: RMSD and convergence status in the JSON; `-json` takes a file name; the molecule (particles, charges, bonds) and the coordinates before and after, superimposed | Minimization panel, viewer and charge display | done |
 | `nma`: root key `nma`; for each mode the displacement of each particle and the reduced mass; the molecule and the minimized coordinates; `-json` takes a file name | Animation of vibrations | done |
-| `simulate`: flush the energy and trajectory files at every output step, and write a progress line (step, time, energies) to a JSON-lines file | Energy plot that follows the simulation | to do |
-| `gentop`: JSON with particles (atoms, shells, virtual sites), types, charges, bonds and coordinates, with `moleculeToJson` as in `minimize` | Viewer and charge display | to do |
+| `simulate`: the energy and trajectory files are flushed a few times per second, and `-progress` writes a line with a JSON object (step, time, temperature, energies) each time the energies are written | Energy plot that follows the simulation | done |
+| `gentop`: `-json` with, for each compound, the particles (atoms, shells, virtual sites), types, charges, bonds and coordinates | Viewer and charge display | done |
 | `edit_ff`: parameters as JSON (now `-dump` writes a .dat file) and the result of `-validate` as JSON | Force field editor | to do |
 | `edit_mp`: the result of `-validate` as JSON, and a summary of the content (compounds, dimers, number of conformations, properties) | Molprop screens | to do |
 | `gen_ff`, `geometry_ff`: a JSON summary of the force field that was made | Force field generator | to do |
@@ -221,15 +223,16 @@ ACT with its test written first.
 The existing tests (`simulateTest`, `nmaTest`, `b2MpiTest`, `trainffTestUtil`)
 already read JSON, so each change extends a test that is there.
 
-**A3. SMILES input.** New in ACT: `-smiles` next to `-f` in `CompoundReader`.
+**A3. SMILES input.** *(done)* New in ACT: `-smiles` next to `-f` in `CompoundReader`.
 RDKit parses the string, adds hydrogens, makes 3D coordinates (ETKDG) and
 optimizes them roughly; then the molecule follows the same path as a file.
 This needs two more RDKit components in CMake (`DistGeomHelpers`,
-`ForceFieldHelpers`). It also gives `CompoundReader` setters, so that it can
-be used without a command line.
-*Test first:* SMILES of ten molecules of the test set give the same formula,
-bonds and atom types as their sdf files; invalid SMILES give an error
-message, not a crash.
+`ForceFieldHelpers`). The setters of `CompoundReader`, for use without a
+command line, come with layer 2 (step A7).
+*Test first:* `smilesTest.cpp`: SMILES of fourteen molecules of the test set
+give the same formula, bonds, atom types and charge as their sdf files;
+invalid SMILES give an error message, not a crash; strings of more than 2000
+characters are refused.
 
 **A4. Layer 1 in Python.** Package `act` in the directory `python/act` of
 ACT, module `act.commands`. *The first version is done; what remains is
@@ -271,10 +274,14 @@ standard `unittest` module, so that they need no extra package; pytest runs
 them as well. Most of them use a stand-in for the program and need no build
 of ACT; the others run `minimize` and `nma` with the real program.
 
+Progress during a run: `act.commands.simulate(..., on_progress=function)`
+calls the function with each object of the progress file while the program
+runs.
+
 *Still to do in A4:* result classes with named fields (`res.rmsd`,
 `modes.frequencies`) once the JSON of all tools has its final form; progress
-during long runs; tests for the remaining subcommands; the installation of
-the package (section 11, question 1).
+of `train_ff`; tests for the remaining subcommands; the installation of the
+package (section 11, question 1).
 
 After A1 to A4 the interface can be built. Layer 2 can proceed in parallel.
 
