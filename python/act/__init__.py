@@ -31,12 +31,13 @@ import warnings
 from typing import Any
 
 from . import commands
-from .errors import ActError, ActNotFoundError, ActOptionError, ActTimeoutError
+from .errors import (ActCancelledError, ActError, ActNotFoundError, ActOptionError,
+                     ActTimeoutError)
 from .options import CommandInfo, OptionInfo, ProgramInfo
 from .runner import Result, build_arguments, config, program_info, run
 
 __all__ = [
-    "ActError", "ActNotFoundError", "ActOptionError", "ActTimeoutError",
+    "ActCancelledError", "ActError", "ActNotFoundError", "ActOptionError", "ActTimeoutError",
     "CommandInfo", "OptionInfo", "ProgramInfo",
     "Result", "build_arguments", "commands", "config", "program_info", "run",
 ]

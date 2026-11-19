@@ -66,6 +66,12 @@ class ActNotFoundError(ActError, FileNotFoundError):
     """
 
 
+class ActCancelledError(ActError):
+    """!
+    @brief The program was stopped because the caller asked for it.
+    """
+
+
 class ActTimeoutError(ActError, TimeoutError):
     """!
     @brief The program ran longer than the time it was given and was stopped.
