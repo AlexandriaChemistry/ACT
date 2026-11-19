@@ -122,7 +122,8 @@ std::vector<PdbAtom> readPdb(const std::string &filename)
 //! \return the value of a JSON element written by JsonTree::addValueUnit
 double jsonValue(const nlohmann::json &obj)
 {
-    return std::stod(obj.at("value").get<std::string>());
+    EXPECT_TRUE(obj.at("value").is_number()) << obj.dump();
+    return obj.at("value").is_number() ? obj.at("value").get<double>() : 0.0;
 }
 
 //! \return the values of an object with keys "1", "2", ... in numerical order
@@ -433,7 +434,7 @@ protected:
         const auto atoms = readPdb(out.confout);
         ASSERT_FALSE(atoms.empty());
         const auto thermo = sim.at("Thermochemistry").at("Alexandria");
-        EXPECT_EQ(mol.sigma, std::stoi(thermo.at("Symmetry number").get<std::string>()));
+        EXPECT_EQ(mol.sigma, thermo.at("Symmetry number").get<int>());
         checkThermochemistry(mol, thermo, freq, atoms);
 
         // Reference data
@@ -598,7 +599,7 @@ TEST_F(NmaTest, SymmetryNumber)
         const auto atoms = readPdb(out.confout);
         double SRot = rigidRotor(atoms, mol.linear, mol.sigma, cRoomT);
         const auto thermo = out.json.at("simulate").at("Thermochemistry").at("Alexandria");
-        EXPECT_EQ(mol.sigma, std::stoi(thermo.at("Symmetry number").get<std::string>()));
+        EXPECT_EQ(mol.sigma, thermo.at("Symmetry number").get<int>());
         const auto S = thermo.at(gmx::formatString("T=%g", cRoomT)).at("Standard entropy");
         EXPECT_NEAR(SRot, jsonValue(S.at("Rotation")), 2e-3*SRot + 6e-4);
     }

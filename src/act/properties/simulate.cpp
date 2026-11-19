@@ -228,10 +228,10 @@ int simulate(int argc, char *argv[])
             double fac = convertFromGromacs(1, unit);
             JsonTree poltree("Polarizability");
 
-            poltree.addValueUnit("XX", gmx_ftoa(fac*alpha[XX][XX]), unit);
-            poltree.addValueUnit("YY", gmx_ftoa(fac*alpha[YY][YY]), unit);
-            poltree.addValueUnit("ZZ", gmx_ftoa(fac*alpha[ZZ][ZZ]), unit);
-            poltree.addValueUnit("Average", gmx_ftoa(fac*qCalc->isotropicPolarizability()), unit);
+            poltree.addValueUnit("XX", fac*alpha[XX][XX], unit);
+            poltree.addValueUnit("YY", fac*alpha[YY][YY], unit);
+            poltree.addValueUnit("ZZ", fac*alpha[ZZ][ZZ], unit);
+            poltree.addValueUnit("Average", fac*qCalc->isotropicPolarizability(), unit);
             jtree.addObject(poltree);
         }
     }

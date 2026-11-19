@@ -40,11 +40,32 @@
 
 namespace alexandria
 {
+/*! \brief Text for a number that reads back as the same number
+ * The shortest text is chosen, such that 0.1 is written as 0.1.
+ * \param[in] value The number
+ * \return the text, nan or inf for numbers that are not finite
+ */
+std::string jsonNumberText(double value);
+
+/*! \brief Text for a single precision number that reads back as the same number
+ * A float is not converted to double first, since that would add digits
+ * that carry no information, e.g. 0.10000000149 for 0.1.
+ * \param[in] value The number
+ * \return the text, nan or inf for numbers that are not finite
+ */
+std::string jsonNumberText(float value);
+
 /*! \brief Simple class to produce JSON or text outputs
  * The input is a tree structure that is filled in a program.
- * Only strings allowed for now.
+ * A value is a string, a number or a boolean. Numbers are stored as text as
+ * well, such that the program decides on the number of digits, but they are
+ * written as JSON numbers, without quotes. Numbers that are not finite
+ * are written as null, since JSON has no way to write them.
  * Each JsonTree can have either a value or objects but not both.
  * If both are added a warning is printed.
+ * The objects of a tree are written as the members of a JSON object, or, for
+ * a tree made with array(), as the elements of a JSON array. In an array the
+ * keys of the objects are not written.
  * JSON serialization is performed using the nlohmann/json library.
  */
 class JsonTree
@@ -54,10 +75,15 @@ private:
     std::string           key_;
     //! The value
     std::string           value_;
+    //! Whether the value is a number
+    bool                  number_  = false;
+    //! Whether the value is a boolean
+    bool                  boolean_ = false;
+    //! Whether the objects are the elements of an array
+    bool                  array_   = false;
     //! Child objects
     std::vector<JsonTree> objects_;
-    
-    
+
 public:
     /*! \brief Constructor that sets the key for this one
      * \param[in] key   The key
@@ -77,24 +103,76 @@ public:
         value_ = value;
     }
 
+    /*! \brief Make an element that holds a number given as text
+     * Use this when the program decides on the number of digits. Text
+     * that is not a number is written as a string.
+     * \param[in] key  The key
+     * \param[in] text The number as text, spaces around it are ignored
+     * \return the element
+     */
+    static JsonTree number(const std::string &key, const std::string &text)
+    {
+        JsonTree jt(key, text);
+        jt.number_ = true;
+        return jt;
+    }
+
+    /*! \brief Make an element that holds a boolean
+     * \param[in] key   The key
+     * \param[in] value The value, written as true or false
+     * \return the element
+     */
+    static JsonTree boolean(const std::string &key, bool value)
+    {
+        JsonTree jt(key, value ? "true" : "false");
+        jt.boolean_ = true;
+        return jt;
+    }
+
+    /*! \brief Make an element of which the objects are written as an array
+     * \param[in] key The key
+     * \return the element, to which the elements of the array can be added
+     * with addObject, addNumber, addBool or addArray. Their keys are not
+     * written in JSON.
+     */
+    static JsonTree array(const std::string &key)
+    {
+        JsonTree jt(key);
+        jt.array_ = true;
+        return jt;
+    }
+
     /*! \brief Constructor that sets the key and a numerical value
      * \param[in] key   The key
-     * \param[in] value The value, stored as a string
+     * \param[in] value The value, written as a JSON number
      */
     JsonTree(const std::string &key, double value)
     {
-        key_ = key;
-        value_ = std::to_string(value);
+        key_    = key;
+        value_  = jsonNumberText(value);
+        number_ = true;
+    }
+
+    /*! \brief Constructor that sets the key and a single precision value
+     * \param[in] key   The key
+     * \param[in] value The value, written as a JSON number
+     */
+    JsonTree(const std::string &key, float value)
+    {
+        key_    = key;
+        value_  = jsonNumberText(value);
+        number_ = true;
     }
 
     /*! \brief Constructor that sets the key and an integer value
      * \param[in] key   The key
-     * \param[in] value The value, stored as a string
+     * \param[in] value The value, written as a JSON number
      */
     JsonTree(const std::string &key, int value)
     {
-        key_ = key;
-        value_ = std::to_string(value);
+        key_    = key;
+        value_  = std::to_string(value);
+        number_ = true;
     }
 
     //! \return key
@@ -102,6 +180,15 @@ public:
 
     //! \return value
     const std::string &value() const { return value_; }
+
+    //! \return whether the value is a number
+    bool isNumber() const { return number_; }
+
+    //! \return whether the value is a boolean
+    bool isBool() const { return boolean_; }
+
+    //! \return whether the objects are the elements of an array
+    bool isArray() const { return array_; }
 
     //! \return objects
     const std::vector<JsonTree> &objects() const { return objects_; }
@@ -135,26 +222,95 @@ public:
         objects_.emplace_back(key, value);
     }
 
-    /*! \brief Add a tree element
+    /*! \brief Add a tree element with a number
      * \param[in] key   The key
-     * \param[in] value The value
+     * \param[in] value The value, written as a JSON number
      */
     void addObject(const std::string &key, double value)
     {
-        objects_.emplace_back(key, std::to_string(value));
+        objects_.emplace_back(key, value);
     }
-    
-    /*! \brief Add a tree element with a subelement
+
+    /*! \brief Add a tree element with a single precision number
      * \param[in] key   The key
-     * \param[in] value The value
-     * \param[in] unit  T
+     * \param[in] value The value, written as a JSON number
      */
-    void addValueUnit(const std::string &key, const std::string &value, const std::string &unit)
+    void addObject(const std::string &key, float value)
     {
-        JsonTree jt(key);
-        jt.addObject("value", value);
-        jt.addObject("unit", unit);
+        objects_.emplace_back(key, value);
+    }
+
+    /*! \brief Add a tree element with an integer
+     * \param[in] key   The key
+     * \param[in] value The value, written as a JSON number
+     */
+    void addObject(const std::string &key, int value)
+    {
+        objects_.emplace_back(key, value);
+    }
+
+    /*! \brief Add a tree element with a number that is given as text
+     * Use this when the program decides on the number of digits. Text
+     * that is not a number is written as a string.
+     * \param[in] key  The key
+     * \param[in] text The number as text, spaces around it are ignored
+     */
+    void addNumber(const std::string &key, const std::string &text)
+    {
+        objects_.push_back(number(key, text));
+    }
+
+    /*! \brief Add a tree element with a boolean
+     * \param[in] key   The key
+     * \param[in] value The value, written as true or false
+     */
+    void addBool(const std::string &key, bool value)
+    {
+        objects_.push_back(boolean(key, value));
+    }
+
+    /*! \brief Add an array of numbers, integers or strings
+     * \tparam T double, float, int or std::string
+     * \param[in] key    The key
+     * \param[in] values The values, an empty vector gives an empty array
+     */
+    template<typename T>
+    void addArray(const std::string &key, const std::vector<T> &values)
+    {
+        JsonTree jt = array(key);
+        for (const auto &value : values)
+        {
+            jt.objects_.emplace_back("", value);
+        }
         objects_.push_back(jt);
+    }
+
+    /*! \brief Add a tree element with a value and a unit
+     * \param[in] key   The key
+     * \param[in] value The value as text. If it is a number it is written
+     *                  as a JSON number.
+     * \param[in] unit  The unit
+     */
+    void addValueUnit(const std::string &key, const std::string &value, const std::string &unit);
+
+    /*! \brief Add a tree element with a value and a unit
+     * \param[in] key   The key
+     * \param[in] value The value, written as a JSON number
+     * \param[in] unit  The unit
+     */
+    void addValueUnit(const std::string &key, double value, const std::string &unit)
+    {
+        addValueUnit(key, jsonNumberText(value), unit);
+    }
+
+    /*! \brief Add a tree element with a value and a unit
+     * \param[in] key   The key
+     * \param[in] value The value, written as a JSON number
+     * \param[in] unit  The unit
+     */
+    void addValueUnit(const std::string &key, float value, const std::string &unit)
+    {
+        addValueUnit(key, jsonNumberText(value), unit);
     }
     
     /*! \brief Add a tree element

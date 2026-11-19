@@ -31,10 +31,14 @@
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
 
+#include <cmath>
 #include <fstream>
 #include <gtest/gtest.h>
 #include <iterator>
+#include <limits>
+#include <nlohmann/json.hpp>
 #include <string>
+#include <vector>
 
 #include "../jsontree.h"
 #include "testutils/cmdlinetest.h"
@@ -181,7 +185,7 @@ TEST(JsonTreeTest, WriteStringJsonIntValue)
     const JsonTree jt("count", 7);
     int indent = -1;
     const std::string result = jt.writeString(true, &indent);
-    EXPECT_EQ(R"({"count":"7"})", result);
+    EXPECT_EQ(R"({"count":7})", result);
     EXPECT_EQ(-1, indent);
 }
 
@@ -207,10 +211,241 @@ TEST(JsonTreeTest, WriteStringJsonValueUnitStructure)
     const std::string result = jt.writeString(true, &indent);
     EXPECT_NE(std::string::npos, result.find("\"energy\""));
     EXPECT_NE(std::string::npos, result.find("\"value\""));
-    EXPECT_NE(std::string::npos, result.find("\"42.0\""));
+    // The value is a number, not a string
+    EXPECT_EQ(std::string::npos, result.find("\"42.0\""));
+    EXPECT_NE(std::string::npos, result.find("42.0"));
     EXPECT_NE(std::string::npos, result.find("\"unit\""));
     EXPECT_NE(std::string::npos, result.find("\"kJ/mol\""));
     EXPECT_EQ(0, indent);
+}
+
+// ---- numbers in JSON ----
+
+/*! \brief Write a tree as JSON and parse the result
+ * \param[in] jt The tree
+ * \return the content below the key of the tree
+ */
+nlohmann::json parsed(const JsonTree &jt)
+{
+    int indent = -1;
+    return nlohmann::json::parse(jt.writeString(true, &indent)).at(jt.key());
+}
+
+TEST(JsonTreeTest, NumbersAreJsonNumbers)
+{
+    JsonTree jt("n");
+    jt.addObject("double", 3.25);
+    jt.addObject("float", 0.1F);
+    jt.addObject("int", 42);
+    jt.addNumber("formatted", "1.5000");
+    jt.addObject("text", std::string("12"));
+    const auto js = parsed(jt);
+
+    ASSERT_TRUE(js.at("double").is_number_float());
+    EXPECT_EQ(3.25, js.at("double").get<double>());
+    // A float is written with the digits of a float, not with the noise
+    // that appears when it is converted to double.
+    ASSERT_TRUE(js.at("float").is_number_float());
+    EXPECT_EQ(0.1, js.at("float").get<double>());
+    ASSERT_TRUE(js.at("int").is_number_integer());
+    EXPECT_EQ(42, js.at("int").get<int>());
+    ASSERT_TRUE(js.at("formatted").is_number());
+    EXPECT_EQ(1.5, js.at("formatted").get<double>());
+    // A string that looks like a number stays a string
+    ASSERT_TRUE(js.at("text").is_string());
+    EXPECT_EQ("12", js.at("text").get<std::string>());
+}
+
+TEST(JsonTreeTest, NumbersKeepTheirPrecision)
+{
+    const double small = 1.2345678901234e-9;
+    const double large = -3553.1988123456;
+    const float  fl    = 1234.5677F;
+    JsonTree     jt("n");
+    jt.addObject("small", small);
+    jt.addObject("large", large);
+    jt.addObject("float", fl);
+    const auto js = parsed(jt);
+    EXPECT_EQ(small, js.at("small").get<double>());
+    EXPECT_EQ(large, js.at("large").get<double>());
+    EXPECT_EQ(fl, js.at("float").get<float>());
+}
+
+TEST(JsonTreeTest, NumberConstructorsMarkNumbers)
+{
+    EXPECT_TRUE(JsonTree("a", 1.5).isNumber());
+    EXPECT_TRUE(JsonTree("a", 1.5F).isNumber());
+    EXPECT_TRUE(JsonTree("a", 3).isNumber());
+    EXPECT_FALSE(JsonTree("a", std::string("3")).isNumber());
+    EXPECT_FALSE(JsonTree("a").isNumber());
+}
+
+TEST(JsonTreeTest, ValueUnitWithNumberIsNumber)
+{
+    JsonTree jt("data");
+    jt.addValueUnit("energy", "-285.8", "kJ/mol");
+    jt.addValueUnit("entropy", 12.5, "J/mol K");
+    const auto js = parsed(jt);
+    ASSERT_TRUE(js.at("energy").at("value").is_number());
+    EXPECT_EQ(-285.8, js.at("energy").at("value").get<double>());
+    EXPECT_EQ("kJ/mol", js.at("energy").at("unit").get<std::string>());
+    ASSERT_TRUE(js.at("entropy").at("value").is_number());
+    EXPECT_EQ(12.5, js.at("entropy").at("value").get<double>());
+}
+
+TEST(JsonTreeTest, ValueUnitWithTextStaysText)
+{
+    JsonTree jt("data");
+    jt.addValueUnit("phase", "liquid", "");
+    const auto js = parsed(jt);
+    ASSERT_TRUE(js.at("phase").at("value").is_string());
+    EXPECT_EQ("liquid", js.at("phase").at("value").get<std::string>());
+}
+
+TEST(JsonTreeTest, NotANumberBecomesNull)
+{
+    JsonTree jt("n");
+    jt.addObject("nan", std::nan(""));
+    jt.addObject("inf", std::numeric_limits<double>::infinity());
+    jt.addNumber("nantext", "nan");
+    const auto js = parsed(jt);
+    EXPECT_TRUE(js.at("nan").is_null());
+    EXPECT_TRUE(js.at("inf").is_null());
+    EXPECT_TRUE(js.at("nantext").is_null());
+}
+
+TEST(JsonTreeTest, AddNumberWithTextThatIsNoNumberWritesString)
+{
+    JsonTree jt("n");
+    jt.addNumber("x", "12 apples");
+    const auto js = parsed(jt);
+    ASSERT_TRUE(js.at("x").is_string());
+    EXPECT_EQ("12 apples", js.at("x").get<std::string>());
+}
+
+TEST(JsonTreeTest, AddNumberIgnoresSpaces)
+{
+    JsonTree jt("n");
+    jt.addNumber("x", "   7.25 ");
+    const auto js = parsed(jt);
+    ASSERT_TRUE(js.at("x").is_number());
+    EXPECT_EQ(7.25, js.at("x").get<double>());
+}
+
+TEST(JsonTreeTest, NumbersInTextOutput)
+{
+    JsonTree jt("n");
+    jt.addObject("count", 7);
+    jt.addObject("x", 2.5);
+    int indent = 0;
+    const std::string result = jt.writeString(false, &indent);
+    EXPECT_NE(std::string::npos, result.find("count: 7"));
+    EXPECT_NE(std::string::npos, result.find("x: 2.5"));
+}
+
+// ---- booleans and arrays in JSON ----
+
+TEST(JsonTreeTest, BooleansAreJsonBooleans)
+{
+    JsonTree jt("b");
+    jt.addBool("converged", true);
+    jt.addBool("failed", false);
+    jt.addObject("text", std::string("true"));
+    const auto js = parsed(jt);
+    ASSERT_TRUE(js.at("converged").is_boolean());
+    EXPECT_TRUE(js.at("converged").get<bool>());
+    ASSERT_TRUE(js.at("failed").is_boolean());
+    EXPECT_FALSE(js.at("failed").get<bool>());
+    // A string that looks like a boolean stays a string
+    EXPECT_TRUE(js.at("text").is_string());
+}
+
+TEST(JsonTreeTest, BooleansInTextOutput)
+{
+    JsonTree jt("b");
+    jt.addBool("converged", true);
+    jt.addBool("failed", false);
+    int indent = 0;
+    const std::string result = jt.writeString(false, &indent);
+    EXPECT_NE(std::string::npos, result.find("converged: true"));
+    EXPECT_NE(std::string::npos, result.find("failed: false"));
+}
+
+TEST(JsonTreeTest, ArrayOfNumbers)
+{
+    JsonTree jt("root");
+    jt.addArray("x", std::vector<double>({ 1.5, -2.25, 0.0 }));
+    jt.addArray("n", std::vector<int>({ 3, 1, 2 }));
+    jt.addArray("names", std::vector<std::string>({ "c2", "h1" }));
+    const auto js = parsed(jt);
+    ASSERT_TRUE(js.at("x").is_array());
+    ASSERT_EQ(3U, js.at("x").size());
+    EXPECT_EQ(1.5, js.at("x")[0].get<double>());
+    EXPECT_EQ(-2.25, js.at("x")[1].get<double>());
+    EXPECT_TRUE(js.at("x")[2].is_number());
+    ASSERT_TRUE(js.at("n").is_array());
+    EXPECT_TRUE(js.at("n")[0].is_number_integer());
+    EXPECT_EQ(3, js.at("n")[0].get<int>());
+    ASSERT_TRUE(js.at("names").is_array());
+    EXPECT_EQ("h1", js.at("names")[1].get<std::string>());
+}
+
+TEST(JsonTreeTest, EmptyArrayIsWrittenAsArray)
+{
+    JsonTree jt("root");
+    jt.addArray("x", std::vector<double>());
+    jt.addObject("after", 1);
+    const auto js = parsed(jt);
+    ASSERT_TRUE(js.at("x").is_array());
+    EXPECT_TRUE(js.at("x").empty());
+}
+
+TEST(JsonTreeTest, ArrayOfObjects)
+{
+    // The elements of an array keep their order, their keys are not written
+    JsonTree atoms = JsonTree::array("atoms");
+    for (int i = 0; i < 3; i++)
+    {
+        JsonTree atom("atom");
+        atom.addObject("index", i);
+        atom.addArray("x", std::vector<double>({ 0.1*i, 0.0, 1.0 }));
+        atoms.addObject(atom);
+    }
+    EXPECT_TRUE(atoms.isArray());
+    JsonTree jt("root");
+    jt.addObject(atoms);
+    const auto js = parsed(jt);
+    ASSERT_TRUE(js.at("atoms").is_array());
+    ASSERT_EQ(3U, js.at("atoms").size());
+    EXPECT_EQ(2, js.at("atoms")[2].at("index").get<int>());
+    ASSERT_TRUE(js.at("atoms")[1].at("x").is_array());
+    EXPECT_EQ(1.0, js.at("atoms")[1].at("x")[2].get<double>());
+}
+
+TEST(JsonTreeTest, ArrayOfArrays)
+{
+    // For instance coordinates: one array of three numbers per atom
+    JsonTree coords = JsonTree::array("coordinates");
+    coords.addArray("", std::vector<double>({ 1, 2, 3 }));
+    coords.addArray("", std::vector<double>({ 4, 5, 6 }));
+    JsonTree jt("root");
+    jt.addObject(coords);
+    const auto js = parsed(jt);
+    ASSERT_TRUE(js.at("coordinates").is_array());
+    ASSERT_EQ(2U, js.at("coordinates").size());
+    ASSERT_TRUE(js.at("coordinates")[1].is_array());
+    EXPECT_EQ(6.0, js.at("coordinates")[1][2].get<double>());
+}
+
+TEST(JsonTreeTest, ArrayInTextOutput)
+{
+    JsonTree jt("root");
+    jt.addArray("x", std::vector<double>({ 1.5, 2.5 }));
+    int indent = 0;
+    const std::string result = jt.writeString(false, &indent);
+    EXPECT_NE(std::string::npos, result.find("x:"));
+    EXPECT_NE(std::string::npos, result.find("1.5"));
+    EXPECT_NE(std::string::npos, result.find("2.5"));
 }
 
 // ---- writeString text tests ----
