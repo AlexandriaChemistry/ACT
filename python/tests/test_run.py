@@ -15,6 +15,7 @@ import inspect
 import os
 import sys
 import tempfile
+import threading
 import time
 import unittest
 import warnings
@@ -231,6 +232,25 @@ class RunTest(unittest.TestCase):
         """
         with self.assertRaises(act.ActOptionError):
             act.run("work", ff=self.ff, on_progress="print")
+
+    def test_another_thread_can_stop_the_program(self):
+        """!
+        @brief A program is stopped when the event is set.
+        """
+        stop = threading.Event()
+        timer = threading.Timer(0.3, stop.set)
+        timer.start()
+        start = time.time()
+        try:
+            with self.assertRaises(act.ActCancelledError) as caught:
+                act.run("work", ff=self.ff, sleep=30.0, stop=stop)
+        finally:
+            timer.cancel()
+        self.assertLess(time.time() - start, 10)
+        self.assertIn("stopped", str(caught.exception))
+        # An event that is not set changes nothing
+        res = act.run("work", ff=self.ff, stop=threading.Event())
+        self.assertTrue(res.ok)
 
     def test_program_that_does_not_exist(self):
         """!

@@ -30,14 +30,15 @@ import weakref
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Mapping, Optional, Sequence, Tuple, Union
 
-from .errors import ActError, ActNotFoundError, ActOptionError, ActTimeoutError
+from .errors import (ActCancelledError, ActError, ActNotFoundError, ActOptionError,
+                     ActTimeoutError)
 from .options import CommandInfo, OptionInfo, ProgramInfo
 
 ## A path as a string or a pathlib.Path
 PathLike = Union[str, "os.PathLike[str]"]
 
 ## Keyword arguments of run() that are not options of the program
-RUN_ARGUMENTS = ("workdir", "processes", "timeout", "check", "env", "on_progress")
+RUN_ARGUMENTS = ("workdir", "processes", "timeout", "check", "env", "on_progress", "stop")
 
 ## Name of the file that `alexandria help -export json` writes
 _OPTIONS_FILE = "alexandria-options.json"
@@ -681,6 +682,7 @@ def run(command: str, *,
         check: bool = True,
         env: Optional[Mapping[str, str]] = None,
         on_progress: Optional[Callable[[Any], None]] = None,
+        stop: Any = None,
         **options: Any) -> Result:
     """!
     @brief Run a command of alexandria and return what it produced.
@@ -713,12 +715,17 @@ def run(command: str, *,
     argument, the object that the program wrote: for simulate a dict with
     the step, the time, the temperature and the energies. An exception in
     the function stops the program.
+    @param stop      An object with a method is_set(), such as a
+    threading.Event, with which another thread can stop the program: when
+    is_set() returns True the program is stopped and ActCancelledError is
+    raised.
     @param options   The options of the command, see build_arguments() for
     the rules and act.program_info() for the options of each command.
     @return The result.
     @throws ActOptionError   for an unknown command or option, or a wrong value.
     @throws ActNotFoundError if the program or an input file does not exist.
     @throws ActTimeoutError  if the program ran too long.
+    @throws ActCancelledError if the program was stopped through @p stop.
     @throws ActError         if the program failed and check is True.
     """
     info = program_info().find_command(command)
@@ -778,7 +785,8 @@ def run(command: str, *,
                 while True:
                     try:
                         # A short wait when there is progress to pass on
-                        wait = 0.05 if reader is not None else None
+                        # or a request to stop to look for
+                        wait = 0.05 if (reader is not None or stop is not None) else None
                         if deadline is not None:
                             left = max(0.0, deadline - time.monotonic())
                             wait = left if wait is None else min(wait, left)
@@ -791,6 +799,12 @@ def run(command: str, *,
                             on_progress(item)
                     if finished:
                         break
+                    if stop is not None and stop.is_set():
+                        _terminate(process)
+                        stdout, stderr = output()
+                        raise ActCancelledError("alexandria %s was stopped" % command,
+                                                args=full, returncode=process.returncode,
+                                                stdout=stdout, stderr=stderr)
                     if deadline is not None and time.monotonic() >= deadline:
                         _terminate(process)
                         stdout, stderr = output()
