@@ -51,6 +51,7 @@
 namespace gmx
 {
 
+class OptionsJsonWriter;
 class ShellCompletionWriter;
 
 /*! \libinternal \brief
@@ -85,6 +86,17 @@ class CommandLineHelpContext
          * Creates a context for shell completion.
          */
         explicit CommandLineHelpContext(ShellCompletionWriter *writer);
+        /*! \brief
+         * Creates a context for exporting the options of commands as JSON.
+         *
+         * \param[in] writer      Collects the options of each command.
+         * \param[in] programName Name of the program, replaces [PROGRAM] in
+         *     help texts.
+         *
+         * Markup in help texts is converted as for the console.
+         */
+        CommandLineHelpContext(OptionsJsonWriter *writer,
+                               const std::string &programName);
         //! Creates a copy of the context.
         explicit CommandLineHelpContext(const CommandLineHelpContext &other);
         //! Moves the context.
@@ -122,6 +134,14 @@ class CommandLineHelpContext
          * Can only be called if isCompletionExport() returns `true`.
          */
         ShellCompletionWriter &shellCompletionWriter() const;
+        //! Returns whether this context is for exporting options as JSON.
+        bool isOptionsJsonExport() const;
+        /*! \brief
+         * Returns the object that collects the options of the commands.
+         *
+         * Can only be called if isOptionsJsonExport() returns `true`.
+         */
+        OptionsJsonWriter &optionsJsonWriter() const;
 
     private:
         class Impl;

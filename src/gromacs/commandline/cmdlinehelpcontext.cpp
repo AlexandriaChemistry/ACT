@@ -45,6 +45,7 @@
 
 #include "gromacs/utility/gmxassert.h"
 
+#include "optionsjsonwriter.h"
 #include "shellcompletions.h"
 
 namespace gmx
@@ -77,13 +78,15 @@ class CommandLineHelpContext::Impl
         Impl(TextWriter *writer, HelpOutputFormat format,
              const HelpLinks *links)
             : writerContext_(writer, format, links), moduleDisplayName_("gmx"),
-              completionWriter_(nullptr), bHidden_(false)
+              completionWriter_(nullptr), optionsJsonWriter_(nullptr),
+              bHidden_(false)
         {
         }
         //! Creates an implementation class from a low-level context.
         explicit Impl(const HelpWriterContext &writerContext)
             : writerContext_(writerContext),
-              completionWriter_(nullptr), bHidden_(false)
+              completionWriter_(nullptr), optionsJsonWriter_(nullptr),
+              bHidden_(false)
         {
         }
 
@@ -93,6 +96,8 @@ class CommandLineHelpContext::Impl
         std::string            moduleDisplayName_;
         //! Shell completion writer (`NULL` if not doing completions).
         ShellCompletionWriter *completionWriter_;
+        //! Collects options as JSON (`NULL` if not exporting options).
+        OptionsJsonWriter     *optionsJsonWriter_;
         //! Whether hidden options should be shown in help output.
         bool                   bHidden_;
 };
@@ -116,6 +121,14 @@ CommandLineHelpContext::CommandLineHelpContext(
     : impl_(new Impl(&writer->outputWriter(), eHelpOutputFormat_Other, nullptr))
 {
     impl_->completionWriter_ = writer;
+}
+
+CommandLineHelpContext::CommandLineHelpContext(
+        OptionsJsonWriter *writer, const std::string &programName)
+    : impl_(new Impl(&writer->outputWriter(), eHelpOutputFormat_Console, nullptr))
+{
+    impl_->writerContext_.setReplacement("[PROGRAM]", programName);
+    impl_->optionsJsonWriter_ = writer;
 }
 
 CommandLineHelpContext::CommandLineHelpContext(
@@ -181,6 +194,18 @@ ShellCompletionWriter &CommandLineHelpContext::shellCompletionWriter() const
     GMX_RELEASE_ASSERT(isCompletionExport(),
                        "Invalid call when not writing shell completions");
     return *impl_->completionWriter_;
+}
+
+bool CommandLineHelpContext::isOptionsJsonExport() const
+{
+    return impl_->optionsJsonWriter_ != nullptr;
+}
+
+OptionsJsonWriter &CommandLineHelpContext::optionsJsonWriter() const
+{
+    GMX_RELEASE_ASSERT(isOptionsJsonExport(),
+                       "Invalid call when not exporting options as JSON");
+    return *impl_->optionsJsonWriter_;
 }
 
 /********************************************************************

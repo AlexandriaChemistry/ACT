@@ -186,14 +186,23 @@ the CI of ACT. Every step ends with `make tidy` and Doxygen comments.
 
 ### Layer 1: the subcommands from Python
 
-**A1. A description of the options of every subcommand, as JSON.**
-New in ACT: `alexandria <tool> -options json` prints the options of the tool
-(name, type, default, allowed values, help text, whether it is an input or an
-output file), generated from the tables the tool already has. Python uses it
-to check keyword arguments before starting a program, and the interface uses
-it to build forms and help texts. Nothing is listed twice.
-*Test first:* a gtest per tool that the output is valid JSON and contains
-every option of `-h`.
+**A1. A description of the options of every subcommand, as JSON.** *(done)*
+New in ACT: `alexandria help -export json` writes the file
+`alexandria-options.json` with, for every subcommand, its description, its
+help text and its options (name, type, default, allowed values, help text,
+whether it is hidden or required and, for files, whether the file is read or
+written and which extensions it may have). It is generated from the same
+option objects that print the help and parse the command line, so it cannot
+differ from what the program accepts, and nothing is listed twice. Python
+uses it to check keyword arguments before starting a program, and the
+interface uses it to build forms and help texts.
+The export sits next to the existing exports for reStructuredText and shell
+completion (`src/gromacs/commandline/optionsjsonwriter.cpp`), and gives all
+subcommands in one call instead of the `-options json` per tool that the
+first version of this plan proposed.
+*Test first:* `optionsJsonTest.cpp` checks that the output is valid JSON,
+contains every subcommand and, for each, exactly the options of
+`-h -hidden`, with the hidden ones marked.
 
 **A2. Complete the JSON output of the tools.** Each item is a small change in
 ACT with its test written first.
