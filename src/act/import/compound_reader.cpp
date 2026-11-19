@@ -104,6 +104,8 @@ void CompoundReader::addOptions(std::vector<t_pargs>      *pargs,
     const std::vector<t_pargs> mypargs = {
               { "-f",      FALSE, etSTR,  {&filename_},
                 "Molecular structure file in e.g. pdb format. Is ignored with train_ff." },
+              { "-smiles", FALSE, etSTR,  {&smiles_},
+                "Make the molecule from a SMILES string instead of reading it from a file, for instance [TT]-smiles 'CC(=O)C'[tt] for acetone. Hydrogen atoms are added and coordinates are generated, which are a rough starting point that should be minimized. Is ignored with train_ff." },
               { "-db",     FALSE, etSTR,  {&dbname_},
                 "Read one or more molecules from the database rather than from a file. To specify multiple molecules please use quotes, e.g. [TT]-db[tt] 'water methane ammonia'. Is ignored with train_ff." },
               { "-oneH", FALSE, etBOOL, {&oneH_},
@@ -130,18 +132,18 @@ void CompoundReader::optionsFinished(MsgHandler                  *msghandler,
     auto mfn = opt2fn_null("-sel", filenm.size(), filenm.data());
     if (mfn != nullptr)
     {
-        if (strlen(filename_) != 0 || strlen(dbname_) != 0)
+        if (strlen(filename_) != 0 || strlen(dbname_) != 0 || strlen(smiles_) != 0)
         {
             msghandler->msg(ACTStatus::Error,
-                            "Please provide just one of the flags -f and -db and -sel.");
+                            "Please provide just one of the flags -f, -smiles, -db and -sel.");
             return;
         }
         molselect_.read(mfn);
     }
-    else if (strlen(filename_) != 0 && strlen(dbname_) != 0)
+    else if ((strlen(filename_) != 0) + (strlen(dbname_) != 0) + (strlen(smiles_) != 0) > 1)
     {
         msghandler->msg(ACTStatus::Error,
-                        "Please provide just one of the flags -f and -db.");
+                        "Please provide just one of the flags -f, -smiles and -db.");
         return;
     }
     const char *qfn = opt2fn_null("-charges", filenm.size(), filenm.data());
@@ -224,7 +226,7 @@ void CompoundReader::setCharges(MsgHandler          *msghandler,
         {
             mol->setCharges(msghandler, &pd);
         }
-        else if (strlen(filename_) > 0 && qmap_.empty())
+        else if ((strlen(filename_) > 0 || strlen(smiles_) > 0) && qmap_.empty())
         {
             mol->generateCharges(msghandler, &pd, forceComp, qAlgorithm_, &coords, &forces,
                                  msghandler->verbose());
@@ -253,27 +255,40 @@ void CompoundReader::readFile(MsgHandler          *msghandler,
 {
     matrix box;
     clear_mat(box);
-    if (strlen(filename_) == 0)
-    {
-        msghandler->msg(ACTStatus::Error, "Empty filename");
-        return;
-    }
     std::vector<MolProp> mps;
-    double               qtot_babel = qtot_;
-    importFile(msghandler, &pd, filename_, &mps, "",
-               JobType::OPT, userQtot(), &qtot_babel,
-               oneH_);
-    if (!msghandler->ok())
+    if (strlen(smiles_) > 0)
     {
-        msghandler->msg(ACTStatus::Error,
-                        gmx::formatString("Reading %s failed.\n", filename_));
-        return;
+        importSmiles(msghandler, &pd, smiles_, &mps, oneH_);
+        if (!msghandler->ok() || mps.empty())
+        {
+            msghandler->msg(ACTStatus::Error,
+                            gmx::formatString("Making a molecule from the SMILES string '%s' failed.\n", smiles_));
+            return;
+        }
     }
-    if (mps.empty())
+    else
     {
-        msghandler->msg(ACTStatus::Error,
-                        gmx::formatString("Failed to import coordinate file %s using OpenBabel", filename_));
-        return;
+        if (strlen(filename_) == 0)
+        {
+            msghandler->msg(ACTStatus::Error, "Empty filename");
+            return;
+        }
+        double qtot_babel = qtot_;
+        importFile(msghandler, &pd, filename_, &mps, "",
+                   JobType::OPT, userQtot(), &qtot_babel,
+                   oneH_);
+        if (!msghandler->ok())
+        {
+            msghandler->msg(ACTStatus::Error,
+                            gmx::formatString("Reading %s failed.\n", filename_));
+            return;
+        }
+        if (mps.empty())
+        {
+            msghandler->msg(ACTStatus::Error,
+                            gmx::formatString("Failed to import coordinate file %s using OpenBabel", filename_));
+            return;
+        }
     }
     for(auto &mp : mps)
     {
@@ -288,7 +303,8 @@ void CompoundReader::read(MsgHandler          *msghandler,
                           const ForceComputer *forceComp,
                           std::vector<ACTMol> *mols)
 {
-    bool                  readCoordinates = strlen(filename_) > 0;
+    // From a file or made from a SMILES string
+    bool                  readCoordinates = strlen(filename_) > 0 || strlen(smiles_) > 0;
     std::set<std::string> lookup;
     std::string           lookupSource;
     if (qmapfn_.empty() && !readCoordinates)
@@ -340,8 +356,16 @@ void CompoundReader::read(MsgHandler          *msghandler,
                 }
             }
             // For printing further down
-            lookupSource.assign(" from file ");
-            lookupSource += filename_;
+            if (strlen(smiles_) > 0)
+            {
+                lookupSource.assign(" from SMILES ");
+                lookupSource += smiles_;
+            }
+            else
+            {
+                lookupSource.assign(" from file ");
+                lookupSource += filename_;
+            }
         }
         else if (strlen(dbname_) > 0)
         {
@@ -424,7 +448,8 @@ void CompoundReader::read(MsgHandler          *msghandler,
             {
                 msghandler->msg(ACTStatus::Warning,
                                 gmx::formatString("CompoundReader could not determine charges for '%s' from '%s'\n",
-                                                  mol->getMolname().c_str(), filename_));
+                                                  mol->getMolname().c_str(),
+                                                  strlen(smiles_) > 0 ? smiles_ : filename_));
                 // Prevent false positives, delete compound and reset status
                 msghandler->resetStatus();
                 mol = mols->erase(mol);

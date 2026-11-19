@@ -396,7 +396,8 @@ find_package(Boost CONFIG REQUIRED)
 list(APPEND GMX_EXTRA_LIBRARIES Boost::headers)
 
 # These are the necessary RDKit libraries
-set(rdkitlibs RDGeneral SmilesParse FileParsers GraphMol Inchi RDInchiLib SubstructMatch SubstructLibrary GeneralizedSubstruct  FilterCatalog DetermineBonds Descriptors )
+# DistGeomHelpers and ForceFieldHelpers make the coordinates for SMILES input
+set(rdkitlibs RDGeneral SmilesParse FileParsers GraphMol Inchi RDInchiLib SubstructMatch SubstructLibrary GeneralizedSubstruct  FilterCatalog DetermineBonds Descriptors DistGeomHelpers ForceFieldHelpers )
 find_package(RDKit REQUIRED COMPONENTS ${rdkitlibs} )
 foreach(lib IN ITEMS ${rdkitlibs})
     list(APPEND GMX_EXTRA_LIBRARIES RDKit::${lib})

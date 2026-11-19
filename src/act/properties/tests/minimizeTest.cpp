@@ -86,7 +86,7 @@ protected:
     }
 
     /*! \brief Run the minimize tool in the temporary directory of the tests
-     * \param[in]  molFile  Molecule file in src/act/testdata/molecules
+     * \param[in]  molFile  Molecule file in src/act/testdata/molecules, may be empty
      * \param[in]  ffFile   Force field file in src/act/testdata/forcefields
      * \param[in]  label    Unique label for the output files
      * \param[in]  extra    Extra command line options
@@ -103,7 +103,11 @@ protected:
         gmx::test::CommandLine cmd;
         cmd.append("minimize");
         cmd.addOption("-ff", alexandriaFile("forcefields/" + ffFile));
-        cmd.addOption("-f", alexandriaFile("molecules/" + molFile));
+        // No file for a molecule that is given in another way
+        if (!molFile.empty())
+        {
+            cmd.addOption("-f", alexandriaFile("molecules/" + molFile));
+        }
         cmd.addOption("-c", fileManager().getTemporaryFilePath(label + "-confout.pdb"));
         cmd.addOption("-g", fileManager().getTemporaryFilePath(label + ".log"));
         if (!jsonFile.empty())
@@ -325,6 +329,45 @@ TEST_F(MinimizeTest, JsonIsNotWrittenWithoutTheOption)
     ASSERT_EQ(0, runMinimize("acetone.sdf", "ACS-g1.xml", "nojson", {}, ""));
     const ScopedDirectory cwd(fileManager().getOutputTempDirectory());
     EXPECT_FALSE(std::filesystem::exists("minimize.json"));
+}
+
+TEST_F(MinimizeTest, MoleculeFromSmiles)
+{
+    // Acetone from its SMILES string instead of from a file
+    const auto jsonFile = fileManager().getTemporaryFilePath("smiles.json");
+    ASSERT_EQ(0, runMinimize("", "ACS-g1.xml", "smiles", { "-smiles", "CC(=O)C" }, jsonFile));
+    std::ifstream in(jsonFile);
+    ASSERT_TRUE(in.good());
+    const auto js = nlohmann::json::parse(in, nullptr, false);
+    ASSERT_TRUE(js.is_object());
+    const auto &min = js["minimize"];
+    EXPECT_EQ("C3H6O", min["molecule"].value("formula", ""));
+    EXPECT_EQ(10U, min["molecule"]["particles"].size());
+    EXPECT_EQ(9U, min["molecule"]["bonds"].size());
+    EXPECT_TRUE(min["converged"].get<bool>());
+    // The generated structure is close to a minimum of the force field
+    EXPECT_LT(min["rmsd"]["value"].get<double>(), 0.1);
+
+    // About the same energy as from the file. The minimum can be another
+    // one, since the methyl groups can be rotated, which makes a
+    // difference of about 1 kJ/mol.
+    nlohmann::json fromFile;
+    minimizeToJson("acetone.sdf", "ACS-g1.xml", "smilesref", &fromFile);
+    ASSERT_TRUE(fromFile.is_object());
+    EXPECT_NEAR(fromFile["Energies after"]["EPOT"]["value"].get<double>(),
+                min["Energies after"]["EPOT"]["value"].get<double>(), 5.0);
+}
+
+TEST_F(MinimizeTest, WrongSmilesFails)
+{
+    const auto jsonFile = fileManager().getTemporaryFilePath("wrongsmiles.json");
+    EXPECT_EQ(1, runMinimize("", "ACS-g1.xml", "wrongsmiles", { "-smiles", "C(C" }, jsonFile));
+}
+
+TEST_F(MinimizeTest, SmilesAndFileTogetherFail)
+{
+    const auto jsonFile = fileManager().getTemporaryFilePath("both.json");
+    EXPECT_EQ(1, runMinimize("acetone.sdf", "ACS-g1.xml", "both", { "-smiles", "CC(=O)C" }, jsonFile));
 }
 
 TEST_F(MinimizeTest, MissingMoleculeFileFails)

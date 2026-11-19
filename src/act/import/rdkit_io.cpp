@@ -58,12 +58,18 @@
 #pragma GCC diagnostic ignored "-Wdeprecated-redundant-constexpr-static-def"
 #include <GraphMol/Descriptors/MolDescriptors.h>
 #include <GraphMol/DetermineBonds/DetermineBonds.h>
+#include <GraphMol/DistGeomHelpers/Embedder.h>
 #include <GraphMol/FileParsers/MolSupplier.h>
 #include <GraphMol/FileParsers/MolWriters.h>
 #include <GraphMol/FilterCatalog/FilterMatchers.h>
+#include <GraphMol/ForceFieldHelpers/MMFF/AtomTyper.h>
+#include <GraphMol/ForceFieldHelpers/MMFF/MMFF.h>
+#include <GraphMol/ForceFieldHelpers/UFF/AtomTyper.h>
+#include <GraphMol/ForceFieldHelpers/UFF/UFF.h>
 #include <GraphMol/GeneralizedSubstruct/XQMol.h>
 #include <GraphMol/GraphMol.h>
 #include <GraphMol/inchi.h>
+#include <GraphMol/SmilesParse/SmilesParse.h>
 #include <GraphMol/Substruct/SubstructMatch.h>
 #pragma GCC diagnostic pop
 
@@ -445,6 +451,71 @@ static void lookUpSpecial(MsgHandler                           *msg_handler,
     }
 }
 
+/*! \brief Turn a molecule of RDKit into a MolProp
+ * \param[in]    msg_handler For debugging and info
+ * \param[in]    pd          Alexandria force field
+ * \param[in]    abdb        The atom and bond type database
+ * \param[in]    mol2        The molecule, with hydrogen atoms and a conformer
+ * \param[in]    conf        Conformation the molecule is in
+ * \param[in]    jobtype     Calculation type for reading QM output
+ * \param[in]    oneH        Remap all hydrogen atom types to "h"
+ * \param[out]   mps         The MolProp is added here if there was no error
+ */
+static void addMolProp(MsgHandler                           *msg_handler,
+                       const ForceField                     *pd,
+                       const std::vector<AtomBondtypeEntry> &abdb,
+                       RDKit::RWMol                         *mol2,
+                       const char                           *conf,
+                       JobType                               jobtype,
+                       bool                                  oneH,
+                       std::vector<MolProp>                 *mps)
+{
+    MolProp      mp;
+    const std::string  ref("Spoel2026a");
+    //! \todo Check whether this is correct
+    const std::string  RDKit_Unit("Angstrom");
+    Experiment   exper(ref, conf);
+    exper.setJobtype(jobtype);
+    unsigned int atomid = 0;
+    auto         conformer = mol2->getConformer();
+    auto         bonds     = mol2->bonds();
+    for(const auto &atom : mol2->atoms())
+    {
+        //standard assignment is now the lower case element
+        std::string atype = atom->getSymbol();
+        std::transform(atype.begin(), atype.end(), atype.begin(), ::tolower);
+        CalcAtom ca(atom->getSymbol(), atype, atomid);
+        const auto& atomPos = conformer.getAtomPos(atomid);
+        ca.setCoords(convertToGromacs(atomPos.x, RDKit_Unit),
+                     convertToGromacs(atomPos.y, RDKit_Unit),
+                     convertToGromacs(atomPos.z, RDKit_Unit));
+        exper.AddAtom(std::move(ca));
+        atomid += 1;
+    }
+    for(const auto &bond : bonds)
+    {
+        double order = bondTypeValue(msg_handler, bond->getBondType());
+        if (msg_handler->ok())
+        {
+            const Bond b(bond->getBeginAtomIdx(),
+                         bond->getEndAtomIdx(),
+                         order);
+            mp.AddBond(std::move(b));
+        }
+    }
+    // Now we have done the "default" atom types and bonds.
+    // The actual atomtypes are assigned in the atom_bond.xml file, as well as special cases.
+    lookUpSpecial(msg_handler, pd, abdb, mol2, &exper, mp.bonds(), oneH);
+    if (msg_handler->ok())
+    {
+        const AlexandriaMols amols;
+        mp.AddExperiment(std::move(exper));
+        mp.generateFragments(msg_handler, pd);
+        addInchiToFragments(msg_handler, amols, mol2, mp.fragmentPtr());
+        mps->push_back(std::move(mp));
+    }
+}
+
 /*! \brief Read an sdf, pdb or xyz file using RDKit and add the molecule to a vector
  * For xyz files, and pdb files without bonds, the bonds are determined
  * by RDKit. Atom types are assigned from the atom and bond type database.
@@ -534,50 +605,7 @@ static void importFile(MsgHandler                           *msg_handler,
         }
         if (mol2)
         {
-            MolProp      mp;
-            const std::string  ref("Spoel2026a");
-            //! \todo Check whether this is correct
-            const std::string  RDKit_Unit("Angstrom");
-            Experiment   exper(ref, conf);
-            exper.setJobtype(jobtype);
-            unsigned int atomid = 0;
-            auto         conformer = mol2->getConformer();
-            auto         bonds     = mol2->bonds();
-            for(const auto &atom : mol2->atoms())
-            {
-                //standard assignment is now the lower case element
-                std::string atype = atom->getSymbol();
-                std::transform(atype.begin(), atype.end(), atype.begin(), ::tolower);
-                CalcAtom ca(atom->getSymbol(), atype, atomid);
-                const auto& atomPos = conformer.getAtomPos(atomid);
-                ca.setCoords(convertToGromacs(atomPos.x, RDKit_Unit),
-                             convertToGromacs(atomPos.y, RDKit_Unit),
-                             convertToGromacs(atomPos.z, RDKit_Unit));
-                exper.AddAtom(std::move(ca));
-                atomid += 1;
-            }
-            for(const auto &bond : bonds)
-            {
-                double order = bondTypeValue(msg_handler, bond->getBondType());
-                if (msg_handler->ok())
-                {
-                    const Bond b(bond->getBeginAtomIdx(),
-                                 bond->getEndAtomIdx(),
-                                 order);
-                    mp.AddBond(std::move(b));
-                }
-            }
-            // Now we have done the "default" atom types and bonds.
-            // The actual atomtypes are assigned in the atom_bond.xml file, as well as special cases.
-            lookUpSpecial(msg_handler, pd, abdb, mol2, &exper, mp.bonds(), oneH);
-            if (msg_handler->ok())
-            {
-                const AlexandriaMols amols;
-                mp.AddExperiment(std::move(exper));
-                mp.generateFragments(msg_handler, pd);
-                addInchiToFragments(msg_handler, amols, mol2, mp.fragmentPtr());
-                mps->push_back(std::move(mp));
-            }
+            addMolProp(msg_handler, pd, abdb, mol2, conf, jobtype, oneH, mps);
             delete mol2;
         }
         else
@@ -593,15 +621,11 @@ static void importFile(MsgHandler                           *msg_handler,
     }
 }
 
-void importFile(MsgHandler             *msg_handler,
-                const ForceField       *pd,
-                const std::string      &filenm,
-                std::vector<MolProp>   *mps,
-                const char             *conf,
-                JobType                 jobtype,
-                bool                    userqtot,
-                double                 *qtot,
-                bool                    oneH)
+/*! \brief The atom and bond type database, read when it is first needed
+ * \param[in] msg_handler For debugging and info
+ * \return the database
+ */
+static const std::vector<AtomBondtypeEntry> &atomBondtypeDB(MsgHandler *msg_handler)
 {
     static std::vector<AtomBondtypeEntry> abe;
     if (abe.empty())
@@ -614,7 +638,122 @@ void importFile(MsgHandler             *msg_handler,
             writeAtomBondtypeDB(msg_handler, "atom_bond.xml", abe);
         }
     }
-    importFile(msg_handler, pd, filenm, mps, conf, jobtype, userqtot, qtot, oneH, abe);
+    return abe;
+}
+
+void importFile(MsgHandler             *msg_handler,
+                const ForceField       *pd,
+                const std::string      &filenm,
+                std::vector<MolProp>   *mps,
+                const char             *conf,
+                JobType                 jobtype,
+                bool                    userqtot,
+                double                 *qtot,
+                bool                    oneH)
+{
+    importFile(msg_handler, pd, filenm, mps, conf, jobtype, userqtot, qtot, oneH,
+               atomBondtypeDB(msg_handler));
+}
+
+void importSmiles(MsgHandler           *msg_handler,
+                  const ForceField     *pd,
+                  const std::string    &smiles,
+                  std::vector<MolProp> *mps,
+                  bool                  oneH)
+{
+    // Without the spaces around it
+    const auto first = smiles.find_first_not_of(" \t\n\r");
+    if (first == std::string::npos)
+    {
+        msg_handler->msg(ACTStatus::Error, "The SMILES string is empty");
+        return;
+    }
+    const std::string smi = smiles.substr(first, smiles.find_last_not_of(" \t\n\r") - first + 1);
+    if (smi.size() > maxSmilesLength)
+    {
+        msg_handler->msg(ACTStatus::Error,
+                         gmx::formatString("The SMILES string has %zu characters, the maximum is %zu",
+                                           smi.size(), maxSmilesLength));
+        return;
+    }
+    if (msg_handler->debug())
+    {
+        msg_handler->writeDebug(gmx::formatString("Will make a molecule from SMILES '%s' using the RDKit library",
+                                                  smi.c_str()));
+    }
+    try
+    {
+        // A null pointer for a string that cannot be parsed, an exception
+        // for one that is not chemistry, e.g. a carbon with five bonds
+        const std::unique_ptr<RDKit::RWMol> mol(RDKit::SmilesToMol(smi));
+        if (!mol || mol->getNumAtoms() == 0)
+        {
+            msg_handler->msg(ACTStatus::Error,
+                             gmx::formatString("Cannot interpret the SMILES string '%s'", smi.c_str()));
+            return;
+        }
+        RDKit::MolOps::addHs(*mol);
+        // Three-dimensional coordinates, the same every time
+        auto params = RDKit::DGeomHelpers::ETKDGv3;
+        params.randomSeed = 20261119;
+        int  confId = RDKit::DGeomHelpers::EmbedMolecule(*mol, params);
+        if (confId < 0)
+        {
+            // Starting from random coordinates works for more molecules
+            params.useRandomCoords = true;
+            confId = RDKit::DGeomHelpers::EmbedMolecule(*mol, params);
+        }
+        if (confId < 0)
+        {
+            msg_handler->msg(ACTStatus::Error,
+                             gmx::formatString("Cannot make coordinates for the SMILES string '%s'", smi.c_str()));
+            return;
+        }
+        // A rough optimization, which a minimization with the ACT force
+        // field should follow. A molecule with one atom has nothing to
+        // optimize. The optimization is done on a copy, since the force
+        // fields of RDKit change the bonds of the molecule to their own
+        // idea of what is aromatic, which is not that of the atom types.
+        if (mol->getNumAtoms() > 1)
+        {
+            const int                      maxIters = 500;
+            RDKit::RWMol                   work(*mol);
+            RDKit::MMFF::MMFFMolProperties mmff(work);
+            bool                           optimized = false;
+            if (mmff.isValid())
+            {
+                RDKit::MMFF::MMFFOptimizeMolecule(work, maxIters);
+                optimized = true;
+            }
+            else
+            {
+                // The check above may have changed the copy
+                work = RDKit::RWMol(*mol);
+                if (RDKit::UFF::getAtomTypes(work).second)
+                {
+                    RDKit::UFF::UFFOptimizeMolecule(work, maxIters);
+                    optimized = true;
+                }
+            }
+            if (optimized)
+            {
+                const auto &optimizedConformer = work.getConformer();
+                auto       &conformer          = mol->getConformer();
+                for (unsigned int i = 0; i < mol->getNumAtoms(); i++)
+                {
+                    conformer.setAtomPos(i, optimizedConformer.getAtomPos(i));
+                }
+            }
+        }
+        addMolProp(msg_handler, pd, atomBondtypeDB(msg_handler), mol.get(),
+                   "minimum", JobType::OPT, oneH, mps);
+    }
+    catch (const std::exception &ex)
+    {
+        msg_handler->msg(ACTStatus::Error,
+                         gmx::formatString("RDKit cannot make a molecule from the SMILES string '%s': %s",
+                                           smi.c_str(), ex.what()));
+    }
 }
 
 } // namespace alexandria

@@ -69,6 +69,8 @@ namespace alexandria
         ChargeGenerationAlgorithm qAlgorithm_ = ChargeGenerationAlgorithm::SQE;
         //! File name for reading structures from
         char   *filename_  = (char *)"";
+        //! SMILES string to make a structure from
+        char   *smiles_    = (char *)"";
         //! List of compounds/dimers to extract from charges files
         char   *dbname_     = (char *)"";
         //! Map back hydrogen atoms to one type
@@ -126,7 +128,9 @@ namespace alexandria
         //! \return charge map for editing
         ChargeMap *chargeMap() { return &qmap_; }
 
-        /*! Read molecule(s) from a single file
+        //! \return the SMILES string to make a molecule from (-smiles), empty if none
+        const char *smiles() const { return smiles_; }
+        /*! Read molecule(s) from a single file, or make one from the SMILES string
          * \param[in]  msghandler Error and message handler, check whether ok after returning
          * \param[in]  pd         The force field
          * \param[out] mols       The molecule
