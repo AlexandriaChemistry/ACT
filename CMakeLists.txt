@@ -605,6 +605,7 @@ add_subdirectory(docs)
 add_subdirectory(share)
 add_subdirectory(scripts)
 add_subdirectory(src)
+add_subdirectory(python)
 
 gmx_cpack_write_config()
 

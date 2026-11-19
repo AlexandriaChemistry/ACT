@@ -1,9 +1,9 @@
 # Plan: a Python API and an HTML5 user interface for ACT
 
-Status: proposal, 2026-11-19, with the decisions of the same day on the
-package name, the repository, the default force field, Slurm and the login
-(section 1). Nothing in this plan is implemented yet, except the feasibility
-test of section 3 and the design mockup of section 7.
+Status: in progress. The decisions of 2026-11-19 on the package name, the
+repository, the default force field, Slurm and the login are in section 1.
+Implemented so far, on the branch `python-api`: step A1, the first three
+items of step A2 and the first version of step A4 (section 5).
 
 This plan answers [issue 59](https://github.com/AlexandriaChemistry/ACT/issues/59)
 ("Python binder for ACT") and the specification for a new user interface. It
@@ -207,16 +207,16 @@ contains every subcommand and, for each, exactly the options of
 **A2. Complete the JSON output of the tools.** Each item is a small change in
 ACT with its test written first.
 
-| Change | Needed for |
-|---|---|
-| `JsonTree` writes numbers as JSON numbers | Everything; removes conversions in Python and JavaScript |
-| `minimize`: RMSD and convergence status in the JSON; `-json` takes a file name | Minimization panel |
-| `nma`: root key `nma`; eigenvectors (displacement per atom and mode) and reduced masses; `-json` takes a file name | Animation of vibrations |
-| `simulate`: flush the energy and trajectory files at every output step, and write a progress line (step, time, energies) to a JSON-lines file | Energy plot that follows the simulation |
-| `gentop`: JSON with particles (atoms, shells, virtual sites), types, charges, bonds and coordinates | Viewer and charge display |
-| `edit_ff`: parameters as JSON (now `-dump` writes a .dat file) and the result of `-validate` as JSON | Force field editor |
-| `edit_mp`: the result of `-validate` as JSON, and a summary of the content (compounds, dimers, number of conformations, properties) | Molprop screens |
-| `gen_ff`, `geometry_ff`: a JSON summary of the force field that was made | Force field generator |
+| Change | Needed for | Status |
+|---|---|---|
+| `JsonTree` writes numbers as JSON numbers; also booleans and arrays | Everything; removes conversions in Python and JavaScript | done |
+| `minimize`: RMSD and convergence status in the JSON; `-json` takes a file name; the molecule (particles, charges, bonds) and the coordinates before and after, superimposed | Minimization panel, viewer and charge display | done |
+| `nma`: root key `nma`; for each mode the displacement of each particle and the reduced mass; the molecule and the minimized coordinates; `-json` takes a file name | Animation of vibrations | done |
+| `simulate`: flush the energy and trajectory files at every output step, and write a progress line (step, time, energies) to a JSON-lines file | Energy plot that follows the simulation | to do |
+| `gentop`: JSON with particles (atoms, shells, virtual sites), types, charges, bonds and coordinates, with `moleculeToJson` as in `minimize` | Viewer and charge display | to do |
+| `edit_ff`: parameters as JSON (now `-dump` writes a .dat file) and the result of `-validate` as JSON | Force field editor | to do |
+| `edit_mp`: the result of `-validate` as JSON, and a summary of the content (compounds, dimers, number of conformations, properties) | Molprop screens | to do |
+| `gen_ff`, `geometry_ff`: a JSON summary of the force field that was made | Force field generator | to do |
 
 The existing tests (`simulateTest`, `nmaTest`, `b2MpiTest`, `trainffTestUtil`)
 already read JSON, so each change extends a test that is there.
@@ -231,22 +231,24 @@ be used without a command line.
 bonds and atom types as their sdf files; invalid SMILES give an error
 message, not a crash.
 
-**A4. Layer 1 in Python.** Package `act`, module `act.commands`:
+**A4. Layer 1 in Python.** Package `act` in the directory `python/act` of
+ACT, module `act.commands`. *The first version is done; what remains is
+listed below.* What works now:
 
 ```python
 import act
 
 ff  = "ACS-pg1.xml"
-res = act.commands.minimize(ff=ff, smiles="CC(=O)C")
-print(res.rmsd, res.energies_after["EPOT"])     # numbers with units
-res.structure.save("acetone-min.pdb")
+res = act.commands.minimize(ff=ff, f="acetone.sdf")
+print(res.data["rmsd"], res.data["Energies after"]["EPOT"])  # value and unit
+print(res.file("c"))                                         # minimized structure
 
-modes = act.commands.nma(ff=ff, f="acetone-min.pdb")
-print(modes.frequencies[:5], modes.thermochemistry[298.15].entropy.total)
+modes = act.commands.nma(ff=ff, f="acetone.sdf", ir=True).data["modes"]
+print(modes[0]["frequency"], modes[0]["displacements"])
 
 stats = act.commands.train_ff(ff=ff, mp="dimers.xml", optimize=False,
-                              processes=8)      # runs under mpirun
-print(stats.statistics["Train"]["INTERACTION"].rmsd)
+                              processes=8)                   # runs under mpirun
+help(act.commands.train_ff)                                  # the options
 ```
 
 - One function per subcommand, generated from the option description of A1,
@@ -260,8 +262,19 @@ print(stats.statistics["Train"]["INTERACTION"].rmsd)
   `train_ff`), read from the progress file of A2.
 - `processes=N` starts the tool with the MPI launcher of the installation.
 
-*Tests:* pytest for every subcommand on the test data of ACT, including the
-error cases (missing file, unknown atom type, wrong option).
+- Values cannot pose as options: a string that starts with a dash is
+  refused, unless it is a negative number. Input files are checked and made
+  absolute before the program starts.
+
+*Tests:* `python/tests`, run by ctest as `PythonInterfaceTests`. They use the
+standard `unittest` module, so that they need no extra package; pytest runs
+them as well. Most of them use a stand-in for the program and need no build
+of ACT; the others run `minimize` and `nma` with the real program.
+
+*Still to do in A4:* result classes with named fields (`res.rmsd`,
+`modes.frequencies`) once the JSON of all tools has its final form; progress
+during long runs; tests for the remaining subcommands; the installation of
+the package (section 11, question 1).
 
 After A1 to A4 the interface can be built. Layer 2 can proceed in parallel.
 
@@ -597,19 +610,31 @@ The questions on the name of the package, the repository, the default force
 field, Slurm, the login, the account for jobs on csb and the place of the
 server are answered; the answers are in section 1. What remains:
 
-1. **Single sign-on on csb (separate issue).** For jobs under the user's own
+1. **Where the Python package is installed.** ACT-utilities installs its
+   modules as loose files in `site-packages/act` and adds that directory to
+   the path of Python with `act.pth`. The package `act` belongs in the same
+   directory. `import act` then gives the new package, but the modules of
+   the package would also be importable under their bare names (`commands`,
+   `options`, `errors`), which can hide modules of other packages. Proposal:
+   ACT-utilities moves its files to `site-packages/act_utilities`, with its
+   `.pth` file, the check in the CMake files of ACT and ACTRC following. That
+   is a change in ACT-utilities and in both conda recipes, so the package is
+   not installed yet: it is used from the source tree and tested by ctest.
+   The old class is reachable as `act.legacy.ACT` when ACT-utilities is
+   installed, and `from act import ACT` still works with a warning.
+2. **Single sign-on on csb (separate issue).** For jobs under the user's own
    csb account, the identity of the university login must map to a csb
    account, and the server must be allowed to submit for that user. Until
    that exists the jobs run as `act-user` (step B11).
-2. **Precision.** The conda packages are single precision. Proposal: the
+3. **Precision.** The conda packages are single precision. Proposal: the
    Python module follows the build it belongs to, and the first release is
    single precision only.
-3. **GPU.** Small molecules do not gain from the GPU. Proposal: the
+4. **GPU.** Small molecules do not gain from the GPU. Proposal: the
    interactive calculations run on the CPU; `train_ff -nooptimize` on large
    molprop files may use the GPU as the program does now, also on csb.
-4. **Which wavenumber direction for spectra?** The mockup plots increasing
+5. **Which wavenumber direction for spectra?** The mockup plots increasing
    wavenumbers, as the xvg file of `nma` and plotXVG do. Spectroscopists
    often plot them decreasing.
 
-None of these blocks the start: steps A1 to A4 and B0 to B10 do not depend
-on them.
+None of these blocks the work on the steps A1 to A8 and B0 to B10. The
+first has to be answered before a release (steps A9 and B12).
