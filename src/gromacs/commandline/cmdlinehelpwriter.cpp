@@ -60,6 +60,7 @@
 #include "gromacs/utility/stringutil.h"
 #include "gromacs/utility/textwriter.h"
 
+#include "optionsjsonwriter.h"
 #include "shellcompletions.h"
 
 namespace gmx
@@ -558,6 +559,12 @@ void CommandLineHelpWriter::writeHelp(const CommandLineHelpContext &context)
     {
         context.shellCompletionWriter().writeModuleCompletions(
                 context.moduleDisplayName(), impl_->options_);
+        return;
+    }
+    if (context.isOptionsJsonExport())
+    {
+        context.optionsJsonWriter().writeCommandOptions(
+                context, impl_->options_, impl_->helpText_);
         return;
     }
     const HelpWriterContext &writerContext = context.writerContext();

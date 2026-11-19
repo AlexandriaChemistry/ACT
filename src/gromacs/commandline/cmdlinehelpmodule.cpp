@@ -70,6 +70,7 @@
 #include "gromacs/utility/textstream.h"
 #include "gromacs/utility/textwriter.h"
 
+#include "optionsjsonwriter.h"
 #include "shellcompletions.h"
 
 namespace gmx
@@ -759,6 +760,82 @@ void HelpExportCompletion::finishModuleExport()
     bashWriter_.finishCompletions();
 }
 
+/********************************************************************
+ * HelpExportJson
+ */
+
+/*! \internal \brief
+ * Implements export of the options of all commands as one JSON document.
+ *
+ * The document is written to the file <program>-options.json, see
+ * OptionsJsonWriter for its layout. It contains the hidden options as well,
+ * marked as such.
+ *
+ * \ingroup module_commandline
+ */
+class HelpExportJson : public IHelpExport
+{
+    public:
+        /*! \brief
+         * Initializes the JSON exporter.
+         *
+         * \param[in] helpModule       Help module that does the export.
+         * \param[in] outputRedirector Opens the output file.
+         */
+        HelpExportJson(const CommandLineHelpModuleImpl &helpModule,
+                       IFileOutputRedirector           *outputRedirector);
+
+        void startModuleExport() override {}
+        void exportModuleHelp(
+            const ICommandLineModule         &module,
+            const std::string                &tag,
+            const std::string                &displayName) override;
+        void finishModuleExport() override;
+
+        void startModuleGroupExport() override {}
+        void exportModuleGroup(const char                * /*title*/,
+                               const ModuleGroupContents & /*modules*/) override {}
+        void finishModuleGroupExport() override {}
+
+        void exportTopic(const IHelpTopic & /*topic*/) override {}
+
+    private:
+        //! Name of the program
+        std::string            binaryName_;
+        //! Opens the output file
+        IFileOutputRedirector *outputRedirector_;
+        //! Collects the options of the commands
+        OptionsJsonWriter      jsonWriter_;
+};
+
+HelpExportJson::HelpExportJson(
+        const CommandLineHelpModuleImpl &helpModule,
+        IFileOutputRedirector           *outputRedirector)
+    : binaryName_(helpModule.binaryName_), outputRedirector_(outputRedirector),
+      jsonWriter_(helpModule.binaryName_)
+{
+}
+
+void HelpExportJson::exportModuleHelp(
+        const ICommandLineModule         &module,
+        const std::string                 & /*tag*/,
+        const std::string                &displayName)
+{
+    jsonWriter_.startCommand(module.name(), module.shortDescription());
+    CommandLineHelpContext context(&jsonWriter_, binaryName_);
+    context.setModuleDisplayName(displayName);
+    context.setShowHidden(true);
+    module.writeHelp(context);
+    jsonWriter_.finishCommand();
+}
+
+void HelpExportJson::finishModuleExport()
+{
+    TextWriter file(outputRedirector_->openTextOutputFile(binaryName_ + "-options.json"));
+    file.writeString(jsonWriter_.toString());
+    file.close();
+}
+
 }   // namespace
 
 /********************************************************************
@@ -790,6 +867,11 @@ CommandLineHelpModuleImpl::createExporter(const std::string     &format,
     {
         return std::unique_ptr<IHelpExport>(
                 new HelpExportCompletion(*this));
+    }
+    else if (format == "json")
+    {
+        return std::unique_ptr<IHelpExport>(
+                new HelpExportJson(*this, redirector));
     }
     GMX_THROW(NotImplementedError("This help format is not implemented"));
 }
@@ -946,7 +1028,7 @@ int CommandLineHelpModule::run(int argc, char *argv[])
     // Add internal topics lazily here.
     addTopic(HelpTopicPointer(new CommandsHelpTopic(*impl_)), false);
 
-    const char *const exportFormats[] = { "rst", "completion" };
+    const char *const exportFormats[] = { "rst", "completion", "json" };
     std::string       exportFormat;
     Options           options;
     options.addOption(StringOption("export").store(&exportFormat)
