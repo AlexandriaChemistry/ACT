@@ -71,6 +71,35 @@ void importFile(MsgHandler           *msg_handler,
                 double               *qtot,
                 bool                  oneH);
 
+/*! \brief
+ * Make a molecule from a SMILES string using RDKit.
+ *
+ * Hydrogen atoms are added, three-dimensional coordinates are generated
+ * with the ETKDG method and optimized roughly with the MMFF94 force field,
+ * or with UFF if MMFF94 does not have the parameters. The coordinates are
+ * a starting point: minimize them with the ACT force field before use.
+ * They are the same every time for the same string, since the random
+ * numbers start from a fixed seed.
+ *
+ * A string that RDKit cannot interpret, for which no coordinates can be
+ * made, or that is longer than maxSmilesLength gives an error in the
+ * message handler and no molecule.
+ *
+ * \param[in]    msg_handler For errors, debugging and info
+ * \param[in]    pd          Alexandria force field
+ * \param[in]    smiles      The SMILES string, e.g. CC(=O)C for acetone
+ * \param[out]   mp          Pointer to a MolProp vector, to which the molecule is added
+ * \param[in]    oneH        Remap all hydrogen atom types to "h"
+ */
+void importSmiles(MsgHandler           *msg_handler,
+                  const ForceField     *pd,
+                  const std::string    &smiles,
+                  std::vector<MolProp> *mp,
+                  bool                  oneH);
+
+//! The longest SMILES string that importSmiles accepts
+const size_t maxSmilesLength = 2000;
+
 }
 
 #endif

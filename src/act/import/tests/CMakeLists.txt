@@ -42,5 +42,6 @@ gmx_add_unit_test(
     # files with code for tests
     compound_readerTest.cpp
     importTest.cpp
+    smilesTest.cpp
     )
 target_link_libraries(${exename} actLib ${GMX_EXE_LINKER_FLAGS})
