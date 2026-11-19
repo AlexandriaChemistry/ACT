@@ -26,6 +26,7 @@
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
 #include <algorithm>
+#include <array>
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
@@ -317,34 +318,56 @@ protected:
     {
         gmx::test::CommandLine cmd;
         cmd.append("nma");
-        cmd.addOption("-ff", alexandriaFile("forcefields/ACS-g1.xml"));
+        cmd.addOption("-ff", alexandriaFile("forcefields/" + ffFile_));
         cmd.addOption("-f", alexandriaFile("molecules/" + molFile));
         output->confout  = fileManager().getTemporaryFilePath(label + "-confout.pdb");
         output->spectrum = fileManager().getTemporaryFilePath(label + "-ir.xvg");
         cmd.addOption("-c", output->confout);
         cmd.addOption("-ir", output->spectrum);
         cmd.addOption("-g", fileManager().getTemporaryFilePath(label + ".log"));
-        cmd.addOption("-json");
+        // The tool writes the results to the file given with -json
+        const auto jsonFile = fileManager().getTemporaryFilePath(label + ".json");
+        cmd.addOption("-json", jsonFile);
         for(const auto &e : extra)
         {
             cmd.append(e);
         }
         int status;
         {
-            // The tool writes nma.json to the working directory
             const ScopedWorkingDirectory cwd(fileManager().getOutputTempDirectory());
-            std::filesystem::remove("nma.json");
+            std::filesystem::remove(jsonFile);
             status = nma(cmd.argc(), cmd.argv());
-            std::ifstream in("nma.json");
+            std::ifstream in(jsonFile);
             if (in.good())
             {
                 output->json = nlohmann::json::parse(in);
-                in.close();
-                std::filesystem::remove("nma.json");
             }
         }
         return status;
     }
+
+    /*! rief Run the nma tool with another force field
+     * \param[in]  molFile Molecule file in src/act/testdata/molecules
+     * \param[in]  ffFile  Force field file in src/act/testdata/forcefields
+     * \param[in]  label   Unique label for the output files
+     * \param[out] output  The output
+     * 
+eturn The exit status of the tool
+     */
+    int runNmaFF(const std::string &molFile,
+                 const std::string &ffFile,
+                 const std::string &label,
+                 NmaOutput         *output)
+    {
+        const std::string previous = ffFile_;
+        ffFile_ = ffFile;
+        const int status = runNma(molFile, label, {}, output);
+        ffFile_ = previous;
+        return status;
+    }
+
+    //! Force field file in src/act/testdata/forcefields
+    std::string ffFile_ = "ACS-g1.xml";
 
     //! Check the thermochemistry against textbook formulas
     void checkThermochemistry(const NmaMolecule          &mol,
@@ -416,7 +439,7 @@ protected:
         NmaOutput out;
         ASSERT_EQ(0, runNma(mol.file, "nma", {}, &out));
         ASSERT_FALSE(out.json.empty());
-        const auto  sim  = out.json.at("simulate");
+        const auto  sim  = out.json.at("nma");
         auto        freq = jsonSeries(sim.at("Frequencies").at("Alexandria"));
         auto        inte = jsonSeries(sim.at("Intensities").at("Alexandria"));
         EXPECT_EQ(mol.nModes, freq.size());
@@ -598,7 +621,7 @@ TEST_F(NmaTest, SymmetryNumber)
         ASSERT_EQ(0, runNma(mol.file, "sigma", {}, &out));
         const auto atoms = readPdb(out.confout);
         double SRot = rigidRotor(atoms, mol.linear, mol.sigma, cRoomT);
-        const auto thermo = out.json.at("simulate").at("Thermochemistry").at("Alexandria");
+        const auto thermo = out.json.at("nma").at("Thermochemistry").at("Alexandria");
         EXPECT_EQ(mol.sigma, thermo.at("Symmetry number").get<int>());
         const auto S = thermo.at(gmx::formatString("T=%g", cRoomT)).at("Standard entropy");
         EXPECT_NEAR(SRot, jsonValue(S.at("Rotation")), 2e-3*SRot + 6e-4);
@@ -617,7 +640,7 @@ TEST_F(NmaTest, InfraredSpectrum)
             NmaOutput out;
             ASSERT_EQ(0, runNma(molFile, gmx::formatString("ir%g", linewidth),
                                 { "-linewidth", gmx::formatString("%g", linewidth) }, &out));
-            const auto  sim  = out.json.at("simulate");
+            const auto  sim  = out.json.at("nma");
             auto        freq = jsonSeries(sim.at("Frequencies").at("Alexandria"));
             auto        inte = jsonSeries(sim.at("Intensities").at("Alexandria"));
             auto        spec = readSpectrum(out.spectrum);
@@ -671,8 +694,220 @@ TEST_F(NmaTest, NoMinimize)
     NmaOutput out;
     EXPECT_EQ(0, runNma("water-3-oep.log.pdb", "nomin", { "-nominimize" }, &out));
     ASSERT_FALSE(out.json.empty());
-    const auto freq = jsonSeries(out.json.at("simulate").at("Frequencies").at("Alexandria"));
+    const auto freq = jsonSeries(out.json.at("nma").at("Frequencies").at("Alexandria"));
     EXPECT_EQ(3u, freq.size());
+}
+
+//! The normal modes in the JSON output of nma with what is needed to check them
+struct JsonModes
+{
+    //! Mass of each particle
+    std::vector<double>                             mass;
+    //! Whether each particle is an atom
+    std::vector<bool>                               isAtom;
+    //! Displacement of each particle in each mode
+    std::vector<std::vector<std::array<double, 3>>> disp;
+    //! Reduced mass of each mode
+    std::vector<double>                             reducedMass;
+    //! Frequency of each mode
+    std::vector<double>                             frequency;
+};
+
+/*! \brief Extract the normal modes from the output of nma
+ * \param[in]  nmaJson The content below the key nma
+ * \param[out] modes   The modes
+ */
+void readModes(const nlohmann::json &nmaJson, JsonModes *modes)
+{
+    ASSERT_TRUE(nmaJson.contains("molecule"));
+    ASSERT_TRUE(nmaJson.contains("modes"));
+    for (const auto &p : nmaJson["molecule"]["particles"])
+    {
+        modes->mass.push_back(p["mass"].get<double>());
+        modes->isAtom.push_back(p["particletype"].get<std::string>() == "Atom");
+    }
+    ASSERT_TRUE(nmaJson["modes"].is_array());
+    for (const auto &m : nmaJson["modes"])
+    {
+        ASSERT_TRUE(m["frequency"]["value"].is_number());
+        ASSERT_TRUE(m["intensity"]["value"].is_number());
+        ASSERT_TRUE(m["reduced_mass"]["value"].is_number());
+        EXPECT_EQ("g/mol", m["reduced_mass"]["unit"].get<std::string>());
+        modes->frequency.push_back(m["frequency"]["value"].get<double>());
+        modes->reducedMass.push_back(m["reduced_mass"]["value"].get<double>());
+        ASSERT_TRUE(m["displacements"].is_array());
+        ASSERT_EQ(modes->mass.size(), m["displacements"].size());
+        std::vector<std::array<double, 3>> disp;
+        for (const auto &d : m["displacements"])
+        {
+            ASSERT_EQ(3U, d.size());
+            disp.push_back({ d[0].get<double>(), d[1].get<double>(), d[2].get<double>() });
+        }
+        modes->disp.push_back(disp);
+    }
+}
+
+// Test: The JSON file has the root key nma, not simulate as it used to
+TEST_F(NmaTest, JsonRootKey)
+{
+    NmaOutput out;
+    ASSERT_EQ(0, runNma("water-3-oep.log.pdb", "rootkey", {}, &out));
+    ASSERT_FALSE(out.json.empty());
+    EXPECT_TRUE(out.json.contains("nma"));
+    EXPECT_FALSE(out.json.contains("simulate"));
+    EXPECT_EQ("OK", out.json["nma"].value("status", ""));
+    EXPECT_TRUE(out.json["nma"]["converged"].get<bool>());
+    EXPECT_TRUE(out.json["nma"]["rmsd"]["value"].is_number());
+}
+
+// Test: The motion of the atoms in each normal mode is in the JSON file
+TEST_F(NmaTest, ModesInJson)
+{
+    NmaOutput out;
+    ASSERT_EQ(0, runNma("acetone.sdf", "modes", {}, &out));
+    ASSERT_FALSE(out.json.empty());
+    const auto &js = out.json.at("nma");
+    JsonModes   modes;
+    readModes(js, &modes);
+    if (HasFatalFailure())
+    {
+        return;
+    }
+    // Acetone has 10 atoms and is not linear
+    const size_t natom = 10;
+    ASSERT_EQ(natom, modes.mass.size());
+    ASSERT_EQ(3*natom-6, modes.disp.size());
+    // The modes are in the order of the frequencies elsewhere in the file
+    const auto freq = jsonSeries(js.at("Frequencies").at("Alexandria"));
+    ASSERT_EQ(freq.size(), modes.frequency.size());
+    for (size_t k = 0; k < freq.size(); k++)
+    {
+        EXPECT_DOUBLE_EQ(freq[k], modes.frequency[k]) << "mode " << k;
+    }
+    // The coordinates the displacements belong to
+    ASSERT_TRUE(js.contains("coordinates"));
+    EXPECT_EQ("nm", js["coordinates"].value("unit", ""));
+    ASSERT_EQ(natom, js["coordinates"]["minimized"].size());
+
+    const double toler = 2e-4;
+    for (size_t k = 0; k < modes.disp.size(); k++)
+    {
+        // The displacements have length one
+        double                norm = 0;
+        // A vibration does not move the center of mass
+        std::array<double, 3> momentum = { 0, 0, 0 };
+        // The sum of the squares of the mass weighted displacements
+        double                massWeighted = 0;
+        for (size_t i = 0; i < natom; i++)
+        {
+            for (int m = 0; m < 3; m++)
+            {
+                norm        += modes.disp[k][i][m]*modes.disp[k][i][m];
+                momentum[m] += modes.mass[i]*modes.disp[k][i][m];
+            }
+        }
+        EXPECT_NEAR(1.0, norm, toler) << "mode " << k;
+        for (int m = 0; m < 3; m++)
+        {
+            EXPECT_NEAR(0.0, momentum[m], 20*toler) << "mode " << k;
+        }
+        // Mass weighted modes are orthogonal
+        for (size_t l = 0; l < k; l++)
+        {
+            double overlap = 0;
+            for (size_t i = 0; i < natom; i++)
+            {
+                for (int m = 0; m < 3; m++)
+                {
+                    overlap += modes.mass[i]*modes.disp[k][i][m]*modes.disp[l][i][m];
+                }
+            }
+            EXPECT_NEAR(0.0, overlap/std::sqrt(modes.reducedMass[k]*modes.reducedMass[l]), 50*toler)
+            << "modes " << l << " and " << k;
+        }
+        // mu = 1/sum_i (l_i^2/m_i) with l the normalized mass weighted
+        // vector, and d_i = sqrt(mu) l_i/sqrt(m_i), so sum_i m_i d_i^2 = mu
+        for (size_t i = 0; i < natom; i++)
+        {
+            for (int m = 0; m < 3; m++)
+            {
+                massWeighted += modes.mass[i]*modes.disp[k][i][m]*modes.disp[k][i][m];
+            }
+        }
+        EXPECT_NEAR(modes.reducedMass[k], massWeighted, 50*toler*modes.reducedMass[k]) << "mode " << k;
+        EXPECT_GT(modes.reducedMass[k], 1.0);
+        EXPECT_LT(modes.reducedMass[k], 16.0);
+    }
+}
+
+// Test: The reduced mass of the single mode of a diatomic molecule
+TEST_F(NmaTest, ReducedMassDiatomic)
+{
+    NmaOutput out;
+    ASSERT_EQ(0, runNma("hydrogen-chloride.sdf", "redmass", {}, &out));
+    ASSERT_FALSE(out.json.empty());
+    JsonModes modes;
+    readModes(out.json.at("nma"), &modes);
+    if (HasFatalFailure())
+    {
+        return;
+    }
+    ASSERT_EQ(2U, modes.mass.size());
+    ASSERT_EQ(1U, modes.disp.size());
+    const double m1 = modes.mass[0];
+    const double m2 = modes.mass[1];
+    // The convention of quantum chemistry programs, for which the
+    // displacements are normalized: (m1+m2) m1 m2/(m1^2+m2^2). Note that
+    // this is not m1 m2/(m1+m2).
+    EXPECT_NEAR((m1+m2)*m1*m2/(m1*m1+m2*m2), modes.reducedMass[0], 1e-4);
+    // The atoms move along the bond in opposite directions, the light
+    // atom the most: m1 d1 = -m2 d2
+    for (int m = 0; m < 3; m++)
+    {
+        EXPECT_NEAR(0.0, m1*modes.disp[0][0][m] + m2*modes.disp[0][1][m], 1e-3);
+    }
+}
+
+// Test: Shells move with their atoms in the normal modes
+TEST_F(NmaTest, ModesOfPolarizableModel)
+{
+    NmaOutput out;
+    ASSERT_EQ(0, runNmaFF("acetone.sdf", "ACS-pg1.xml", "polmodes", &out));
+    ASSERT_FALSE(out.json.empty());
+    const auto &js = out.json.at("nma");
+    JsonModes   modes;
+    readModes(js, &modes);
+    if (HasFatalFailure())
+    {
+        return;
+    }
+    ASSERT_EQ(20U, modes.mass.size());
+    ASSERT_EQ(24U, modes.disp.size());
+    const auto &particles = js["molecule"]["particles"];
+    for (size_t k = 0; k < modes.disp.size(); k++)
+    {
+        double norm = 0;
+        for (size_t i = 0; i < particles.size(); i++)
+        {
+            if (modes.isAtom[i])
+            {
+                for (int m = 0; m < 3; m++)
+                {
+                    norm += modes.disp[k][i][m]*modes.disp[k][i][m];
+                }
+            }
+            else
+            {
+                const int parent = particles[i]["parents"][0].get<int>();
+                for (int m = 0; m < 3; m++)
+                {
+                    EXPECT_DOUBLE_EQ(modes.disp[k][parent][m], modes.disp[k][i][m]);
+                }
+            }
+        }
+        // The length is that of the displacements of the atoms
+        EXPECT_NEAR(1.0, norm, 2e-4) << "mode " << k;
+    }
 }
 
 // Test: A molecule file that does not exist

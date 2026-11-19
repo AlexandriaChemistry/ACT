@@ -473,7 +473,19 @@ static void outputFreqInten(const ACTMol               *mol,
     }
 }
 
-//! \brief Solve the eigenvalue equation using the Eigen package
+/*! \brief Solve the eigenvalue equation using the Eigen package
+ * \param[in]  hessian     The mass weighted Hessian
+ * \param[in]  atomIndex   The indices of the atoms in the Hessian
+ * \param[in]  atoms       All the particles
+ * \param[in]  dpdq        The derivatives of the dipole moment
+ * \param[in]  rigidBody   The translations and rotations
+ * \param[out] frequencies The frequencies of the vibrations
+ * \param[out] intensities The intensities of the vibrations
+ * \param[out] output      Text for the log file, may be nullptr
+ * \param[in]  debugNMA    Whether to print more
+ * \param[out] vibrations  The eigenvector of each vibration, in the order
+ *                         of the frequencies, may be nullptr
+ */
 static void solveEigen(const MatrixWrapper          &hessian,
                        const std::vector<int>       &atomIndex,
                        const std::vector<ActAtom>   &atoms,
@@ -482,7 +494,8 @@ static void solveEigen(const MatrixWrapper          &hessian,
                        std::vector<double>          *frequencies,
                        std::vector<double>          *intensities,
                        std::vector<std::string>     *output,
-                       bool                          debugNMA)
+                       bool                          debugNMA,
+                       std::vector<std::vector<double>> *vibrations)
 {
     if (output)
     {
@@ -607,6 +620,17 @@ static void solveEigen(const MatrixWrapper          &hessian,
         if (vibration[i])
         {
             intensities->push_back(In[i]);
+            if (vibrations)
+            {
+                // The normalized eigenvector of the mass weighted Hessian
+                const auto          evec = evecs.col(i);
+                std::vector<double> v(matrixSide);
+                for (Eigen::Index j = 0; j < matrixSide; j++)
+                {
+                    v[j] = evec[j];
+                }
+                vibrations->push_back(std::move(v));
+            }
         }
     }
     std::vector<double> eigenvalues;
@@ -617,10 +641,19 @@ static void solveEigen(const MatrixWrapper          &hessian,
     computeFrequencies(eigenvalues, vibration, frequencies, output);
 }
 
-//! \brief Sort Frequencies and Intensities
+/*! \brief Sort Frequencies and Intensities
+ * Of two modes with the same frequency the one with the highest intensity
+ * comes first.
+ * \param[inout] frequencies The frequencies
+ * \param[inout] intensities The intensities
+ * \param[in]    freq_toler  Difference below which frequencies are the same
+ * \param[inout] vibrations  The eigenvectors, which are put in the same
+ *                           order, may be nullptr
+ */
 static void resortFreqIntens(std::vector<double> *frequencies, 
                              std::vector<double> *intensities,
-                             double               freq_toler)
+                             double               freq_toler,
+                             std::vector<std::vector<double>> *vibrations)
 {
     std::vector<double> freq  = *frequencies;
     std::vector<double> inten = *intensities;
@@ -651,6 +684,14 @@ static void resortFreqIntens(std::vector<double> *frequencies,
             (*frequencies)[i] = freq[renumber[i]];
             (*intensities)[i] = inten[renumber[i]];
         }
+        if (vibrations && vibrations->size() == renumber.size())
+        {
+            const auto vib = *vibrations;
+            for (size_t i = 0; i < renumber.size(); i++)
+            {
+                (*vibrations)[i] = vib[renumber[i]];
+            }
+        }
     }
 }
 
@@ -661,7 +702,8 @@ void MolHandler::nma(const ForceField         *pd,
                      std::vector<double>      *frequencies,
                      std::vector<double>      *intensities,
                      std::vector<std::string> *output,
-                     bool                      debugNMA) const
+                     bool                      debugNMA,
+                     std::vector<NormalMode>  *modes) const
 {
     // Get the indices of the real atoms of the molecule (not shells and such)
     auto atoms = mol->topology()->atoms();
@@ -730,13 +772,67 @@ void MolHandler::nma(const ForceField         *pd,
     {
         output->emplace_back("Diagonalizing Hessian to find eigenvectors.");
     }
+    std::vector<std::vector<double>> vibrations;
     solveEigen(hessian, atomIndex, atoms, dpdq, rigidBody,
-               frequencies, intensities, output, debugNMA);
+               frequencies, intensities, output, debugNMA,
+               modes ? &vibrations : nullptr);
     // Check whether there are very similar frequencies, then change the sorting 
     // according to intensities.
     //! \todo make ftoler a parameter.
     double ftoler = 0.001; // Frequency unit is internal unit.
-    resortFreqIntens(frequencies, intensities, ftoler);
+    resortFreqIntens(frequencies, intensities, ftoler,
+                     modes ? &vibrations : nullptr);
+    if (modes)
+    {
+        modes->clear();
+        for (const auto &vib : vibrations)
+        {
+            // Displacements of the atoms from the mass weighted vector
+            NormalMode mode;
+            mode.displacement.resize(atoms.size(), { 0, 0, 0 });
+            double     sum2 = 0;
+            for (size_t i = 0; i < atomIndex.size(); i++)
+            {
+                const double invSqrtMass = gmx::invsqrt(atoms[atomIndex[i]].mass());
+                for (int m = 0; m < DIM; m++)
+                {
+                    const double c = vib[i*DIM+m]*invSqrtMass;
+                    mode.displacement[atomIndex[i]][m] = c;
+                    sum2 += c*c;
+                }
+            }
+            // Normalize, the reduced mass is the inverse of the squared length
+            mode.reducedMass = sum2 > 0 ? 1.0/sum2 : 0;
+            const double scale = sum2 > 0 ? gmx::invsqrt(sum2) : 0;
+            for (auto ai : atomIndex)
+            {
+                for (int m = 0; m < DIM; m++)
+                {
+                    mode.displacement[ai][m] *= scale;
+                }
+            }
+            // Shells and virtual sites move with their atoms: the average
+            // of the displacements of the atoms they belong to
+            for (size_t i = 0; i < atoms.size(); i++)
+            {
+                const auto &parents = atoms[i].parents();
+                if (atoms[i].pType() == ActParticle::Atom || parents.empty())
+                {
+                    continue;
+                }
+                for (int m = 0; m < DIM; m++)
+                {
+                    double d = 0;
+                    for (auto parent : parents)
+                    {
+                        d += mode.displacement[parent][m];
+                    }
+                    mode.displacement[i][m] = d/parents.size();
+                }
+            }
+            modes->push_back(std::move(mode));
+        }
+    }
 
     if (output)
     {

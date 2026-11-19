@@ -64,6 +64,7 @@
 #include "act/qgen/qtype.h"
 #include "act/statistics/statistics.h"
 #include "act/topology/actmol.h"
+#include "act/topology/actmol_json.h"
 #include "act/topology/actmol_low.h"
 #include "act/topology/coords_energy.h"
 #include "act/utility/jsontree.h"
@@ -849,12 +850,14 @@ void doFrequencyAnalysis(MsgHandler               *msghandler,
                          const char               *spectrumFileName,
                          double                    lineWidth,
                          gmx_output_env_t         *oenv,
-                         bool                      debugNMA)
+                         bool                      debugNMA,
+                         bool                      writeModes)
 {
     std::vector<double> alex_freq, intensities;
     std::vector<std::string> output;
+    std::vector<NormalMode>  modes;
     molhandler.nma(pd, mol, forceComp, coords, &alex_freq, &intensities,
-                   &output, debugNMA);
+                   &output, debugNMA, writeModes ? &modes : nullptr);
     auto unit      = mpo_unit2(MolPropObservable::FREQUENCY);
     auto uniti     = mpo_unit2(MolPropObservable::INTENSITY);
     const auto &ref_freq  = mol->referenceFrequencies();
@@ -928,6 +931,21 @@ void doFrequencyAnalysis(MsgHandler               *msghandler,
     }
     jtree->addObject(ftree);
     jtree->addObject(itree);
+    if (writeModes && modes.size() == alex_freq.size())
+    {
+        // The motion of the particles, for showing the vibrations
+        JsonTree jmodes = JsonTree::array("modes");
+        for (size_t k = 0; k < modes.size(); k++)
+        {
+            JsonTree jmode("mode");
+            jmode.addValueUnit("frequency", convertFromGromacs(alex_freq[k], unit), unit);
+            jmode.addValueUnit("intensity", convertFromGromacs(intensities[k], uniti), uniti);
+            jmode.addValueUnit("reduced_mass", modes[k].reducedMass, "g/mol");
+            jmode.addObject(coordinatesToJson("displacements", modes[k].displacement));
+            jmodes.addObject(jmode);
+        }
+        jtree->addObject(jmodes);
+    }
     // Energies
     std::map<InteractionType, double> energies;
     std::vector<gmx::RVec>    forces(coords->size());
