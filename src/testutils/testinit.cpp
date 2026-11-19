@@ -190,6 +190,13 @@ void initTestUtils(const char *dataPath, const char *tempPath, bool usesMpi,
         }
         g_testContext = gmx::compat::make_unique<TestProgramContext>(context);
         setProgramContext(g_testContext.get());
+        // Tests write their output over that of earlier runs. Backups of
+        // such files pile up in the build tree until their maximum number
+        // is reached, after which the test that writes them fails. The
+        // environment variable is set as well, since running a program
+        // through the command line module manager reads it again.
+        setenv("GMX_MAXBACKUP", "-1", 0);
+        gmx_set_max_backup_count(-1);
         // Use the default finder that does not respect GMXLIB, since the tests
         // generally can only get confused by a different set of data files.
         setLibraryFileFinder(nullptr);
