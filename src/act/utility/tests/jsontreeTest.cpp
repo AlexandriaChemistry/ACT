@@ -343,6 +343,18 @@ TEST(JsonTreeTest, NumbersInTextOutput)
     EXPECT_NE(std::string::npos, result.find("x: 2.5"));
 }
 
+TEST(JsonTreeTest, EmptyStringIsWrittenAsString)
+{
+    JsonTree jt("n");
+    jt.addObject("name", std::string(""));
+    jt.addObject(JsonTree("nothing"));
+    const auto js = parsed(jt);
+    ASSERT_TRUE(js.at("name").is_string());
+    EXPECT_EQ("", js.at("name").get<std::string>());
+    // Without value and without objects there is nothing to write
+    EXPECT_TRUE(js.at("nothing").is_null());
+}
+
 // ---- booleans and arrays in JSON ----
 
 TEST(JsonTreeTest, BooleansAreJsonBooleans)

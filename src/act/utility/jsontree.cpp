@@ -212,6 +212,11 @@ static nlohmann::ordered_json toNlohmannValue(const JsonTree &tree)
         }
         return arr;
     }
+    else if (tree.objects().empty() && tree.hasValue())
+    {
+        // An empty string that was given as value
+        return "";
+    }
     else if (!tree.objects().empty())
     {
         nlohmann::ordered_json obj = nlohmann::ordered_json::object();
