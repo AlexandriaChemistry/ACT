@@ -110,10 +110,11 @@ struct TrainOutput
     nlohmann::json           sensitivity;
 };
 
-//! \return a number that is written as a number or a string in json
+//! \return a number in json, which has to be written as a number, not as a string
 inline double jsonNumber(const nlohmann::json &value)
 {
-    return value.is_string() ? std::stod(value.get<std::string>()) : value.get<double>();
+    EXPECT_TRUE(value.is_number()) << value.dump();
+    return value.is_number() ? value.get<double>() : 0.0;
 }
 
 //! \return the lines of a text file

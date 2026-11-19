@@ -194,7 +194,7 @@ int nma(int argc, char *argv[])
             for (const auto &ener : energies)
             {
                 jtener.addValueUnit(interactionTypeToString(ener.first),
-                                    gmx_ftoa(ener.second), unit);
+                                    ener.second, unit);
             }
             jtree.addObject(jtener);
 

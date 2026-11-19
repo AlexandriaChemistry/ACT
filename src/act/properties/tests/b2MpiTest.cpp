@@ -259,7 +259,7 @@ protected:
                     double bmax = 0;
                     for(const auto &b : t.value().items())
                     {
-                        bmax = std::max(bmax, std::abs(std::stod(b.value().get<std::string>())));
+                        bmax = std::max(bmax, std::abs(b.value().get<double>()));
                     }
                     checker.setDefaultTolerance(gmx::test::FloatingPointTolerance(singleToler*bmax, singleToler*bmax,
                                                                                   singleToler, singleToler,
@@ -267,7 +267,7 @@ protected:
                 }
                 for(const auto &b : t.value().items())
                 {
-                    checker.checkReal(std::stod(b.value().get<std::string>()),
+                    checker.checkReal(b.value().get<double>(),
                                       gmx::formatString("%s %s", t.key().c_str(), b.key().c_str()).c_str());
                 }
             }

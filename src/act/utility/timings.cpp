@@ -379,8 +379,8 @@ void printTimings(const CommunicationRecord *cr,
         double      percent = totalWall > 0 ? 100*s.seconds/totalWall : 0.0;
         std::string line    = gmx::formatString("%-48s %10.2f %6.2f", name.c_str(), s.seconds, percent);
         JsonTree    jrow(name);
-        jrow.addObject("Seconds", gmx::formatString("%.3f", s.seconds));
-        jrow.addObject("Percent", gmx::formatString("%.2f", percent));
+        jrow.addNumber("Seconds", gmx::formatString("%.3f", s.seconds));
+        jrow.addNumber("Percent", gmx::formatString("%.2f", percent));
         for (size_t r = 0; r < roles.size(); r++)
         {
             if (nproc[roles[r]] > 0)
@@ -388,7 +388,7 @@ void printTimings(const CommunicationRecord *cr,
                 const auto   pr      = s.perRole.find(roles[r]);
                 double average = (pr == s.perRole.end() ? 0.0 : pr->second)/nproc[roles[r]];
                 line += gmx::formatString(" %10.3f", average);
-                jrow.addObject(roleNames[r], gmx::formatString("%.3f", average));
+                jrow.addNumber(roleNames[r], gmx::formatString("%.3f", average));
             }
         }
         if (haveFlops)
@@ -397,7 +397,7 @@ void printTimings(const CommunicationRecord *cr,
             {
                 double gflops = 1e-9*s.flops/s.seconds;
                 line += gmx::formatString(" %9.3f", gflops);
-                jrow.addObject("GFlop/s", gmx::formatString("%.4f", gflops));
+                jrow.addNumber("GFlop/s", gmx::formatString("%.4f", gflops));
             }
             else
             {
@@ -407,7 +407,7 @@ void printTimings(const CommunicationRecord *cr,
         if (s.calls > 0)
         {
             line += gmx::formatString(" %12.0f", s.calls);
-            jrow.addObject("Calls", gmx::formatString("%.0f", s.calls));
+            jrow.addNumber("Calls", gmx::formatString("%.0f", s.calls));
         }
         if (tw)
         {
@@ -505,7 +505,7 @@ void printTimings(const CommunicationRecord *cr,
             }
             tw->writeStringFormatted("\n");
         }
-        jperf.addObject("Floating point operations", gmx::formatString("%.6g", totalFlops));
+        jperf.addNumber("Floating point operations", gmx::formatString("%.6g", totalFlops));
         jperf.addObject("Precision", calculationPrecision);
         jperf.addValueUnit("Average per core", gmx::formatString("%.4f", average), "GFlop/s");
         jperf.addValueUnit("Per core in the counted parts", gmx::formatString("%.4f", inCounted), "GFlop/s");

@@ -580,19 +580,19 @@ void TrainForceFieldPrinter::printAtoms(gmx::TextWriter              *tw,
     {
         JsonTree atom(std::to_string(j));
         atom.addObject(JsonTree("particletype", actParticleToString(myatoms[j].pType())));
-        atom.addObject(JsonTree("atomicnumber", std::to_string(myatoms[j].atomicNumber())));
+        atom.addObject(JsonTree("atomicnumber", static_cast<int>(myatoms[j].atomicNumber())));
         atom.addObject(JsonTree("fftype", myatoms[j].ffType()));
-        atom.addObject(JsonTree("charge", std::to_string(myatoms[j].charge())));
+        atom.addObject(JsonTree("charge", myatoms[j].charge()));
         if (haveVS)
         {
-            atom.addObject(JsonTree(chargeVSName, std::to_string(myatoms[j].chargeVS())));
+            atom.addObject(JsonTree(chargeVSName, myatoms[j].chargeVS()));
         }
-        atom.addObject(JsonTree("x", std::to_string(coords[j][XX])));
-        atom.addObject(JsonTree("y", std::to_string(coords[j][YY])));
-        atom.addObject(JsonTree("z", std::to_string(coords[j][ZZ])));
-        atom.addObject(JsonTree("fx", std::to_string(forces[j][XX])));
-        atom.addObject(JsonTree("fy", std::to_string(forces[j][YY])));
-        atom.addObject(JsonTree("fz", std::to_string(forces[j][ZZ])));
+        atom.addObject(JsonTree("x", coords[j][XX]));
+        atom.addObject(JsonTree("y", coords[j][YY]));
+        atom.addObject(JsonTree("z", coords[j][ZZ]));
+        atom.addObject(JsonTree("fx", forces[j][XX]));
+        atom.addObject(JsonTree("fy", forces[j][YY]));
+        atom.addObject(JsonTree("fz", forces[j][ZZ]));
         jtatoms.addObject(atom);
         if (myatoms[j].pType() == ActParticle::Atom)
         {
@@ -786,23 +786,23 @@ static void addThermo(MsgHandler                *msghandler,
     real roomTemp     = 298.15;
     const std::string eunit("kJ/mol");
     const std::string sunit("J/mol K");
-    jtree->addValueUnit("Epot", gmx_ftoa(epot), eunit);
+    jtree->addValueUnit("Epot", epot, eunit);
     JsonTree jtc0("T=0");
     JsonTree jtcRT(gmx::formatString("T=%g", roomTemp));
     const ThermoChemistry tc0(msghandler, mol, *coords, atomenergy, freq, epot, 0.0, 1, scale_factor);
     const ThermoChemistry tcRT(msghandler, mol, *coords, atomenergy, freq, epot, roomTemp, 1, scale_factor);
-    jtree->addObject("Symmetry number", gmx::formatString("%d", tcRT.symmetryNumber()));
+    jtree->addObject("Symmetry number", static_cast<int>(tcRT.symmetryNumber()));
     {
-        jtc0.addValueUnit("Zero point energy", gmx_ftoa(tc0.ZPE()), eunit);
-        jtcRT.addValueUnit("Zero point energy", gmx_ftoa(tcRT.ZPE()), eunit);
+        jtc0.addValueUnit("Zero point energy", tc0.ZPE(), eunit);
+        jtcRT.addValueUnit("Zero point energy", tcRT.ZPE(), eunit);
     }
     {
         JsonTree jtS0("Standard entropy");
         JsonTree jtSRT("Standard entropy");
         for(const auto &tcc : tccmap())
         {
-            jtS0.addValueUnit(tcc.second, gmx_ftoa(tc0.S0(tcc.first)), sunit);
-            jtSRT.addValueUnit(tcc.second, gmx_ftoa(tcRT.S0(tcc.first)), sunit);
+            jtS0.addValueUnit(tcc.second, tc0.S0(tcc.first), sunit);
+            jtSRT.addValueUnit(tcc.second, tcRT.S0(tcc.first), sunit);
         }
         jtc0.addObject(jtS0);
         jtcRT.addObject(jtSRT);
@@ -812,8 +812,8 @@ static void addThermo(MsgHandler                *msghandler,
         JsonTree jtcvRT("Heat capacity cV");
         for(const auto &tcc : tccmap())
         {
-            jtcv0.addValueUnit(tcc.second, gmx_ftoa(tc0.cv(tcc.first)), sunit);
-            jtcvRT.addValueUnit(tcc.second, gmx_ftoa(tcRT.cv(tcc.first)), sunit);
+            jtcv0.addValueUnit(tcc.second, tc0.cv(tcc.first), sunit);
+            jtcvRT.addValueUnit(tcc.second, tcRT.cv(tcc.first), sunit);
         }
         jtc0.addObject(jtcv0);
         jtcRT.addObject(jtcvRT);
@@ -823,15 +823,15 @@ static void addThermo(MsgHandler                *msghandler,
         JsonTree jtcERT("Internal energy");
         for(const auto &tcc : tccmap())
         {
-            jtcE0.addValueUnit(tcc.second, gmx_ftoa(tc0.Einternal(tcc.first)), eunit);
-            jtcERT.addValueUnit(tcc.second, gmx_ftoa(tcRT.Einternal(tcc.first)), eunit);
+            jtcE0.addValueUnit(tcc.second, tc0.Einternal(tcc.first), eunit);
+            jtcERT.addValueUnit(tcc.second, tcRT.Einternal(tcc.first), eunit);
         }
         jtc0.addObject(jtcE0);
         jtcRT.addObject(jtcERT);
     }
     {
-        jtc0.addValueUnit("Delta H formation", gmx_ftoa(tc0.DHform()), eunit);
-        jtcRT.addValueUnit("Delta H formation", gmx_ftoa(tcRT.DHform()), eunit);
+        jtc0.addValueUnit("Delta H formation", tc0.DHform(), eunit);
+        jtcRT.addValueUnit("Delta H formation", tcRT.DHform(), eunit);
     }
     jtree->addObject(jtc0);
     jtree->addObject(jtcRT);
@@ -876,15 +876,15 @@ void doFrequencyAnalysis(MsgHandler               *msghandler,
         double fcalc = convertFromGromacs(alex_freq[k], unit);
         double icalc = convertFromGromacs(intensities[k], uniti);
         aftree.addValueUnit(gmx::formatString("%lu", k+1),
-                            gmx_ftoa(fcalc), unit);
+                            fcalc, unit);
         aitree.addValueUnit(gmx::formatString("%lu", k+1),
-                            gmx_ftoa(icalc), uniti);
+                            icalc, uniti);
         
         if (!ref_freq.empty())
         {
             double fref  = convertFromGromacs(ref_freq[k], unit);
             rftree.addValueUnit(gmx::formatString("%lu", k+1),
-                                gmx_ftoa(fref), unit);
+                                fref, unit);
             
             if (nullptr != lsq_freq_all)
             {
@@ -896,7 +896,7 @@ void doFrequencyAnalysis(MsgHandler               *msghandler,
         {
             double iref = convertFromGromacs(ref_inten[k], uniti);
             ritree.addValueUnit(gmx::formatString("%lu", k+1),
-                                gmx_ftoa(iref), uniti);
+                                iref, uniti);
             lsq_inten.add_point(iref, icalc, 0, 0);
         }
     }
@@ -911,8 +911,8 @@ void doFrequencyAnalysis(MsgHandler               *msghandler,
         if (eStats::OK == lsq_freq.get_corr_coeff(&r) &&
             eStats::OK == lsq_freq.get_rmsd(&rmsd))
         {
-            ftree.addObject("Pearson r2", gmx_ftoa(100*r*r));
-            ftree.addObject("RMSD", gmx_ftoa(rmsd));
+            ftree.addObject("Pearson r2", 100*r*r);
+            ftree.addObject("RMSD", rmsd);
         }
     }
     if (!ritree.empty())
@@ -922,8 +922,8 @@ void doFrequencyAnalysis(MsgHandler               *msghandler,
         if (eStats::OK == lsq_inten.get_corr_coeff(&r) &&
             eStats::OK == lsq_inten.get_rmsd(&rmsd))
         {
-            itree.addObject("Pearson r2", gmx_ftoa(100*r*r));
-            itree.addObject("RMSD", gmx_ftoa(rmsd));
+            itree.addObject("Pearson r2", 100*r*r);
+            itree.addObject("RMSD", rmsd);
         }
     }
     jtree->addObject(ftree);
@@ -1637,10 +1637,10 @@ void TrainForceFieldPrinter::print(MsgHandler                  *msghandler,
         auto ims   = mol->datasetType();
         {
             jtmol.addObject(JsonTree("name", mol->getMolname()));
-            jtmol.addObject(JsonTree("charge", std::to_string(mol->totalCharge())));
-            jtmol.addObject(JsonTree("multiplicity", std::to_string(mol->totalMultiplicity())));
-            jtmol.addObject(JsonTree("mass", std::to_string(mol->totalMass())));
-            jtmol.addObject(JsonTree("symmetrynumber", std::to_string(mol->symmetryNumber())));
+            jtmol.addObject(JsonTree("charge", static_cast<int>(mol->totalCharge())));
+            jtmol.addObject(JsonTree("multiplicity", static_cast<int>(mol->totalMultiplicity())));
+            jtmol.addObject(JsonTree("mass", mol->totalMass()));
+            jtmol.addObject(JsonTree("symmetrynumber", static_cast<int>(mol->symmetryNumber())));
             jtmol.addObject(JsonTree("dataset", iMolSelectName(ims)));
         }
         auto topology = mol->topology();

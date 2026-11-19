@@ -59,8 +59,8 @@
     <Real Name="Heat capacity cV Rotation">12.472</Real>
     <Real Name="Heat capacity cV Vibration">16.09</Real>
     <Real Name="Heat capacity cV Total">41.033000000000001</Real>
-    <Real Name="Internal energy Translation">3.718</Real>
-    <Real Name="Internal energy Rotation">3.718</Real>
+    <Real Name="Internal energy Translation">3.7184354682824039</Real>
+    <Real Name="Internal energy Rotation">3.7184354682824039</Real>
     <Real Name="Internal energy Vibration">114.986</Real>
     <Real Name="Internal energy Total">122.423</Real>
   </Thermochemistry>

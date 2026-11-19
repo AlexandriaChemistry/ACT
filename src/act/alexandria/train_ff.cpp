@@ -839,16 +839,16 @@ void OptACM::printGenomeTable(const std::map<iMolSelect, ga::Genome> &genome,
                         tw->writeStringFormatted(" %-*g     |", sizes[k], value);
                     }
                 }
-                param.addObject("best", std::to_string(value));
+                param.addObject("best", value);
                 k++;
             }
             if (tw)
             {
-                param.addObject("min", std::to_string(min[j]));
-                param.addObject("max", std::to_string(max[j]));
-                param.addObject("mean", std::to_string(mean[j]));
-                param.addObject("stdev", std::to_string(stdev[j]));
-                param.addObject("median", std::to_string(median[j]));
+                param.addObject("min", min[j]);
+                param.addObject("max", max[j]);
+                param.addObject("mean", mean[j]);
+                param.addObject("stdev", stdev[j]);
+                param.addObject("median", median[j]);
                 tw->writeStringFormatted(" %-*g | %-*g | %-*g | %-*g | %-*g |\n%s\n",
                                          sizes[k], min[j],
                                          sizes[k+1], max[j],
@@ -953,13 +953,13 @@ bool OptACM::runMaster(bool               optimize,
                 summary.addObject("mode", sensitivityModeToString(res.mode));
                 summary.addObject("file", sensitivityFile);
                 summary.addObject("minimum", res.minimum ? "yes" : "no");
-                summary.addObject("n_parameters", std::to_string(res.nParameters));
-                summary.addObject("n_parameters_converged", std::to_string(res.nParametersConverged));
-                summary.addObject("n_parameters_flat", std::to_string(res.nParametersFlat));
+                summary.addNumber("n_parameters", std::to_string(res.nParameters));
+                summary.addNumber("n_parameters_converged", std::to_string(res.nParametersConverged));
+                summary.addNumber("n_parameters_flat", std::to_string(res.nParametersFlat));
                 if (res.mode == SensitivityMode::TwoD)
                 {
-                    summary.addObject("n_pairs", std::to_string(res.nPairs));
-                    summary.addObject("n_pairs_converged", std::to_string(res.nPairsConverged));
+                    summary.addNumber("n_pairs", std::to_string(res.nPairs));
+                    summary.addNumber("n_pairs_converged", std::to_string(res.nPairsConverged));
                 }
                 jtree->addObject(summary);
             }

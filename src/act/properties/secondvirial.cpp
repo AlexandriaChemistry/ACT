@@ -110,13 +110,12 @@ void forceFieldSummary(JsonTree      *jtree,
                               chargeGenerationAlgorithmName(pd->chargeGenerationAlgorithm())));
     // The same for van der Waals and Coulomb
     int nexcl = std::max(0, pd->nexcl());
-    jtree->addObject(JsonTree("# vanderwaals exclusions", gmx_itoa(nexcl)));
-    jtree->addObject(JsonTree("# coulomb exclusions", gmx_itoa(nexcl)));
+    jtree->addObject(JsonTree("# vanderwaals exclusions", nexcl));
+    jtree->addObject(JsonTree("# coulomb exclusions", nexcl));
     double epsilonr;
     epsilonr = pd->epsilonr();
-    jtree->addObject(JsonTree("Relative dielectric constant epsilon_r",
-                              gmx_ftoa(epsilonr)));
-    jtree->addObject(JsonTree("# particle types", gmx_itoa(pd->getNatypes())));
+    jtree->addObject(JsonTree("Relative dielectric constant epsilon_r", epsilonr));
+    jtree->addObject(JsonTree("# particle types", static_cast<int>(pd->getNatypes())));
     
     JsonTree ftree("InteractionTypes");
     for(const auto &fs : pd->forcesConst())
@@ -131,8 +130,7 @@ void forceFieldSummary(JsonTree      *jtree,
             {
                 fftree.addObject(JsonTree("Force function", function));
             }
-            fftree.addObject(JsonTree("# entries",
-                                      gmx_itoa(ffpl.parametersConst().size())));
+            fftree.addObject(JsonTree("# entries", static_cast<int>(ffpl.parametersConst().size())));
             ftree.addObject(fftree);
         }
     }
@@ -217,7 +215,7 @@ void ReRunner::addB2(JsonTree *jtree)
         JsonTree ttree(gmx::formatString("T = %g K", T[ii]));
         for(const auto &b2b : b2Type2str)
         {
-            ttree.addObject(JsonTree(b2b.second, gmx::formatString("%.17g", b2t_[b2b.first][ii])));
+            ttree.addObject(JsonTree(b2b.second, b2t_[b2b.first][ii]));
         }
         b2tree.addObject(ttree);
     }
