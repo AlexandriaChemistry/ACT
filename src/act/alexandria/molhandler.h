@@ -60,6 +60,23 @@ enum class eMinimizeStatus {
     OK, TooManySteps, Solver, NoMinimum, Constraints
 };
 
+/*! \brief The motion of the particles in a normal mode
+ *
+ * The displacements of the atoms are normalized such that the sum of their
+ * squares is one, as quantum chemistry programs print them. With l the
+ * normalized eigenvector of the mass weighted Hessian, the displacement of
+ * atom i is sqrt(mu) l_i/sqrt(m_i), where the reduced mass mu is
+ * 1/sum_i(l_i^2/m_i). Note that for a diatomic molecule this is
+ * (m1+m2) m1 m2/(m1^2+m2^2) and not m1 m2/(m1+m2).
+ */
+struct NormalMode
+{
+    //! Displacement of each particle. Shells and virtual sites move with their atoms.
+    std::vector<gmx::RVec> displacement;
+    //! The reduced mass (g/mol)
+    double                 reducedMass = 0;
+};
+
 /*! \brief Convert enum to string
  * \param[in] e The minimizer status
  * \return the string corresponding to the status
@@ -174,6 +191,8 @@ public:
      * \param[out] intensities  The normal mode intensities
      * \param[out] output       Vector of string to write information such as frequencies to, may be nullptr (default)
      * \param[in]  debugNMA     Will provide excessive printing statements
+     * \param[out] modes        The motion of the particles in each mode, in the order
+     *                          of the frequencies, may be nullptr (default)
      */
     void nma(const ForceField         *pd,
              const ACTMol             *mol,
@@ -182,7 +201,8 @@ public:
              std::vector<double>      *frequencies,
              std::vector<double>      *intensities,
              std::vector<std::string> *output = nullptr,
-             bool                      debugNMA = false) const;
+             bool                      debugNMA = false,
+             std::vector<NormalMode>  *modes = nullptr) const;
 
     /*! \brief
      * The routine will energy minimize the atomic coordinates of a molecule while

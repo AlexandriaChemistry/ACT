@@ -248,6 +248,10 @@ void print_header(gmx::TextWriter             *tw,
  * \param[in]    lineWidth    The Lorentzian line width for printing a spectrum
  * \param[in]    oenv         Structure to print xvg files
  * \param[in]    debugNMA     Will provide excessive printing statements
+ * \param[in]    writeModes   Whether to add the motion of the particles in each mode to
+ *                            the output structure, as an array "modes" with for each mode
+ *                            the frequency, the intensity, the reduced mass and the
+ *                            displacement of each particle
  */
 void doFrequencyAnalysis(MsgHandler               *msghandler,
                          const ForceField         *pd,
@@ -261,7 +265,8 @@ void doFrequencyAnalysis(MsgHandler               *msghandler,
                          const char               *spectrumFileName,
                          double                    lineWidth,
                          gmx_output_env_t         *oenv,
-                         bool                      debugNMA);
+                         bool                      debugNMA,
+                         bool                      writeModes = false);
                             
 } // namespace alexandria
 

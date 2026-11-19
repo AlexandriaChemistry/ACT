@@ -52,6 +52,7 @@
 #include "act/molprop/molprop_xml.h"
 #include "act/properties/secondvirial.h"
 #include "act/topology/actmol.h"
+#include "act/topology/actmol_json.h"
 #include "act/utility/communicationrecord.h"
 #include "act/utility/jsontree.h"
 #include "act/utility/stringutil.h"
@@ -78,26 +79,30 @@ int nma(int argc, char *argv[])
         "analysis including thermochemistry calculations.[PAR]",
         "The input is given by a coordinate file, a force field file,",
         "a molprop file containing charge information and",
-        "command line options."
+        "command line options.[PAR]",
+        "With [TT]-json[tt], the results are written in json format to the",
+        "given file, nma.json by default: the energies, the frequencies and",
+        "intensities, the thermochemistry, the particles and bonds of the",
+        "molecule, the minimized coordinates and for each normal mode the",
+        "reduced mass and the displacement of each particle, with which",
+        "the vibrations can be shown."
     };
 
     std::vector<t_filenm>     fnm = {
         { efXML, "-ff",      "aff",        ffREAD  },
         { efSTO, "-c",       "confout",    ffOPTWR },
-        { efXVG, "-ir",      "IRspectrum", ffOPTWR }
+        { efXVG, "-ir",      "IRspectrum", ffOPTWR },
+        { efJSON, "-json",   "nma",        ffOPTWR }
     };
     gmx_output_env_t         *oenv;
     real                      shellToler = 1e-6;
-    bool                      json       = false;
     //! Line width (cm^-1) for a Lorentzian when computing infrared intensities and plotting an IR spectrum
     real                      linewidth  = 24;
     std::vector<t_pargs>      pa = {
         { "-linewidth", FALSE, etREAL, {&linewidth},
           "Line width (cm^-1) for a Lorentzian when computing infrared intensities and plotting an IR spectrum" },
         { "-shelltoler", FALSE, etREAL, {&shellToler},
-          "Tolerance for shell force optimization (mean square force)" },
-        { "-json", FALSE, etBOOL, {&json},
-          "Print part of the output in json format" }
+          "Tolerance for shell force optimization (mean square force)" }
     };
     SimulationConfigHandler  sch;
     sch.setMinimize(true);
@@ -116,6 +121,9 @@ int nma(int argc, char *argv[])
     CommunicationRecord cr;
     cr.init(cr.size());
     msghandler.optionsFinished(fnm, &cr);
+    // The results in json format, in the file of -json if it is given
+    const char *jsonFile = opt2fn_null("-json", fnm.size(), fnm.data());
+    const bool  json     = jsonFile != nullptr;
 
     sch.check_pargs(&msghandler);
     compR.optionsFinished(&msghandler, fnm);
@@ -145,7 +153,7 @@ int nma(int argc, char *argv[])
     forceComp.init(shellToler, sch.shellMaxIter(), epsilonr);
     print_header(msghandler.tw(), pa, fnm);
     
-    JsonTree jtree("simulate");
+    JsonTree jtree("nma");
     if (msghandler.verbose())
     {
         forceFieldSummary(&jtree, &pd);
@@ -183,12 +191,16 @@ int nma(int argc, char *argv[])
         std::map<InteractionType, double> energies;
         eMin = molhandler.minimizeCoordinates(&msghandler, &pd, actmol.topology(), &forceComp, sch,
                                               &xmin, &energies, {});
+        // The status of the minimization for programs that read the output
+        jtree.addObject("status", eMinimizeStatusToString(eMin));
+        jtree.addBool("converged", eMinimizeStatus::OK == eMin);
         if (eMinimizeStatus::OK == eMin)
         {
             auto rmsd = molhandler.coordinateRmsd(actmol.atomsConst(), coords, &xmin);
             msghandler.msg(ACTStatus::Info,
                            gmx::formatString("Final energy: %g. RMSD wrt original structure %g nm.",
                                              energies[InteractionType::EPOT], rmsd));
+            jtree.addValueUnit("rmsd", rmsd, "nm");
             JsonTree jtener("Energies");
             const std::string unit("kJ/mol");
             for (const auto &ener : energies)
@@ -217,7 +229,16 @@ int nma(int argc, char *argv[])
         doFrequencyAnalysis(&msghandler, &pd, &actmol, molhandler, &forceComp, &xmin,
                             atomenergy, nullptr, &jtree,
                             opt2fn_null("-ir", fnm.size(), fnm.data()),
-                            linewidth, oenv, msghandler.verbose());
+                            linewidth, oenv, msghandler.verbose(), json);
+        if (json)
+        {
+            // The molecule and the structure the normal modes belong to
+            jtree.addObject(moleculeToJson(&actmol));
+            JsonTree jcoords("coordinates");
+            jcoords.addObject("unit", "nm");
+            jcoords.addObject(coordinatesToJson("minimized", xmin));
+            jtree.addObject(jcoords);
+        }
     }
 
     if (eMinimizeStatus::OK != eMin)
@@ -229,7 +250,7 @@ int nma(int argc, char *argv[])
 
     if (json)
     {
-        jtree.write("nma.json", json);
+        jtree.write(jsonFile, json);
     }
     else
     {
