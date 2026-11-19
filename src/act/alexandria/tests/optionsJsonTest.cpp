@@ -386,10 +386,18 @@ TEST(OptionsJsonTest, KnownOptionsOfMinimize)
     }
     EXPECT_TRUE(found) << "The default of -minalg is one of its values";
 
+    // The file with results in JSON format is optional output
     auto json = findOption(doc, "minimize", "json");
     ASSERT_TRUE(json.is_object());
-    EXPECT_EQ("bool", json.value("type", ""));
-    EXPECT_TRUE(json["default"].is_boolean());
+    EXPECT_EQ("file", json.value("type", ""));
+    EXPECT_FALSE(json.value("required", true));
+    EXPECT_TRUE(json["file"].value("output", false));
+    EXPECT_EQ(".json", json["file"]["extensions"][0].get<std::string>());
+
+    auto oneH = findOption(doc, "minimize", "oneH");
+    ASSERT_TRUE(oneH.is_object());
+    EXPECT_EQ("bool", oneH.value("type", ""));
+    EXPECT_TRUE(oneH["default"].is_boolean());
 
     auto f = findOption(doc, "minimize", "f");
     ASSERT_TRUE(f.is_object());

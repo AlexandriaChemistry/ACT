@@ -41,6 +41,7 @@ gmx_add_unit_test(
     ${exename}
     # files with code for tests
     b2Test.cpp
+    minimizeTest.cpp
     princTest.cpp
     simulateTest.cpp
     nmaTest.cpp

@@ -62,7 +62,8 @@ std::string jsonNumberText(float value);
  * written as JSON numbers, without quotes. Numbers that are not finite
  * are written as null, since JSON has no way to write them.
  * Each JsonTree can have either a value or objects but not both.
- * If both are added a warning is printed.
+ * If both are added a warning is printed. A tree without value and without
+ * objects is written as null, a tree with an empty string as value as "".
  * The objects of a tree are written as the members of a JSON object, or, for
  * a tree made with array(), as the elements of a JSON array. In an array the
  * keys of the objects are not written.
@@ -75,6 +76,8 @@ private:
     std::string           key_;
     //! The value
     std::string           value_;
+    //! Whether a value was given, which may be an empty string
+    bool                  hasValue_ = false;
     //! Whether the value is a number
     bool                  number_  = false;
     //! Whether the value is a boolean
@@ -99,8 +102,9 @@ public:
      */
     JsonTree(const std::string &key, const std::string &value)
     {
-        key_ = key;
-        value_ = value;
+        key_      = key;
+        value_    = value;
+        hasValue_ = true;
     }
 
     /*! \brief Make an element that holds a number given as text
@@ -180,6 +184,9 @@ public:
 
     //! \return value
     const std::string &value() const { return value_; }
+
+    //! \return whether a value was given, which may be an empty string
+    bool hasValue() const { return hasValue_; }
 
     //! \return whether the value is a number
     bool isNumber() const { return number_; }

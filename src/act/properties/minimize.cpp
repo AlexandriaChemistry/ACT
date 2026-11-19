@@ -49,6 +49,7 @@
 #include "act/molprop/molprop_xml.h"
 #include "act/properties/secondvirial.h"
 #include "act/topology/actmol.h"
+#include "act/topology/actmol_json.h"
 #include "act/topology/actmol_low.h"
 #include "act/topology/fragmenthandler.h"
 #include "act/utility/jsontree.h"
@@ -81,6 +82,39 @@ static void addEnergies(JsonTree                                *jtree,
                             val, unit);
     }
     jtree->addObject(jtener);
+}
+
+/*! \brief Move coordinates such that the center of mass is in the origin
+ * \param[in] atoms  The particles with their masses
+ * \param[in] coords The coordinates
+ * \return the moved coordinates
+ */
+static std::vector<gmx::RVec> centeredCoordinates(const std::vector<ActAtom>   &atoms,
+                                                  const std::vector<gmx::RVec> &coords)
+{
+    double    tmass = 0;
+    gmx::RVec com   = { 0, 0, 0 };
+    for (size_t i = 0; i < coords.size(); i++)
+    {
+        const double mass = atoms[i].mass();
+        tmass += mass;
+        for (int m = 0; m < DIM; m++)
+        {
+            com[m] += mass*coords[i][m];
+        }
+    }
+    auto centered = coords;
+    if (tmass > 0)
+    {
+        for (auto &x : centered)
+        {
+            for (int m = 0; m < DIM; m++)
+            {
+                x[m] -= com[m]/tmass;
+            }
+        }
+    }
+    return centered;
 }
 
 eMinimizeStatus minimizeMolecule(MsgHandler                    *msghandler,
@@ -132,6 +166,9 @@ eMinimizeStatus minimizeMolecule(MsgHandler                    *msghandler,
     {
         *epot = energies[InteractionType::EPOT];
     }
+    // The status for programs that read the output
+    jtree->addObject("status", eMinimizeStatusToString(eMin));
+    jtree->addBool("converged", eMinimizeStatus::OK == eMin);
     if (minimizationDidNotConverge(eMin))
     {
         msghandler->msg(ACTStatus::Warning,
@@ -144,6 +181,7 @@ eMinimizeStatus minimizeMolecule(MsgHandler                    *msghandler,
         msghandler->msg(ACTStatus::Info,
                         gmx::formatString("Final energy: %g RMSD wrt original structure %g nm.",
                                           energies[InteractionType::EPOT], rmsd));
+        jtree->addValueUnit("rmsd", rmsd, "nm");
         if (actmol->fragmentHandler()->topologies().size() == 2)
         {
             // Make a copy to keep the correct shell coordinates when saving the structure.
@@ -197,23 +235,26 @@ int minimize(int argc, char *argv[])
         "To obtain information on the used model, the final structure can be",
         "stored as a molprop file. The same minimization can be done with",
         "alexandria simulate -minimize, which can also run a simulation",
-        "starting from the minimized structure."
+        "starting from the minimized structure.[PAR]",
+        "With [TT]-json[tt], the results are written in json format to the",
+        "given file, minimize.json by default: the status of the",
+        "minimization, the energies before and after, the root mean square",
+        "deviation between the two structures, the particles and bonds of",
+        "the molecule and the coordinates of both structures."
     };
 
     std::vector<t_filenm>     fnm = {
         { efXML, "-ff",      "aff",        ffREAD  },
         { efSTO, "-c",       "confout",    ffWRITE },
         { efNDX, "-freeze",  "freeze",     ffOPTRD },
-        { efXML, "-omp",     "molprop",    ffOPTWR }
+        { efXML, "-omp",     "molprop",    ffOPTWR },
+        { efJSON, "-json",   "minimize",   ffOPTWR }
     };
     gmx_output_env_t         *oenv;
     real                      shellToler = 1e-6;
-    bool                      json       = false;
     std::vector<t_pargs>      pa = {
         { "-shelltoler", FALSE, etREAL, {&shellToler},
-          "Tolerance for shell force optimization (mean square force)" },
-        { "-json", FALSE, etBOOL, {&json},
-          "Print part of the output in json format" }
+          "Tolerance for shell force optimization (mean square force)" }
     };
     SimulationConfigHandler  sch;
     sch.add_minimize_options(&pa, true);
@@ -230,6 +271,9 @@ int minimize(int argc, char *argv[])
     CommunicationRecord cr;
     cr.init(cr.size());
     msghandler.optionsFinished(fnm, &cr);
+    // The results in json format, in the file of -json if it is given
+    const char *jsonFile = opt2fn_null("-json", fnm.size(), fnm.data());
+    const bool  json     = jsonFile != nullptr;
 
     sch.check_pargs(&msghandler);
     sch.setMinimize(true);
@@ -299,6 +343,16 @@ int minimize(int argc, char *argv[])
                    gmx::formatString("There are %lu fragments.",
                                      actmol.fragmentHandler()->topologies().size()));
     auto xmin = actmol.xOriginal();
+    // The description of the molecule has to be made before the molprop
+    // is moved out of it below.
+    const JsonTree jmolecule = moleculeToJson(&actmol);
+    // Both structures are given with the center of mass in the origin, and
+    // the final structure is superimposed on the initial one when the root
+    // mean square deviation is computed, such that they can be shown together.
+    JsonTree       jcoords("coordinates");
+    jcoords.addObject("unit", "nm");
+    jcoords.addObject("frame", "center of mass in the origin, after is superimposed on before");
+    jcoords.addObject(coordinatesToJson("before", centeredCoordinates(actmol.atomsConst(), xmin)));
     double epot = 0;
     auto   eMin = minimizeMolecule(&msghandler, &pd, &forceComp, sch,
                                    opt2fn_null("-freeze", fnm.size(), fnm.data()),
@@ -336,7 +390,13 @@ int minimize(int argc, char *argv[])
     }
     if (json)
     {
-        jtree.write("minimize.json", json);
+        jtree.addObject(jmolecule);
+        if (eMinimizeStatus::OK == eMin || minimizationDidNotConverge(eMin))
+        {
+            jcoords.addObject(coordinatesToJson("after", centeredCoordinates(actmol.atomsConst(), xmin)));
+        }
+        jtree.addObject(jcoords);
+        jtree.write(jsonFile, json);
     }
     else
     {
