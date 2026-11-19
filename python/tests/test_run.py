@@ -1,0 +1,317 @@
+#
+# This source file is part of the Alexandria Chemistry Toolkit.
+#
+# This program is free software; you can redistribute it and/or
+# modify it under the terms of the GNU General Public License
+# as published by the Free Software Foundation; either version 2
+# of the License, or (at your option) any later version.
+#
+"""!
+@file
+@brief Tests of running a program, with a stand-in for alexandria, such
+that these tests need no build of ACT.
+"""
+import inspect
+import os
+import sys
+import tempfile
+import time
+import unittest
+import warnings
+from pathlib import Path
+
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+import act  # noqa: E402  pylint: disable=wrong-import-position
+
+## The stand-in program
+FAKE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "fake_alexandria.py")
+
+
+class RunTest(unittest.TestCase):
+    """!
+    @brief Running commands and reading their results.
+    """
+
+    def setUp(self):
+        """!
+        @brief Use the stand-in program and make an input file.
+        """
+        self._executable = act.config.executable
+        self._timeout = act.config.timeout
+        act.config.executable = [sys.executable, FAKE]
+        self._tmp = tempfile.TemporaryDirectory()
+        self.dir = Path(os.path.realpath(self._tmp.name))
+        self.ff = self.dir / "ff.xml"
+        self.ff.write_text("x")
+
+    def tearDown(self):
+        """!
+        @brief Restore the settings and remove the files.
+        """
+        act.config.executable = self._executable
+        act.config.timeout = self._timeout
+        self._tmp.cleanup()
+
+    def test_description_is_read_from_the_program(self):
+        """!
+        @brief The program is asked for its commands.
+        """
+        self.assertEqual(["work"], act.commands.available())
+        self.assertIn("maxiter", act.program_info().find_command("work").options)
+
+    def test_run_gives_results(self):
+        """!
+        @brief A run returns the JSON results, the files and the output.
+        """
+        res = act.run("work", ff=self.ff, maxiter=5, oneH=True)
+        self.assertTrue(res.ok)
+        self.assertEqual(0, res.returncode)
+        self.assertEqual("work", res.command)
+        self.assertIn("done", res.stdout)
+        # Results in JSON format without asking
+        self.assertEqual(0.0192, res.data["rmsd"]["value"])
+        self.assertEqual(res.json["work"], res.data)
+        argv = res.data["argv"]
+        self.assertEqual(["-maxiter", "5"], argv[argv.index("-maxiter"):argv.index("-maxiter")+2])
+        self.assertIn("-oneH", argv)
+        # The files that the program always writes are found
+        self.assertEqual(res.workdir / "confout.pdb", res.file("c"))
+        self.assertTrue(res.file("c").exists())
+        self.assertEqual("log of work\n", res.log)
+        self.assertIsNone(res.file("extra"))
+        self.assertIn("work", repr(res))
+
+    def test_program_runs_in_its_own_directory(self):
+        """!
+        @brief The program runs in a temporary directory that is removed.
+        """
+        res = act.run("work", ff=self.ff)
+        workdir = res.workdir
+        self.assertEqual(os.path.realpath(res.data["cwd"]), os.path.realpath(str(workdir)))
+        self.assertNotEqual(os.path.realpath(os.getcwd()), os.path.realpath(str(workdir)))
+        self.assertTrue(workdir.is_dir())
+        res.close()
+        self.assertFalse(workdir.exists())
+        # Also in a with statement
+        with act.run("work", ff=self.ff) as res2:
+            workdir2 = res2.workdir
+            self.assertTrue(workdir2.is_dir())
+        self.assertFalse(workdir2.exists())
+
+    def test_given_directory_is_kept(self):
+        """!
+        @brief A directory given by the caller is made and kept.
+        """
+        workdir = self.dir / "new" / "run1"
+        res = act.run("work", ff=self.ff, workdir=workdir, extra=True)
+        self.assertEqual(workdir, res.workdir)
+        self.assertEqual(workdir / "extra.xvg", res.file("extra"))
+        res.close()
+        self.assertTrue((workdir / "confout.pdb").exists())
+        self.assertTrue((workdir / "work.json").exists())
+
+    def test_output_file_where_the_caller_wants_it(self):
+        """!
+        @brief An output file with a name is written there.
+        """
+        target = self.dir / "min.pdb"
+        res = act.run("work", ff=self.ff, c=target)
+        self.assertEqual(target, res.file("c"))
+        res.close()
+        self.assertTrue(target.exists())
+
+    def test_json_can_be_switched_off(self):
+        """!
+        @brief Without the JSON file there are no data.
+        """
+        res = act.run("work", ff=self.ff, json=False)
+        self.assertIsNone(res.json)
+        self.assertIsNone(res.data)
+        self.assertIsNone(res.file("json"))
+
+    def test_environment(self):
+        """!
+        @brief Environment variables can be set for the program.
+        """
+        res = act.run("work", ff=self.ff, env={"ACT_TEST_VARIABLE": "hello"})
+        self.assertEqual("hello", res.data["env"])
+
+    def test_failure_raises_with_the_reason(self):
+        """!
+        @brief A program that fails raises an error with its message and output.
+        """
+        with self.assertRaises(act.ActError) as caught:
+            act.run("work", ff=self.ff, fail=3)
+        error = caught.exception
+        self.assertEqual(3, error.returncode)
+        self.assertIn("exit status 3", str(error))
+        self.assertIn("The calculation went wrong.", str(error))
+        self.assertNotIn("For more information", str(error))
+        self.assertIn("Fatal error:", error.stderr)
+        self.assertEqual("log of work\n", error.log)
+        self.assertEqual("work", error.command_line[2])
+
+    def test_failure_without_check(self):
+        """!
+        @brief Without check the result tells that the program failed.
+        """
+        res = act.run("work", ff=self.ff, fail=2, check=False)
+        self.assertFalse(res.ok)
+        self.assertEqual(2, res.returncode)
+        self.assertIsNone(res.data)
+        self.assertIsNone(res.file("c"))
+
+    def test_nothing_runs_with_a_wrong_option(self):
+        """!
+        @brief Wrong arguments are refused before the program starts.
+        """
+        before = set(os.listdir(tempfile.gettempdir()))
+        with self.assertRaises(act.ActOptionError):
+            act.run("work", ff=self.ff, maxiter="many")
+        with self.assertRaises(act.ActNotFoundError):
+            act.run("work", ff=self.dir / "nothere.xml")
+        with self.assertRaises(act.ActOptionError):
+            act.run("nosuchcommand")
+        with self.assertRaises(act.ActOptionError):
+            act.run("work", ff=self.ff, processes=0)
+        # No temporary directories are left behind
+        left = [n for n in set(os.listdir(tempfile.gettempdir())) - before
+                if n.startswith("act-work-")]
+        self.assertEqual([], left)
+
+    def test_timeout_stops_the_program(self):
+        """!
+        @brief A program that takes too long is stopped.
+        """
+        start = time.time()
+        with self.assertRaises(act.ActTimeoutError) as caught:
+            act.run("work", ff=self.ff, sleep=30.0, timeout=0.5)
+        self.assertLess(time.time() - start, 15)
+        self.assertIn("0.5 seconds", str(caught.exception))
+        # The default for all runs
+        act.config.timeout = 0.5
+        with self.assertRaises(act.ActTimeoutError):
+            act.run("work", ff=self.ff, sleep=30.0)
+
+    def test_program_that_does_not_exist(self):
+        """!
+        @brief A missing program gives an error that says what to do.
+        """
+        act.config.executable = "no-such-alexandria-program"
+        with self.assertRaises(act.ActNotFoundError) as caught:
+            act.run("work", ff=self.ff)
+        self.assertIn("ACT_ALEXANDRIA", str(caught.exception))
+
+    def test_program_that_gives_no_description(self):
+        """!
+        @brief A program without the JSON export is reported as too old.
+        """
+        act.config.executable = [sys.executable, "-c", "print('old')"]
+        with self.assertRaises(act.ActError) as caught:
+            act.program_info()
+        self.assertIn("older", str(caught.exception))
+
+    def test_launcher_for_several_processes(self):
+        """!
+        @brief Several processes put the launcher in front of the command.
+        """
+        launcher = act.config.mpi_launcher
+        try:
+            # The stand-in for mpirun runs what follows the number of processes
+            act.config.mpi_launcher = [sys.executable, "-c",
+                                       "import subprocess, sys; "
+                                       "sys.exit(subprocess.call(sys.argv[3:]))"]
+            res = act.run("work", ff=self.ff, processes=4)
+            self.assertEqual(["-n", "4"], res.args[3:5])
+            self.assertTrue(res.ok)
+            self.assertEqual(0.0192, res.data["rmsd"]["value"])
+        finally:
+            act.config.mpi_launcher = launcher
+
+
+class CommandsTest(unittest.TestCase):
+    """!
+    @brief The functions in act.commands.
+    """
+
+    def setUp(self):
+        """!
+        @brief Use the stand-in program.
+        """
+        self._executable = act.config.executable
+        act.config.executable = [sys.executable, FAKE]
+        act.commands._functions.clear()  # pylint: disable=protected-access
+        self._tmp = tempfile.TemporaryDirectory()
+        self.ff = Path(os.path.realpath(self._tmp.name)) / "ff.xml"
+        self.ff.write_text("x")
+
+    def tearDown(self):
+        """!
+        @brief Restore the settings.
+        """
+        act.config.executable = self._executable
+        act.commands._functions.clear()  # pylint: disable=protected-access
+        self._tmp.cleanup()
+
+    def test_function_runs_the_command(self):
+        """!
+        @brief A function runs its command.
+        """
+        res = act.commands.work(ff=self.ff, minalg="Steep")
+        self.assertIn("Steep", res.data["argv"])
+
+    def test_function_is_documented(self):
+        """!
+        @brief Name, help and signature come from the program.
+        """
+        work = act.commands.work
+        self.assertEqual("work", work.__name__)
+        self.assertIn("Pretend to do a calculation.", work.__doc__)
+        self.assertIn("maxiter (int, default 100)", work.__doc__)
+        self.assertIn("one of LBFGS, Newton, Steep", work.__doc__)
+        self.assertIn("Options for experts", work.__doc__)
+        parameters = inspect.signature(work).parameters
+        for name in ("ff", "maxiter", "del_", "workdir", "processes", "timeout"):
+            self.assertIn(name, parameters)
+
+    def test_unknown_command(self):
+        """!
+        @brief A command that does not exist is an attribute error.
+        """
+        with self.assertRaises(AttributeError) as caught:
+            act.commands.nosuchcommand  # pylint: disable=pointless-statement
+        self.assertIn("work", str(caught.exception))
+        self.assertIn("work", dir(act.commands))
+
+
+class LegacyTest(unittest.TestCase):
+    """!
+    @brief The class ACT of the earlier module act.py.
+    """
+
+    def test_old_name_warns_or_explains(self):
+        """!
+        @brief act.ACT gives the old class with a warning when ACT-utilities
+        is installed, and otherwise an error that says where the class is.
+        """
+        with warnings.catch_warnings(record=True) as caught:
+            warnings.simplefilter("always")
+            try:
+                old = act.ACT
+            except ImportError as error:
+                self.assertIn("ACT-utilities", str(error))
+                return
+        self.assertTrue(inspect.isclass(old))
+        self.assertTrue(any(issubclass(w.category, DeprecationWarning) for w in caught))
+
+    def test_other_names_do_not_exist(self):
+        """!
+        @brief Other names are not invented.
+        """
+        with self.assertRaises(AttributeError):
+            act.NoSuchName  # pylint: disable=pointless-statement
+
+
+if __name__ == "__main__":
+    unittest.main()
