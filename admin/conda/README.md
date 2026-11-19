@@ -8,6 +8,7 @@ behind it are in `docs/conda-packaging-plan.md`.
 |-------------|---------------|---------------------------|---------------|
 | `osx-arm64` | ARM NEON      | none                      | mpich, openmpi |
 | `linux-64`  | AVX2 (whole build for x86-64-v3) | SYCL with AdaptiveCpp, CUDA backend | mpich, openmpi |
+| `linux-aarch64` | ARM NEON | SYCL with AdaptiveCpp, CUDA backend | mpich, openmpi |
 
 ## Building locally
 
