@@ -1,0 +1,720 @@
+<title>ACT GUI Mockup</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* Layout: a top bar with three workspaces; each workspace keeps its inputs in a
+   compact bar or column and gives the viewer and the plots the remaining room. */
+:root {
+  --bg: #f3f5f7;          /* page ground, cool grey */
+  --surface: #ffffff;     /* cards */
+  --stage: #e9eef2;       /* 3D viewer and plot ground */
+  --ink: #15202b;         /* text */
+  --muted: #5a6b7a;       /* secondary text */
+  --line: #d9e0e6;        /* hairlines */
+  --accent: #1a5fb0;      /* the one accent, from the blue of the ACT logo */
+  --accent-ink: #ffffff;
+  --accent-soft: #e4eefa;
+  --good: #23784a;
+  --warn: #a8690c;
+  --bad: #b83227;
+  --neg: #c0392b;         /* negative charge */
+  --pos: #2563c4;         /* positive charge */
+  --series2: #6b7885;     /* second plot series */
+  --font: "IBM Plex Sans", "Helvetica Neue", Arial, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, Menlo, Consolas, monospace;
+  --radius: 10px;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0e1419; --surface: #151d24; --stage: #0a0f13; --ink: #e5ecf2; --muted: #93a3b2;
+    --line: #25313b; --accent: #6eaaf0; --accent-ink: #08131f; --accent-soft: #162a41;
+    --good: #58c08a; --warn: #e0a84a; --bad: #f0796c; --neg: #f0796c; --pos: #7fb0f5;
+    --series2: #8d9aa7; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0e1419; --surface: #151d24; --stage: #0a0f13; --ink: #e5ecf2; --muted: #93a3b2;
+  --line: #25313b; --accent: #6eaaf0; --accent-ink: #08131f; --accent-soft: #162a41;
+  --good: #58c08a; --warn: #e0a84a; --bad: #f0796c; --neg: #f0796c; --pos: #7fb0f5;
+  --series2: #8d9aa7; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font: 15px/1.5 var(--font); }
+.wrap { max-width: 1440px; margin: 0 auto; padding-block: 0 56px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+h1, h2, h3 { margin: 0; font-weight: 600; text-wrap: balance; }
+h2 { font-size: 17px; }
+h3 { font-size: 12px; letter-spacing: .07em; text-transform: uppercase; color: var(--muted); font-weight: 500; }
+p { margin: 0; }
+.muted { color: var(--muted); }
+.num, td.n, th.n { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+
+/* top bar */
+.top { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 8px 32px; padding-block: 18px 0; border-bottom: 1px solid var(--line); }
+.brand { display: flex; align-items: center; gap: 10px; padding-bottom: 12px; }
+.mark { width: 30px; height: 30px; border-radius: 50%; background: var(--accent); color: var(--accent-ink);
+  display: grid; place-items: center; font: 600 12px var(--mono); letter-spacing: .02em; }
+.brand b { font-size: 16px; font-weight: 600; }
+.brand span { color: var(--muted); font-size: 13px; }
+.top .tabs { flex: 1 1 auto; }
+.status { margin-left: auto; padding-bottom: 12px; display: flex; gap: 8px; align-items: center; font-size: 13px; color: var(--muted); }
+.dot { width: 8px; height: 8px; border-radius: 50%; background: var(--good); }
+
+/* tabs with a sliding underline */
+.tabs { position: relative; display: flex; gap: 4px; overflow-x: auto; scrollbar-width: none; }
+.tabs button { appearance: none; border: 0; background: none; color: var(--muted); font: 500 15px var(--font);
+  padding: 10px 12px 12px; cursor: pointer; white-space: nowrap; border-radius: 6px 6px 0 0; transition: color .15s; }
+.tabs button:hover { color: var(--ink); }
+.tabs button[aria-selected="true"] { color: var(--ink); }
+.tabs .ink { position: absolute; left: 0; bottom: 0; height: 2px; width: 0; background: var(--accent);
+  transition: transform .24s cubic-bezier(.4,0,.2,1), width .24s cubic-bezier(.4,0,.2,1); pointer-events: none; }
+.tabs.sub button { font-size: 14px; padding: 8px 10px 10px; }
+.tabs.sub { border-bottom: 1px solid var(--line); }
+
+.note { margin-block: 14px 0; font-size: 13px; color: var(--muted); max-width: 100ch; }
+.view { padding-top: 22px; display: grid; gap: 18px; }
+.panel, .view { animation: fade .22s ease both; }
+@keyframes fade { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+
+/* cards and controls */
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); min-width: 0; }
+.card > .head { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; padding: 12px 16px; border-bottom: 1px solid var(--line); }
+.card > .body { padding: 16px; display: grid; gap: 16px; }
+.bar { display: flex; flex-wrap: wrap; gap: 14px 18px; align-items: flex-end; padding: 16px; }
+.field { display: grid; gap: 5px; min-width: 0; }
+.field > label, .lab { font-size: 12px; color: var(--muted); font-weight: 500; }
+input[type="text"], input[type="number"], select { font: 14px var(--font); color: var(--ink); background: var(--surface);
+  border: 1px solid var(--line); border-radius: 7px; padding: 7px 10px; min-width: 0; max-width: 100%; height: 36px; }
+input.mono { font-family: var(--mono); }
+input[type="number"] { width: 92px; font-family: var(--mono); }
+input[type="range"] { accent-color: var(--accent); width: 100%; }
+input[type="checkbox"] { accent-color: var(--accent); width: 15px; height: 15px; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.btn { appearance: none; font: 500 14px var(--font); height: 36px; padding: 0 14px; border-radius: 7px; cursor: pointer;
+  background: var(--surface); color: var(--ink); border: 1px solid var(--line); transition: background .15s, border-color .15s, transform .08s; white-space: nowrap; }
+.btn:hover { border-color: var(--muted); }
+.btn:active { transform: translateY(1px); }
+.btn.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+.btn.primary:hover { filter: brightness(1.08); }
+.btn.small { height: 30px; padding: 0 10px; font-size: 13px; }
+.seg { display: inline-flex; border: 1px solid var(--line); border-radius: 7px; overflow: hidden; background: var(--surface); }
+.seg button { appearance: none; border: 0; background: none; color: var(--muted); font: 500 13px var(--font); padding: 6px 11px; cursor: pointer; transition: background .15s, color .15s; }
+.seg button + button { border-left: 1px solid var(--line); }
+.seg button[aria-pressed="true"] { background: var(--accent-soft); color: var(--accent); }
+.chips { display: flex; flex-wrap: wrap; gap: 6px 8px; }
+.chip { font-size: 13px; padding: 3px 10px; border-radius: 99px; background: var(--bg); border: 1px solid var(--line); color: var(--muted); }
+.chip b { color: var(--ink); font-weight: 500; }
+.pill { font-size: 12px; font-weight: 500; padding: 2px 9px; border-radius: 99px; border: 1px solid currentColor; }
+.pill.good { color: var(--good); } .pill.warn { color: var(--warn); } .pill.bad { color: var(--bad); }
+.check { display: inline-flex; gap: 7px; align-items: center; font-size: 14px; }
+.row { display: flex; flex-wrap: wrap; gap: 10px 14px; align-items: center; }
+.spacer { flex: 1 1 auto; }
+
+/* molecule workspace */
+.split { display: grid; gap: 18px; grid-template-columns: minmax(0, 1.08fr) minmax(0, 1fr); align-items: start; }
+@media (max-width: 1020px) { .split { grid-template-columns: minmax(0, 1fr); } }
+.stage { position: relative; height: clamp(320px, 56vh, 560px); background: var(--stage); border-radius: 0 0 var(--radius) var(--radius); overflow: hidden; }
+.stage .gl { position: absolute; inset: 0; }
+.stage .hint { position: absolute; left: 12px; bottom: 10px; font-size: 12px; color: var(--muted); pointer-events: none; }
+.stage .legend { position: absolute; right: 12px; bottom: 10px; display: flex; align-items: center; gap: 8px; font: 12px var(--mono); color: var(--muted); pointer-events: none; }
+.stage .legend i { width: 120px; height: 8px; border-radius: 4px; background: linear-gradient(90deg, #d0392b, #f4f4f4, #2a5fd0); border: 1px solid var(--line); }
+.stage .nogl { position: absolute; inset: 0; display: grid; place-items: center; text-align: center; padding: 24px; color: var(--muted); }
+.stat { display: grid; gap: 2px; }
+.stat .v { font: 500 26px/1.15 var(--mono); font-variant-numeric: tabular-nums; }
+.stat .v small { font-size: 14px; color: var(--muted); font-weight: 400; }
+.stats { display: flex; flex-wrap: wrap; gap: 14px 36px; }
+.plot { background: var(--stage); border-radius: 8px; min-width: 0; }
+.plot svg { display: block; width: 100%; height: auto; }
+.scroll { overflow: auto; max-height: 300px; border: 1px solid var(--line); border-radius: 8px; }
+.xscroll { overflow-x: auto; }
+table.data { border-collapse: collapse; width: 100%; font-size: 13.5px; }
+table.data th { text-align: left; font-weight: 500; color: var(--muted); font-size: 12px; padding: 7px 10px; border-bottom: 1px solid var(--line); position: sticky; top: 0; background: var(--surface); white-space: nowrap; }
+table.data td { padding: 6px 10px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+table.data tr:last-child td { border-bottom: 0; }
+table.data .n { text-align: right; }
+table.data tr.pick { cursor: pointer; }
+table.data tr.pick:hover td { background: var(--bg); }
+table.data tr.sel td { background: var(--accent-soft); }
+table.data tr.total td { font-weight: 600; }
+.qbar { display: inline-block; width: 84px; height: 8px; position: relative; background: var(--bg); border-radius: 4px; vertical-align: middle; margin-left: 8px; }
+.qbar i { position: absolute; top: 0; bottom: 0; border-radius: 4px; }
+.qbar::after { content: ""; position: absolute; left: 50%; top: -2px; bottom: -2px; width: 1px; background: var(--muted); }
+.range { display: inline-block; width: 110px; height: 6px; background: var(--bg); border: 1px solid var(--line); border-radius: 4px; position: relative; vertical-align: middle; }
+.range i { position: absolute; top: -4px; width: 2px; height: 12px; background: var(--accent); border-radius: 1px; transition: left .2s; }
+.range.out i { background: var(--bad); }
+.progress { height: 4px; background: var(--bg); border-radius: 2px; overflow: hidden; }
+.progress i { display: block; height: 100%; width: 0; background: var(--accent); transition: width .12s linear; }
+pre.code { margin: 0; font: 12.5px/1.55 var(--mono); background: var(--stage); border-radius: 8px; padding: 12px 14px; overflow-x: auto; }
+.files { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; }
+.files li { display: grid; grid-template-columns: minmax(0, 15em) minmax(0, 1fr); gap: 4px 16px; padding: 8px 0; border-bottom: 1px solid var(--line); font-size: 14px; }
+.files li:last-child { border-bottom: 0; }
+.files code, code { font-family: var(--mono); font-size: 13px; }
+@media (max-width: 560px) { .files li { grid-template-columns: minmax(0, 1fr); } }
+.cols { display: grid; gap: 18px; grid-template-columns: minmax(0, 340px) minmax(0, 1fr); align-items: start; }
+.cols.side-right { grid-template-columns: minmax(0, 1fr) minmax(0, 340px); }
+.cols.plot-left { grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); }
+.cols.modes { grid-template-columns: minmax(0, 190px) minmax(0, 1fr); }
+@media (max-width: 900px) { .cols, .cols.side-right, .cols.plot-left { grid-template-columns: minmax(0, 1fr); } }
+@media (max-width: 560px) { .cols.modes { grid-template-columns: minmax(0, 1fr); } .stage .hint { display: none; } }
+.group { display: grid; gap: 12px; }
+.grid2 { display: grid; gap: 12px 14px; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); }
+.list { margin: 0; padding: 0; list-style: none; display: grid; gap: 10px; font-size: 14px; }
+.list li { display: grid; grid-template-columns: 22px minmax(0, 1fr); gap: 8px; }
+.list .ok { color: var(--good); } .list .wr { color: var(--warn); } .list .er { color: var(--bad); }
+.toast { position: fixed; left: 50%; bottom: calc(24px + env(safe-area-inset-bottom, 0px)); transform: translate(-50%, 12px); opacity: 0; pointer-events: none;
+  background: var(--ink); color: var(--bg); font-size: 14px; padding: 10px 16px; border-radius: 8px; max-width: min(92vw, 560px); transition: opacity .2s, transform .2s; z-index: 20; }
+.toast.on { opacity: 1; transform: translate(-50%, 0); }
+@media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <div class="brand"><div class="mark" aria-hidden="true">AC</div><div><b>ACT</b> <span>Alexandria Chemistry Toolkit</span></div></div>
+    <nav class="tabs" id="nav" role="tablist" aria-label="Workspaces">
+      <button role="tab" data-view="molecule" aria-selected="true">Molecule</button>
+      <button role="tab" data-view="force-field" aria-selected="false">Force field</button>
+      <button role="tab" data-view="molprop" aria-selected="false">Molprop data</button>
+      <span class="ink"></span>
+    </nav>
+    <div class="status"><span class="dot"></span>Desktop mode · alexandria 1.9b</div>
+  </header>
+  <p class="note">Design mockup with example data. The molecule results are real ACT output for acetone with a test force field; the molprop numbers are illustrative. Buttons that would write files or start long jobs only show a message here.</p>
+
+  <!-- ================= Molecule ================= -->
+  <section class="view" id="view-molecule">
+    <div class="card">
+      <div class="bar">
+        <div class="field" style="flex:1 1 220px"><label for="smiles">SMILES or molecule file</label>
+          <input class="mono" type="text" id="smiles" value="CC(=O)C" spellcheck="false"></div>
+        <button class="btn" id="upload" type="button">Upload file…</button>
+        <div class="field"><label for="ffsel">Force field</label>
+          <select id="ffsel"><option>ACS-pg1 (test, polarizable)</option><option>Default force field</option><option>Upload force field…</option></select></div>
+        <div class="field"><label for="qalg">Charges</label>
+          <select id="qalg"><option>From force field (ACM)</option><option>EEM</option><option>SQE</option><option>ESP</option><option>Read from file</option></select></div>
+        <button class="btn primary" id="load" type="button">Load molecule</button>
+      </div>
+      <div class="bar" style="padding-top:0"><div class="chips" id="molchips"></div></div>
+    </div>
+
+    <div class="split">
+      <div class="card">
+        <div class="head">
+          <h2 id="scene-title">Structure</h2><span class="spacer"></span>
+          <div class="seg" id="style" role="group" aria-label="Drawing style">
+            <button aria-pressed="true" data-v="ball">Ball and stick</button><button aria-pressed="false" data-v="stick">Sticks</button><button aria-pressed="false" data-v="sphere">Spheres</button></div>
+          <div class="seg" id="colour" role="group" aria-label="Colour">
+            <button aria-pressed="false" data-v="element">Element</button><button aria-pressed="true" data-v="charge">Charge</button></div>
+          <label class="check"><input type="checkbox" id="labels" checked> Labels</label>
+        </div>
+        <div class="stage"><div class="gl" id="gl"></div>
+          <button class="btn small" id="reset" type="button" style="position:absolute;top:10px;right:10px">Reset view</button>
+          <div class="hint">Drag to rotate · scroll to zoom · shift-drag to move</div>
+          <div class="legend" id="qlegend"><span>−0.4 e</span><i></i><span>+0.4 e</span></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <nav class="tabs sub" id="tasks" role="tablist" aria-label="Calculations" style="padding:4px 8px 0">
+          <button role="tab" data-tab="charges" aria-selected="true">Charges</button>
+          <button role="tab" data-tab="minimize" aria-selected="false">Minimize</button>
+          <button role="tab" data-tab="modes" aria-selected="false">Normal modes</button>
+          <button role="tab" data-tab="simulate" aria-selected="false">Simulate</button>
+          <button role="tab" data-tab="openmm" aria-selected="false">OpenMM package</button>
+          <span class="ink"></span>
+        </nav>
+
+        <div class="body panel" id="tab-charges">
+          <p class="muted">Net charge of each atom, core plus shell. Click a row to find the atom in the viewer.</p>
+          <div class="scroll" style="max-height:380px"><table class="data" id="qtable"></table></div>
+        </div>
+
+        <div class="body panel" id="tab-minimize" hidden>
+          <div class="row"><button class="btn primary" id="run-min" type="button">Minimize energy</button>
+            <label class="check"><input type="checkbox" id="ghost" checked> Show original structure</label>
+            <span class="spacer"></span><span class="pill good" id="min-pill">Converged</span></div>
+          <div class="stats">
+            <div class="stat"><span class="lab">RMSD after superposition</span><span class="v" id="rmsd"></span></div>
+            <div class="stat"><span class="lab">Change in potential energy</span><span class="v" id="dE"></span></div>
+          </div>
+          <div class="xscroll"><table class="data" id="etable"></table></div>
+        </div>
+
+        <div class="body panel" id="tab-modes" hidden>
+          <div class="row"><button class="btn primary" id="run-nma" type="button">Run normal mode analysis</button>
+            <span class="spacer"></span><button class="btn small" data-msg="Mockup: the application saves the spectrum as a PDF made by plotXVG." type="button">Save spectrum as PDF</button></div>
+          <div><h3>Infrared spectrum</h3><div class="plot" id="irplot" style="margin-top:8px"></div>
+            <p class="muted" style="font-size:13px;margin-top:6px">Click a line under the spectrum or a row in the table to see the vibration.</p></div>
+          <div class="cols modes">
+            <div><h3 style="margin-bottom:8px">Modes</h3><div class="scroll" style="max-height:250px"><table class="data" id="modetable"></table></div></div>
+            <div><h3 style="margin-bottom:8px">Thermochemistry at 298.15 K</h3><div class="xscroll"><table class="data" id="thermo"></table></div></div>
+          </div>
+        </div>
+
+        <div class="body panel" id="tab-simulate" hidden>
+          <div class="row">
+            <div class="field"><label for="nsteps">Steps</label><input type="number" id="nsteps" value="2000" step="100"></div>
+            <div class="field"><label for="dt">Time step (fs)</label><input type="number" id="dt" value="0.5" step="0.1"></div>
+            <div class="field"><label for="temp">Temperature (K)</label><input type="number" id="temp" value="300" step="10"></div>
+            <button class="btn primary" id="run-sim" type="button" style="align-self:flex-end">Run simulation</button>
+          </div>
+          <div class="progress" aria-hidden="true"><i id="simbar"></i></div>
+          <div class="row"><div class="seg" id="eseries" role="group" aria-label="Energy to plot">
+              <button aria-pressed="true" data-v="EPOT">Potential</button><button aria-pressed="false" data-v="EKIN">Kinetic</button><button aria-pressed="false" data-v="ETOT">Total</button><button aria-pressed="false" data-v="T">Temperature</button></div>
+            <span class="spacer"></span><span class="num muted" id="simtime"></span>
+            <button class="btn small" data-msg="Mockup: the application saves the energy plot as a PDF made by plotXVG." type="button">Save plot as PDF</button></div>
+          <div class="plot" id="eplot"></div>
+        </div>
+
+        <div class="body panel" id="tab-openmm" hidden>
+          <p>Everything needed to simulate this molecule with OpenMM and the same force field, in one archive.</p>
+          <ul class="files">
+            <li><code>acetone.pdb</code><span class="muted">Coordinates, with the shell particles</span></li>
+            <li><code>acetone-openmm.xml</code><span class="muted">Force field for OpenMM, written by <code>alexandria gentop -openmm</code></span></li>
+            <li><code>simulation.dat</code><span class="muted">Simulation settings read by <code>act_openmm.py</code></span></li>
+            <li><code>run.py</code><span class="muted">Script that starts the simulation with <code>ActOpenMMSim</code></span></li>
+            <li><code>README.md</code><span class="muted">How the files were made, with the command lines</span></li>
+          </ul>
+          <div class="row">
+            <div class="field"><label for="ens">Ensemble</label><select id="ens"><option>NVT</option><option>NPT</option><option>NVE</option></select></div>
+            <div class="field"><label for="ommsteps">Steps</label><input type="number" id="ommsteps" value="100000" step="1000" style="width:110px"></div>
+            <button class="btn primary" data-msg="Mockup: the application runs gentop and offers the archive acetone-openmm.zip." type="button" style="align-self:flex-end">Create package</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= Force field ================= -->
+  <section class="view" id="view-force-field" hidden>
+    <nav class="tabs sub" id="fftabs" role="tablist" aria-label="Force field tools">
+      <button role="tab" data-tab="gen" aria-selected="true">Generate</button>
+      <button role="tab" data-tab="edit" aria-selected="false">Edit and validate</button>
+      <button role="tab" data-tab="vsite" aria-selected="false">Virtual sites</button>
+      <span class="ink"></span>
+    </nav>
+
+    <div class="panel cols" id="tab-gen">
+      <div class="card"><div class="body">
+        <div class="field"><label for="ffname">Name</label><input type="text" id="ffname" value="my-force-field"></div>
+        <div class="group"><h3>Electrostatics</h3>
+          <div class="field"><span class="lab">Charge distribution</span><div class="seg" id="qdist"><button aria-pressed="true" data-v="GAUSSIAN">Gaussian</button><button aria-pressed="false" data-v="POINT">Point</button><button aria-pressed="false" data-v="SLATER">Slater</button></div></div>
+          <label class="check"><input type="checkbox" id="pol" checked> Polarizable, with shells</label>
+          <label class="check"><input type="checkbox" id="qsymm" checked> Symmetrize charges</label>
+          <div class="grid2"><div class="field"><label for="epsr">Relative dielectric constant</label><input type="number" id="epsr" value="1" step="0.1"></div>
+            <div class="field"><label for="nexcl">Excluded bonds</label><input type="number" id="nexcl" value="2" min="0" max="3"></div></div></div>
+        <div class="group"><h3>Van der Waals</h3>
+          <div class="field"><label for="vdwfn">Potential</label><select id="vdwfn"><option>LJ12_6</option><option>LJ14_7</option><option>LJ8_6</option><option>LJ12_6_4</option><option>GENERALIZED_BUCKINGHAM</option><option selected>WANG_BUCKINGHAM</option><option>BUCKINGHAM</option><option>TANG_TOENNIES</option><option>TT2b</option><option>SLATER_ISA_TT</option></select></div></div>
+        <div class="group"><h3>Bonded interactions</h3>
+          <div class="grid2">
+            <div class="field"><label for="bondfn">Bonds</label><select id="bondfn"><option>HARMONIC_BONDS</option><option selected>MORSE_BONDS</option><option>CUBIC_BONDS</option><option>HUA_BONDS</option></select></div>
+            <div class="field"><label for="anglefn">Angles</label><select id="anglefn"><option>HARMONIC_ANGLES</option><option>UREY_BRADLEY_ANGLES</option></select></div>
+            <div class="field"><label for="dihfn">Dihedrals</label><select id="dihfn"><option>FOURIER_DIHEDRALS</option><option>PROPER_DIHEDRALS</option></select></div>
+          </div></div>
+        <button class="btn primary" id="run-gen" type="button">Generate force field</button>
+      </div></div>
+      <div style="display:grid;gap:18px;min-width:0">
+        <div class="card"><div class="head"><h2>Atom types</h2><span class="muted" id="ntypes"></span><span class="spacer"></span>
+            <button class="btn small" id="all-on" type="button">Select all</button><button class="btn small" id="all-off" type="button">Clear</button></div>
+          <div class="scroll" style="max-height:380px;border:0;border-radius:0 0 var(--radius) var(--radius)"><table class="data" id="atypes"></table></div></div>
+        <div class="card"><div class="head"><h2>Command the interface will run</h2></div>
+          <div class="body"><pre class="code" id="gencmd"></pre><div id="genresult" class="row" hidden></div></div></div>
+      </div>
+    </div>
+
+    <div class="panel cols side-right" id="tab-edit" hidden>
+      <div class="card"><div class="head"><h2>Parameters</h2><span class="muted">ACS-pg1, types of acetone</span><span class="spacer"></span>
+          <div class="field"><select id="pfilter" aria-label="Interaction"><option value="">All interactions</option></select></div></div>
+        <div class="scroll" style="max-height:520px;border:0;border-radius:0 0 var(--radius) var(--radius)"><table class="data" id="ptable"></table></div></div>
+      <div class="card"><div class="head"><h2>Validation</h2><span class="spacer"></span><button class="btn primary small" id="run-val" type="button">Validate</button></div>
+        <div class="body"><ul class="list" id="vallist"></ul>
+          <p class="muted" style="font-size:13px">Change a value in the table to one outside its bounds and validate again.</p>
+          <button class="btn" data-msg="Mockup: the application writes the changed force field with alexandria edit_ff." type="button">Save force field</button></div></div>
+    </div>
+
+    <div class="panel split" id="tab-vsite" hidden>
+      <div class="card"><div class="head"><h2>Pick the atoms that carry the site</h2><span class="spacer"></span><button class="btn small" id="vs-clear" type="button">Clear selection</button></div>
+        <div class="stage"><div class="gl" id="gl2"></div><div class="hint">Click two atoms for a site on their line, three for a site on the bisector</div></div></div>
+      <div class="card"><div class="body">
+        <div class="group"><h3>Selected atoms</h3><div class="chips" id="vs-atoms"></div></div>
+        <div class="grid2">
+          <div class="field"><label for="vs-type">Name of the site type</label><input class="mono" type="text" id="vs-type" value="v2o2"></div>
+          <div class="field"><span class="lab">Interaction</span><span class="num" id="vs-inter" style="height:36px;display:flex;align-items:center">VSITE2</span></div>
+        </div>
+        <div class="group"><h3>Position parameter <span class="num" id="vs-pname" style="text-transform:none;letter-spacing:0">vs2a</span></h3>
+          <input type="range" id="vs-a" min="-1" max="1.5" step="0.01" value="1.25" aria-label="Position parameter">
+          <div class="row"><div class="field"><label for="vs-min">Minimum</label><input type="number" id="vs-min" value="1" step="0.05"></div>
+            <div class="field"><label for="vs-max">Maximum</label><input type="number" id="vs-max" value="1.5" step="0.05"></div>
+            <div class="stat"><span class="lab">Preview at</span><span class="num" id="vs-aval"></span></div></div></div>
+        <div class="group"><h3>Definition for gen_ff -vs</h3><pre class="code" id="vs-json"></pre></div>
+        <div class="row"><button class="btn primary" id="vs-add" type="button">Add to force field</button><span class="muted" id="vs-count"></span></div>
+      </div></div>
+    </div>
+  </section>
+
+  <!-- ================= Molprop ================= -->
+  <section class="view" id="view-molprop" hidden>
+    <div class="card"><div class="bar">
+      <div class="field" style="flex:1 1 240px"><span class="lab">Molprop file</span><div class="row"><code>alcohol-dimers.xml</code><button class="btn small" data-msg="Mockup: the application uploads a molprop file and checks that it is well-formed XML before anything reads it." type="button">Upload file…</button></div></div>
+      <div class="chips"><span class="chip"><b>12</b> dimers</span><span class="chip"><b>240</b> conformations</span><span class="chip">reference <b>SAPT2+(CCD)-δMP2</b></span></div>
+    </div></div>
+    <nav class="tabs sub" id="mptabs" role="tablist" aria-label="Molprop tools">
+      <button role="tab" data-tab="eval" aria-selected="true">Evaluate force field</button>
+      <button role="tab" data-tab="ana" aria-selected="false">Analyse content</button>
+      <button role="tab" data-tab="mpval" aria-selected="false">Validate file</button>
+      <span class="ink"></span>
+    </nav>
+
+    <div class="panel cols plot-left" id="tab-eval">
+      <div class="card"><div class="head"><h2>ACT against the reference</h2><span class="spacer"></span>
+          <div class="seg" id="comp" role="group" aria-label="Energy component"></div></div>
+        <div class="body"><div class="plot" id="corrplot"></div>
+          <div class="row"><span class="muted" style="font-size:13px">Each point is one dimer conformation. The line is y = x.</span><span class="spacer"></span>
+            <button class="btn small" data-msg="Mockup: the application prints the correlation plot as a PDF made by plotXVG." type="button">Print plot</button></div></div></div>
+      <div class="card"><div class="head"><h2>Statistics</h2><span class="spacer"></span><button class="btn primary small" data-msg="Mockup: the application runs alexandria train_ff -nooptimize and reads the statistics from its JSON output." type="button">Evaluate again</button></div>
+        <div class="xscroll"><table class="data" id="stattable"></table></div>
+        <div class="body"><p class="muted" style="font-size:13px">Energies in kJ/mol. RMSD, mean signed error (MSE) and mean absolute error (MAE) of ACT minus reference.</p></div></div>
+    </div>
+
+    <div class="panel cols" id="tab-ana" hidden>
+      <div class="card"><div class="head"><h2>Dimers</h2></div><div class="scroll" style="max-height:420px;border:0;border-radius:0 0 var(--radius) var(--radius)"><table class="data" id="dimertable"></table></div></div>
+      <div class="card"><div class="head"><h2 id="histtitle">Energy distribution</h2><span class="spacer"></span>
+          <button class="btn small" data-msg="Mockup: the application saves the histogram as a PDF made by plotXVG." type="button">Save plot as PDF</button></div>
+        <div class="body"><div class="plot" id="histplot"></div><div class="stats" id="histstats"></div></div></div>
+    </div>
+
+    <div class="panel" id="tab-mpval" hidden>
+      <div class="card"><div class="head"><h2>Checks of <code>alexandria edit_mp -validate</code></h2><span class="spacer"></span><span class="pill warn">1 warning</span></div>
+        <div class="body"><ul class="list">
+          <li><span class="ok">✓</span><span>The file is well-formed XML and follows the molprop format.</span></li>
+          <li><span class="ok">✓</span><span>The atoms have the same order in all 240 conformations of each dimer.</span></li>
+          <li><span class="ok">✓</span><span>The atoms of each fragment match its formula.</span></li>
+          <li><span class="ok">✓</span><span>No bonds between the two molecules of a dimer.</span></li>
+          <li><span class="wr">!</span><span>Both <code>methanol#water</code> and <code>water#methanol</code> are present. They are the same dimer; merge them or remove one.</span></li>
+        </ul></div></div>
+    </div>
+  </section>
+</div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/3Dmol/2.4.2/3Dmol-min.js"></script>
+<script id="data" type="application/json">{"name":"acetone","formula":"C3H6O","forcefield":"ACS-pg1 (polarizable, test force field)","elem":["O","C","C","C","H","H","H","H","H","H"],"bonds":[[1,0,2],[2,4,1],[2,1,1],[3,7,1],[3,1,1],[5,2,1],[6,2,1],[8,3,1],[9,3,1]],"q":[-0.3126,-0.3033,-0.3429,-0.3437,0.2169,0.2169,0.2169,0.2172,0.2172,0.2172],"x0":[[-0.3558,-0.0641,1.2155],[0.0,0.0,0.1843],[-1.2878,0.0,-0.6113],[1.358,-0.0086,-0.6349],[-2.1423,0.0,0.0598],[-1.3298,0.8767,-1.2624],[-1.1438,-0.8557,-1.2026],[1.8017,0.0811,0.2824],[1.0792,-0.867,-1.2356],[1.3298,0.8767,-1.2614]],"xmin":[[-0.2013,-0.0364,1.3809],[-0.103,-0.0043,0.1794],[-1.305,0.02,-0.7207],[1.2293,0.0138,-0.5136],[-2.2154,0.0033,-0.0854],[-1.2945,0.9464,-1.3299],[-1.295,-0.8725,-1.3786],[2.0243,-0.0071,0.2611],[1.3218,-0.8789,-1.1647],[1.3223,0.94,-1.1161]],"xnm":[[-0.1606,-0.0085,1.384],[-0.0999,-0.0022,0.1796],[-1.3294,-0.0009,-0.6829],[1.2102,0.005,-0.5547],[-2.2195,-0.0066,-0.0193],[-1.3412,0.912,-1.312],[-1.3365,-0.9075,-1.3213],[2.029,0.0032,0.1951],[1.2857,-0.9014,-1.189],[1.281,0.9181,-1.1797]],"rmsd_nm":0.0192,"e_before":{"BONDS":-3553.1988,"ANGLES":118.4596,"PROPER_DIHEDRALS":0.139,"IMPROPER_DIHEDRALS":0.0007,"DISPERSION":-12.3294,"EXCHANGE":52.2819,"COULOMB":-197.4446,"POLARIZATION":0.0,"INDUCTION":-7.0759,"ALLELEC":-204.5205,"EXCHIND":45.206,"EXCHDISP":39.9525,"EPOT":-3599.1675},"e_after":{"BONDS":-3596.8366,"ANGLES":2.2741,"PROPER_DIHEDRALS":0.0009,"IMPROPER_DIHEDRALS":0.0,"DISPERSION":-11.2263,"EXCHANGE":38.3297,"COULOMB":-189.0682,"POLARIZATION":0.0,"INDUCTION":-8.3108,"ALLELEC":-197.3789,"EXCHIND":30.0189,"EXCHDISP":27.1034,"EPOT":-3764.8373},"freq":[57.112,107.953,176.998,304.224,377.063,746.76,839.158,843.228,850.149,908.855,1191.57,1287.7,1479.76,1484.86,1489.91,1490.69,1499.28,1538.75,3152.14,3153.52,3174.02,3175.86,3183.48,3184.91],"inten":[0.00927165,4.17272e-10,0.00458585,0.0181498,0.00240064,0.0174996,0.0153864,0.0135076,1.13804e-08,0.0117738,0.10235,0.0222013,0.0230009,0.0494062,7.80547e-06,0.0530661,0.00489696,0.0276657,0.0394964,0.00123919,0.0158192,0.0795719,1.65506e-05,0.0964754],"modes":[[[-0.0,0.0001,0.0],[0.0009,-0.3512,-0.0018],[-0.0003,0.1171,0.0006],[-0.0003,0.1171,0.0006],[-0.0026,1.0,0.0051],[0.6139,-0.1483,-0.3947],[-0.6131,-0.1555,0.3931],[-0.0026,1.0,0.0051],[0.5712,-0.1528,0.4529],[-0.5704,-0.1511,-0.4545]],[[-0.0,-0.0,-0.0],[0.0,0.0,-0.0],[-0.0002,0.0819,0.0004],[0.0002,-0.0819,-0.0004],[0.0026,-1.0,-0.0051],[-0.5017,0.6488,0.8308],[0.4984,0.6599,-0.8241],[-0.0026,0.9999,0.0051],[0.4159,-0.6578,0.8703],[-0.4125,-0.6509,-0.877]],[[-0.0011,0.4418,0.0023],[0.0021,-0.7982,-0.0041],[-0.0001,0.0395,0.0002],[-0.0001,0.0395,0.0002],[0.0018,-0.6898,-0.0035],[-0.025,0.7292,1.0],[0.0212,0.7395,-0.9925],[0.0018,-0.6897,-0.0035],[0.0754,0.7396,-0.9897],[-0.0792,0.729,0.9973]],[[0.0223,0.0023,-0.4412],[0.0187,0.002,-0.3711],[-0.5033,-0.0029,0.3105],[0.4695,-0.0006,0.3596],[-0.0373,-0.005,0.9482],[-1.0,0.0069,0.3367],[-0.9999,-0.0155,0.3366],[-0.0584,-0.005,0.9471],[0.961,-0.0109,0.4356],[0.961,0.0114,0.4357]],[[-0.8562,-0.002,-0.0432],[0.4545,0.0011,0.0229],[0.2625,-0.0019,0.5058],[0.3121,0.0032,-0.4768],[0.6279,-0.0035,1.0],[-0.0347,0.0251,0.5625],[-0.0346,-0.031,0.5622],[0.7254,0.0066,-0.9317],[0.022,0.031,-0.5628],[0.0222,-0.0251,-0.5631]],[[-0.0399,-0.0042,0.7916],[-0.0009,-0.0001,0.0175],[-0.5955,0.0006,-0.4128],[0.634,0.0034,-0.3507],[-0.9014,0.0017,-0.7814],[-0.9437,-0.1024,-0.6017],[-0.9442,0.1036,-0.6006],[0.9755,0.006,-0.6867],[0.9995,0.1081,-0.5025],[1.0,-0.0978,-0.5036]],[[0.0187,0.0,0.0007],[0.0355,0.0001,0.0018],[0.063,0.0014,-0.2478],[0.0382,-0.0012,0.2534],[0.9128,-0.0022,0.8802],[-0.9522,0.0542,-0.1745],[-0.9519,-0.0573,-0.1751],[1.0,0.0066,-0.7863],[-0.9668,0.053,0.0783],[-0.9665,-0.0588,0.0777]],[[-0.0071,-0.0007,0.1413],[0.0018,0.0002,-0.0358],[0.1599,0.0011,-0.1357],[-0.1454,0.0004,-0.1505],[0.9201,-0.002,0.8617],[-0.5598,0.0664,-0.0355],[-0.5595,-0.069,-0.0362],[-1.0,-0.0065,0.763],[0.5584,-0.0662,0.0205],[0.5581,0.0689,0.0211]],[[-0.0,-0.0,0.0],[-0.0,-0.0,-0.0],[-0.0006,0.219,0.0011],[0.0006,-0.219,-0.0011],[0.001,-0.3943,-0.002],[-0.9315,-0.2728,-0.7154],[0.9329,-0.2753,0.7126],[-0.001,0.3942,0.002],[0.9986,0.2797,-0.6151],[-1.0,0.2683,0.6179]],[[-0.0,0.0067,0.0],[0.0007,-0.2894,-0.0015],[-0.0006,0.2217,0.0011],[-0.0006,0.2217,0.0011],[0.0011,-0.4239,-0.0022],[-0.9306,-0.272,-0.7232],[0.932,-0.2746,0.7204],[0.0011,-0.4238,-0.0022],[-0.9986,-0.2791,0.623],[1.0,-0.2675,-0.6258]],[[0.0475,0.0001,0.0024],[-0.594,-0.0014,-0.0299],[0.0481,0.0003,-0.0356],[0.0442,-0.0001,0.0402],[0.8684,-0.0029,1.0],[0.8271,0.3058,0.4418],[0.8287,-0.306,0.4387],[0.9648,0.0071,-0.9076],[0.8675,0.31,-0.3531],[0.8691,-0.3019,-0.3563]],[[-0.0152,-0.0016,0.3009],[0.0288,0.003,-0.572],[-0.1633,-0.0003,-0.023],[0.1648,0.0005,-0.0064],[0.3544,-0.0025,0.6579],[0.9709,0.225,0.3292],[0.9721,-0.2234,0.3269],[-0.4187,-0.0043,0.6187],[-0.9988,-0.2279,0.2273],[-1.0,0.2204,0.2296]],[[0.0068,0.0,0.0003],[-0.0579,-0.0001,-0.0028],[0.1184,0.0007,-0.08],[0.1098,-0.0002,0.0911],[-0.3074,0.0025,-0.6428],[-0.4162,0.713,0.9658],[-0.4125,-0.725,0.9584],[-0.3701,-0.0041,0.6077],[-0.3171,0.7212,-0.9927],[-0.3134,-0.7126,-1.0]],[[0.0013,0.0001,-0.0254],[-0.0036,-0.0004,0.0725],[0.0129,0.0008,-0.1528],[0.0023,0.0008,-0.1536],[-0.1667,0.0016,-0.3879],[-0.2019,0.7825,0.9824],[-0.1978,-0.7936,0.9743],[0.2058,0.0024,-0.3706],[0.1032,-0.7947,0.9919],[0.0991,0.785,1.0]],[[0.0,-0.0,0.0],[-0.0,-0.0002,-0.0],[0.0002,-0.0901,-0.0005],[-0.0002,0.0877,0.0005],[-0.0026,1.0,0.0051],[-0.5569,0.0832,0.2534],[0.5564,0.0887,-0.2526],[0.0025,-0.974,-0.005],[0.5147,-0.0839,0.2993],[-0.5143,-0.0836,-0.3002]],[[0.0,-0.0006,-0.0],[0.0,-0.0167,-0.0001],[0.0002,-0.0871,-0.0004],[0.0002,-0.0895,-0.0005],[-0.0025,0.9739,0.005],[-0.5448,0.0809,0.2457],[0.5444,0.0862,-0.2448],[-0.0026,1.0,0.0051],[-0.5311,0.086,-0.3064],[0.5307,0.0856,0.3073]],[[-0.0119,-0.0012,0.2358],[0.0351,0.0036,-0.693],[0.3632,-0.0004,0.2644],[-0.3881,-0.0022,0.2266],[-0.5886,0.0036,-1.0],[-0.6705,-0.1357,0.1162],[-0.6712,0.131,0.1176],[0.6861,0.0066,-0.9356],[0.6555,0.1345,0.184],[0.6562,-0.133,0.1827]],[[0.0426,0.0001,0.0022],[-0.9485,-0.0022,-0.048],[0.6142,-0.0006,0.4214],[0.6533,0.0035,-0.3573],[-0.2565,0.0035,-0.8053],[-0.943,-0.7356,-0.5853],[-0.9468,0.7366,-0.5777],[-0.3359,-0.0048,0.7747],[-0.9962,-0.7411,0.4798],[-1.0,0.731,0.4874]],[[-0.0003,-0.0,-0.0],[0.0136,0.0,0.0007],[-0.0895,-0.0001,-0.0206],[-0.0899,-0.0003,0.0114],[1.0,0.0065,-0.7652],[-0.0034,-0.6994,0.477],[-0.007,0.6944,0.4842],[0.906,-0.002,0.8508],[0.0444,-0.6855,-0.4761],[0.0409,0.6906,-0.4691]],[[0.0,0.0,-0.0002],[-0.0004,-0.0,0.0069],[-0.0889,-0.0001,-0.0174],[0.0914,0.0003,-0.0084],[1.0,0.0065,-0.7632],[-0.0028,-0.6746,0.4603],[-0.0062,0.6698,0.4672],[-0.9299,0.0021,-0.8711],[-0.0445,0.6785,0.4714],[-0.041,-0.6836,0.4644]],[[-0.0012,-0.0,-0.0001],[0.0003,0.0,-0.0],[-0.0833,-0.001,0.1574],[-0.066,0.0007,-0.1624],[1.0,0.0065,-0.7557],[-0.0025,0.7949,-0.5417],[0.0016,-0.7893,-0.5497],[0.9044,-0.002,0.8392],[-0.0565,0.7765,0.5381],[-0.0525,-0.7823,0.5301]],[[0.0,0.0,-0.0005],[-0.0004,-0.0,0.0081],[0.0837,0.0011,-0.1625],[-0.068,0.0007,-0.1728],[-1.0,-0.0065,0.7569],[0.002,-0.8255,0.5636],[-0.0022,0.8196,0.5719],[0.9338,-0.002,0.8677],[-0.0601,0.8326,0.5782],[-0.0558,-0.8389,0.5697]],[[-0.0,0.0,0.0],[0.0,-0.0,-0.0],[-0.0004,0.1682,0.0009],[0.0004,-0.1637,-0.0008],[0.0,0.0023,0.0],[0.0021,-1.0,0.6847],[0.003,-0.993,-0.695],[0.0,-0.0022,0.0],[-0.0696,0.9657,0.6727],[0.0646,0.9729,-0.6627]],[[-0.0,0.0002,0.0],[0.0,-0.0024,-0.0],[-0.0004,0.1636,0.0008],[-0.0004,0.1682,0.0009],[0.0,0.0016,-0.0],[0.0014,-0.9725,0.6652],[0.0036,-0.9657,-0.6752],[-0.0,0.0017,-0.0],[0.0708,-0.9927,-0.6908],[-0.0657,-1.0,0.6805]]],"ir":[[0.0,0.0028],[4.0,0.0031],[8.0,0.0036],[12.0,0.0041],[16.0,0.0048],[20.0,0.0057],[24.0,0.0068],[28.0,0.0084],[32.0,0.0106],[36.0,0.0138],[40.0,0.0184],[44.0,0.0251],[48.0,0.0347],[52.0,0.0461],[56.0,0.054],[60.0,0.0515],[64.0,0.0412],[68.0,0.0303],[72.0,0.022],[76.0,0.0164],[80.0,0.0125],[84.0,0.0099],[88.0,0.0081],[92.0,0.0068],[96.0,0.0059],[100.0,0.0052],[104.0,0.0047],[108.0,0.0043],[112.0,0.004],[116.0,0.0039],[120.0,0.0038],[124.0,0.0037],[128.0,0.0038],[132.0,0.0039],[136.0,0.0042],[140.0,0.0045],[144.0,0.005],[148.0,0.0057],[152.0,0.0068],[156.0,0.0083],[160.0,0.0106],[164.0,0.014],[168.0,0.0188],[172.0,0.0244],[176.0,0.0282],[180.0,0.0268],[184.0,0.0217],[188.0,0.0163],[192.0,0.0123],[196.0,0.0096],[200.0,0.0078],[204.0,0.0066],[208.0,0.0058],[212.0,0.0053],[216.0,0.0049],[220.0,0.0047],[224.0,0.0046],[228.0,0.0046],[232.0,0.0047],[236.0,0.0049],[240.0,0.0052],[244.0,0.0055],[248.0,0.006],[252.0,0.0066],[256.0,0.0074],[260.0,0.0085],[264.0,0.0098],[268.0,0.0116],[272.0,0.0139],[276.0,0.0172],[280.0,0.0218],[284.0,0.0285],[288.0,0.0382],[292.0,0.0527],[296.0,0.0726],[300.0,0.0946],[304.0,0.1061],[308.0,0.0967],[312.0,0.0752],[316.0,0.0548],[320.0,0.0398],[324.0,0.0297],[328.0,0.0228],[332.0,0.0182],[336.0,0.0149],[340.0,0.0127],[344.0,0.0111],[348.0,0.0101],[352.0,0.0095],[356.0,0.0095],[360.0,0.0099],[364.0,0.0111],[368.0,0.0131],[372.0,0.0157],[376.0,0.0173],[380.0,0.0164],[384.0,0.0134],[388.0,0.0104],[392.0,0.0081],[396.0,0.0065],[400.0,0.0053],[404.0,0.0045],[408.0,0.0039],[412.0,0.0035],[416.0,0.0031],[420.0,0.0029],[424.0,0.0026],[428.0,0.0025],[432.0,0.0023],[436.0,0.0022],[440.0,0.0021],[444.0,0.002],[448.0,0.0019],[452.0,0.0018],[456.0,0.0018],[460.0,0.0017],[464.0,0.0017],[468.0,0.0016],[472.0,0.0016],[476.0,0.0016],[480.0,0.0016],[484.0,0.0015],[488.0,0.0015],[492.0,0.0015],[496.0,0.0015],[500.0,0.0015],[504.0,0.0015],[508.0,0.0015],[512.0,0.0015],[516.0,0.0015],[520.0,0.0015],[524.0,0.0015],[528.0,0.0015],[532.0,0.0015],[536.0,0.0015],[540.0,0.0015],[544.0,0.0015],[548.0,0.0015],[552.0,0.0015],[556.0,0.0016],[560.0,0.0016],[564.0,0.0016],[568.0,0.0016],[572.0,0.0017],[576.0,0.0017],[580.0,0.0017],[584.0,0.0017],[588.0,0.0018],[592.0,0.0018],[596.0,0.0019],[600.0,0.0019],[604.0,0.002],[608.0,0.002],[612.0,0.0021],[616.0,0.0022],[620.0,0.0022],[624.0,0.0023],[628.0,0.0024],[632.0,0.0025],[636.0,0.0026],[640.0,0.0027],[644.0,0.0029],[648.0,0.003],[652.0,0.0032],[656.0,0.0033],[660.0,0.0035],[664.0,0.0038],[668.0,0.004],[672.0,0.0043],[676.0,0.0047],[680.0,0.005],[684.0,0.0055],[688.0,0.0061],[692.0,0.0067],[696.0,0.0075],[700.0,0.0085],[704.0,0.0097],[708.0,0.0113],[712.0,0.0133],[716.0,0.016],[720.0,0.0197],[724.0,0.0249],[728.0,0.0324],[732.0,0.0435],[736.0,0.0595],[740.0,0.0804],[744.0,0.0999],[748.0,0.1042],[752.0,0.0893],[756.0,0.0682],[760.0,0.0506],[764.0,0.0384],[768.0,0.0303],[772.0,0.025],[776.0,0.0216],[780.0,0.0195],[784.0,0.0182],[788.0,0.0177],[792.0,0.0179],[796.0,0.0186],[800.0,0.02],[804.0,0.0222],[808.0,0.0254],[812.0,0.03],[816.0,0.0367],[820.0,0.0465],[824.0,0.0611],[828.0,0.0825],[832.0,0.1121],[836.0,0.1454],[840.0,0.1663],[844.0,0.1594],[848.0,0.1304],[852.0,0.0979],[856.0,0.0725],[860.0,0.0549],[864.0,0.0433],[868.0,0.0358],[872.0,0.0309],[876.0,0.0281],[880.0,0.0269],[884.0,0.0273],[888.0,0.0295],[892.0,0.034],[896.0,0.0416],[900.0,0.053],[904.0,0.0666],[908.0,0.0752],[912.0,0.0707],[916.0,0.0567],[920.0,0.0426],[924.0,0.032],[928.0,0.0247],[932.0,0.0196],[936.0,0.0161],[940.0,0.0136],[944.0,0.0118],[948.0,0.0104],[952.0,0.0094],[956.0,0.0085],[960.0,0.0079],[964.0,0.0073],[968.0,0.0069],[972.0,0.0066],[976.0,0.0063],[980.0,0.0061],[984.0,0.0059],[988.0,0.0058],[992.0,0.0056],[996.0,0.0056],[1000.0,0.0055],[1004.0,0.0055],[1008.0,0.0055],[1012.0,0.0055],[1016.0,0.0055],[1020.0,0.0055],[1024.0,0.0056],[1028.0,0.0057],[1032.0,0.0058],[1036.0,0.0059],[1040.0,0.0061],[1044.0,0.0062],[1048.0,0.0064],[1052.0,0.0066],[1056.0,0.0068],[1060.0,0.0071],[1064.0,0.0074],[1068.0,0.0077],[1072.0,0.0081],[1076.0,0.0085],[1080.0,0.0089],[1084.0,0.0094],[1088.0,0.01],[1092.0,0.0107],[1096.0,0.0114],[1100.0,0.0122],[1104.0,0.0131],[1108.0,0.0142],[1112.0,0.0154],[1116.0,0.0168],[1120.0,0.0185],[1124.0,0.0204],[1128.0,0.0228],[1132.0,0.0255],[1136.0,0.0289],[1140.0,0.0329],[1144.0,0.038],[1148.0,0.0444],[1152.0,0.0526],[1156.0,0.0633],[1160.0,0.0776],[1164.0,0.0973],[1168.0,0.1249],[1172.0,0.165],[1176.0,0.2239],[1180.0,0.3103],[1184.0,0.4271],[1188.0,0.5477],[1192.0,0.5954],[1196.0,0.5254],[1200.0,0.4009],[1204.0,0.2903],[1208.0,0.2109],[1212.0,0.1572],[1216.0,0.1208],[1220.0,0.0956],[1224.0,0.0779],[1228.0,0.0652],[1232.0,0.056],[1236.0,0.0492],[1240.0,0.0443],[1244.0,0.041],[1248.0,0.0389],[1252.0,0.0381],[1256.0,0.0386],[1260.0,0.0407],[1264.0,0.0449],[1268.0,0.0519],[1272.0,0.0633],[1276.0,0.0807],[1280.0,0.1049],[1284.0,0.1304],[1288.0,0.1408],[1292.0,0.1257],[1296.0,0.0983],[1300.0,0.0736],[1304.0,0.0558],[1308.0,0.0436],[1312.0,0.0353],[1316.0,0.0295],[1320.0,0.0254],[1324.0,0.0223],[1328.0,0.0201],[1332.0,0.0184],[1336.0,0.0171],[1340.0,0.0161],[1344.0,0.0154],[1348.0,0.0149],[1352.0,0.0145],[1356.0,0.0142],[1360.0,0.0141],[1364.0,0.0141],[1368.0,0.0142],[1372.0,0.0144],[1376.0,0.0147],[1380.0,0.0151],[1384.0,0.0156],[1388.0,0.0163],[1392.0,0.0171],[1396.0,0.018],[1400.0,0.0191],[1404.0,0.0204],[1408.0,0.0219],[1412.0,0.0237],[1416.0,0.0258],[1420.0,0.0284],[1424.0,0.0314],[1428.0,0.0351],[1432.0,0.0397],[1436.0,0.0453],[1440.0,0.0523],[1444.0,0.0613],[1448.0,0.0729],[1452.0,0.0884],[1456.0,0.1094],[1460.0,0.1386],[1464.0,0.1804],[1468.0,0.2411],[1472.0,0.3279],[1476.0,0.4424],[1480.0,0.5658],[1484.0,0.6568],[1488.0,0.6756],[1492.0,0.6121],[1496.0,0.4971],[1500.0,0.3805],[1504.0,0.2877],[1508.0,0.2218],[1512.0,0.1785],[1516.0,0.1523],[1520.0,0.1398],[1524.0,0.1394],[1528.0,0.1514],[1532.0,0.1742],[1536.0,0.1969],[1540.0,0.197],[1544.0,0.168],[1548.0,0.13],[1552.0,0.0984],[1556.0,0.0756],[1560.0,0.0598],[1564.0,0.0486],[1568.0,0.0404],[1572.0,0.0343],[1576.0,0.0296],[1580.0,0.0259],[1584.0,0.0229],[1588.0,0.0204],[1592.0,0.0184],[1596.0,0.0167],[1600.0,0.0152],[1604.0,0.014],[1608.0,0.0129],[1612.0,0.0119],[1616.0,0.0111],[1620.0,0.0103],[1624.0,0.0097],[1628.0,0.0091],[1632.0,0.0085],[1636.0,0.008],[1640.0,0.0076],[1644.0,0.0072],[1648.0,0.0068],[1652.0,0.0065],[1656.0,0.0061],[1660.0,0.0059],[1664.0,0.0056],[1668.0,0.0053],[1672.0,0.0051],[1676.0,0.0049],[1680.0,0.0047],[1684.0,0.0045],[1688.0,0.0043],[1692.0,0.0042],[1696.0,0.004],[1700.0,0.0039],[1704.0,0.0037],[1708.0,0.0036],[1712.0,0.0035],[1716.0,0.0034],[1720.0,0.0033],[1724.0,0.0032],[1728.0,0.0031],[1732.0,0.003],[1736.0,0.0029],[1740.0,0.0028],[1744.0,0.0027],[1748.0,0.0026],[1752.0,0.0026],[1756.0,0.0025],[1760.0,0.0024],[1764.0,0.0024],[1768.0,0.0023],[1772.0,0.0023],[1776.0,0.0022],[1780.0,0.0021],[1784.0,0.0021],[1788.0,0.002],[1792.0,0.002],[1796.0,0.002],[1800.0,0.0019],[1804.0,0.0019],[1808.0,0.0018],[1812.0,0.0018],[1816.0,0.0018],[1820.0,0.0017],[1824.0,0.0017],[1828.0,0.0016],[1832.0,0.0016],[1836.0,0.0016],[1840.0,0.0016],[1844.0,0.0015],[1848.0,0.0015],[1852.0,0.0015],[1856.0,0.0014],[1860.0,0.0014],[1864.0,0.0014],[1868.0,0.0014],[1872.0,0.0013],[1876.0,0.0013],[1880.0,0.0013],[1884.0,0.0013],[1888.0,0.0013],[1892.0,0.0012],[1896.0,0.0012],[1900.0,0.0012],[1904.0,0.0012],[1908.0,0.0012],[1912.0,0.0012],[1916.0,0.0011],[1920.0,0.0011],[1924.0,0.0011],[1928.0,0.0011],[1932.0,0.0011],[1936.0,0.0011],[1940.0,0.001],[1944.0,0.001],[1948.0,0.001],[1952.0,0.001],[1956.0,0.001],[1960.0,0.001],[1964.0,0.001],[1968.0,0.001],[1972.0,0.0009],[1976.0,0.0009],[1980.0,0.0009],[1984.0,0.0009],[1988.0,0.0009],[1992.0,0.0009],[1996.0,0.0009],[2000.0,0.0009],[2004.0,0.0009],[2008.0,0.0009],[2012.0,0.0008],[2016.0,0.0008],[2020.0,0.0008],[2024.0,0.0008],[2028.0,0.0008],[2032.0,0.0008],[2036.0,0.0008],[2040.0,0.0008],[2044.0,0.0008],[2048.0,0.0008],[2052.0,0.0008],[2056.0,0.0008],[2060.0,0.0008],[2064.0,0.0007],[2068.0,0.0007],[2072.0,0.0007],[2076.0,0.0007],[2080.0,0.0007],[2084.0,0.0007],[2088.0,0.0007],[2092.0,0.0007],[2096.0,0.0007],[2100.0,0.0007],[2104.0,0.0007],[2108.0,0.0007],[2112.0,0.0007],[2116.0,0.0007],[2120.0,0.0007],[2124.0,0.0007],[2128.0,0.0007],[2132.0,0.0007],[2136.0,0.0007],[2140.0,0.0007],[2144.0,0.0007],[2148.0,0.0006],[2152.0,0.0006],[2156.0,0.0006],[2160.0,0.0006],[2164.0,0.0006],[2168.0,0.0006],[2172.0,0.0006],[2176.0,0.0006],[2180.0,0.0006],[2184.0,0.0006],[2188.0,0.0006],[2192.0,0.0006],[2196.0,0.0006],[2200.0,0.0006],[2204.0,0.0006],[2208.0,0.0006],[2212.0,0.0006],[2216.0,0.0006],[2220.0,0.0006],[2224.0,0.0006],[2228.0,0.0006],[2232.0,0.0006],[2236.0,0.0006],[2240.0,0.0006],[2244.0,0.0006],[2248.0,0.0006],[2252.0,0.0006],[2256.0,0.0006],[2260.0,0.0006],[2264.0,0.0006],[2268.0,0.0006],[2272.0,0.0006],[2276.0,0.0006],[2280.0,0.0006],[2284.0,0.0006],[2288.0,0.0006],[2292.0,0.0006],[2296.0,0.0006],[2300.0,0.0006],[2304.0,0.0006],[2308.0,0.0006],[2312.0,0.0006],[2316.0,0.0006],[2320.0,0.0006],[2324.0,0.0006],[2328.0,0.0006],[2332.0,0.0006],[2336.0,0.0006],[2340.0,0.0006],[2344.0,0.0006],[2348.0,0.0006],[2352.0,0.0006],[2356.0,0.0006],[2360.0,0.0006],[2364.0,0.0006],[2368.0,0.0006],[2372.0,0.0006],[2376.0,0.0006],[2380.0,0.0006],[2384.0,0.0006],[2388.0,0.0006],[2392.0,0.0006],[2396.0,0.0006],[2400.0,0.0006],[2404.0,0.0006],[2408.0,0.0006],[2412.0,0.0006],[2416.0,0.0006],[2420.0,0.0006],[2424.0,0.0006],[2428.0,0.0006],[2432.0,0.0006],[2436.0,0.0006],[2440.0,0.0006],[2444.0,0.0006],[2448.0,0.0006],[2452.0,0.0006],[2456.0,0.0006],[2460.0,0.0006],[2464.0,0.0006],[2468.0,0.0006],[2472.0,0.0006],[2476.0,0.0006],[2480.0,0.0006],[2484.0,0.0006],[2488.0,0.0006],[2492.0,0.0006],[2496.0,0.0006],[2500.0,0.0006],[2504.0,0.0006],[2508.0,0.0006],[2512.0,0.0007],[2516.0,0.0007],[2520.0,0.0007],[2524.0,0.0007],[2528.0,0.0007],[2532.0,0.0007],[2536.0,0.0007],[2540.0,0.0007],[2544.0,0.0007],[2548.0,0.0007],[2552.0,0.0007],[2556.0,0.0007],[2560.0,0.0007],[2564.0,0.0007],[2568.0,0.0007],[2572.0,0.0007],[2576.0,0.0007],[2580.0,0.0007],[2584.0,0.0007],[2588.0,0.0007],[2592.0,0.0008],[2596.0,0.0008],[2600.0,0.0008],[2604.0,0.0008],[2608.0,0.0008],[2612.0,0.0008],[2616.0,0.0008],[2620.0,0.0008],[2624.0,0.0008],[2628.0,0.0008],[2632.0,0.0008],[2636.0,0.0008],[2640.0,0.0008],[2644.0,0.0009],[2648.0,0.0009],[2652.0,0.0009],[2656.0,0.0009],[2660.0,0.0009],[2664.0,0.0009],[2668.0,0.0009],[2672.0,0.0009],[2676.0,0.0009],[2680.0,0.001],[2684.0,0.001],[2688.0,0.001],[2692.0,0.001],[2696.0,0.001],[2700.0,0.001],[2704.0,0.001],[2708.0,0.001],[2712.0,0.0011],[2716.0,0.0011],[2720.0,0.0011],[2724.0,0.0011],[2728.0,0.0011],[2732.0,0.0011],[2736.0,0.0012],[2740.0,0.0012],[2744.0,0.0012],[2748.0,0.0012],[2752.0,0.0012],[2756.0,0.0012],[2760.0,0.0013],[2764.0,0.0013],[2768.0,0.0013],[2772.0,0.0013],[2776.0,0.0014],[2780.0,0.0014],[2784.0,0.0014],[2788.0,0.0014],[2792.0,0.0015],[2796.0,0.0015],[2800.0,0.0015],[2804.0,0.0015],[2808.0,0.0016],[2812.0,0.0016],[2816.0,0.0016],[2820.0,0.0017],[2824.0,0.0017],[2828.0,0.0017],[2832.0,0.0018],[2836.0,0.0018],[2840.0,0.0019],[2844.0,0.0019],[2848.0,0.0019],[2852.0,0.002],[2856.0,0.002],[2860.0,0.0021],[2864.0,0.0021],[2868.0,0.0022],[2872.0,0.0022],[2876.0,0.0023],[2880.0,0.0024],[2884.0,0.0024],[2888.0,0.0025],[2892.0,0.0025],[2896.0,0.0026],[2900.0,0.0027],[2904.0,0.0028],[2908.0,0.0028],[2912.0,0.0029],[2916.0,0.003],[2920.0,0.0031],[2924.0,0.0032],[2928.0,0.0033],[2932.0,0.0034],[2936.0,0.0035],[2940.0,0.0036],[2944.0,0.0038],[2948.0,0.0039],[2952.0,0.004],[2956.0,0.0042],[2960.0,0.0043],[2964.0,0.0045],[2968.0,0.0046],[2972.0,0.0048],[2976.0,0.005],[2980.0,0.0052],[2984.0,0.0054],[2988.0,0.0057],[2992.0,0.0059],[2996.0,0.0062],[3000.0,0.0065],[3004.0,0.0068],[3008.0,0.0071],[3012.0,0.0074],[3016.0,0.0078],[3020.0,0.0082],[3024.0,0.0087],[3028.0,0.0092],[3032.0,0.0097],[3036.0,0.0102],[3040.0,0.0109],[3044.0,0.0115],[3048.0,0.0123],[3052.0,0.0131],[3056.0,0.014],[3060.0,0.015],[3064.0,0.0161],[3068.0,0.0174],[3072.0,0.0188],[3076.0,0.0204],[3080.0,0.0222],[3084.0,0.0243],[3088.0,0.0267],[3092.0,0.0294],[3096.0,0.0326],[3100.0,0.0365],[3104.0,0.041],[3108.0,0.0464],[3112.0,0.0531],[3116.0,0.0614],[3120.0,0.0719],[3124.0,0.0855],[3128.0,0.1035],[3132.0,0.128],[3136.0,0.162],[3140.0,0.2099],[3144.0,0.2751],[3148.0,0.3517],[3152.0,0.4151],[3156.0,0.4474],[3160.0,0.4771],[3164.0,0.545],[3168.0,0.6686],[3172.0,0.8284],[3176.0,0.9572],[3180.0,1.0],[3184.0,0.9539],[3188.0,0.8138],[3192.0,0.6257],[3196.0,0.4593],[3200.0,0.3377],[3204.0,0.2537],[3208.0,0.1957],[3212.0,0.1548],[3216.0,0.1252],[3220.0,0.1032],[3224.0,0.0865],[3228.0,0.0735],[3232.0,0.0632],[3236.0,0.0549],[3240.0,0.0482],[3244.0,0.0426],[3248.0,0.038],[3252.0,0.034],[3256.0,0.0307],[3260.0,0.0278],[3264.0,0.0253],[3268.0,0.0231],[3272.0,0.0212],[3276.0,0.0196],[3280.0,0.0181],[3284.0,0.0168],[3288.0,0.0156],[3292.0,0.0145],[3296.0,0.0136],[3300.0,0.0127],[3304.0,0.0119]],"thermo":{"Epot":-3764.84,"Symmetry number":"2","T=0":{"Zero point energy":213.521,"Standard entropy":{"Translation":20.786,"Rotation":12.472,"Vibration":0.0,"Total":33.258},"Heat capacity cV":{"Translation":12.472,"Rotation":12.472,"Vibration":0.0,"Total":24.943},"Internal energy":{"Translation":0.0,"Rotation":0.0,"Vibration":0.0,"Total":0.0},"Delta H formation":125.24},"T=298.15":{"Zero point energy":213.521,"Standard entropy":{"Translation":159.513,"Rotation":95.084,"Vibration":57.406,"Total":312.003},"Heat capacity cV":{"Translation":12.472,"Rotation":12.472,"Vibration":53.411,"Total":78.355},"Internal energy":{"Translation":3.718,"Rotation":3.718,"Vibration":222.161,"Total":229.598},"Delta H formation":291.32}},"energy":{"t":[0.0,0.005,0.01,0.015,0.02,0.025,0.03,0.035,0.04,0.045,0.05,0.055,0.06,0.065,0.07,0.075,0.08,0.085,0.09,0.095,0.1,0.105,0.11,0.115,0.12,0.125,0.13,0.135,0.14,0.145,0.15,0.155,0.16,0.165,0.17,0.175,0.18,0.185,0.19,0.195,0.2,0.205,0.21,0.215,0.22,0.225,0.23,0.235,0.24,0.245,0.25,0.255,0.26,0.265,0.27,0.275,0.28,0.285,0.29,0.295,0.3,0.305,0.31,0.315,0.32,0.325,0.33,0.335,0.34,0.345,0.35,0.355,0.36,0.365,0.37,0.375,0.38,0.385,0.39,0.395,0.4,0.405,0.41,0.415,0.42,0.425,0.43,0.435,0.44,0.445,0.45,0.455,0.46,0.465,0.47,0.475,0.48,0.485,0.49,0.495,0.5,0.505,0.51,0.515,0.52,0.525,0.53,0.535,0.54,0.545,0.55,0.555,0.56,0.565,0.57,0.575,0.58,0.585,0.59,0.595,0.6,0.605,0.61,0.615,0.62,0.625,0.63,0.635,0.64,0.645,0.65,0.655,0.66,0.665,0.67,0.675,0.68,0.685,0.69,0.695,0.7,0.705,0.71,0.715,0.72,0.725,0.73,0.735,0.74,0.745,0.75,0.755,0.76,0.765,0.77,0.775,0.78,0.785,0.79,0.795,0.8,0.805,0.81,0.815,0.82,0.825,0.83,0.835,0.84,0.845,0.85,0.855,0.86,0.865,0.87,0.875,0.88,0.885,0.89,0.895,0.9,0.905,0.91,0.915,0.92,0.925,0.93,0.935,0.94,0.945,0.95,0.955,0.96,0.965,0.97,0.975,0.98,0.985,0.99,0.995],"EPOT":[-3764.837,-3757.769,-3756.031,-3756.888,-3753.172,-3750.927,-3744.379,-3745.682,-3744.999,-3742.583,-3738.909,-3745.414,-3744.757,-3745.777,-3746.101,-3751.277,-3752.844,-3751.133,-3752.807,-3754.757,-3757.434,-3751.799,-3752.186,-3754.001,-3751.637,-3746.56,-3744.828,-3745.374,-3743.781,-3740.684,-3739.85,-3745.309,-3746.024,-3742.979,-3750.249,-3750.63,-3754.144,-3750.4,-3752.179,-3756.486,-3753.636,-3751.45,-3752.294,-3755.227,-3751.002,-3750.894,-3748.956,-3752.59,-3748.16,-3746.993,-3747.907,-3751.911,-3750.565,-3748.304,-3753.494,-3754.245,-3753.396,-3750.467,-3751.385,-3751.714,-3748.629,-3746.195,-3748.381,-3750.378,-3746.922,-3749.099,-3751.362,-3752.669,-3753.455,-3748.888,-3755.068,-3752.173,-3751.118,-3750.17,-3752.036,-3753.273,-3749.02,-3748.897,-3750.451,-3751.865,-3746.887,-3748.502,-3750.119,-3752.678,-3747.79,-3751.322,-3753.49,-3755.377,-3753.283,-3752.139,-3756.176,-3753.717,-3749.398,-3748.403,-3749.906,-3746.402,-3744.529,-3743.913,-3746.651,-3747.052,-3743.525,-3747.38,-3750.409,-3748.626,-3749.102,-3748.858,-3754.493,-3752.147,-3752.396,-3753.588,-3755.961,-3752.6,-3749.681,-3751.228,-3748.767,-3746.272,-3741.964,-3746.017,-3743.842,-3744.712,-3742.821,-3747.958,-3749.152,-3748.773,-3750.184,-3752.365,-3753.663,-3752.901,-3753.204,-3752.939,-3754.016,-3750.88,-3751.806,-3750.349,-3748.677,-3748.961,-3745.257,-3744.828,-3744.369,-3743.092,-3744.802,-3745.585,-3750.883,-3749.953,-3751.967,-3752.573,-3755.004,-3752.269,-3750.715,-3751.506,-3751.972,-3750.586,-3748.624,-3753.135,-3751.797,-3753.542,-3748.224,-3751.834,-3751.499,-3751.251,-3748.756,-3751.941,-3752.607,-3752.284,-3752.428,-3751.685,-3753.641,-3748.154,-3748.777,-3746.66,-3747.233,-3746.026,-3747.257,-3747.765,-3750.034,-3748.924,-3751.112,-3750.903,-3751.517,-3749.734,-3749.286,-3750.65,-3748.859,-3748.366,-3747.668,-3749.971,-3748.935,-3747.541,-3747.065,-3750.046,-3749.097,-3748.127,-3746.86,-3749.8,-3752.078,-3752.105,-3751.646,-3756.452,-3755.316,-3753.906],"EKIN":[29.932,22.895,21.179,22.016,18.381,16.119,9.659,10.968,10.327,7.942,4.268,10.771,10.093,11.074,11.386,16.488,18.061,16.289,17.965,19.894,22.554,16.961,17.33,19.203,16.843,11.821,10.111,10.671,9.101,6.002,5.173,10.616,11.29,8.262,15.461,15.859,19.325,15.587,17.366,21.649,18.841,16.646,17.522,20.466,16.258,16.169,14.232,17.855,13.435,12.225,13.162,17.109,15.794,13.514,18.696,19.468,18.598,15.721,16.619,16.985,13.908,11.472,13.677,15.636,12.204,14.344,16.578,17.888,18.605,14.089,20.206,17.354,16.291,15.353,17.267,18.489,14.314,14.18,15.769,17.19,12.21,13.84,15.411,17.953,13.046,16.52,18.69,20.51,18.444,17.264,21.307,18.865,14.557,13.621,15.115,11.687,9.817,9.242,11.999,12.39,8.885,12.693,15.7,13.891,14.313,14.07,19.635,17.302,17.518,18.724,21.105,17.755,14.883,16.427,14.025,11.549,7.279,11.333,9.172,10.031,8.142,13.241,14.433,14.011,15.414,17.554,18.839,18.066,18.356,18.113,19.172,16.079,17.002,15.584,13.938,14.229,10.546,10.112,9.648,8.383,10.063,10.862,16.116,15.203,17.183,17.791,20.211,17.468,15.928,16.704,17.2,15.809,13.87,18.368,17.048,18.777,13.48,17.07,16.744,16.469,13.996,17.164,17.839,17.522,17.661,16.933,18.874,13.418,14.03,11.929,12.492,11.282,12.501,13.006,15.251,14.15,16.297,16.102,16.682,14.925,14.482,15.848,14.093,13.593,12.944,15.235,14.235,12.843,12.371,15.345,14.378,13.392,12.117,15.015,17.282,17.261,16.822,21.592,20.476,19.081],"ETOT":[-3734.904,-3734.874,-3734.852,-3734.872,-3734.792,-3734.808,-3734.72,-3734.714,-3734.672,-3734.64,-3734.642,-3734.643,-3734.664,-3734.703,-3734.715,-3734.788,-3734.783,-3734.845,-3734.842,-3734.863,-3734.88,-3734.837,-3734.856,-3734.798,-3734.794,-3734.74,-3734.717,-3734.704,-3734.68,-3734.683,-3734.677,-3734.693,-3734.734,-3734.717,-3734.788,-3734.772,-3734.819,-3734.813,-3734.812,-3734.836,-3734.795,-3734.804,-3734.773,-3734.762,-3734.743,-3734.725,-3734.724,-3734.735,-3734.726,-3734.768,-3734.745,-3734.802,-3734.771,-3734.79,-3734.797,-3734.777,-3734.798,-3734.746,-3734.766,-3734.729,-3734.721,-3734.723,-3734.704,-3734.742,-3734.718,-3734.755,-3734.784,-3734.781,-3734.85,-3734.799,-3734.862,-3734.819,-3734.827,-3734.817,-3734.768,-3734.784,-3734.706,-3734.717,-3734.682,-3734.675,-3734.677,-3734.662,-3734.708,-3734.726,-3734.743,-3734.801,-3734.799,-3734.867,-3734.84,-3734.875,-3734.869,-3734.852,-3734.841,-3734.782,-3734.791,-3734.715,-3734.711,-3734.671,-3734.652,-3734.663,-3734.64,-3734.687,-3734.709,-3734.736,-3734.789,-3734.789,-3734.858,-3734.844,-3734.878,-3734.864,-3734.856,-3734.845,-3734.797,-3734.801,-3734.742,-3734.723,-3734.685,-3734.684,-3734.67,-3734.681,-3734.679,-3734.718,-3734.719,-3734.763,-3734.771,-3734.81,-3734.824,-3734.835,-3734.848,-3734.826,-3734.844,-3734.801,-3734.803,-3734.765,-3734.739,-3734.732,-3734.711,-3734.716,-3734.721,-3734.709,-3734.739,-3734.723,-3734.766,-3734.75,-3734.784,-3734.782,-3734.793,-3734.8,-3734.787,-3734.802,-3734.772,-3734.777,-3734.754,-3734.766,-3734.749,-3734.765,-3734.744,-3734.764,-3734.755,-3734.783,-3734.76,-3734.776,-3734.768,-3734.762,-3734.767,-3734.752,-3734.767,-3734.736,-3734.747,-3734.731,-3734.741,-3734.745,-3734.756,-3734.759,-3734.783,-3734.774,-3734.815,-3734.8,-3734.836,-3734.809,-3734.804,-3734.803,-3734.767,-3734.773,-3734.725,-3734.736,-3734.699,-3734.697,-3734.694,-3734.701,-3734.719,-3734.734,-3734.744,-3734.784,-3734.796,-3734.844,-3734.824,-3734.859,-3734.84,-3734.825],"T":[300.0,229.5,212.3,220.7,184.2,161.6,96.8,109.9,103.5,79.6,42.8,107.9,101.2,111.0,114.1,165.3,181.0,163.3,180.1,199.4,226.1,170.0,173.7,192.5,168.8,118.5,101.3,106.9,91.2,60.2,51.8,106.4,113.2,82.8,155.0,158.9,193.7,156.2,174.1,217.0,188.8,166.8,175.6,205.1,163.0,162.1,142.6,179.0,134.7,122.5,131.9,171.5,158.3,135.4,187.4,195.1,186.4,157.6,166.6,170.2,139.4,115.0,137.1,156.7,122.3,143.8,166.2,179.3,186.5,141.2,202.5,173.9,163.3,153.9,173.1,185.3,143.5,142.1,158.0,172.3,122.4,138.7,154.5,179.9,130.8,165.6,187.3,205.6,184.9,173.0,213.6,189.1,145.9,136.5,151.5,117.1,98.4,92.6,120.3,124.2,89.1,127.2,157.4,139.2,143.5,141.0,196.8,173.4,175.6,187.7,211.5,178.0,149.2,164.6,140.6,115.8,73.0,113.6,91.9,100.5,81.6,132.7,144.7,140.4,154.5,175.9,188.8,181.1,184.0,181.5,192.2,161.2,170.4,156.2,139.7,142.6,105.7,101.3,96.7,84.0,100.9,108.9,161.5,152.4,172.2,178.3,202.6,175.1,159.6,167.4,172.4,158.5,139.0,184.1,170.9,188.2,135.1,171.1,167.8,165.1,140.3,172.0,178.8,175.6,177.0,169.7,189.2,134.5,140.6,119.6,125.2,113.1,125.3,130.4,152.9,141.8,163.3,161.4,167.2,149.6,145.2,158.8,141.2,136.2,129.7,152.7,142.7,128.7,124.0,153.8,144.1,134.2,121.4,150.5,173.2,173.0,168.6,216.4,205.2,191.2]},"frames":[[[-0.201,-0.036,1.381],[-0.103,-0.004,0.179],[-1.305,0.02,-0.721],[1.229,0.014,-0.514],[-2.215,0.003,-0.085],[-1.294,0.946,-1.33],[-1.295,-0.872,-1.379],[2.024,-0.007,0.261],[1.322,-0.879,-1.165],[1.322,0.94,-1.116]],[[-0.212,-0.069,1.404],[-0.089,0.066,0.195],[-1.285,0.033,-0.733],[1.218,-0.011,-0.532],[-2.223,-0.059,-0.143],[-1.375,0.911,-1.392],[-1.148,-0.895,-1.342],[2.068,0.103,0.201],[1.281,-0.969,-1.115],[1.158,0.871,-1.206]],[[-0.215,-0.097,1.403],[-0.109,0.128,0.225],[-1.255,0.023,-0.733],[1.187,-0.008,-0.548],[-2.174,-0.118,-0.13],[-1.288,0.919,-1.358],[-1.121,-0.881,-1.398],[2.093,0.138,0.134],[1.287,-1.045,-1.006],[1.268,0.73,-1.387]],[[-0.214,-0.12,1.398],[-0.097,0.176,0.215],[-1.237,0.007,-0.727],[1.171,-0.01,-0.556],[-2.183,-0.09,-0.159],[-1.301,0.953,-1.258],[-1.069,-0.874,-1.43],[2.01,0.212,0.202],[1.165,-1.12,-0.822],[1.253,0.652,-1.461]],[[-0.205,-0.13,1.369],[-0.093,0.201,0.222],[-1.25,0.031,-0.722],[1.165,-0.029,-0.523],[-2.156,-0.238,-0.143],[-1.366,0.913,-1.342],[-1.026,-0.847,-1.427],[2.056,0.275,0.157],[1.243,-1.143,-0.791],[1.149,0.583,-1.466]],[[-0.194,-0.135,1.353],[-0.12,0.213,0.215],[-1.266,0.042,-0.727],[1.191,-0.049,-0.499],[-2.15,-0.231,-0.117],[-1.537,0.933,-1.279],[-0.955,-0.837,-1.399],[2.116,0.345,0.088],[1.352,-1.164,-0.743],[1.128,0.543,-1.452]],[[-0.194,-0.136,1.358],[-0.093,0.207,0.184],[-1.301,0.039,-0.718],[1.206,-0.037,-0.495],[-2.149,-0.317,-0.096],[-1.493,0.98,-1.218],[-1.082,-0.752,-1.529],[2.029,0.388,0.201],[1.331,-1.174,-0.598],[1.211,0.444,-1.51]],[[-0.194,-0.119,1.34],[-0.105,0.163,0.182],[-1.305,0.039,-0.707],[1.224,-0.03,-0.496],[-2.177,-0.293,-0.104],[-1.558,1.037,-1.055],[-1.163,-0.679,-1.594],[2.008,0.445,0.2],[1.387,-1.16,-0.487],[1.346,0.395,-1.524]],[[-0.199,-0.097,1.336],[-0.108,0.106,0.155],[-1.335,0.066,-0.698],[1.251,-0.039,-0.471],[-2.13,-0.39,-0.071],[-1.58,1.077,-1.023],[-1.096,-0.601,-1.595],[2.029,0.517,0.147],[1.551,-1.13,-0.537],[1.219,0.381,-1.503]],[[-0.21,-0.074,1.345],[-0.087,0.045,0.157],[-1.341,0.083,-0.7],[1.271,-0.043,-0.477],[-2.169,-0.412,-0.145],[-1.664,1.096,-0.984],[-1.145,-0.523,-1.641],[1.976,0.591,0.12],[1.633,-1.102,-0.536],[1.115,0.405,-1.475]],[[-0.217,-0.05,1.366],[-0.099,-0.018,0.17],[-1.321,0.078,-0.712],[1.258,-0.021,-0.505],[-2.171,-0.389,-0.171],[-1.571,1.149,-0.84],[-1.186,-0.425,-1.713],[1.948,0.593,0.099],[1.648,-1.056,-0.524],[1.249,0.359,-1.54]],[[-0.221,-0.028,1.389],[-0.107,-0.081,0.16],[-1.3,0.083,-0.714],[1.241,-0.005,-0.524],[-2.142,-0.42,-0.198],[-1.416,1.186,-0.789],[-1.125,-0.343,-1.729],[1.891,0.613,0.09],[1.617,-1.032,-0.496],[1.2,0.37,-1.554]],[[-0.216,-0.008,1.373],[-0.093,-0.14,0.196],[-1.271,0.103,-0.72],[1.215,-0.01,-0.514],[-2.195,-0.355,-0.313],[-1.522,1.192,-0.8],[-1.059,-0.338,-1.71],[1.834,0.671,0.037],[1.68,-0.985,-0.602],[1.011,0.404,-1.503]],[[-0.207,0.013,1.379],[-0.116,-0.194,0.201],[-1.258,0.116,-0.723],[1.197,-0.006,-0.513],[-2.14,-0.424,-0.331],[-1.402,1.228,-0.844],[-1.004,-0.288,-1.706],[1.816,0.675,0.023],[1.746,-0.916,-0.682],[0.916,0.429,-1.471]],[[-0.2,0.033,1.395],[-0.123,-0.238,0.194],[-1.237,0.102,-0.74],[1.178,0.013,-0.527],[-2.18,-0.315,-0.338],[-1.354,1.227,-0.69],[-1.016,-0.275,-1.732],[1.757,0.661,0.086],[1.659,-0.937,-0.65],[1.008,0.491,-1.494]],[[-0.195,0.039,1.374],[-0.11,-0.251,0.214],[-1.24,0.095,-0.732],[1.161,0.022,-0.522],[-2.203,-0.331,-0.387],[-1.283,1.231,-0.749],[-1.083,-0.203,-1.755],[1.764,0.599,0.143],[1.64,-0.93,-0.651],[1.052,0.519,-1.492]],[[-0.193,0.041,1.359],[-0.13,-0.241,0.186],[-1.25,0.103,-0.723],[1.189,0.004,-0.494],[-2.175,-0.345,-0.313],[-1.374,1.235,-0.736],[-0.995,-0.306,-1.679],[1.818,0.622,0.129],[1.672,-0.927,-0.75],[0.93,0.57,-1.401]],[[-0.199,0.035,1.348],[-0.111,-0.215,0.187],[-1.277,0.103,-0.718],[1.208,-0.004,-0.484],[-2.17,-0.392,-0.284],[-1.447,1.225,-0.82],[-1.077,-0.324,-1.679],[1.875,0.556,0.179],[1.687,-0.932,-0.796],[0.968,0.604,-1.376]],[[-0.209,0.026,1.362],[-0.101,-0.173,0.174],[-1.297,0.073,-0.716],[1.231,0.004,-0.502],[-2.209,-0.355,-0.246],[-1.452,1.197,-0.794],[-1.19,-0.315,-1.71],[1.905,0.449,0.262],[1.599,-1.003,-0.758],[1.194,0.667,-1.398]],[[-0.217,0.011,1.37],[-0.109,-0.11,0.15],[-1.319,0.056,-0.714],[1.257,-0.002,-0.501],[-2.191,-0.377,-0.175],[-1.434,1.18,-0.764],[-1.167,-0.413,-1.671],[1.977,0.357,0.293],[1.547,-1.03,-0.819],[1.298,0.689,-1.385]],[[-0.22,-0.012,1.346],[-0.092,-0.036,0.17],[-1.325,0.054,-0.7],[1.261,-0.028,-0.486],[-2.179,-0.424,-0.167],[-1.583,1.115,-0.98],[-1.168,-0.468,-1.641],[2.057,0.273,0.281],[1.54,-1.029,-0.919],[1.217,0.745,-1.305]],[[-0.22,-0.036,1.356],[-0.089,0.037,0.16],[-1.317,0.043,-0.715],[1.255,-0.039,-0.485],[-2.146,-0.393,-0.106],[-1.647,1.073,-0.998],[-1.112,-0.619,-1.565],[2.078,0.181,0.299],[1.406,-1.05,-0.978],[1.246,0.792,-1.252]],[[-0.214,-0.06,1.373],[-0.109,0.112,0.171],[-1.303,0.009,-0.72],[1.235,-0.024,-0.504],[-2.11,-0.394,-0.062],[-1.493,1.031,-1.101],[-1.131,-0.652,-1.594],[2.055,-0.011,0.323],[1.276,-1.05,-1.001],[1.458,0.776,-1.28]],[[-0.206,-0.077,1.371],[-0.096,0.177,0.2],[-1.282,-0.015,-0.727],[1.21,-0.031,-0.514],[-2.208,-0.304,-0.172],[-1.537,0.97,-1.152],[-1.086,-0.773,-1.535],[2.006,-0.129,0.328],[1.142,-1.021,-1.084],[1.511,0.823,-1.198]],[[-0.197,-0.087,1.369],[-0.107,0.217,0.195],[-1.271,-0.006,-0.725],[1.186,-0.05,-0.5],[-2.142,-0.362,-0.123],[-1.465,0.879,-1.343],[-0.948,-0.847,-1.413],[2.022,-0.267,0.274],[1.079,-0.924,-1.228],[1.394,0.895,-1.08]],[[-0.19,-0.085,1.358],[-0.123,0.225,0.213],[-1.242,-0.019,-0.731],[1.164,-0.045,-0.503],[-2.131,-0.256,-0.102],[-1.494,0.834,-1.362],[-0.936,-0.932,-1.346],[1.989,-0.383,0.221],[1.034,-0.843,-1.306],[1.496,0.924,-0.965]],[[-0.195,-0.08,1.376],[-0.1,0.223,0.206],[-1.251,-0.048,-0.732],[1.172,-0.018,-0.517],[-2.169,-0.214,-0.126],[-1.372,0.834,-1.359],[-1.102,-0.98,-1.392],[1.828,-0.515,0.262],[0.955,-0.739,-1.361],[1.633,0.917,-0.911]],[[-0.201,-0.065,1.387],[-0.111,0.196,0.191],[-1.274,-0.055,-0.722],[1.202,-0.011,-0.525],[-2.202,-0.137,-0.115],[-1.322,0.808,-1.375],[-1.107,-0.997,-1.37],[1.847,-0.603,0.168],[0.998,-0.624,-1.446],[1.709,0.94,-0.775]],[[-0.207,-0.038,1.371],[-0.108,0.138,0.196],[-1.292,-0.034,-0.716],[1.222,-0.02,-0.516],[-2.218,-0.117,-0.11],[-1.418,0.779,-1.425],[-1.117,-1.051,-1.232],[1.923,-0.648,0.05],[1.115,-0.438,-1.546],[1.654,0.985,-0.609]],[[-0.213,-0.011,1.369],[-0.087,0.074,0.162],[-1.311,-0.033,-0.7],[1.241,-0.005,-0.509],[-2.197,-0.072,-0.035],[-1.37,0.747,-1.454],[-1.237,-1.03,-1.27],[1.867,-0.696,0.036],[1.096,-0.306,-1.561],[1.627,1.009,-0.433]],[[-0.21,0.017,1.358],[-0.102,0.008,0.164],[-1.321,-0.058,-0.703],[1.257,0.028,-0.502],[-2.191,0.07,-0.036],[-1.314,0.838,-1.321],[-1.402,-1.04,-1.287],[1.828,-0.741,-0.029],[1.158,-0.213,-1.566],[1.774,0.973,-0.379]],[[-0.205,0.046,1.357],[-0.101,-0.057,0.165],[-1.339,-0.045,-0.699],[1.265,0.037,-0.497],[-2.21,0.036,-0.029],[-1.239,0.78,-1.409],[-1.464,-0.988,-1.318],[1.844,-0.762,-0.106],[1.18,-0.084,-1.577],[1.765,0.974,-0.28]],[[-0.198,0.072,1.362],[-0.091,-0.117,0.157],[-1.333,-0.033,-0.708],[1.253,0.028,-0.496],[-2.227,0.133,-0.086],[-1.315,0.813,-1.412],[-1.379,-1.027,-1.225],[1.9,-0.757,-0.191],[1.129,0.065,-1.574],[1.606,0.977,-0.112]],[[-0.189,0.093,1.344],[-0.113,-0.162,0.187],[-1.303,-0.031,-0.711],[1.221,0.038,-0.493],[-2.172,0.102,-0.048],[-1.174,0.781,-1.454],[-1.461,-0.988,-1.253],[1.907,-0.762,-0.306],[1.124,0.195,-1.563],[1.635,0.95,-0.061]],[[-0.189,0.115,1.351],[-0.102,-0.209,0.188],[-1.285,-0.057,-0.717],[1.197,0.069,-0.495],[-2.142,0.26,-0.098],[-1.048,0.809,-1.379],[-1.497,-0.96,-1.304],[1.771,-0.841,-0.381],[1.002,0.266,-1.545],[1.729,0.898,-0.011]],[[-0.198,0.128,1.359],[-0.093,-0.238,0.214],[-1.268,-0.05,-0.723],[1.183,0.072,-0.51],[-2.171,0.246,-0.156],[-0.983,0.76,-1.447],[-1.5,-0.964,-1.26],[1.742,-0.874,-0.536],[0.956,0.412,-1.523],[1.746,0.856,0.036]],[[-0.209,0.134,1.367],[-0.106,-0.232,0.226],[-1.244,-0.046,-0.722],[1.173,0.054,-0.53],[-2.132,0.267,-0.138],[-1.038,0.703,-1.541],[-1.409,-1.009,-1.172],[1.832,-0.828,-0.726],[0.967,0.568,-1.478],[1.751,0.757,0.124]],[[-0.222,0.132,1.378],[-0.083,-0.199,0.206],[-1.246,-0.072,-0.727],[1.18,0.058,-0.531],[-2.107,0.294,-0.126],[-1.011,0.696,-1.526],[-1.46,-1.045,-1.118],[1.682,-0.921,-0.818],[0.936,0.672,-1.414],[1.808,0.648,0.199]],[[-0.227,0.119,1.366],[-0.086,-0.151,0.216],[-1.265,-0.102,-0.717],[1.203,0.076,-0.519],[-2.13,0.295,-0.134],[-1.006,0.598,-1.572],[-1.548,-1.031,-1.164],[1.514,-0.969,-0.885],[1.051,0.748,-1.391],[2.03,0.491,0.15]],[[-0.227,0.109,1.376],[-0.097,-0.101,0.19],[-1.294,-0.12,-0.717],[1.234,0.068,-0.514],[-2.168,0.314,-0.169],[-1.077,0.587,-1.58],[-1.479,-1.133,-1.014],[1.482,-0.949,-1.013],[1.161,0.844,-1.316],[2.089,0.333,0.205]],[[-0.222,0.098,1.379],[-0.089,-0.035,0.167],[-1.31,-0.12,-0.711],[1.245,0.042,-0.516],[-2.218,0.208,-0.14],[-1.171,0.418,-1.704],[-1.442,-1.163,-0.944],[1.509,-0.916,-1.127],[1.239,0.963,-1.156],[1.972,0.192,0.358]],[[-0.206,0.084,1.355],[-0.107,0.034,0.167],[-1.313,-0.159,-0.712],[1.241,0.04,-0.491],[-2.197,0.258,-0.159],[-1.262,0.439,-1.675],[-1.446,-1.222,-0.895],[1.436,-0.873,-1.189],[1.403,0.994,-1.064],[2.014,-0.013,0.354]],[[-0.194,0.074,1.346],[-0.122,0.096,0.142],[-1.324,-0.186,-0.708],[1.255,0.042,-0.462],[-2.197,0.184,-0.108],[-1.153,0.382,-1.668],[-1.467,-1.256,-0.91],[1.16,-0.822,-1.225],[1.498,1.007,-0.987],[2.053,-0.19,0.318]],[[-0.192,0.067,1.343],[-0.109,0.15,0.157],[-1.314,-0.2,-0.702],[1.237,0.026,-0.469],[-2.269,0.149,-0.224],[-1.269,0.338,-1.691],[-1.354,-1.295,-0.894],[1.161,-0.749,-1.313],[1.558,1.019,-0.886],[1.969,-0.346,0.305]],[[-0.196,0.065,1.362],[-0.132,0.192,0.159],[-1.288,-0.196,-0.709],[1.219,-0.0,-0.502],[-2.243,0.024,-0.164],[-1.242,0.3,-1.711],[-1.219,-1.312,-0.8],[1.234,-0.664,-1.425],[1.634,1.011,-0.748],[1.875,-0.433,0.291]],[[-0.208,0.07,1.372],[-0.123,0.218,0.155],[-1.261,-0.217,-0.704],[1.202,-0.004,-0.505],[-2.202,0.023,-0.152],[-1.23,0.312,-1.68],[-1.143,-1.329,-0.881],[1.083,-0.578,-1.458],[1.669,0.989,-0.707],[1.82,-0.588,0.197]],[[-0.22,0.086,1.356],[-0.106,0.225,0.193],[-1.236,-0.237,-0.706],[1.193,-0.007,-0.506],[-2.212,-0.061,-0.193],[-1.246,0.377,-1.622],[-1.196,-1.353,-0.947],[0.896,-0.462,-1.463],[1.733,0.948,-0.682],[1.821,-0.684,0.07]],[[-0.23,0.103,1.382],[-0.118,0.208,0.175],[-1.23,-0.23,-0.701],[1.192,-0.016,-0.525],[-2.168,-0.13,-0.116],[-1.206,0.377,-1.609],[-1.047,-1.322,-1.003],[0.958,-0.382,-1.521],[1.744,0.939,-0.615],[1.785,-0.754,-0.008]],[[-0.235,0.124,1.398],[-0.108,0.181,0.185],[-1.237,-0.228,-0.713],[1.194,-0.025,-0.555],[-2.186,-0.2,-0.144],[-1.344,0.445,-1.56],[-0.983,-1.311,-0.998],[1.098,-0.32,-1.584],[1.743,0.929,-0.473],[1.728,-0.763,0.008]],[[-0.227,0.15,1.389],[-0.106,0.148,0.184],[-1.256,-0.231,-0.711],[1.21,-0.019,-0.533],[-2.172,-0.315,-0.102],[-1.363,0.46,-1.535],[-1.092,-1.26,-1.2],[1.072,-0.25,-1.563],[1.781,0.917,-0.435],[1.742,-0.813,-0.049]],[[-0.213,0.176,1.367],[-0.117,0.102,0.162],[-1.284,-0.247,-0.718],[1.233,-0.012,-0.489],[-2.168,-0.299,-0.067],[-1.429,0.608,-1.356],[-1.07,-1.226,-1.272],[0.983,-0.174,-1.507],[1.818,0.917,-0.396],[1.79,-0.849,-0.113]],[[-0.202,0.202,1.341],[-0.112,0.048,0.169],[-1.307,-0.227,-0.703],[1.239,-0.01,-0.482],[-2.163,-0.48,-0.064],[-1.502,0.604,-1.361],[-1.131,-1.139,-1.362],[1.116,-0.113,-1.537],[1.781,0.921,-0.247],[1.789,-0.849,-0.074]],[[-0.2,0.232,1.344],[-0.107,-0.007,0.153],[-1.329,-0.226,-0.702],[1.249,-0.009,-0.489],[-2.169,-0.49,-0.047],[-1.622,0.665,-1.247],[-1.06,-1.065,-1.407],[1.293,-0.054,-1.561],[1.725,0.917,-0.12],[1.772,-0.865,-0.051]],[[-0.204,0.255,1.331],[-0.117,-0.041,0.157],[-1.337,-0.23,-0.702],[1.269,-0.007,-0.473],[-2.134,-0.594,-0.041],[-1.571,0.738,-1.136],[-1.162,-1.006,-1.494],[1.211,0.017,-1.559],[1.783,0.905,-0.106],[1.842,-0.894,-0.125]],[[-0.217,0.274,1.308],[-0.088,-0.068,0.18],[-1.324,-0.238,-0.696],[1.259,-0.006,-0.456],[-2.159,-0.595,-0.073],[-1.616,0.749,-1.079],[-1.188,-0.896,-1.58],[1.064,0.071,-1.535],[1.831,0.885,-0.115],[1.863,-0.935,-0.263]],[[-0.235,0.299,1.315],[-0.09,-0.113,0.189],[-1.297,-0.222,-0.689],[1.249,-0.007,-0.49],[-2.108,-0.68,-0.095],[-1.602,0.792,-1.007],[-1.036,-0.893,-1.517],[1.067,0.17,-1.576],[1.806,0.848,-0.035],[1.795,-0.988,-0.305]],[[-0.249,0.321,1.325],[-0.089,-0.138,0.222],[-1.265,-0.223,-0.683],[1.214,-0.014,-0.524],[-2.075,-0.733,-0.127],[-1.566,0.789,-1.047],[-0.972,-0.8,-1.561],[1.173,0.264,-1.621],[1.804,0.762,0.026],[1.793,-1.002,-0.423]],[[-0.253,0.341,1.337],[-0.076,-0.142,0.243],[-1.242,-0.242,-0.711],[1.207,-0.023,-0.524],[-2.116,-0.715,-0.215],[-1.579,0.812,-0.93],[-0.986,-0.801,-1.605],[0.969,0.376,-1.571],[1.84,0.719,0.028],[1.732,-1.053,-0.576]],[[-0.245,0.357,1.344],[-0.089,-0.15,0.243],[-1.235,-0.251,-0.721],[1.197,-0.021,-0.507],[-2.052,-0.815,-0.213],[-1.503,0.82,-0.986],[-0.952,-0.742,-1.64],[0.84,0.448,-1.493],[1.956,0.636,-0.004],[1.654,-1.063,-0.728]],[[-0.231,0.361,1.333],[-0.1,-0.151,0.265],[-1.222,-0.254,-0.726],[1.176,-0.018,-0.515],[-2.069,-0.807,-0.25],[-1.66,0.774,-0.97],[-0.859,-0.78,-1.594],[1.015,0.579,-1.492],[1.945,0.53,0.091],[1.566,-1.074,-0.778]],[[-0.221,0.37,1.338],[-0.098,-0.138,0.238],[-1.24,-0.267,-0.713],[1.176,-0.017,-0.518],[-2.029,-0.927,-0.269],[-1.611,0.775,-1.021],[-0.869,-0.753,-1.601],[1.101,0.675,-1.439],[1.871,0.381,0.256],[1.507,-1.079,-0.802]],[[-0.212,0.369,1.332],[-0.113,-0.098,0.22],[-1.26,-0.298,-0.725],[1.205,-0.033,-0.485],[-2.073,-0.883,-0.216],[-1.696,0.752,-0.904],[-0.911,-0.748,-1.644],[1.12,0.752,-1.32],[1.977,0.326,0.228],[1.502,-1.034,-0.94]],[[-0.215,0.361,1.32],[-0.11,-0.063,0.204],[-1.293,-0.302,-0.716],[1.246,-0.032,-0.464],[-2.025,-0.986,-0.199],[-1.789,0.711,-0.94],[-1.034,-0.785,-1.655],[1.152,0.795,-1.244],[2.078,0.19,0.23],[1.448,-1.012,-0.976]],[[-0.229,0.351,1.316],[-0.092,-0.038,0.165],[-1.314,-0.307,-0.691],[1.261,-0.029,-0.469],[-1.982,-0.997,-0.104],[-1.894,0.649,-0.935],[-0.968,-0.765,-1.619],[1.37,0.825,-1.204],[2.001,0.085,0.336],[1.375,-1.006,-0.977]],[[-0.24,0.331,1.296],[-0.112,0.027,0.158],[-1.3,-0.318,-0.662],[1.269,-0.041,-0.481],[-1.954,-1.028,-0.083],[-1.886,0.635,-0.847],[-0.987,-0.813,-1.591],[1.516,0.826,-1.141],[1.942,-0.027,0.381],[1.435,-0.981,-1.017]],[[-0.251,0.315,1.305],[-0.091,0.104,0.124],[-1.301,-0.344,-0.653],[1.27,-0.066,-0.466],[-1.904,-1.046,-0.02],[-1.87,0.599,-0.872],[-1.035,-0.79,-1.631],[1.452,0.843,-1.062],[1.993,-0.099,0.352],[1.35,-0.951,-1.08]],[[-0.25,0.3,1.313],[-0.105,0.162,0.121],[-1.287,-0.345,-0.666],[1.276,-0.076,-0.463],[-1.854,-1.05,-0.005],[-1.996,0.488,-0.87],[-0.974,-0.89,-1.587],[1.489,0.813,-1.06],[2.039,-0.212,0.308],[1.199,-0.933,-1.094]],[[-0.24,0.288,1.32],[-0.119,0.208,0.134],[-1.272,-0.351,-0.662],[1.238,-0.074,-0.48],[-1.748,-1.102,0.006],[-1.965,0.423,-1.016],[-0.879,-0.885,-1.569],[1.656,0.738,-1.062],[1.952,-0.314,0.316],[1.171,-0.94,-1.092]],[[-0.226,0.28,1.339],[-0.127,0.257,0.115],[-1.233,-0.372,-0.666],[1.202,-0.093,-0.493],[-1.825,-1.063,-0.034],[-1.916,0.414,-0.973],[-0.759,-0.897,-1.544],[1.608,0.765,-0.999],[1.792,-0.329,0.402],[1.107,-0.934,-1.135]],[[-0.209,0.277,1.329],[-0.14,0.285,0.137],[-1.213,-0.379,-0.677],[1.165,-0.101,-0.476],[-1.77,-1.086,-0.039],[-1.826,0.42,-1.059],[-0.824,-0.968,-1.565],[1.552,0.777,-0.96],[1.855,-0.4,0.337],[1.1,-0.912,-1.17]],[[-0.199,0.282,1.335],[-0.152,0.262,0.136],[-1.219,-0.374,-0.696],[1.174,-0.091,-0.463],[-1.795,-0.99,0.008],[-1.896,0.353,-1.098],[-0.747,-0.994,-1.524],[1.567,0.775,-0.967],[1.909,-0.437,0.3],[0.991,-0.866,-1.188]],[[-0.204,0.29,1.35],[-0.132,0.229,0.129],[-1.258,-0.367,-0.692],[1.202,-0.072,-0.481],[-1.845,-1.015,-0.031],[-1.864,0.382,-1.165],[-0.824,-1.065,-1.482],[1.617,0.815,-0.946],[1.846,-0.43,0.365],[1.085,-0.891,-1.196]],[[-0.216,0.298,1.337],[-0.129,0.187,0.135],[-1.283,-0.376,-0.673],[1.231,-0.062,-0.492],[-2.004,-0.886,-0.021],[-1.786,0.459,-1.126],[-0.903,-1.051,-1.507],[1.656,0.855,-0.909],[1.887,-0.336,0.385],[1.277,-0.872,-1.25]],[[-0.231,0.306,1.311],[-0.117,0.112,0.123],[-1.301,-0.351,-0.654],[1.264,-0.038,-0.47],[-2.034,-0.813,0.015],[-1.72,0.535,-1.107],[-0.97,-1.122,-1.42],[1.533,0.93,-0.926],[1.994,-0.325,0.351],[1.241,-0.851,-1.248]],[[-0.245,0.312,1.286],[-0.082,0.038,0.15],[-1.315,-0.326,-0.652],[1.268,-0.015,-0.46],[-2.04,-0.698,0.086],[-1.727,0.513,-1.214],[-1.07,-1.148,-1.392],[1.495,0.963,-0.94],[2.079,-0.245,0.305],[1.228,-0.83,-1.253]],[[-0.254,0.326,1.305],[-0.095,-0.023,0.16],[-1.307,-0.318,-0.658],[1.282,-0.001,-0.493],[-2.114,-0.547,0.052],[-1.649,0.572,-1.212],[-1.131,-1.218,-1.313],[1.463,1.004,-0.963],[2.047,-0.176,0.333],[1.373,-0.841,-1.275]],[[-0.252,0.335,1.328],[-0.081,-0.061,0.174],[-1.314,-0.316,-0.666],[1.26,0.007,-0.511],[-2.18,-0.463,0.009],[-1.388,0.575,-1.326],[-1.171,-1.22,-1.314],[1.392,1.015,-1.006],[2.02,-0.075,0.329],[1.469,-0.833,-1.284]],[[-0.233,0.327,1.321],[-0.093,-0.09,0.214],[-1.275,-0.307,-0.685],[1.232,0.024,-0.504],[-2.23,-0.263,-0.12],[-1.373,0.546,-1.409],[-1.194,-1.277,-1.232],[1.252,1.007,-1.077],[2.068,0.023,0.259],[1.339,-0.878,-1.228]],[[-0.215,0.321,1.335],[-0.096,-0.115,0.221],[-1.255,-0.284,-0.718],[1.185,0.041,-0.491],[-2.165,-0.208,-0.08],[-1.18,0.466,-1.566],[-1.202,-1.32,-1.1],[1.127,0.951,-1.17],[2.078,0.1,0.186],[1.277,-0.905,-1.153]],[[-0.206,0.311,1.362],[-0.111,-0.117,0.238],[-1.231,-0.29,-0.726],[1.169,0.039,-0.526],[-2.18,0.03,-0.22],[-1.113,0.402,-1.625],[-1.261,-1.335,-1.067],[1.07,0.944,-1.208],[1.96,0.24,0.229],[1.384,-0.93,-1.116]],[[-0.208,0.297,1.387],[-0.098,-0.11,0.242],[-1.244,-0.286,-0.736],[1.164,0.044,-0.543],[-2.211,0.107,-0.315],[-0.929,0.302,-1.671],[-1.415,-1.337,-0.975],[1.054,0.872,-1.312],[1.919,0.335,0.204],[1.536,-0.9,-1.067]],[[-0.215,0.273,1.387],[-0.108,-0.113,0.225],[-1.252,-0.277,-0.726],[1.193,0.067,-0.537],[-2.141,0.293,-0.324],[-0.945,0.153,-1.746],[-1.44,-1.338,-0.854],[1.015,0.791,-1.386],[1.971,0.475,0.115],[1.477,-0.953,-0.926]],[[-0.226,0.237,1.355],[-0.082,-0.089,0.219],[-1.254,-0.269,-0.714],[1.197,0.083,-0.516],[-2.096,0.372,-0.315],[-1.035,0.06,-1.791],[-1.6,-1.291,-0.653],[1.01,0.667,-1.455],[1.965,0.548,0.089],[1.536,-0.938,-0.798]],[[-0.238,0.21,1.342],[-0.083,-0.069,0.183],[-1.281,-0.258,-0.675],[1.232,0.079,-0.521],[-2.045,0.496,-0.318],[-1.003,-0.101,-1.769],[-1.66,-1.263,-0.575],[1.062,0.629,-1.475],[1.851,0.675,0.133],[1.685,-0.905,-0.689]],[[-0.241,0.189,1.339],[-0.085,-0.066,0.164],[-1.322,-0.254,-0.66],[1.269,0.089,-0.521],[-2.063,0.565,-0.434],[-1.009,-0.142,-1.743],[-1.733,-1.226,-0.427],[1.177,0.549,-1.525],[1.822,0.753,0.121],[1.807,-0.845,-0.602]],[[-0.23,0.17,1.33],[-0.075,-0.066,0.165],[-1.339,-0.241,-0.671],[1.279,0.112,-0.502],[-2.076,0.578,-0.447],[-1.12,-0.329,-1.773],[-1.834,-1.164,-0.386],[1.173,0.458,-1.541],[1.876,0.819,0.056],[1.776,-0.835,-0.474]],[[-0.21,0.156,1.33],[-0.092,-0.059,0.147],[-1.332,-0.247,-0.679],[1.264,0.119,-0.481],[-1.932,0.682,-0.531],[-1.129,-0.338,-1.773],[-1.834,-1.132,-0.281],[1.098,0.376,-1.53],[1.831,0.898,0.021],[1.744,-0.827,-0.406]],[[-0.19,0.143,1.333],[-0.105,-0.043,0.166],[-1.31,-0.237,-0.692],[1.224,0.107,-0.492],[-1.92,0.685,-0.592],[-0.999,-0.45,-1.732],[-1.921,-1.056,-0.282],[1.119,0.35,-1.549],[1.729,0.931,0.027],[1.831,-0.758,-0.369]],[[-0.182,0.135,1.371],[-0.108,-0.046,0.185],[-1.307,-0.224,-0.706],[1.215,0.11,-0.52],[-1.883,0.709,-0.833],[-0.941,-0.52,-1.697],[-1.935,-1.059,-0.333],[1.098,0.323,-1.582],[1.655,0.995,-0.022],[1.806,-0.766,-0.347]],[[-0.183,0.128,1.414],[-0.108,-0.051,0.193],[-1.291,-0.227,-0.747],[1.196,0.129,-0.534],[-1.827,0.722,-0.878],[-0.9,-0.601,-1.693],[-1.993,-0.95,-0.257],[1.01,0.235,-1.603],[1.776,1.002,-0.133],[1.793,-0.759,-0.368]],[[-0.193,0.112,1.412],[-0.113,-0.032,0.22],[-1.252,-0.23,-0.746],[1.183,0.131,-0.547],[-1.673,0.762,-0.934],[-0.998,-0.712,-1.681],[-2.033,-0.889,-0.267],[0.935,0.242,-1.605],[1.76,1.052,-0.223],[1.782,-0.776,-0.394]],[[-0.212,0.095,1.405],[-0.086,-0.015,0.206],[-1.241,-0.228,-0.722],[1.162,0.126,-0.56],[-1.579,0.756,-1.041],[-0.884,-0.767,-1.586],[-2.075,-0.754,-0.154],[0.916,0.242,-1.621],[1.668,1.061,-0.144],[1.823,-0.757,-0.403]],[[-0.224,0.079,1.395],[-0.1,-0.015,0.208],[-1.242,-0.212,-0.703],[1.186,0.14,-0.574],[-1.567,0.729,-1.145],[-0.92,-0.952,-1.416],[-2.096,-0.685,-0.109],[0.993,0.287,-1.65],[1.699,1.079,-0.153],[1.846,-0.762,-0.397]],[[-0.226,0.064,1.397],[-0.079,-0.005,0.193],[-1.284,-0.234,-0.702],[1.212,0.169,-0.555],[-1.506,0.66,-1.285],[-1.085,-1.024,-1.413],[-2.172,-0.498,-0.019],[1.023,0.289,-1.639],[1.819,1.074,-0.176],[1.843,-0.774,-0.407]],[[-0.212,0.052,1.384],[-0.091,0.007,0.165],[-1.307,-0.252,-0.7],[1.243,0.185,-0.535],[-1.445,0.646,-1.306],[-1.247,-1.172,-1.281],[-2.228,-0.311,-0.017],[1.006,0.339,-1.607],[1.815,1.083,-0.089],[1.847,-0.786,-0.377]],[[-0.187,0.042,1.344],[-0.107,0.005,0.163],[-1.32,-0.239,-0.682],[1.224,0.186,-0.507],[-1.378,0.501,-1.492],[-1.26,-1.235,-1.136],[-2.221,-0.199,0.026],[1.155,0.434,-1.591],[1.749,1.07,0.008],[1.893,-0.755,-0.387]],[[-0.167,0.036,1.337],[-0.106,-0.006,0.139],[-1.328,-0.237,-0.682],[1.219,0.202,-0.493],[-1.387,0.414,-1.569],[-1.268,-1.308,-0.945],[-2.251,-0.024,-0.048],[1.124,0.486,-1.567],[1.699,1.019,0.14],[1.834,-0.771,-0.346]],[[-0.157,0.033,1.347],[-0.111,-0.009,0.149],[-1.342,-0.25,-0.699],[1.228,0.22,-0.482],[-1.252,0.31,-1.653],[-1.477,-1.338,-0.903],[-2.24,0.077,-0.092],[1.095,0.556,-1.535],[1.78,1.023,0.088],[1.794,-0.788,-0.45]],[[-0.162,0.034,1.37],[-0.115,-0.021,0.169],[-1.336,-0.264,-0.706],[1.223,0.234,-0.502],[-1.172,0.238,-1.688],[-1.557,-1.352,-0.887],[-2.198,0.269,-0.23],[1.064,0.616,-1.536],[1.856,0.941,0.082],[1.834,-0.737,-0.574]],[[-0.181,0.036,1.394],[-0.096,-0.049,0.174],[-1.299,-0.238,-0.711],[1.203,0.233,-0.537],[-1.058,0.122,-1.748],[-1.545,-1.341,-0.697],[-2.184,0.281,-0.295],[1.006,0.746,-1.504],[1.746,0.915,0.127],[1.737,-0.759,-0.677]]],"types":["o2","c2","c3","c3","h","h","h","h","h","h"],"params":[["BONDS","c2_b=o2_b","D0","kJ/mol",0.0,-400.0,400.0,"Bounded"],["BONDS","c2_b=o2_b","De","kJ/mol",400.0,200.0,800.0,"Bounded"],["BONDS","c2_b=o2_b","beta","1/nm",20.0,10.0,40.0,"Bounded"],["BONDS","c2_b=o2_b","bondlength","pm",120.7,60.35,241.4,"Bounded"],["BONDS","c2_b~c3_b","D0","kJ/mol",0.0,-400.0,400.0,"Bounded"],["BONDS","c2_b~c3_b","De","kJ/mol",400.0,200.0,800.0,"Bounded"],["BONDS","c2_b~c3_b","beta","1/nm",20.0,10.0,40.0,"Bounded"],["BONDS","c2_b~c3_b","bondlength","pm",150.6,75.3,301.2,"Bounded"],["BONDS","c3_b~h_b","D0","kJ/mol",0.0,-400.0,400.0,"Bounded"],["BONDS","c3_b~h_b","De","kJ/mol",400.0,200.0,800.0,"Bounded"],["BONDS","c3_b~h_b","beta","1/nm",20.0,10.0,40.0,"Bounded"],["BONDS","c3_b~h_b","bondlength","pm",109.1,54.55,218.2,"Bounded"],["ANGLES","c2_b~c3_b~h_b","angle","degree",110.6,55.3,180.0,"Bounded"],["ANGLES","c2_b~c3_b~h_b","kt","kJ/mol/rad2",300.0,150.0,600.0,"Bounded"],["ANGLES","c3_b~c2_b=o2_b","angle","degree",124.4,62.2,180.0,"Bounded"],["ANGLES","c3_b~c2_b=o2_b","kt","kJ/mol/rad2",300.0,150.0,600.0,"Bounded"],["ANGLES","c3_b~c2_b~c3_b","angle","degree",115.7,57.85,180.0,"Bounded"],["ANGLES","c3_b~c2_b~c3_b","kt","kJ/mol/rad2",300.0,150.0,600.0,"Bounded"],["ANGLES","h_b~c3_b~h_b","angle","degree",107.8,53.9,180.0,"Bounded"],["ANGLES","h_b~c3_b~h_b","kt","kJ/mol/rad2",300.0,150.0,600.0,"Bounded"],["POLARIZATION","c2_s","alpha","Angstrom3",1.45,0.4,2.5,"Bounded"],["POLARIZATION","c3_s","alpha","Angstrom3",1.45,0.4,2.5,"Bounded"],["POLARIZATION","h_s","alpha","Angstrom3",0.55,0.1,1.0,"Bounded"],["POLARIZATION","o2_s","alpha","Angstrom3",1.45,0.4,2.5,"Bounded"],["ELECTRONEGATIVITYEQUALIZATION","c2_z","chi","eV",5.5,2.0,9.0,"Bounded"],["ELECTRONEGATIVITYEQUALIZATION","c2_z","eta","eV/e",14.0,4.0,24.0,"Bounded"],["ELECTRONEGATIVITYEQUALIZATION","c3_z","chi","eV",5.5,2.0,9.0,"Bounded"],["ELECTRONEGATIVITYEQUALIZATION","c3_z","eta","eV/e",14.0,4.0,24.0,"Bounded"],["ELECTRONEGATIVITYEQUALIZATION","h_z","chi","eV",3.5,1.0,6.0,"Bounded"],["ELECTRONEGATIVITYEQUALIZATION","h_z","eta","eV/e",14.0,4.0,24.0,"Bounded"],["ELECTRONEGATIVITYEQUALIZATION","o2_z","chi","eV",6.0,3.0,9.0,"Bounded"],["ELECTRONEGATIVITYEQUALIZATION","o2_z","eta","eV/e",14.0,4.0,24.0,"Bounded"]]}</script>
+<script>
+"use strict";
+const D = JSON.parse(document.getElementById("data").textContent);
+const $ = (s, r = document) => r.querySelector(s), $$ = (s, r = document) => [...r.querySelectorAll(s)];
+const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+const fmt = (x, d = 2) => (x < 0 ? "−" : "") + Math.abs(x).toFixed(d);
+const el = (tag, attrs = {}, html = "") => { const e = document.createElement(tag); for (const k in attrs) e.setAttribute(k, attrs[k]); e.innerHTML = html; return e; };
+
+/* ---------- toast for actions that are not connected ---------- */
+let toastTimer;
+function toast(msg) { const t = $("#toast"); t.textContent = msg; t.classList.add("on"); clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove("on"), 3600); }
+document.addEventListener("click", e => { const b = e.target.closest("[data-msg]"); if (b) toast(b.dataset.msg); });
+$("#upload").onclick = () => toast("Mockup: the application accepts sdf, pdb and xyz files and reads them in a sandbox.");
+$("#load").onclick = () => toast("Mockup: acetone is the only molecule here. The application builds 3D coordinates from the SMILES string with RDKit.");
+
+/* ---------- tabs with a sliding underline ---------- */
+function moveInk(nav) { const b = $('button[aria-selected="true"]', nav), ink = $(".ink", nav); if (!b || !ink || !b.offsetWidth) return;
+  if (!ink.dataset.placed) { ink.style.transition = "none"; ink.dataset.placed = "1"; requestAnimationFrame(() => requestAnimationFrame(() => { ink.style.transition = ""; })); }
+  ink.style.width = b.offsetWidth + "px"; ink.style.transform = `translateX(${b.offsetLeft}px)`; }
+function tabs(nav, onSelect) {
+  const pick = b => { $$("button", nav).forEach(x => x.setAttribute("aria-selected", x === b)); moveInk(nav); onSelect(b.dataset.tab || b.dataset.view); };
+  nav.addEventListener("click", e => { const b = e.target.closest("button"); if (b) pick(b); });
+  return { pick: name => { const b = $$("button", nav).find(x => (x.dataset.tab || x.dataset.view) === name); if (b) pick(b); } };
+}
+function showOnly(ids, on) { ids.forEach(i => { const p = document.getElementById(i); if (p) p.hidden = i !== on; }); requestAnimationFrame(redrawPlots); }
+function seg(root, onPick) { root.addEventListener("click", e => { const b = e.target.closest("button"); if (!b) return;
+  $$("button", root).forEach(x => x.setAttribute("aria-pressed", x === b)); onPick(b.dataset.v); }); }
+
+/* ---------- small SVG plots drawn to one scale ---------- */
+function ticks(lo, hi, n = 5) { const span = hi - lo || 1, step0 = Math.pow(10, Math.floor(Math.log10(span / n))); const err = span / n / step0;
+  const step = step0 * (err >= 7.5 ? 10 : err >= 3.5 ? 5 : err >= 1.5 ? 2 : 1); const t = []; for (let v = Math.ceil(lo / step) * step; v <= hi + step * 1e-6; v += step) t.push(+v.toFixed(10)); return t; }
+const plots = new Map();
+function plot(target, cfg) { plots.set(target, cfg); drawPlot(target, cfg); }
+function redrawPlots() { plots.forEach((cfg, t) => drawPlot(t, cfg)); $$(".tabs").forEach(moveInk); }
+function drawPlot(target, cfg) {
+  const host = document.getElementById(target); if (!host || !host.clientWidth) return;
+  const W = host.clientWidth, H = Math.round(Math.min(cfg.height || 260, W * (cfg.aspect || 0.62))), m = { l: 66, r: 14, t: 14, b: 40 };
+  const [x0, x1] = cfg.xlim, [y0, y1] = cfg.ylim;
+  const X = v => m.l + (v - x0) / (x1 - x0) * (W - m.l - m.r), Y = v => H - m.b - (v - y0) / (y1 - y0) * (H - m.t - m.b);
+  const ink = css("--ink"), muted = css("--muted"), line = css("--line");
+  let s = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${cfg.label}" font-family="IBM Plex Mono, monospace" font-size="11">`;
+  for (const v of ticks(y0, y1, 4)) s += `<line x1="${m.l}" x2="${W - m.r}" y1="${Y(v)}" y2="${Y(v)}" stroke="${line}" stroke-width="1"/><text x="${m.l - 8}" y="${Y(v) + 4}" text-anchor="end" fill="${muted}">${String(cfg.yfmt ? cfg.yfmt(v) : v).replace("-", "−")}</text>`;
+  for (const v of ticks(x0, x1, W < 420 ? 4 : 6)) s += `<line x1="${X(v)}" x2="${X(v)}" y1="${H - m.b}" y2="${H - m.b + 5}" stroke="${muted}"/><text x="${X(v)}" y="${H - m.b + 18}" text-anchor="middle" fill="${muted}">${String(v).replace("-", "−")}</text>`;
+  s += `<line x1="${m.l}" x2="${W - m.r}" y1="${H - m.b}" y2="${H - m.b}" stroke="${muted}"/>`;
+  s += `<text x="${(m.l + W - m.r) / 2}" y="${H - 6}" text-anchor="middle" fill="${ink}" font-family="IBM Plex Sans, sans-serif" font-size="12">${cfg.xlabel}</text>`;
+  s += `<text transform="translate(12 ${(m.t + H - m.b) / 2}) rotate(-90)" text-anchor="middle" fill="${ink}" font-family="IBM Plex Sans, sans-serif" font-size="12">${cfg.ylabel}</text>`;
+  for (const p of cfg.series) {
+    const col = css(p.color || "--accent");
+    if (p.type === "line") { const d = p.x.map((v, i) => `${i ? "L" : "M"}${X(v).toFixed(1)} ${Y(p.y[i]).toFixed(1)}`).join("");
+      if (p.fill) s += `<path d="${d}L${X(p.x[p.x.length - 1]).toFixed(1)} ${Y(y0)}L${X(p.x[0]).toFixed(1)} ${Y(y0)}Z" fill="${col}" fill-opacity="0.12" stroke="none"/>`;
+      s += `<path d="${d}" fill="none" stroke="${col}" stroke-width="${p.width || 1.6}" stroke-linejoin="round" ${p.dash ? `stroke-dasharray="${p.dash}"` : ""}/>`;
+      if (p.endpoint && p.x.length) { const i = p.x.length - 1; s += `<circle cx="${X(p.x[i])}" cy="${Y(p.y[i])}" r="3.5" fill="${col}"/>`; } }
+    else if (p.type === "scatter") p.x.forEach((v, i) => { s += `<circle cx="${X(v).toFixed(1)}" cy="${Y(p.y[i]).toFixed(1)}" r="2.6" fill="${col}" fill-opacity="0.7"/>`; });
+    else if (p.type === "bars") { const w = Math.max(1, (X(p.x[1]) - X(p.x[0])) - 1.5); p.x.forEach((v, i) => { s += `<rect x="${(X(v) - w / 2).toFixed(1)}" y="${Y(p.y[i]).toFixed(1)}" width="${w.toFixed(1)}" height="${Math.max(0, Y(y0) - Y(p.y[i])).toFixed(1)}" fill="${col}" fill-opacity="0.8"/>`; }); }
+    else if (p.type === "sticks") p.x.forEach((v, i) => { const on = i === p.selected; s += `<line data-i="${i}" x1="${X(v)}" x2="${X(v)}" y1="${H - m.b - 1}" y2="${H - m.b - (on ? 26 : 12)}" stroke="${on ? col : muted}" stroke-width="${on ? 3 : 2}" style="cursor:pointer"/><line data-i="${i}" x1="${X(v)}" x2="${X(v)}" y1="${H - m.b}" y2="${m.t}" stroke="transparent" stroke-width="9" style="cursor:pointer"/>`; });
+  }
+  host.innerHTML = s + "</svg>";
+  if (cfg.onPick) host.onclick = e => { const i = e.target.getAttribute && e.target.getAttribute("data-i"); if (i !== null) cfg.onPick(+i); };
+}
+
+/* ---------- 3D viewers ---------- */
+const have3D = typeof $3Dmol !== "undefined";
+function makeViewer(id) {
+  const host = document.getElementById(id);
+  try { if (!have3D) throw 0; const v = $3Dmol.createViewer(host, { backgroundColor: css("--stage"), antialias: true }); if (!v) throw 0; return v; }
+  catch (e) { host.parentNode.appendChild(el("div", { class: "nogl" }, "The 3D view needs WebGL, which this browser does not offer here.")); return null; }
+}
+function atomsFrom(coords, modeVec) {
+  const a = D.elem.map((e, i) => ({ elem: e, atom: e + (i + 1), serial: i + 1, x: coords[i][0], y: coords[i][1], z: coords[i][2], bonds: [], bondOrder: [], hetflag: true, properties: { charge: D.q[i] } }));
+  D.bonds.forEach(([i, j, o]) => { a[i].bonds.push(j); a[i].bondOrder.push(o); a[j].bonds.push(i); a[j].bondOrder.push(o); });
+  if (modeVec) a.forEach((at, i) => { at.dx = modeVec[i][0]; at.dy = modeVec[i][1]; at.dz = modeVec[i][2]; });
+  return a;
+}
+const ui = { style: "ball", colour: "charge", labels: true, tab: "charges", mode: D.inten.indexOf(Math.max(...D.inten)), ghost: true, focus: -1 };
+let V = null, triedV = false, zoomed = false, simTimer = null;   /* the viewer is made when its workspace is first shown */
+function styleSpec(opacity) {
+  const cs = ui.colour === "charge" ? { colorscheme: { prop: "charge", gradient: new $3Dmol.Gradient.RWB(-0.4, 0.4) } } : {};
+  const o = opacity ? { opacity } : {};
+  if (ui.style === "stick") return { stick: { radius: 0.16, ...cs, ...o } };
+  if (ui.style === "sphere") return { sphere: { scale: 0.85, ...cs, ...o } };
+  return { stick: { radius: 0.12, ...cs, ...o }, sphere: { scale: 0.26, ...cs, ...o } };
+}
+function labelAtoms(coords) {
+  if (!ui.labels) return;
+  coords.forEach((c, i) => { if (D.elem[i] === "H" && ui.tab !== "charges") return;
+    V.addLabel(ui.colour === "charge" ? (D.q[i] > 0 ? "+" : "−") + Math.abs(D.q[i]).toFixed(2) : D.elem[i] + (i + 1),
+      { position: { x: c[0], y: c[1], z: c[2] }, fontSize: 11, fontColor: css("--ink"), backgroundColor: css("--surface"), backgroundOpacity: 0.82, borderThickness: 0, inFront: true, showBackground: true, alignment: "center" }); });
+}
+function scene() {
+  $("#qlegend").hidden = ui.colour !== "charge";
+  const titles = { charges: "Structure and charges", minimize: "Minimized and original", modes: `Vibration at ${D.freq[ui.mode].toFixed(0)} cm⁻¹`, simulate: "Trajectory", openmm: "Structure" };
+  $("#scene-title").textContent = titles[ui.tab];
+  if ($("#view-molecule").hidden) return;   /* never draw into a hidden canvas */
+  if (!V && !triedV) { triedV = true; V = makeViewer("gl"); }
+  if (!V) return;
+  clearInterval(simTimer); V.stopAnimate(); V.removeAllModels(); V.removeAllShapes(); V.removeAllLabels();
+  V.setBackgroundColor(css("--stage"));
+  if (ui.tab === "modes") {
+    const m = V.addModel(); m.addAtoms(atomsFrom(D.xnm, D.modes[ui.mode])); m.frames = [m.atoms]; /* vibrate() needs a first frame */ m.setStyle({}, styleSpec());
+    m.vibrate(12, 0.55, true, V, { radius: 0.06, radiusRatio: 2.2, mid: 0.7, color: css("--accent") });
+    V.animate({ loop: "backAndForth", interval: 45 });
+  } else if (ui.tab === "minimize") {
+    if (ui.ghost) { const g = V.addModel(); g.addAtoms(atomsFrom(D.x0)); g.setStyle({}, { stick: { radius: 0.09, color: css("--series2"), opacity: 0.55 } }); }
+    const m = V.addModel(); m.addAtoms(atomsFrom(D.xmin)); m.setStyle({}, styleSpec()); labelAtoms(D.xmin);
+  } else if (ui.tab === "simulate") {
+    const m = V.addModel(); m.addAtoms(atomsFrom(D.frames[simFrame])); m.setStyle({}, styleSpec());
+  } else {
+    const m = V.addModel(); m.addAtoms(atomsFrom(D.xmin)); m.setStyle({}, styleSpec()); labelAtoms(D.xmin);
+    if (ui.focus >= 0) { const c = D.xmin[ui.focus]; V.addSphere({ center: { x: c[0], y: c[1], z: c[2] }, radius: 0.62, color: css("--accent"), opacity: 0.35 }); }
+  }
+  if (!zoomed) { V.setView([0, 0, 0, 0, 0, 0, 0, 1]); V.rotate(-72, "x"); V.rotate(18, "y"); V.zoomTo(); V.zoom($("#gl").clientWidth < 500 ? 0.9 : 1.25); zoomed = true; }
+  V.render();
+}
+seg($("#style"), v => { ui.style = v; scene(); });
+seg($("#colour"), v => { ui.colour = v; scene(); });
+$("#labels").onchange = e => { ui.labels = e.target.checked; scene(); };
+$("#reset").onclick = () => { zoomed = false; scene(); };
+
+/* ---------- molecule: summary, charges ---------- */
+$("#molchips").innerHTML = [`<b>${D.name}</b>`, `<b>${D.formula}</b>`, `<b>${D.elem.length}</b> atoms and <b>${D.elem.length}</b> shells`, `net charge <b>${Math.abs(Math.round(D.q.reduce((a, b) => a + b, 0)))} e</b>`, `force field <b>ACS-pg1</b>`, `reads <b>sdf, pdb, xyz, SMILES</b>`].map(t => `<span class="chip">${t}</span>`).join("");
+function chargeTable() {
+  const qmax = 0.4;
+  $("#qtable").innerHTML = `<tr><th>Atom</th><th>Type</th><th class="n">Charge (e)</th></tr>` + D.elem.map((e, i) => {
+    const w = Math.min(1, Math.abs(D.q[i]) / qmax) * 50, neg = D.q[i] < 0;
+    return `<tr class="pick${i === ui.focus ? " sel" : ""}" data-i="${i}"><td>${e}${i + 1}</td><td class="num">${D.types[i]}</td><td class="n">${fmt(D.q[i], 3)}<span class="qbar"><i style="${neg ? `right:50%;width:${w}%;background:var(--neg)` : `left:50%;width:${w}%;background:var(--pos)`}"></i></span></td></tr>`; }).join("");
+}
+$("#qtable").onclick = e => { const r = e.target.closest("tr.pick"); if (!r) return; ui.focus = ui.focus === +r.dataset.i ? -1 : +r.dataset.i; chargeTable(); scene(); };
+
+/* ---------- molecule: minimize ---------- */
+function minimizePanel() {
+  $("#rmsd").innerHTML = `${(D.rmsd_nm * 10).toFixed(3)} <small>Å</small>`;
+  const dE = D.e_after.EPOT - D.e_before.EPOT; $("#dE").innerHTML = `${fmt(dE, 1)} <small>kJ/mol</small>`;
+  const names = { BONDS: "Bonds", ANGLES: "Angles", PROPER_DIHEDRALS: "Dihedrals", DISPERSION: "Dispersion", EXCHANGE: "Exchange", COULOMB: "Coulomb", INDUCTION: "Induction", EPOT: "Potential energy" };
+  $("#etable").innerHTML = `<tr><th>Term (kJ/mol)</th><th class="n">Before</th><th class="n">After</th><th class="n">Change</th></tr>` + Object.keys(names).map(k =>
+    `<tr class="${k === "EPOT" ? "total" : ""}"><td>${names[k]}</td><td class="n">${fmt(D.e_before[k])}</td><td class="n">${fmt(D.e_after[k])}</td><td class="n">${fmt(D.e_after[k] - D.e_before[k])}</td></tr>`).join("");
+}
+$("#ghost").onchange = e => { ui.ghost = e.target.checked; scene(); };
+$("#run-min").onclick = () => { const p = $("#min-pill"); p.textContent = "Minimizing…"; p.className = "pill warn"; setTimeout(() => { p.textContent = "Converged"; p.className = "pill good"; scene(); }, 700); };
+
+/* ---------- molecule: normal modes ---------- */
+function modesPanel() {
+  const imax = Math.max(...D.inten);
+  plot("irplot", { label: "Infrared spectrum of acetone", xlim: [0, 3400], ylim: [0, 1.08], xlabel: "Wavenumber (cm⁻¹)", ylabel: "Relative intensity", height: 230, aspect: 0.5, yfmt: v => v.toFixed(1),
+    series: [{ type: "line", x: D.ir.map(p => p[0]), y: D.ir.map(p => p[1]), fill: true }, { type: "sticks", x: D.freq, selected: ui.mode }], onPick: pickMode });
+  $("#modetable").innerHTML = `<tr><th class="n">Mode</th><th class="n">cm⁻¹</th><th class="n">Int.</th></tr>` + D.freq.map((f, i) =>
+    `<tr class="pick${i === ui.mode ? " sel" : ""}" data-i="${i}"><td class="n">${i + 1}</td><td class="n">${f.toFixed(1)}</td><td class="n">${(D.inten[i] / imax).toFixed(2)}</td></tr>`).join("");
+  const t = D.thermo["T=298.15"], row = (name, o, unit) => `<tr><td>${name} <span class="muted">(${unit})</span></td>${["Translation", "Rotation", "Vibration", "Total"].map(k => `<td class="n">${fmt(o[k], 1)}</td>`).join("")}</tr>`;
+  $("#thermo").innerHTML = `<tr><th></th><th class="n">Trans.</th><th class="n">Rot.</th><th class="n">Vib.</th><th class="n">Total</th></tr>` +
+    row("Entropy S°", t["Standard entropy"], "J/mol K") + row("Heat capacity c<sub>V</sub>", t["Heat capacity cV"], "J/mol K") + row("Internal energy", t["Internal energy"], "kJ/mol") +
+    `<tr><td>Zero point energy <span class="muted">(kJ/mol)</span></td><td colspan="3"></td><td class="n">${fmt(t["Zero point energy"], 1)}</td></tr>` +
+    `<tr><td>Symmetry number</td><td colspan="3"></td><td class="n">${D.thermo["Symmetry number"]}</td></tr>`;
+}
+function showModeRow() { const r = $("#modetable tr.sel"), box = $("#modetable").parentNode; if (r && (r.offsetTop < box.scrollTop + 30 || r.offsetTop > box.scrollTop + box.clientHeight - 30)) box.scrollTop = r.offsetTop - 70; }
+function pickMode(i) { const box = $("#modetable").parentNode, top = box.scrollTop; ui.mode = i; modesPanel(); box.scrollTop = top; showModeRow(); scene(); }
+$("#modetable").onclick = e => { const r = e.target.closest("tr.pick"); if (r) pickMode(+r.dataset.i); };
+$("#run-nma").onclick = () => toast("Mockup: the application runs alexandria nma and reads frequencies, intensities and thermochemistry from its JSON output.");
+
+/* ---------- molecule: simulate ---------- */
+let simFrame = D.frames.length - 1, eKey = "EPOT";
+function energyPlot() {
+  const n = Math.min(D.energy.t.length, Math.round((simFrame + 1) / D.frames.length * D.energy.t.length)), y = D.energy[eKey];
+  const lo = Math.min(...y), hi = Math.max(...y), pad = (hi - lo) * 0.08 || 1;
+  plot("eplot", { label: "Energy during the simulation", xlim: [0, 1], ylim: [lo - pad, hi + pad], xlabel: "Time (ps)", ylabel: eKey === "T" ? "Temperature (K)" : "Energy (kJ/mol)", height: 280,
+    yfmt: v => v.toFixed(Math.abs(hi - lo) < 5 ? 1 : 0), series: [{ type: "line", x: D.energy.t.slice(0, n), y: y.slice(0, n), endpoint: true }] });
+  $("#simbar").style.width = (simFrame + 1) / D.frames.length * 100 + "%";
+  $("#simtime").textContent = `${((simFrame + 1) / D.frames.length).toFixed(2)} ps of 1.00 ps`;
+}
+seg($("#eseries"), v => { eKey = v; energyPlot(); });
+$("#run-sim").onclick = () => {
+  clearInterval(simTimer); simFrame = 0; scene(); energyPlot();
+  simTimer = setInterval(() => { simFrame++; if (simFrame >= D.frames.length) { simFrame = D.frames.length - 1; clearInterval(simTimer); return; }
+    if (V) { V.removeAllModels(); const m = V.addModel(); m.addAtoms(atomsFrom(D.frames[simFrame])); m.setStyle({}, styleSpec()); V.render(); } energyPlot(); }, 70);
+};
+
+/* ---------- force field: generate ---------- */
+const ATYPES = [["hc", "H", "Hydrogen on carbon"], ["hw", "H", "Hydrogen in water"], ["ho", "H", "Hydrogen on oxygen"], ["hn", "H", "Hydrogen on nitrogen"], ["c3", "C", "sp3 carbon"], ["c2", "C", "sp2 carbon"], ["ca", "C", "Aromatic carbon"], ["n3", "N", "sp3 nitrogen"], ["o2", "O", "sp2 oxygen"], ["oh", "O", "Oxygen in a hydroxyl group"], ["ow", "O", "Oxygen in water"], ["f", "F", "Fluorine"], ["cl", "Cl", "Chlorine"], ["s", "S", "Sulfur"]];
+const aSel = ATYPES.map((_, i) => i < 11);
+function atypeTable() {
+  $("#atypes").innerHTML = `<tr><th>Use</th><th>Type</th><th>Element</th><th>Description</th><th>Shell</th></tr>` + ATYPES.map((a, i) =>
+    `<tr><td><input type="checkbox" id="at${i}" data-i="${i}" ${aSel[i] ? "checked" : ""} aria-label="Use ${a[0]}"></td><td class="num">${a[0]}</td><td>${a[1]}</td><td>${a[2]}</td><td class="num muted">${$("#pol").checked && aSel[i] ? a[0] + "_s" : "–"}</td></tr>`).join("");
+  $("#ntypes").textContent = `${aSel.filter(Boolean).length} of ${ATYPES.length} selected`;
+}
+function genCmd() {
+  const q = $('#qdist button[aria-pressed="true"]').dataset.v;
+  $("#gencmd").textContent = `alexandria gen_ff -f atomtypes.csv -o ${$("#ffname").value || "ffout"}.xml \\\n    -qdist ${q} -vdwfn ${$("#vdwfn").value} \\\n    -bondfn ${$("#bondfn").value} -anglefn ${$("#anglefn").value} -dihfn ${$("#dihfn").value} \\\n    -nexcl ${$("#nexcl").value} -epsilonr ${$("#epsr").value}${$("#qsymm").checked ? "" : " -noqsymm"}`;
+}
+$("#atypes").onchange = e => { aSel[+e.target.dataset.i] = e.target.checked; atypeTable(); };
+$("#all-on").onclick = () => { aSel.fill(true); atypeTable(); };
+$("#all-off").onclick = () => { aSel.fill(false); atypeTable(); };
+$("#tab-gen").addEventListener("input", () => { atypeTable(); genCmd(); });
+seg($("#qdist"), genCmd);
+$("#run-gen").onclick = () => { const n = aSel.filter(Boolean).length, r = $("#genresult"); r.hidden = false;
+  r.innerHTML = `<span class="pill good">Example result</span><span><code>${$("#ffname").value}.xml</code> with ${n * ($("#pol").checked ? 2 : 1)} particle types. Next: add bonded parameters from a molprop file with geometry_ff.</span>`; };
+
+/* ---------- force field: edit and validate ---------- */
+const P = D.params.map(r => ({ inter: r[0], id: r[1], par: r[2], unit: r[3], val: r[4], min: r[5], max: r[6], mut: r[7] }));
+[...new Set(P.map(p => p.inter))].forEach(n => $("#pfilter").appendChild(el("option", { value: n }, n.charAt(0) + n.slice(1).toLowerCase().replace(/_/g, " "))));
+function paramTable() {
+  const f = $("#pfilter").value;
+  $("#ptable").innerHTML = `<tr><th>Interaction</th><th>Identifier</th><th>Parameter</th><th class="n">Value</th><th class="n">Min</th><th class="n">Max</th><th>Within bounds</th><th>Mutability</th></tr>` + P.map((p, i) => {
+    if (f && p.inter !== f) return "";
+    const span = p.max - p.min, pos = span > 0 ? Math.max(0, Math.min(1, (p.val - p.min) / span)) * 100 : 50, out = p.val < p.min || p.val > p.max;
+    return `<tr><td class="muted">${p.inter.charAt(0) + p.inter.slice(1).toLowerCase().replace(/_/g, " ")}</td><td class="num">${p.id}</td><td class="num">${p.par} <span class="muted">${p.unit}</span></td>
+      <td class="n"><input type="number" id="pv${i}" data-i="${i}" value="${p.val}" step="any" aria-label="Value of ${p.par} for ${p.id}" ${p.mut === "Bounded" ? "" : "disabled"}></td>
+      <td class="n">${p.min}</td><td class="n">${p.max}</td><td><span class="range${out ? " out" : ""}"><i style="left:calc(${pos}% - 1px)"></i></span></td><td>${p.mut}</td></tr>`; }).join("");
+}
+$("#pfilter").onchange = paramTable;
+$("#ptable").addEventListener("change", e => { const i = e.target.dataset.i; if (i === undefined) return; P[+i].val = parseFloat(e.target.value); paramTable(); });
+function validateFF() {
+  const out = P.filter(p => p.val < p.min || p.val > p.max), at = P.filter(p => p.mut === "Bounded" && p.max > p.min && (p.val === p.min || p.val === p.max));
+  const li = (c, s, t) => `<li><span class="${c}">${s}</span><span>${t}</span></li>`;
+  $("#vallist").innerHTML = (out.length ? out.map(p => li("er", "✕", `<code>${p.par}</code> of <code>${p.id}</code> is ${p.val}, outside ${p.min} to ${p.max}.`)).join("") : li("ok", "✓", `All ${P.length} values are within their bounds.`)) +
+    li("ok", "✓", "Every minimum is at most its maximum.") + li("ok", "✓", "No parameter that must be nonnegative is negative.") + li("ok", "✓", "No identifier is defined twice.") +
+    (at.length ? li("wr", "!", `${at.length} bounded parameter${at.length > 1 ? "s are" : " is"} exactly at a bound.`) : li("ok", "✓", "No bounded parameter sits exactly at a bound."));
+}
+$("#run-val").onclick = validateFF;
+
+/* ---------- force field: virtual sites by point and click ---------- */
+let V2 = null, vsPick = [1, 0], vsDefs = 0;
+function vsPos() { const X = D.xmin, a = +$("#vs-a").value, p = vsPick.map(i => X[i]);
+  if (p.length === 2) return p[0].map((c, k) => c + a * (p[1][k] - c));
+  if (p.length === 3) return p[1].map((c, k) => c + a * ((p[0][k] - c) + (p[2][k] - c)));
+  return null; }
+function vsiteScene() {
+  const n = vsPick.length, inter = n === 3 ? "VSITE3S" : "VSITE2", pname = n === 3 ? "vs3sa" : "vs2a";
+  $("#vs-inter").textContent = n >= 2 ? inter : "pick atoms"; $("#vs-pname").textContent = pname; $("#vs-aval").textContent = (+$("#vs-a").value).toFixed(2);
+  $("#vs-atoms").innerHTML = n ? vsPick.map(i => `<span class="chip"><b>${D.elem[i]}${i + 1}</b> ${D.types[i]}_b</span>`).join("") : `<span class="muted">None yet. Click atoms in the viewer.</span>`;
+  $("#vs-json").textContent = n >= 2 ? `{
+  "description": "Site defined in the ACT interface",
+  "virtual_sites": [
+    { "type": ${JSON.stringify($("#vs-type").value)}, "interaction": "${inter}",
+      "atoms": [${vsPick.map(i => `"${D.types[i]}_b"`).join(", ")}],
+      "parameters": { "${pname}": { "min": ${+$("#vs-min").value}, "max": ${+$("#vs-max").value} } } }
+  ]
+}` : "Pick two or three atoms.";
+  if (!V2 || !$("#gl2").offsetWidth) return;
+  V2.removeAllShapes(); V2.removeAllLabels(); V2.setBackgroundColor(css("--stage"));
+  vsPick.forEach(i => { const c = D.xmin[i]; V2.addSphere({ center: { x: c[0], y: c[1], z: c[2] }, radius: 0.55, color: css("--accent"), opacity: 0.4 }); });
+  const s = vsPos(); if (s) { const c = D.xmin[vsPick[n === 3 ? 1 : 0]];
+    V2.addCylinder({ start: { x: c[0], y: c[1], z: c[2] }, end: { x: s[0], y: s[1], z: s[2] }, radius: 0.03, color: css("--accent"), dashed: true, fromCap: 1, toCap: 1 });
+    V2.addSphere({ center: { x: s[0], y: s[1], z: s[2] }, radius: 0.2, color: css("--accent") });
+    V2.addLabel($("#vs-type").value, { position: { x: s[0], y: s[1], z: s[2] }, fontSize: 12, fontColor: css("--ink"), backgroundColor: css("--surface"), backgroundOpacity: 0.85, borderThickness: 0, inFront: true, screenOffset: { x: 12, y: -6 } }); }
+  V2.render();
+}
+function vsiteInit() {
+  if (V2 || !have3D) { vsiteScene(); return; }
+  V2 = makeViewer("gl2"); if (!V2) { vsiteScene(); return; }
+  const m = V2.addModel(); m.addAtoms(atomsFrom(D.xmin)); m.setStyle({}, { stick: { radius: 0.12 }, sphere: { scale: 0.26 } });
+  V2.setClickable({}, true, atom => { const i = atom.serial - 1, k = vsPick.indexOf(i); if (k >= 0) vsPick.splice(k, 1); else { if (vsPick.length === 3) vsPick = []; vsPick.push(i); } vsiteScene(); });
+  V2.rotate(-72, "x"); V2.rotate(18, "y"); V2.zoomTo(); V2.zoom(1.15); vsiteScene();
+}
+["vs-a", "vs-min", "vs-max", "vs-type"].forEach(id => document.getElementById(id).addEventListener("input", vsiteScene));
+$("#vs-clear").onclick = () => { vsPick = []; vsiteScene(); };
+$("#vs-add").onclick = () => { if (vsPick.length < 2) return toast("Pick two or three atoms first."); vsDefs++; $("#vs-count").textContent = `${vsDefs} site type${vsDefs > 1 ? "s" : ""} added in this session`; };
+
+/* ---------- molprop: illustrative data ---------- */
+function rng(seed) { return () => { seed |= 0; seed = seed + 0x6D2B79F5 | 0; let t = Math.imul(seed ^ seed >>> 15, 1 | seed); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+const R = rng(11), gauss = () => Math.sqrt(-2 * Math.log(R() + 1e-9)) * Math.cos(2 * Math.PI * R());
+const DIMERS = ["water#water", "methanol#water", "methanol#methanol", "ethanol#water", "ethanol#methanol", "ethanol#ethanol", "1-propanol#water", "2-propanol#water", "1-propanol#methanol", "2-propanol#methanol", "1-butanol#water", "ethanol#1-propanol"];
+const COMPS = [["INTERACTION", "Interaction", 0.9], ["ELECTROSTATICS", "Electrostatics", 1.6], ["EXCHANGE", "Exchange", 2.1], ["DISPERSION", "Dispersion", 0.7], ["INDUCTION", "Induction", 0.8]];
+const MP = DIMERS.map((name, d) => { const pts = []; for (let k = 0; k < 20; k++) { const r = R(), el = -38 * Math.pow(1 - r, 2.2) - 2 + gauss(), ex = 44 * Math.pow(1 - r, 3) + 1 + Math.abs(gauss()), di = -11 * Math.pow(1 - r, 1.6) - 2 + 0.4 * gauss(), ind = -9 * Math.pow(1 - r, 2.6) - 0.5 + 0.3 * gauss();
+    const ref = { ELECTROSTATICS: el, EXCHANGE: ex, DISPERSION: di, INDUCTION: ind }; ref.INTERACTION = el + ex + di + ind; const act = {};
+    COMPS.forEach(([k, , sd]) => { act[k] = ref[k] * (1 + 0.03 * gauss()) + sd * gauss() + (k === "EXCHANGE" ? 0.6 : 0); }); pts.push({ ref, act }); } return { name, pts }; });
+const ALL = MP.flatMap(m => m.pts);
+function stats(k, pts) { const n = pts.length, e = pts.map(p => p.act[k] - p.ref[k]), mse = e.reduce((a, b) => a + b, 0) / n, mae = e.reduce((a, b) => a + Math.abs(b), 0) / n, rmsd = Math.sqrt(e.reduce((a, b) => a + b * b, 0) / n);
+  const mx = pts.reduce((a, p) => a + p.ref[k], 0) / n, my = pts.reduce((a, p) => a + p.act[k], 0) / n; let sxy = 0, sxx = 0, syy = 0; pts.forEach(p => { sxy += (p.ref[k] - mx) * (p.act[k] - my); sxx += (p.ref[k] - mx) ** 2; syy += (p.act[k] - my) ** 2; });
+  return { n, rmsd, mse, mae, r2: sxy * sxy / (sxx * syy) }; }
+let compKey = "INTERACTION", dimerSel = 1;
+$("#comp").innerHTML = COMPS.map(([k, n], i) => `<button aria-pressed="${i === 0}" data-v="${k}">${n}</button>`).join("");
+seg($("#comp"), v => { compKey = v; evalPanel(); });
+function evalPanel() {
+  const x = ALL.map(p => p.ref[compKey]), y = ALL.map(p => p.act[compKey]), lo = Math.floor((Math.min(...x, ...y) - 1) / 5) * 5, hi = Math.ceil((Math.max(...x, ...y) + 1) / 5) * 5;
+  plot("corrplot", { label: "Correlation of ACT and reference energies", xlim: [lo, hi], ylim: [lo, hi], xlabel: "Reference (kJ/mol)", ylabel: "ACT (kJ/mol)", height: 440, aspect: 0.86,
+    series: [{ type: "line", x: [lo, hi], y: [lo, hi], color: "--series2", width: 1.2, dash: "4 4" }, { type: "scatter", x, y }] });
+  $("#stattable").innerHTML = `<tr><th>Component</th><th class="n">N</th><th class="n">RMSD</th><th class="n">MSE</th><th class="n">MAE</th><th class="n">R²</th></tr>` + COMPS.map(([k, n]) => { const s = stats(k, ALL);
+    return `<tr class="pick${k === compKey ? " sel" : ""}" data-k="${k}"><td>${n}</td><td class="n">${s.n}</td><td class="n">${fmt(s.rmsd)}</td><td class="n">${fmt(s.mse)}</td><td class="n">${fmt(s.mae)}</td><td class="n">${s.r2.toFixed(3)}</td></tr>`; }).join("");
+}
+$("#stattable").onclick = e => { const r = e.target.closest("tr.pick"); if (!r) return; compKey = r.dataset.k; $$("#comp button").forEach(b => b.setAttribute("aria-pressed", b.dataset.v === compKey)); evalPanel(); };
+function anaPanel() {
+  $("#dimertable").innerHTML = `<tr><th>Dimer</th><th class="n">Conf.</th><th class="n">Lowest E<sub>int</sub></th></tr>` + MP.map((m, i) =>
+    `<tr class="pick${i === dimerSel ? " sel" : ""}" data-i="${i}"><td>${m.name}</td><td class="n">${m.pts.length}</td><td class="n">${fmt(Math.min(...m.pts.map(p => p.ref.INTERACTION)), 1)}</td></tr>`).join("");
+  const v = MP[dimerSel].pts.map(p => p.ref.INTERACTION), lo = Math.floor(Math.min(...v) / 4) * 4, hi = Math.ceil(Math.max(...v) / 4) * 4, nb = Math.round((hi - lo) / 2), h = new Array(nb).fill(0);
+  v.forEach(e => h[Math.min(nb - 1, Math.floor((e - lo) / 2))]++);
+  $("#histtitle").textContent = `Interaction energies of ${MP[dimerSel].name}`;
+  plot("histplot", { label: "Histogram of interaction energies", xlim: [lo, hi], ylim: [0, Math.max(...h) + 1], xlabel: "Reference interaction energy (kJ/mol)", ylabel: "Conformations", height: 300,
+    series: [{ type: "bars", x: h.map((_, i) => lo + 2 * i + 1), y: h }] });
+  const mean = v.reduce((a, b) => a + b, 0) / v.length;
+  $("#histstats").innerHTML = [["Conformations", v.length, ""], ["Lowest", fmt(Math.min(...v), 1), "kJ/mol"], ["Mean", fmt(mean, 1), "kJ/mol"], ["Highest", fmt(Math.max(...v), 1), "kJ/mol"]].map(s => `<div class="stat"><span class="lab">${s[0]}</span><span class="v" style="font-size:20px">${s[1]} <small>${s[2]}</small></span></div>`).join("");
+}
+$("#dimertable").onclick = e => { const r = e.target.closest("tr.pick"); if (r) { dimerSel = +r.dataset.i; anaPanel(); } };
+
+/* ---------- wiring: every workspace and tool has its own link (#name) ---------- */
+const ROUTES = { "molecule": ["molecule"], "charges": ["molecule", "charges"], "minimize": ["molecule", "minimize"], "normal-modes": ["molecule", "modes"], "simulate": ["molecule", "simulate"], "openmm": ["molecule", "openmm"],
+  "force-field": ["force-field"], "generate": ["force-field", "gen"], "edit": ["force-field", "edit"], "virtual-sites": ["force-field", "vsite"],
+  "molprop": ["molprop"], "evaluate": ["molprop", "eval"], "analyse": ["molprop", "ana"], "validate-file": ["molprop", "mpval"] };
+let routing = false;
+function setHash(view, tab) { if (routing) return; const name = Object.keys(ROUTES).find(k => ROUTES[k][0] === view && ROUTES[k][1] === tab) || view;
+  try { history.replaceState(null, "", "#" + name); } catch (e) { /* the link stays as it was */ } }
+const VIEWS = ["molecule", "force-field", "molprop"];
+const sub = {
+  "molecule": tabs($("#tasks"), name => { ui.tab = name; ui.focus = -1; showOnly(["tab-charges", "tab-minimize", "tab-modes", "tab-simulate", "tab-openmm"], "tab-" + name);
+    if (name === "simulate") energyPlot(); if (name === "modes") { modesPanel(); showModeRow(); } scene(); setHash("molecule", name); }),
+  "force-field": tabs($("#fftabs"), name => { showOnly(["tab-gen", "tab-edit", "tab-vsite"], "tab-" + name); if (name === "vsite" && !$("#view-force-field").hidden) vsiteInit(); setHash("force-field", name); }),
+  "molprop": tabs($("#mptabs"), name => { showOnly(["tab-eval", "tab-ana", "tab-mpval"], "tab-" + name); setHash("molprop", name); })
+};
+const navTabs = tabs($("#nav"), name => { showOnly(VIEWS.map(v => "view-" + v), "view-" + name); setHash(name);
+  if (V && name !== "molecule") { clearInterval(simTimer); V.stopAnimate(); }
+  if (name === "molecule") { if (V) V.resize(); scene(); }
+  if (name === "force-field" && !$("#tab-vsite").hidden) { if (V2) V2.resize(); vsiteInit(); } });
+function route() { const r = ROUTES[location.hash.slice(1)] || ROUTES.molecule; routing = true; navTabs.pick(r[0]); if (r[1]) sub[r[0]].pick(r[1]); routing = false; }
+window.addEventListener("hashchange", route);
+
+chargeTable(); minimizePanel(); modesPanel(); energyPlot(); atypeTable(); genCmd(); paramTable(); validateFF(); vsiteScene(); evalPanel(); anaPanel();
+route(); scene();
+let rz; window.addEventListener("resize", () => { clearTimeout(rz); rz = setTimeout(() => { redrawPlots(); if (V && !$("#view-molecule").hidden) { V.resize(); V.render(); } if (V2 && $("#gl2").offsetWidth) { V2.resize(); V2.render(); } }, 120); });
+const retheme = () => { redrawPlots(); scene(); if (V2 && $("#gl2").offsetWidth) vsiteScene(); };
+matchMedia("(prefers-color-scheme: dark)").addEventListener("change", retheme);
+new MutationObserver(retheme).observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+if (document.fonts && document.fonts.ready) document.fonts.ready.then(redrawPlots);
+</script>
