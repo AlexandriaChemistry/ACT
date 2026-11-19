@@ -194,6 +194,44 @@ class RunTest(unittest.TestCase):
         with self.assertRaises(act.ActTimeoutError):
             act.run("work", ff=self.ff, sleep=30.0)
 
+    def test_progress_is_passed_on_while_the_program_runs(self):
+        """!
+        @brief The function for the progress gets every line, the first
+        well before the program is done.
+        """
+        seen = []
+        start = time.time()
+
+        def progress(item):
+            seen.append((time.time() - start, item))
+
+        res = act.run("work", ff=self.ff, on_progress=progress)
+        total = time.time() - start
+        self.assertEqual([0, 1, 2, 3, 4], [item["step"] for _, item in seen])
+        self.assertEqual(5, seen[0][1]["nsteps"])
+        # The program takes a second, the first line is there at once
+        self.assertLess(seen[0][0], total - 0.5)
+        self.assertTrue(res.file("progress").exists())
+
+    def test_error_in_progress_function_stops_the_program(self):
+        """!
+        @brief An exception in the function ends the run at once.
+        """
+        def progress(item):
+            raise RuntimeError("stop at step %d" % item["step"])
+
+        start = time.time()
+        with self.assertRaises(RuntimeError):
+            act.run("work", ff=self.ff, on_progress=progress, sleep=30.0)
+        self.assertLess(time.time() - start, 10)
+
+    def test_progress_needs_a_function(self):
+        """!
+        @brief Something that cannot be called is refused.
+        """
+        with self.assertRaises(act.ActOptionError):
+            act.run("work", ff=self.ff, on_progress="print")
+
     def test_program_that_does_not_exist(self):
         """!
         @brief A missing program gives an error that says what to do.

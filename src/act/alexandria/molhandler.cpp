@@ -35,10 +35,12 @@
 
 // This include has to come first, to prevent the GROMACS definition of
 // "real" from messing up the library.
+#include <chrono>
 #include <cstddef>
 #include <cstdio>
 #include <Eigen/Core>
 #include <map>
+#include <nlohmann/json.hpp>
 #include <string>
 #include <utility>
 #include <vector>
@@ -2127,6 +2129,88 @@ static void printEnergies(FILE                                    *exvg,
     fprintf(exvg, " %.5f %.5f %.5f\n", ekin, ekin+epot, temp);
 }
 
+/*! \brief Write the progress of a simulation as one line with a JSON object
+ * \param[in] fp       The file
+ * \param[in] step     The step
+ * \param[in] nsteps   The number of steps of the simulation
+ * \param[in] deltat   The time step (ps)
+ * \param[in] energies The energy terms
+ * \param[in] ekin     The kinetic energy
+ * \param[in] nDOF     The number of degrees of freedom
+ */
+static void printProgress(FILE                                    *fp,
+                          int                                      step,
+                          int                                      nsteps,
+                          double                                   deltat,
+                          const std::map<InteractionType, double> &energies,
+                          double                                   ekin,
+                          int                                      nDOF)
+{
+    nlohmann::ordered_json js;
+    js["step"]   = step;
+    js["nsteps"] = nsteps;
+    js["time"]   = { { "value", step*deltat }, { "unit", "ps" } };
+    js["temperature"] = { { "value", nDOF > 0 ? 2*ekin/(nDOF*BOLTZ) : 0.0 }, { "unit", "K" } };
+    nlohmann::ordered_json jener;
+    jener["unit"] = "kJ/mol";
+    for (const auto &e : energies)
+    {
+        jener[interactionTypeToString(e.first)] = e.second;
+    }
+    jener["EKIN"] = ekin;
+    jener["ETOT"] = ekin + energies.find(InteractionType::EPOT)->second;
+    js["energies"] = jener;
+    // On one line, replacing what is not a valid character or number
+    fprintf(fp, "%s\n", js.dump(-1, ' ', false, nlohmann::json::error_handler_t::replace).c_str());
+}
+
+/*! \brief Flushes output files a few times per second
+ * A program that shows a simulation while it runs needs the output on
+ * disk soon after it is written. Flushing at every step would slow down
+ * simulations of small molecules that write often.
+ */
+class OutputFlusher
+{
+public:
+    /*! \brief Constructor
+     * \param[in] files The files to flush, null pointers are skipped
+     */
+    explicit OutputFlusher(const std::vector<FILE *> &files)
+        : files_(files), last_(std::chrono::steady_clock::now())
+    {
+    }
+
+    //! Flush the files if the interval has passed since the last time
+    void flushIfDue()
+    {
+        const auto now = std::chrono::steady_clock::now();
+        if (now - last_ >= interval_)
+        {
+            flush();
+            last_ = now;
+        }
+    }
+
+    //! Flush the files now
+    void flush()
+    {
+        for (auto *fp : files_)
+        {
+            if (fp)
+            {
+                fflush(fp);
+            }
+        }
+    }
+private:
+    //! The files
+    std::vector<FILE *>                   files_;
+    //! When the files were flushed last
+    std::chrono::steady_clock::time_point last_;
+    //! The time between flushes
+    std::chrono::milliseconds             interval_ = std::chrono::milliseconds(200);
+};
+
 /*! \brief Positions relative to an atom of each group of constrained atoms
  * The constraints are computed with coordinates in double precision in
  * nm, the differences of the integer coordinates, see coordinate.h,
@@ -2268,7 +2352,8 @@ void MolHandler::simulate(MsgHandler                    *msghandler,
                           const SimulationConfigHandler &simConfig,
                           const char                    *trajectoryFile,
                           const char                    *energyFile,
-                          const gmx_output_env_t        *oenv) const
+                          const gmx_output_env_t        *oenv,
+                          const char                    *progressFile) const
 {
     if (simConfig.nsteps() <= 0)
     {
@@ -2278,6 +2363,8 @@ void MolHandler::simulate(MsgHandler                    *msghandler,
     FILE                              *traj = gmx_ffopen(trajectoryFile, "w");
     FILE                              *exvg = xvgropen(energyFile, "ACT Energies",
                                                        "Time (ps)", "Energy (kJ/mol)", oenv);
+    FILE                              *progress = progressFile ? gmx_ffopen(progressFile, "w") : nullptr;
+    OutputFlusher                      flusher({ traj, exvg, progress });
     // The coordinates are integers, such that the steps are exact, see
     // coordinate.h
     Coordinates                        coordinates, xprev;
@@ -2440,6 +2527,11 @@ void MolHandler::simulate(MsgHandler                    *msghandler,
                 ekin += mass_2[i]*rvecNormSquared(velocities[i]);
             }
             printEnergies(exvg, step, deltat, energies, ekin, nDOF, oenv);
+            if (progress)
+            {
+                printProgress(progress, step, simConfig.nsteps(), deltat, energies, ekin, nDOF);
+            }
+            flusher.flushIfDue();
         }
         // Write the coordinates of the same time, numbering the frames from 1
         if (simConfig.nstxout() > 0 && step % simConfig.nstxout() == 0)
@@ -2451,6 +2543,7 @@ void MolHandler::simulate(MsgHandler                    *msghandler,
                       epbcNONE,
                       box, chain, step/simConfig.nstxout()+1, trajIndex,
                       nullptr, true);
+            flusher.flushIfDue();
         }
         // Integrate positions using velocity Verlet
         timings.start(integrationTimer);
@@ -2549,6 +2642,10 @@ void MolHandler::simulate(MsgHandler                    *msghandler,
     
     gmx_ffclose(traj);
     xvgrclose(exvg);
+    if (progress)
+    {
+        gmx_ffclose(progress);
+    }
     msghandler->write("Simulation finished correctly.");
 }
 

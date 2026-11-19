@@ -248,6 +248,13 @@ public:
      * \param[in] trajectoryFile Filename for writing coordinates
      * \param[in] energyFile     Filename for writing energies
      * \param[in] oenv           GROMACS output environment
+     * \param[in] progressFile   Filename for writing the progress, may be nullptr (default).
+     *                           Each time the energies are written, a line with a JSON
+     *                           object is added that has the step, the time, the
+     *                           temperature and the energies.
+     *
+     * The output files are flushed a few times per second, such that
+     * another program can follow the simulation while it runs.
      */
     void simulate(MsgHandler                    *msghandler,
                   const ForceField              *pd,
@@ -257,7 +264,8 @@ public:
                   const SimulationConfigHandler &simConfig,
                   const char                    *trajectoryFile,
                   const char                    *energyFile,
-                  const gmx_output_env_t        *oenv) const;
+                  const gmx_output_env_t        *oenv,
+                  const char                    *progressFile = nullptr) const;
 
     /*! \brief
      * The routine will compute the RMSD between two sets of coordinates

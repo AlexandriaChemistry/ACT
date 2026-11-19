@@ -129,7 +129,8 @@ static const t_deffile deffile[efNR] =
     { eftASC, ".csv", "data", nullptr, "Comma-separated-values file" },
     { eftASC, ".sdf", "mol", nullptr, "Mol2 file with extension sdf" },
     { eftASC, ".json", "output", nullptr, "JavaScript Object Notation" },
-    { eftASC, ".xyz", "conf", nullptr, "Coordinates in xyz format" }
+    { eftASC, ".xyz", "conf", nullptr, "Coordinates in xyz format" },
+    { eftASC, ".jsonl", "progress", nullptr, "JSON lines, one JSON object on each line" }
 };
 
 const char *ftp2ext(int ftp)
@@ -279,6 +280,11 @@ int fn2ftp(const char *fn)
     else if ((len >= 5) && (fn[len - 5] == '.'))
     {
         feptr = &(fn[len - 5]);
+    }
+    else if ((len >= 6) && (fn[len - 6] == '.'))
+    {
+        // An extension of five letters, .jsonl
+        feptr = &(fn[len - 6]);
     }
     else
     {

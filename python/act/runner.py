@@ -25,9 +25,10 @@ import shutil
 import signal
 import subprocess
 import tempfile
+import time
 import weakref
 from pathlib import Path
-from typing import Any, Dict, List, Mapping, Optional, Sequence, Tuple, Union
+from typing import Any, Callable, Dict, List, Mapping, Optional, Sequence, Tuple, Union
 
 from .errors import ActError, ActNotFoundError, ActOptionError, ActTimeoutError
 from .options import CommandInfo, OptionInfo, ProgramInfo
@@ -36,7 +37,7 @@ from .options import CommandInfo, OptionInfo, ProgramInfo
 PathLike = Union[str, "os.PathLike[str]"]
 
 ## Keyword arguments of run() that are not options of the program
-RUN_ARGUMENTS = ("workdir", "processes", "timeout", "check", "env")
+RUN_ARGUMENTS = ("workdir", "processes", "timeout", "check", "env", "on_progress")
 
 ## Name of the file that `alexandria help -export json` writes
 _OPTIONS_FILE = "alexandria-options.json"
@@ -610,6 +611,50 @@ def _error_message(command: str, returncode: int, stdout: str, stderr: str) -> s
     return "alexandria %s failed with exit status %d: %s" % (command, returncode, detail)
 
 
+class _ProgressReader:
+    """!
+    @brief Reads the lines that a program adds to its progress file.
+
+    Each line of the file is a JSON object. A line is passed on when it is
+    complete, such that a line that the program is still writing is not
+    read half.
+    """
+
+    def __init__(self, path: Path):
+        """!
+        @brief Start following a file, which need not exist yet.
+        @param path The progress file.
+        """
+        self._path = path
+        self._offset = 0
+        self._rest = b""
+
+    def new_objects(self) -> List[Any]:
+        """!
+        @brief The objects on the lines that were added since the last call.
+        @return The parsed lines, in the order of the file. Lines that are
+        not valid JSON are skipped.
+        """
+        try:
+            with open(self._path, "rb") as handle:
+                handle.seek(self._offset)
+                data = handle.read()
+        except OSError:
+            return []
+        self._offset += len(data)
+        lines = (self._rest + data).split(b"\n")
+        self._rest = lines.pop()
+        objects = []
+        for line in lines:
+            if not line.strip():
+                continue
+            try:
+                objects.append(json.loads(line.decode("utf-8", errors="replace")))
+            except ValueError:
+                continue
+        return objects
+
+
 def _terminate(process: "subprocess.Popen[str]") -> None:
     """!
     @brief Stop a program and the processes it started.
@@ -635,6 +680,7 @@ def run(command: str, *,
         timeout: Optional[float] = None,
         check: bool = True,
         env: Optional[Mapping[str, str]] = None,
+        on_progress: Optional[Callable[[Any], None]] = None,
         **options: Any) -> Result:
     """!
     @brief Run a command of alexandria and return what it produced.
@@ -662,6 +708,11 @@ def run(command: str, *,
     result is returned and its returncode tells what happened.
     @param env       Environment variables to set for the program, on top of
     those of Python.
+    @param on_progress A function that is called while the program runs,
+    for commands with the option -progress, such as simulate. It gets one
+    argument, the object that the program wrote: for simulate a dict with
+    the step, the time, the temperature and the energies. An exception in
+    the function stops the program.
     @param options   The options of the command, see build_arguments() for
     the rules and act.program_info() for the options of each command.
     @return The result.
@@ -675,9 +726,16 @@ def run(command: str, *,
         raise ActOptionError("The number of processes must be a positive integer, not %r"
                              % (processes,))
     # Results in JSON format unless the caller decides otherwise
+    options = dict(options)
     if info.has_option("json") and "json" not in options:
-        options = dict(options)
         options["json"] = True
+    if on_progress is not None:
+        if not info.has_option("progress"):
+            raise ActOptionError("alexandria %s does not report its progress" % command)
+        if not callable(on_progress):
+            raise ActOptionError("on_progress must be a function, not %r" % (on_progress,))
+        if options.get("progress") in (None, False):
+            options["progress"] = True
 
     temporary = workdir is None
     if temporary:
@@ -692,26 +750,61 @@ def run(command: str, *,
         if env:
             environment.update({str(k): str(v) for k, v in env.items()})
         limit = timeout if timeout is not None else config.timeout
-        try:
-            process = subprocess.Popen(full, cwd=str(rundir), env=environment,
-                                       stdin=subprocess.DEVNULL,
-                                       stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-                                       universal_newlines=True, start_new_session=True)
-        except (OSError, ValueError) as exc:
-            raise ActError("Cannot start %s: %s" % (full[0], exc), args=full) from exc
-        try:
-            stdout, stderr = process.communicate(timeout=limit)
-        except subprocess.TimeoutExpired:
-            _terminate(process)
-            stdout, stderr = process.communicate()
-            raise ActTimeoutError("alexandria %s was stopped after %g seconds"
-                                  % (command, limit), args=full,
-                                  returncode=process.returncode,
-                                  stdout=stdout, stderr=stderr) from None
-        except BaseException:
-            # For instance Ctrl-C: do not leave the program running
-            _terminate(process)
-            raise
+        # The output goes to files, not to pipes: a pipe that nobody reads
+        # while the progress is followed would stop the program when it is full.
+        with tempfile.TemporaryFile(mode="w+", encoding="utf-8", errors="replace") as out, \
+                tempfile.TemporaryFile(mode="w+", encoding="utf-8", errors="replace") as err:
+            try:
+                process = subprocess.Popen(full, cwd=str(rundir), env=environment,
+                                           stdin=subprocess.DEVNULL, stdout=out, stderr=err,
+                                           start_new_session=True)
+            except (OSError, ValueError) as exc:
+                raise ActError("Cannot start %s: %s" % (full[0], exc), args=full) from exc
+
+            def output() -> Tuple[str, str]:
+                """!
+                @brief What the program wrote so far.
+                @return Standard output and standard error.
+                """
+                out.seek(0)
+                err.seek(0)
+                return out.read(), err.read()
+
+            reader = None
+            if on_progress is not None:
+                reader = _ProgressReader(outputs["progress"][0])
+            deadline = None if limit is None else time.monotonic() + limit
+            try:
+                while True:
+                    try:
+                        # A short wait when there is progress to pass on
+                        wait = 0.05 if reader is not None else None
+                        if deadline is not None:
+                            left = max(0.0, deadline - time.monotonic())
+                            wait = left if wait is None else min(wait, left)
+                        process.wait(timeout=wait)
+                        finished = True
+                    except subprocess.TimeoutExpired:
+                        finished = False
+                    if reader is not None and on_progress is not None:
+                        for item in reader.new_objects():
+                            on_progress(item)
+                    if finished:
+                        break
+                    if deadline is not None and time.monotonic() >= deadline:
+                        _terminate(process)
+                        stdout, stderr = output()
+                        raise ActTimeoutError("alexandria %s was stopped after %g seconds"
+                                              % (command, limit), args=full,
+                                              returncode=process.returncode,
+                                              stdout=stdout, stderr=stderr)
+            except BaseException:
+                # For instance Ctrl-C or an error in on_progress: do not
+                # leave the program running
+                if process.poll() is None:
+                    _terminate(process)
+                raise
+            stdout, stderr = output()
         files = {name: [p for p in paths if p.exists()] for name, paths in outputs.items()}
         files = {name: paths for name, paths in files.items() if paths}
         result = Result(command, full, process.returncode, stdout, stderr,

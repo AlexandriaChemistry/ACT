@@ -129,6 +129,34 @@ class AlexandriaTest(unittest.TestCase):
             self.assertEqual(10, kinds.count("Atom"))
             self.assertEqual(10, kinds.count("Shell"))
 
+    def test_molecule_from_smiles(self):
+        """!
+        @brief A molecule can be given as a SMILES string.
+        """
+        with act.commands.minimize(ff=self.ff, smiles="CC(=O)C") as res:
+            self.assertEqual("C3H6O", res.data["molecule"]["formula"])
+            self.assertIs(True, res.data["converged"])
+        with self.assertRaises(act.ActError):
+            act.commands.minimize(ff=self.ff, smiles="C(C")
+
+    def test_simulation_reports_progress(self):
+        """!
+        @brief A simulation tells how far it is while it runs.
+        """
+        seen = []
+        with act.commands.simulate(ff=self.ff, f=self.acetone, nsteps=200, nstener=20,
+                                   temp=300.0, seed=1993, on_progress=seen.append) as res:
+            self.assertEqual(list(range(0, 200, 20)), [item["step"] for item in seen])
+            self.assertEqual(200, seen[0]["nsteps"])
+            self.assertEqual("kJ/mol", seen[0]["energies"]["unit"])
+            for item in seen:
+                self.assertIn("EPOT", item["energies"])
+                self.assertGreaterEqual(item["temperature"]["value"], 0)
+            self.assertTrue(res.file("e").exists())
+            self.assertTrue(res.file("o").exists())
+        with self.assertRaises(act.ActOptionError):
+            act.commands.minimize(ff=self.ff, f=self.acetone, on_progress=seen.append)
+
     def test_missing_molecule_file(self):
         """!
         @brief The program reports a molecule file that does not exist.

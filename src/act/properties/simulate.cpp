@@ -101,7 +101,12 @@ int simulate(int argc, char *argv[])
         "To obtain information on the used model, the final structure can be",
         "store as a molprop file.[PAR]",
         "With [TT]-json[tt], part of the output, such as the timings, is",
-        "written in json format to the given file, simulate.json by default."
+        "written in json format to the given file, simulate.json by default.[PAR]",
+        "With [TT]-progress[tt], a line with a json object is added to the",
+        "given file each time the energies are written, with the step, the",
+        "time, the temperature and the energies. The energy, trajectory and",
+        "progress files are flushed a few times per second, such that",
+        "another program can follow the simulation while it runs."
     };
 
     std::vector<t_filenm>     fnm = {
@@ -111,7 +116,8 @@ int simulate(int argc, char *argv[])
         { efXVG, "-e",       "energy",     ffWRITE },
         { efNDX, "-freeze",  "freeze",     ffOPTRD },
         { efXML, "-omp",     "molprop",    ffOPTWR },
-        { efJSON, "-json",   "simulate",   ffOPTWR }
+        { efJSON, "-json",   "simulate",   ffOPTWR },
+        { efJSONL, "-progress", "progress", ffOPTWR }
     };
     gmx_output_env_t         *oenv;
     real                      shellToler = 1e-6;
@@ -310,7 +316,8 @@ int simulate(int argc, char *argv[])
             molhandler.simulate(&msghandler, &pd, &actmol, xmin, &forceComp, sch,
                                 opt2fn("-o", fnm.size(),fnm.data()),
                                 opt2fn("-e", fnm.size(),fnm.data()),
-                                oenv);
+                                oenv,
+                                opt2fn_null("-progress", fnm.size(), fnm.data()));
         }
         phase.next("Output");
         auto confout = opt2fn_null("-c", fnm.size(),fnm.data());

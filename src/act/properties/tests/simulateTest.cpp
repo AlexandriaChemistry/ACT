@@ -561,6 +561,70 @@ TEST_F(SimulateTest, JsonFile)
     EXPECT_FALSE(std::ifstream("simulate.json").good());
 }
 
+// Test: The progress file has one JSON object for each time the energies
+// are written, with the same numbers as the energy file, such that a
+// program can follow a simulation while it runs
+TEST_F(SimulateTest, ProgressFile)
+{
+    SimulateFiles files;
+    auto cmd = baseCommand("acetone.sdf", "progress", &files);
+    addMD(&cmd, 300, 1993);
+    const auto progress = fileManager().getTemporaryFilePath("progress.jsonl");
+    cmd.addOption("-progress", progress);
+    ASSERT_EQ(0, run(&cmd));
+
+    const auto xvg = readXvg(files.energy);
+    ASSERT_EQ(10U, xvg.rows.size());
+    std::ifstream               in(progress);
+    ASSERT_TRUE(in.good()) << "Cannot open " << progress;
+    std::vector<nlohmann::json> lines;
+    for (std::string line; std::getline(in, line); )
+    {
+        const auto js = nlohmann::json::parse(line, nullptr, false);
+        ASSERT_TRUE(js.is_object()) << "Not a JSON object: " << line;
+        lines.push_back(js);
+    }
+    // The energies are written every 10 of the 100 steps
+    ASSERT_EQ(xvg.rows.size(), lines.size());
+    for (size_t i = 0; i < lines.size(); i++)
+    {
+        const auto &js = lines[i];
+        ASSERT_TRUE(js["step"].is_number_integer());
+        EXPECT_EQ(static_cast<int>(10*i), js["step"].get<int>());
+        EXPECT_EQ(100, js["nsteps"].get<int>());
+        ASSERT_TRUE(js["time"]["value"].is_number());
+        EXPECT_EQ("ps", js["time"]["unit"].get<std::string>());
+        EXPECT_NEAR(xvg.rows[i][0], js["time"]["value"].get<double>(), 1e-9);
+        ASSERT_TRUE(js["temperature"]["value"].is_number());
+        EXPECT_EQ("K", js["temperature"]["unit"].get<std::string>());
+        EXPECT_EQ("kJ/mol", js["energies"]["unit"].get<std::string>());
+        // All the columns of the energy file, by their legend
+        for (const std::string term : { "EPOT", "EKIN", "ETOT", "BONDS" })
+        {
+            const int col = xvg.column(term);
+            ASSERT_GT(col, 0) << term;
+            ASSERT_TRUE(js["energies"].contains(term)) << term;
+            ASSERT_TRUE(js["energies"][term].is_number()) << term;
+            // The energy file has five decimals
+            EXPECT_NEAR(xvg.rows[i][col], js["energies"][term].get<double>(), 1e-4) << term;
+        }
+        EXPECT_NEAR(xvg.rows[i][xvg.column("TEMPERATURE")],
+                    js["temperature"]["value"].get<double>(), 1e-4);
+    }
+    EXPECT_NEAR(300, lines[0]["temperature"]["value"].get<double>(), 1e-4);
+}
+
+// Test: Without the option there is no progress file
+TEST_F(SimulateTest, NoProgressFileByDefault)
+{
+    std::remove("progress.jsonl");
+    SimulateFiles files;
+    auto cmd = baseCommand("acetone.sdf", "noprogress", &files);
+    addMD(&cmd, 300, 1993);
+    ASSERT_EQ(0, run(&cmd));
+    EXPECT_FALSE(std::ifstream("progress.jsonl").good());
+}
+
 // Test: The initial temperature is the requested one, computed for
 // the degrees of freedom without the translation of and rotation around
 // the center of mass and without constraints

@@ -59,6 +59,10 @@ DESCRIPTION = {
                  "required": False, "multiple": False, "default": "work.json",
                  "file": {"input": False, "output": True, "library": False,
                           "allow_missing": False, "directory": False, "extensions": [".json"]}},
+                {"name": "progress", "type": "file", "description": "Progress", "hidden": False,
+                 "required": False, "multiple": False, "default": "progress.jsonl",
+                 "file": {"input": False, "output": True, "library": False,
+                          "allow_missing": False, "directory": False, "extensions": [".jsonl"]}},
                 {"name": "f", "type": "string", "description": "Molecule file", "hidden": False,
                  "required": False, "multiple": False, "default": None},
                 {"name": "name", "type": "string", "description": "A name", "hidden": False,
@@ -114,6 +118,22 @@ def main(argv):
             options[flag] = []
         elif flag is not None:
             options[flag].append(word)
+    if "progress" in options:
+        # Five steps that take a while, each reported when it is done. The
+        # last line is written in two parts, as a program may be caught
+        # in the middle of a line.
+        with open(options["progress"][0], "w", encoding="utf-8") as handle:
+            for step in range(5):
+                line = json.dumps({"step": step, "nsteps": 5})
+                if step == 4:
+                    handle.write(line[:5])
+                    handle.flush()
+                    time.sleep(0.2)
+                    handle.write(line[5:] + "\n")
+                else:
+                    handle.write(line + "\n")
+                handle.flush()
+                time.sleep(0.2)
     seconds = float(options.get("sleep", ["0"])[0])
     if seconds > 0:
         time.sleep(seconds)
