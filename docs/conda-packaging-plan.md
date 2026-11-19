@@ -22,8 +22,9 @@ Targets of the first release:
 | B | `linux-64` | AVX2 with FMA | SYCL (AdaptiveCpp), CUDA backend, plus the CPU | x86-64 Linux with AVX2 (Intel Haswell, AMD Zen and later), with or without an NVIDIA GPU |
 | C | `linux-aarch64` | ARM NEON | SYCL (AdaptiveCpp), CUDA backend, plus the CPU | 64-bit ARM Linux, such as NVIDIA Grace (GH200 nodes of arrhenius), with or without an NVIDIA GPU |
 
-All are built from one recipe, as variants. Other targets (section 10)
-only add variants.
+All are built from one recipe, as variants; `linux-aarch64` is built in the
+workflow on a native ARM runner. SVE is not used, since ACT has no SVE
+kernels. Other targets (section 10) only add variants.
 
 ## 1. Decisions
 
@@ -386,9 +387,6 @@ by hand (`workflow_dispatch`):
   of section 3.1 show a gain.
 - `linux-64` with `sycl_hip` for AMD GPUs, when AdaptiveCpp with HIP is on
   conda-forge.
-- `linux-aarch64` with NEON and `sycl_cuda` is target C (table at the top), built
-  in the workflow on a native ARM runner. SVE is not used, since ACT has no
-  SVE kernels.
 - `osx-64` (Intel Macs, AVX2), only if users ask.
 - Double precision packages for all targets, without GPU.
 
