@@ -457,6 +457,15 @@ fixed parameters that `actgui` could read (the first comes with B9), the
 comparison of two force fields, changes of parameters of particle types, and
 `geometry_ff` with a selection of compounds.
 
+Of the molprop workspace (B10) the first part is done: a file is opened and
+the page shows the compounds, the number of values of each property and
+the result of `edit_mp -validate`. The evaluation of a force field with
+`train_ff -nooptimize`, the correlation plots and the histograms are still
+to do. Found on the way: `edit_mp -ff` stops with "No such QM property
+dipole" on a file with dimers, so the page does not give it a force field;
+and `edit_mp` always writes its output file (`allmols.xml`), which is a
+second copy of a large file in the directory of the job.
+
 Each step ends with tests of the routes (pytest), of the JavaScript modules
 (the test runner built into Node.js, which needs no build step) and one
 end-to-end test in a real browser (Playwright) that does what a user would
