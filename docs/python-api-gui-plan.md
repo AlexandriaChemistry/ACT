@@ -40,6 +40,7 @@ the molprop screens.
 | Repository of the interface | A new repository `ACT-GUI` with its own noarch conda package `act-gui` | ACT-utilities does not get the dependencies of a web server. |
 | Default force field | `ACS-pg1.xml` from `src/act/testdata/forcefields`, until the new default force field is ready | A new default is under development. The name is one setting (`default_forcefield`), so that replacing it is a change of one line. The interface labels it as a test force field. |
 | Long jobs | The server can send them to Slurm on csb for the local users (step B11) | `train_ff -nooptimize` on large molprop files and long simulations do not belong on the web server. |
+| Long jobs from the desktop | A user with an account on csb sends training jobs from the interface on their own machine, through their own `ssh` (step B10a). The interface holds no password or key. | The job runs under the user's own account, with their accounting, quota and file permissions, and needs neither a service account nor single sign-on on csb. Decided 2026-11-20. |
 | Login for stage 1 | The university single sign-on, through OpenID Connect | The same identity can later own the jobs on csb. Single sign-on for csb itself is a separate issue (section 11). |
 | Account for jobs on csb | The service account `act-user`, for now | Jobs under the user's own csb account need single sign-on on csb. The name of the account is a setting of the server. |
 | Where the Python package is installed | `site-packages/act`, by ACT. ACT-utilities moves its modules from that directory to `site-packages/act_utilities`, with the file `act_utilities.pth`, and its module `act.py` becomes `act_legacy.py`. Installing ACT-utilities removes the files of the earlier layout; the CMake files of ACT refuse an ACT-utilities with the earlier layout. | A module `act.py` on the path hides the package, and a `.pth` file pointing into the package makes its modules importable under their bare names (`commands`, `options`, `errors`). |
@@ -441,8 +442,8 @@ set-up in CI.
 **B1. Job engine.** Start, follow, cancel and list jobs; a directory per job;
 results as JSON; download of output files; time and size limits. The engine
 talks to a back end with three operations (submit, status, cancel). The
-first back end starts child processes on the same machine; step B11 adds
-Slurm without changes to the routes or the pages. Tested with `alexandria`
+first back end starts child processes on the same machine; steps B10a and
+B11 add Slurm without changes to the routes or the pages. Tested with `alexandria`
 on the ACT test data and with a tool that fails on purpose.
 
 **B2. Molecule input, viewer and charges.** Upload of sdf, pdb and xyz files
@@ -489,6 +490,49 @@ it to the force field. Layer 2 gives the position of the site at once.
 evaluation of a force field with `train_ff -nooptimize`, correlation plots
 per property and a table of statistics; selection of a compound or dimer and
 a histogram of its energies; all plots can be printed through plotXVG.
+
+**B10a. Long jobs on a cluster, from the desktop.** A user who has an
+account on csb, or on another cluster with Slurm, sends a long job from the
+interface on their own machine and gets the results back there. It is a
+back end of the job engine of step B1 (submit, status, cancel) next to the
+one that starts child processes, so the routes and the pages stay the same.
+
+- *Whose login.* The interface starts the programs `ssh` and `scp` (or
+  `rsync`) of the user's machine, which use the user's own configuration,
+  keys and agent. It never asks for, sees or stores a password or a key. It
+  runs `ssh` in batch mode: a login that needs a password or a second
+  factor fails with a message instead of a prompt. For such logins the user
+  opens one connection in a terminal, with connection sharing
+  (`ControlMaster`), and the interface uses that connection.
+- *Few logins.* A cluster may block an account that logs in often. The
+  interface uses one shared connection and does not ask for the state of a
+  job every few seconds: either one remote command that runs as long as the
+  job and passes on its progress, or a question every few minutes. The
+  interval is a setting with a lower limit.
+- *Which jobs.* `train_ff`, with and without optimization, and long
+  simulations. The interactive calculations stay on the user's machine.
+- *What is sent.* The input files go to a new directory for the job below
+  a directory of the user on the cluster. The interface writes the batch
+  script from a fixed template, starts `sbatch`, and later fetches the
+  results. The page shows the script and asks for confirmation before
+  anything is submitted.
+- *The command on the cluster.* `ssh` gives its command to a shell on the
+  cluster, where the rule "an argument list, never a shell" of the other
+  jobs does not hold. So the command is built from checked values only:
+  the options from the list of the task, checked against the description of
+  step A1, numbers within limits, and names of directories and files that
+  the interface made itself. Every word is quoted for the shell, and no
+  text of the user enters the command or the script.
+- *Settings per user.* The name of the host as in the configuration of
+  `ssh`, the directory on the cluster, the partition and the account, the
+  largest number of nodes and the longest wall time, and how ACT is loaded
+  there (a module or a conda environment).
+- *Tests.* Against small scripts that imitate `ssh`, `scp`, `sbatch`,
+  `squeue` and `scancel`, so that CI needs no cluster and no login, with
+  cases for an option that tries to carry a shell command, a login that
+  fails and a connection that is lost; and by hand on csb.
+
+The progress of `train_ff` (step A4) is needed for this step.
 
 **B11. Server, stage 1.** Login with the university single sign-on,
 workspaces, quotas, queue, isolation of the workers (section 8); an
@@ -609,6 +653,15 @@ strangers upload. The measures, in order of importance:
 On the desktop the server only listens on the local machine and needs the
 token, so other users and web pages cannot reach it.
 
+With step B10a the desktop can start jobs on a cluster as the user, so what
+reaches the local server matters more than before. The measures that are
+there stay: the token in a header for everything that changes something,
+the check of the host name, and no requests from other sites. Added for
+cluster jobs: the interface holds no password or key, the user confirms
+each submission after seeing the batch script, the largest number of nodes
+and the longest wall time are settings, and the interface cancels only the
+jobs that it submitted itself.
+
 ## 9. Conventions for all new code
 
 - **Tests first.** A feature in ACT starts with its failing test. Remember
@@ -642,6 +695,7 @@ They are rough; the refactoring steps (A5, A8) are the least certain.
 | B10 | Molprop workspace | 5 |
 | A8 | Tools split into parse and run | 6 |
 | A9, B12 | Documentation, conda packages, release | 4 |
+| B10a | Long jobs on a cluster from the desktop, over `ssh` | 6 |
 | B11 | Server, stage 1, with the Slurm back end | 12 |
 | B13 | Server, stage 2 | 8 |
 
@@ -652,8 +706,10 @@ Milestones:
 3. **API 1.0** (A5 to A7): the classes of issue 59.
 4. **Desktop 1.0** (B7 to B10, A8, A9, B12): all functions of the
    specification, conda package, `actgui` retired.
-5. **Server for known users** (B11), with long jobs on csb.
-6. **Public server** (B13).
+5. **Cluster jobs from the desktop** (B10a), for users with an account on
+   csb.
+6. **Server for known users** (B11), with long jobs on csb.
+7. **Public server** (B13).
 
 ## 11. Open questions
 
@@ -663,14 +719,21 @@ on csb, the place of the server and the direction of the wavenumber axis
 are answered; the answers are in
 section 1. What remains:
 
-1. **Single sign-on on csb (separate issue).** For jobs under the user's own
-   csb account, the identity of the university login must map to a csb
-   account, and the server must be allowed to submit for that user. Until
-   that exists the jobs run as `act-user` (step B11).
-2. **Precision.** The conda packages are single precision. Proposal: the
+1. **Single sign-on on csb (separate issue).** For jobs that the server
+   sends under the user's own csb account, the identity of the university
+   login must map to a csb account, and the server must be allowed to submit
+   for that user. Until that exists the jobs of the server run as `act-user`
+   (step B11). Users with an account on csb do not need this: they send
+   their jobs from the desktop (step B10a). Whether the server needs the
+   Slurm back end at all, once that works, can be decided then.
+2. **How csb lets users log in.** Whether keys are allowed, whether a
+   second factor is asked for and how many connections an account may make
+   decide if the shared connection of step B10a is needed and how often the
+   interface may ask for the state of a job.
+3. **Precision.** The conda packages are single precision. Proposal: the
    Python module follows the build it belongs to, and the first release is
    single precision only.
-3. **GPU.** Small molecules do not gain from the GPU. Proposal: the
+4. **GPU.** Small molecules do not gain from the GPU. Proposal: the
    interactive calculations run on the CPU; `train_ff -nooptimize` on large
    molprop files may use the GPU as the program does now, also on csb.
 
