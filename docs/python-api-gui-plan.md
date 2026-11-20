@@ -648,13 +648,32 @@ there, in the modules `cluster_jobs.py`, `cluster_queue.py` and
   statistics and the plots.
 - Nothing is ever removed on the cluster.
 
+- Training (`train_ff` with optimization) is a task as well (`train`, module
+  `training.py`), on the desktop and on the cluster. The request is that
+  of the comparison, with the kinds of parameters to train, the optimizer,
+  the numbers of iterations and generations and the part of the compounds
+  that is kept for testing, drawn with a fixed seed. `train_ff` has an
+  individual for each process, so the number of processes, on the cluster
+  that of the job, is the size of the population. The page follows a
+  training on the desktop with a plot of chi squared from `-progress`. A
+  job on the cluster writes the same file in its directory; the login
+  that asks for the state of the jobs reads its last line, of which a few
+  numbers are kept, and the list of jobs shows the generation and the
+  lowest chi squared. The result is the trained force field, its
+  parameters, the summary of the sensitivity analysis and the comparison
+  of the trained force field with the data.
+
 Still to do: a try on csb itself (so far only the stand-ins of the tests
-were used); training (`train_ff` with optimization) as a task, with its
-progress; the name of the program on the cluster, now `alexandria`, as a
-setting for double precision builds; and results that are larger than
-fits in memory, since the archives are built and read in memory. The
-command is made with the options that the `alexandria` of the desktop
-knows, so the program on the cluster must not be older than that.
+were used); the name of the program on the cluster, now `alexandria`, as a
+setting for double precision builds; results that are larger than fits in
+memory, since the archives are built and read in memory; and for the
+training a choice of the compounds, weights for the properties, the
+parameters to train offered from the force field instead of typed, and
+continuing from the population of an earlier training. A training on the
+desktop ends at the time limit of a calculation. The command is made with
+the options that the `alexandria` of the desktop knows, so the program on
+the cluster must not be older than that: for a training it needs
+`train_ff -progress`.
 
 **B11. Server, stage 1.** Login with the university single sign-on,
 workspaces, quotas, queue, isolation of the workers (section 8); an
