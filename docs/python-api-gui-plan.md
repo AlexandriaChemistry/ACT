@@ -43,6 +43,7 @@ the molprop screens.
 | Login for stage 1 | The university single sign-on, through OpenID Connect | The same identity can later own the jobs on csb. Single sign-on for csb itself is a separate issue (section 11). |
 | Account for jobs on csb | The service account `act-user`, for now | Jobs under the user's own csb account need single sign-on on csb. The name of the account is a setting of the server. |
 | Where the Python package is installed | `site-packages/act`, by ACT. ACT-utilities moves its modules from that directory to `site-packages/act_utilities`, with the file `act_utilities.pth`, and its module `act.py` becomes `act_legacy.py`. Installing ACT-utilities removes the files of the earlier layout; the CMake files of ACT refuse an ACT-utilities with the earlier layout. | A module `act.py` on the path hides the package, and a `.pth` file pointing into the package makes its modules importable under their bare names (`commands`, `options`, `errors`). |
+| Direction of the wavenumber axis | A button on the spectrum reverses the axis; the PDF file follows, and the browser remembers the choice. Increasing wavenumbers, as in the xvg file of `nma`, when nothing was chosen. | Spectroscopists draw wavenumbers from high to low, the files of ACT from low to high. |
 | Where the server runs | On a machine connected to the csb cluster: it can call `sbatch` and shares a file system with the compute nodes | The Slurm back end needs no SSH connection and can read the progress of a job from its directory. |
 
 ## 2. What exists today
@@ -223,12 +224,20 @@ ACT with its test written first.
 | `nma`: root key `nma`; for each mode the displacement of each particle and the reduced mass; the molecule and the minimized coordinates; `-json` takes a file name | Animation of vibrations | done |
 | `simulate`: the energy and trajectory files are flushed a few times per second, and `-progress` writes a line with a JSON object (step, time, temperature, energies) each time the energies are written | Energy plot that follows the simulation | done |
 | `gentop`: `-json` with, for each compound, the particles (atoms, shells, virtual sites), types, charges, bonds and coordinates | Viewer and charge display | done |
-| `edit_ff`: parameters as JSON (now `-dump` writes a .dat file) and the result of `-validate` as JSON | Force field editor | to do |
+| `edit_ff`: `-json` with the whole force field as it is after the changes (particle types, interactions, options, combination rules, parameters with value, bounds and mutability) and the findings of `-validate` | Force field editor | done |
 | `edit_mp`: the result of `-validate` as JSON, and a summary of the content (compounds, dimers, number of conformations, properties) | Molprop screens | to do |
 | `gen_ff`, `geometry_ff`: a JSON summary of the force field that was made | Force field generator | to do |
 
 The existing tests (`simulateTest`, `nmaTest`, `b2MpiTest`, `trainffTestUtil`)
 already read JSON, so each change extends a test that is there.
+
+The description of a force field is made by `forceFieldToJson`
+(`src/act/forcefield/forcefield_json.cpp`), which `gen_ff` and
+`geometry_ff` can use as well. Found on the way, for step B8: `edit_ff -p
+-a` changes the parameters of interactions and the charge and zeta of
+particle types, but not their other parameters such as the mass; it then
+says that nothing changed. The editor has to show those as read-only, or
+`edit_ff` has to learn them.
 
 **A3. SMILES input.** *(done)* New in ACT: `-smiles` next to `-f` in `CompoundReader`.
 RDKit parses the string, adds hydrogens, makes 3D coordinates (ETKDG) and
@@ -646,7 +655,8 @@ Milestones:
 
 The questions on the name of the package, where it is installed, the
 repository, the default force field, Slurm, the login, the account for jobs
-on csb and the place of the server are answered; the answers are in
+on csb, the place of the server and the direction of the wavenumber axis
+are answered; the answers are in
 section 1. What remains:
 
 1. **Single sign-on on csb (separate issue).** For jobs under the user's own
@@ -659,9 +669,6 @@ section 1. What remains:
 3. **GPU.** Small molecules do not gain from the GPU. Proposal: the
    interactive calculations run on the CPU; `train_ff -nooptimize` on large
    molprop files may use the GPU as the program does now, also on csb.
-4. **Which wavenumber direction for spectra?** The mockup plots increasing
-   wavenumbers, as the xvg file of `nma` and plotXVG do. Spectroscopists
-   often plot them decreasing.
 
 None of these blocks the work on the steps A1 to A8 and B0 to B10.
 
