@@ -402,6 +402,26 @@ TEST(JsonTreeTest, ArrayOfNumbers)
     EXPECT_EQ("h1", js.at("names")[1].get<std::string>());
 }
 
+// Test: An element made as an object is written as an object when it has
+// no members, where an element with only a key gives null
+TEST(JsonTreeTest, EmptyObjectIsWrittenAsObject)
+{
+    JsonTree jt("root");
+    jt.addObject(JsonTree::object("options"));
+    jt.addObject(JsonTree("nothing"));
+    JsonTree filled = JsonTree::object("filled");
+    filled.addObject("key", "value");
+    jt.addObject(filled);
+    int        indent = 0;
+    const auto js     = nlohmann::json::parse(jt.writeString(true, &indent)).at("root");
+    EXPECT_TRUE(js.at("options").is_object());
+    EXPECT_TRUE(js.at("options").empty());
+    EXPECT_TRUE(js.at("nothing").is_null());
+    EXPECT_EQ("value", js.at("filled").at("key").get<std::string>());
+    EXPECT_TRUE(JsonTree::object("o").isObject());
+    EXPECT_FALSE(JsonTree("o").isObject());
+}
+
 TEST(JsonTreeTest, EmptyArrayIsWrittenAsArray)
 {
     JsonTree jt("root");

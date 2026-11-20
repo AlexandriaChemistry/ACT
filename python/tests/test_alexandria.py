@@ -139,6 +139,50 @@ class AlexandriaTest(unittest.TestCase):
         with self.assertRaises(act.ActError):
             act.commands.minimize(ff=self.ff, smiles="C(C")
 
+    def test_force_field_as_json(self):
+        """!
+        @brief edit_ff describes a force field, and a change shows up in
+        the description and in the file that is written.
+        """
+        with act.commands.edit_ff(ff=self.ff, json=True) as res:
+            described = res.data["forcefield"]
+            self.assertIsInstance(described["polarizable"], bool)
+            kinds = {inter["type"]: inter for inter in described["interactions"]}
+            self.assertIn("BONDS", kinds)
+            first = kinds["BONDS"]["parameterlists"][0]
+            self.assertIn("identifier", first)
+            for parameter in first["parameters"]:
+                self.assertLessEqual(parameter["minimum"], parameter["maximum"])
+                self.assertIsInstance(parameter["nonnegative"], bool)
+            self.assertTrue(res.data["validation"]["ok"])
+            self.assertEqual([], res.data["validation"]["issues"])
+            masses = [param["value"] for ptype in described["particletypes"]["types"]
+                      for param in ptype["parameters"] if param["type"] == "mass"]
+            self.assertGreater(len(masses), 5)
+            self.assertGreater(min(masses), 0)
+
+        def chi(data, identifier):
+            """The electronegativity of a type in the description"""
+            for inter in data["forcefield"]["interactions"]:
+                if inter["type"] == "ELECTRONEGATIVITYEQUALIZATION":
+                    for entry in inter["parameterlists"]:
+                        if entry["identifier"] == identifier:
+                            return [p for p in entry["parameters"] if p["type"] == "chi"][0]
+            self.fail("No chi of %s in the description" % identifier)
+            return None
+        acm = self.data / "forcefields" / "ACM-g1.xml"
+        with act.commands.edit_ff(ff=acm, json=True) as res:
+            before = chi(res.data, "h_z")
+        new = 0.5 * (before["value"] + before["maximum"])
+        with act.commands.edit_ff(ff=acm, p="chi", a="h_z", val=new, o=True, json=True) as res:
+            self.assertAlmostEqual(new, chi(res.data, "h_z")["value"], places=5)
+            self.assertNotAlmostEqual(before["value"], chi(res.data, "h_z")["value"], places=3)
+            # The file that was written has the same value
+            written = res.file("o")
+            self.assertTrue(written.is_file())
+            with act.commands.edit_ff(ff=written, json=True) as again:
+                self.assertAlmostEqual(new, chi(again.data, "h_z")["value"], places=5)
+
     def test_simulation_reports_progress(self):
         """!
         @brief A simulation tells how far it is while it runs.

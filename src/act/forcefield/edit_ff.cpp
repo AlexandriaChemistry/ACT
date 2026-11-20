@@ -51,6 +51,7 @@
 #include "act/forcefield/act_checksum.h"
 #include "act/forcefield/combruleutil.h"
 #include "act/forcefield/forcefield.h"
+#include "act/forcefield/forcefield_json.h"
 #include "act/forcefield/forcefield_parameter.h"
 #include "act/forcefield/forcefield_parameterlist.h"
 #include "act/forcefield/forcefield_validation.h"
@@ -58,6 +59,7 @@
 #include "act/forcefield/generate_dependent.h"
 #include "act/forcefield/particletype.h"
 #include "act/forces/forcecomputer.h"
+#include "act/utility/jsontree.h"
 #include "gromacs/commandline/filenm.h"
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/fileio/filetypes.h"
@@ -921,6 +923,12 @@ int edit_ff(int argc, char*argv[])
         "If the value, the minimum",
         "or the maximum is to be changed, the actual value may be set to the",
         "new minimum or maximum if it falls outside the new bounds.[PAR]",
+        "With [TT]-json[tt] the force field is written in json format to the",
+        "given file, edit_ff.json by default, as it is after the changes that",
+        "were asked for: the particle types and the interactions with their",
+        "options, combination rules and parameters (value, uncertainty,",
+        "minimum, maximum, mutability), and the problems that [TT]-validate[tt]",
+        "looks for.[PAR]",
         "With [TT]-validate[tt] the parameters are checked: values have to be",
         "within their bounds, the minimum must not be larger than the maximum,",
         "parameters that may not be negative must not be, and each parameter",
@@ -937,7 +945,8 @@ int edit_ff(int argc, char*argv[])
         { efXML, "-ff",   "aff_in" , ffREAD  },
         { efXML, "-ff2",  "aff_in2", ffOPTRD },
         { efXML, "-o",    "aff_out", ffOPTWR },
-        { efDAT, "-dump", "params",  ffOPTWR }
+        { efDAT, "-dump", "params",  ffOPTWR },
+        { efJSON, "-json", "edit_ff", ffOPTWR }
     };
 
     char        *parameter  = (char *)"";
@@ -1177,6 +1186,16 @@ int edit_ff(int argc, char*argv[])
             pd.setCheckSum(checkSum);
             writeForceField(opt2fn("-o", fnm.size(), fnm.data()), &pd, false);
         }
+    }
+    // After writing, such that the checksum is that of the new file
+    const char *jsonFile = opt2fn_null("-json", fnm.size(), fnm.data());
+    if (jsonFile)
+    {
+        // The force field as it is now, for programs that show or edit it
+        JsonTree jtree("edit_ff");
+        jtree.addObject(forceFieldToJson(pd));
+        jtree.addObject(forceFieldIssuesToJson(validateForceField(pd)));
+        jtree.write(jsonFile, true);
     }
     return 0;
 }

@@ -41,6 +41,7 @@
 #include <gtest/gtest.h>
 #include <iterator>
 #include <map>
+#include <nlohmann/json.hpp>
 #include <string>
 #include <utility>
 #include <vector>
@@ -55,6 +56,7 @@
 #include "act/forcefield/forcefield_validation.h"
 #include "act/forcefield/forcefield_xml.h"
 #include "act/forcefield/particletype.h"
+#include "act/forcefield/potential.h"
 #include "testutils/cmdlinetest.h"
 #include "testutils/testfilemanager.h"
 
@@ -470,6 +472,229 @@ TEST_F(EditFFTest, ValidateWrites)
     const auto ref = read(input_);
     expectRealEq(acm(ref, "i_z", "eta").value(), acm(pd, "i_z", "eta").value());
     expectRealEq(acm(ref, "h_z", "eta").value(), acm(pd, "h_z", "eta").value());
+}
+
+//! \return the content of a JSON file, which has to exist
+static nlohmann::json readJson(const std::string &fileName)
+{
+    std::ifstream in(fileName);
+    EXPECT_TRUE(in.good()) << fileName;
+    return in.good() ? nlohmann::json::parse(in) : nlohmann::json();
+}
+
+/*! \brief Compare a parameter in the JSON output with that of a force field
+ * \param[in] j     The parameter in JSON
+ * \param[in] type  The type of the parameter
+ * \param[in] param The parameter
+ */
+static void expectParameter(const nlohmann::json &j, const std::string &type,
+                            const ForceFieldParameter &param)
+{
+    SCOPED_TRACE("parameter " + type);
+    EXPECT_EQ(type, j.at("type").get<std::string>());
+    EXPECT_EQ(param.unit(), j.at("unit").get<std::string>());
+    // The force field file has thirteen digits, the JSON output all
+    const auto near = [](double expected, double actual)
+          {
+              EXPECT_NEAR(expected, actual, 1e-10*std::max(1.0, std::abs(expected)));
+          };
+    near(param.value(), j.at("value").get<double>());
+    near(param.minimum(), j.at("minimum").get<double>());
+    near(param.maximum(), j.at("maximum").get<double>());
+    near(param.uncertainty(), j.at("uncertainty").get<double>());
+    EXPECT_EQ(param.ntrain(), j.at("ntrain").get<unsigned int>());
+    EXPECT_EQ(mutabilityName(param.mutability()), j.at("mutability").get<std::string>());
+    EXPECT_EQ(param.nonNegative(), j.at("nonnegative").get<bool>());
+}
+
+/*! \brief Compare the JSON description of a force field with the force field
+ * \param[in] ff The description
+ * \param[in] pd The force field
+ */
+static void expectForceField(const nlohmann::json &ff, const ForceField &pd)
+{
+    EXPECT_EQ(pd.polarizable(), ff.at("polarizable").get<bool>());
+    // The particle types, in the order of the force field
+    const auto &ptypes = ff.at("particletypes").at("types");
+    ASSERT_EQ(pd.particleTypesConst().size(), ptypes.size());
+    size_t ipt = 0;
+    for (const auto &pt : pd.particleTypesConst())
+    {
+        const auto &jpt = ptypes[ipt++];
+        SCOPED_TRACE("particle type " + pt.second.id().id());
+        EXPECT_EQ(pt.second.id().id(), jpt.at("identifier").get<std::string>());
+        EXPECT_EQ(actParticleToString(pt.second.apType()), jpt.at("type").get<std::string>());
+        EXPECT_EQ(pt.second.description(), jpt.at("description").get<std::string>());
+        for (const auto &opt : pt.second.optionsConst())
+        {
+            EXPECT_EQ(opt.second, jpt.at("options").at(opt.first).get<std::string>());
+        }
+        ASSERT_EQ(pt.second.parametersConst().size(), jpt.at("parameters").size());
+        size_t ip = 0;
+        for (const auto &param : pt.second.parametersConst())
+        {
+            expectParameter(jpt.at("parameters")[ip++], param.first, param.second);
+        }
+    }
+    // The interactions
+    const auto &inters = ff.at("interactions");
+    ASSERT_EQ(pd.forcesConst().size(), inters.size());
+    size_t ifs     = 0;
+    size_t nparams = 0;
+    for (const auto &fs : pd.forcesConst())
+    {
+        const auto &jfs = inters[ifs++];
+        SCOPED_TRACE("interaction " + interactionTypeToString(fs.first));
+        EXPECT_EQ(interactionTypeToString(fs.first), jfs.at("type").get<std::string>());
+        EXPECT_EQ(potentialToString(fs.second.potential()), jfs.at("function").get<std::string>());
+        for (const auto &opt : fs.second.option())
+        {
+            EXPECT_EQ(opt.second, jfs.at("options").at(opt.first).get<std::string>());
+        }
+        // Objects, also when there is nothing in them
+        EXPECT_TRUE(jfs.at("options").is_object());
+        EXPECT_TRUE(jfs.at("combination_rules").is_object());
+        EXPECT_EQ(fs.second.combinationRules().size(), jfs.at("combination_rules").size());
+        for (const auto &cr : fs.second.combinationRules())
+        {
+            const auto &jcr = jfs.at("combination_rules").at(cr.first);
+            EXPECT_EQ(combinationRuleName(cr.second.rule()), jcr.at("rule").get<std::string>());
+            expectParameter(jcr.at("exponent"), "exponent", cr.second.ffplConst());
+        }
+        // As in the file, without the lists that are derived from others
+        size_t ilist = 0;
+        for (const auto &params : fs.second.parametersConst())
+        {
+            const bool dependent = std::all_of(params.second.begin(), params.second.end(),
+                                               [](const auto &p) { return Mutability::Dependent == p.second.mutability(); });
+            if (dependent)
+            {
+                continue;
+            }
+            ASSERT_LT(ilist, jfs.at("parameterlists").size());
+            const auto &jlist = jfs.at("parameterlists")[ilist++];
+            SCOPED_TRACE("identifier " + params.first.id());
+            EXPECT_EQ(params.first.id(), jlist.at("identifier").get<std::string>());
+            ASSERT_EQ(params.second.size(), jlist.at("parameters").size());
+            size_t ip = 0;
+            for (const auto &param : params.second)
+            {
+                expectParameter(jlist.at("parameters")[ip++], param.first, param.second);
+                nparams++;
+            }
+        }
+        EXPECT_EQ(ilist, jfs.at("parameterlists").size());
+    }
+    // There was something to compare
+    EXPECT_GT(nparams, 50u);
+}
+
+// Test: -json describes the whole force field: the particle types and the
+// interactions with their options, combination rules and parameters
+TEST_F(EditFFTest, Json)
+{
+    for (const auto *ff : { "forcefields/ACM-g1.xml", "forcefields/ACS-pg1.xml" })
+    {
+        SCOPED_TRACE(ff);
+        const auto input    = fileManager().getInputFilePath(ff);
+        const auto jsonFile = fileManager().getTemporaryFilePath("ff.json");
+        std::filesystem::remove(jsonFile);
+        run(input, { { "-json", jsonFile } }, "");
+        const auto j = readJson(jsonFile);
+        ASSERT_TRUE(j.contains("edit_ff"));
+        const auto pd = read(input);
+        expectForceField(j.at("edit_ff").at("forcefield"), pd);
+        EXPECT_EQ(pd.checkSum(), j.at("edit_ff").at("forcefield").at("checksum").get<std::string>());
+        // No problems in the force fields of the tests
+        const auto &validation = j.at("edit_ff").at("validation");
+        EXPECT_TRUE(validation.at("ok").get<bool>());
+        EXPECT_TRUE(validation.at("issues").is_array());
+        EXPECT_TRUE(validation.at("issues").empty());
+    }
+}
+
+// Test: The JSON output has the force field after the changes, which is
+// the one that is written with -o
+TEST_F(EditFFTest, JsonAfterChange)
+{
+    const auto jsonFile = fileManager().getTemporaryFilePath("changed.json");
+    const auto out      = run(input_, { { "-p", "chi" }, { "-a", "h_z" }, { "-val", "3.6" },
+                                        { "-json", jsonFile } }, "changed.xml");
+    const auto pd = read(out);
+    expectRealEq(3.6, acm(pd, "h_z", "chi").value());
+    const auto ff = readJson(jsonFile).at("edit_ff").at("forcefield");
+    expectForceField(ff, pd);
+    bool found = false;
+    for (const auto &jfs : ff.at("interactions"))
+    {
+        if (jfs.at("type").get<std::string>() !=
+            interactionTypeToString(InteractionType::ELECTRONEGATIVITYEQUALIZATION))
+        {
+            continue;
+        }
+        for (const auto &jlist : jfs.at("parameterlists"))
+        {
+            if (jlist.at("identifier").get<std::string>() != "h_z")
+            {
+                continue;
+            }
+            for (const auto &jp : jlist.at("parameters"))
+            {
+                if (jp.at("type").get<std::string>() == "chi")
+                {
+                    expectRealEq(3.6, jp.at("value").get<double>());
+                    found = true;
+                }
+            }
+        }
+    }
+    EXPECT_TRUE(found);
+}
+
+// Test: The problems that -validate prints are in the JSON output, with
+// their kind and whether writing the force field removes them
+TEST_F(EditFFTest, JsonValidation)
+{
+    const auto broken = fileManager().getTemporaryFilePath("broken.xml");
+    writeBrokenForceField(input_, broken);
+    const auto jsonFile = fileManager().getTemporaryFilePath("broken.json");
+    run(broken, { { "-validate", "" }, { "-json", jsonFile } }, "");
+    const auto validation = readJson(jsonFile).at("edit_ff").at("validation");
+    EXPECT_FALSE(validation.at("ok").get<bool>());
+    const auto &issues = validation.at("issues");
+    ASSERT_EQ(6u, issues.size());
+    std::map<std::string, int> kinds;
+    int                        nrepaired = 0;
+    for (const auto &issue : issues)
+    {
+        const auto kind = issue.at("kind").get<std::string>();
+        kinds[kind] += 1;
+        EXPECT_FALSE(issue.at("where").get<std::string>().empty());
+        EXPECT_FALSE(issue.at("identifier").get<std::string>().empty());
+        EXPECT_FALSE(issue.at("parameter").get<std::string>().empty());
+        EXPECT_FALSE(issue.at("text").get<std::string>().empty());
+        const bool repaired = issue.at("repaired").get<bool>();
+        EXPECT_EQ(kind == "ResetToBounds" || kind == "Duplicate", repaired);
+        nrepaired += repaired ? 1 : 0;
+    }
+    EXPECT_EQ(2, kinds["ResetToBounds"]);
+    EXPECT_EQ(2, kinds["Duplicate"]);
+    EXPECT_EQ(1, kinds["OutOfBounds"]);
+    EXPECT_EQ(1, kinds["Negative"]);
+    EXPECT_EQ(4, nrepaired);
+    EXPECT_EQ(4, validation.at("repaired").get<int>());
+    // chi of h_z is one of them
+    const bool chi = std::any_of(issues.begin(), issues.end(), [](const nlohmann::json &i)
+                                 { return i.at("identifier") == "h_z" && i.at("parameter") == "chi"; });
+    EXPECT_TRUE(chi);
+}
+
+// Test: Without the option no JSON file is written
+TEST_F(EditFFTest, NoJsonByDefault)
+{
+    std::remove("edit_ff.json");
+    run(input_, {}, "");
+    EXPECT_FALSE(std::ifstream("edit_ff.json").good());
 }
 
 // Test: -nonneg no lets parameters of an interaction be negative, only

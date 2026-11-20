@@ -84,6 +84,8 @@ private:
     bool                  boolean_ = false;
     //! Whether the objects are the elements of an array
     bool                  array_   = false;
+    //! Whether this is an object also when it has no members
+    bool                  object_  = false;
     //! Child objects
     std::vector<JsonTree> objects_;
 
@@ -146,6 +148,18 @@ public:
         return jt;
     }
 
+    /*! \brief Make an element that is written as an object also when it
+     * has no members, where an element with only a key is written as null
+     * \param[in] key The key
+     * \return the element, to which the members can be added
+     */
+    static JsonTree object(const std::string &key)
+    {
+        JsonTree jt(key);
+        jt.object_ = true;
+        return jt;
+    }
+
     /*! \brief Constructor that sets the key and a numerical value
      * \param[in] key   The key
      * \param[in] value The value, written as a JSON number
@@ -196,6 +210,9 @@ public:
 
     //! \return whether the objects are the elements of an array
     bool isArray() const { return array_; }
+
+    //! \return whether this is written as an object also when it is empty
+    bool isObject() const { return object_; }
 
     //! \return objects
     const std::vector<JsonTree> &objects() const { return objects_; }
