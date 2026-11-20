@@ -862,7 +862,9 @@ void doFrequencyAnalysis(MsgHandler               *msghandler,
     auto uniti     = mpo_unit2(MolPropObservable::INTENSITY);
     const auto &ref_freq  = mol->referenceFrequencies();
     const auto &ref_inten = mol->referenceIntensities();
-    plot_spectrum(spectrumFileName, mol->getMolname(), lineWidth, alex_freq,
+    // A molecule from a file or a SMILES string may have no name
+    const std::string spectrumName = mol->getMolname().empty() ? mol->formula() : mol->getMolname();
+    plot_spectrum(spectrumFileName, spectrumName, lineWidth, alex_freq,
                   intensities, ref_freq, ref_inten, oenv, true);
     JsonTree ftree("Frequencies");
     JsonTree itree("Intensities");
