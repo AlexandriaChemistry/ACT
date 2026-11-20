@@ -1,13 +1,16 @@
 # Plan: a Python API and an HTML5 user interface for ACT
 
-Status: in progress. The decisions of 2026-11-19 on the package name, the
-repository, the default force field, Slurm and the login are in section 1.
-Implemented so far, on the branch `python-api` of ACT: steps A1 and A3,
-step A2 for `minimize`, `nma`, `simulate` and `gentop`, and the first
-version of step A4 (section 5). In the new repository ACT-GUI: the server
-with the job engine (steps B0 and B1) and the molecule workspace with the
-viewer, the charges, the minimization, the normal modes and the simulation
-(steps B2 to B5), see the status under the steps in section 6.
+Status: in progress. The decisions of 2026-11-19 and 2026-11-20 on the
+package name, where it is installed, the repository, the default force
+field, Slurm and the login are in section 1. Implemented so far, on the
+branch `python-api` of ACT: steps A1 and A3, step A2 for `minimize`, `nma`,
+`simulate` and `gentop`, and step A4 with the installation of the package
+(section 5). In the repository ACT-GUI: the server with the job engine
+(steps B0 and B1) and the whole molecule workspace (steps B2 to B6), which
+is the milestone "Desktop alpha"; see the status under the steps in
+section 6. ACT-utilities has a branch `act-utilities-dir` that goes with
+it: the modules move to `site-packages/act_utilities`, and its OpenMM
+interface accepts a force field without exclusions.
 
 This plan answers [issue 59](https://github.com/AlexandriaChemistry/ACT/issues/59)
 ("Python binder for ACT") and the specification for a new user interface. It
@@ -396,15 +399,21 @@ test and one small calculation as package test.
 
 ### Steps
 
-*Status.* Steps B0 to B5 are done in the repository ACT-GUI, which exists
-on the developer's machine only until it is made on GitHub. Three things
+*Status.* Steps B0 to B6 are done in the repository ACT-GUI. Some things
 were done differently from the description below. The plots on the page are
 drawn by a small SVG module taken from the mockup, not by uPlot; that can
 change when a plot needs more than lines. The fonts are those of the
 system, since the page may not load anything from other hosts and the IBM
 Plex fonts are not in the package yet. The progress of a job is fetched by
 asking the server four times per second instead of over a WebSocket.
-The tests of the page drive Firefox through selenium.
+The tests of the page drive Firefox through selenium. plotXVG makes the
+PDF files as a program of its own, not as a function inside the server,
+and the plot of the energies has the series that is on the screen. The
+archive for OpenMM is for one molecule in vacuum, with the number of steps,
+the time step and the temperature from the form; the choice of an ensemble
+in the mockup makes no sense for one molecule and was left out. Its test
+runs ten steps with OpenMM where OpenMM and ACT-utilities are installed;
+ACT-GUI has no CI yet.
 
 Each step ends with tests of the routes (pytest), of the JavaScript modules
 (the test runner built into Node.js, which needs no build step) and one
