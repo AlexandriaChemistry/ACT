@@ -4,7 +4,7 @@ Status: in progress. The decisions of 2026-11-19 and 2026-11-20 on the
 package name, where it is installed, the repository, the default force
 field, Slurm and the login are in section 1. Implemented so far, on the
 branch `python-api` of ACT: steps A1 and A3, step A2 for `minimize`, `nma`,
-`simulate` and `gentop`, and step A4 with the installation of the package
+`simulate`, `gentop`, `edit_ff` and `edit_mp`, and step A4 with the installation of the package
 (section 5). In the repository ACT-GUI: the server with the job engine
 (steps B0 and B1) and the whole molecule workspace (steps B2 to B6), which
 is the milestone "Desktop alpha"; see the status under the steps in
@@ -225,7 +225,7 @@ ACT with its test written first.
 | `simulate`: the energy and trajectory files are flushed a few times per second, and `-progress` writes a line with a JSON object (step, time, temperature, energies) each time the energies are written | Energy plot that follows the simulation | done |
 | `gentop`: `-json` with, for each compound, the particles (atoms, shells, virtual sites), types, charges, bonds and coordinates | Viewer and charge display | done |
 | `edit_ff`: `-json` with the whole force field as it is after the changes (particle types, interactions, options, combination rules, parameters with value, bounds and mutability) and the findings of `-validate` | Force field editor | done |
-| `edit_mp`: the result of `-validate` as JSON, and a summary of the content (compounds, dimers, number of conformations, properties) | Molprop screens | to do |
+| `edit_mp`: `-json` with a summary of the content (monomers, dimers, experiments, values per property), each molecule with its fragments, and the result of `-validate` with the molecules that have problems and the messages | Molprop screens | done |
 | `gen_ff`, `geometry_ff`: a JSON summary of the force field that was made | Force field generator | to do |
 
 The existing tests (`simulateTest`, `nmaTest`, `b2MpiTest`, `trainffTestUtil`)
@@ -233,7 +233,10 @@ already read JSON, so each change extends a test that is there.
 
 The description of a force field is made by `forceFieldToJson`
 (`src/act/forcefield/forcefield_json.cpp`), which `gen_ff` and
-`geometry_ff` can use as well. Found on the way, for step B8: `edit_ff -p
+`geometry_ff` can use as well, that of molprop files by the functions in
+`src/act/molprop/molprop_json.cpp`. `MsgHandler::record` keeps messages
+for a program that reports them in another way than in the log file; the
+validation of molprop files uses it. Found on the way, for step B8: `edit_ff -p
 -a` changes the parameters of interactions and the charge and zeta of
 particle types, but not their other parameters such as the mass; it then
 says that nothing changed. The editor has to show those as read-only, or
@@ -421,8 +424,9 @@ and the plot of the energies has the series that is on the screen. The
 archive for OpenMM is for one molecule in vacuum, with the number of steps,
 the time step and the temperature from the form; the choice of an ensemble
 in the mockup makes no sense for one molecule and was left out. Its test
-runs ten steps with OpenMM where OpenMM and ACT-utilities are installed;
-ACT-GUI has no CI yet.
+runs ten steps with OpenMM where OpenMM and ACT-utilities are installed.
+The CI of ACT-GUI runs the tests that need no build of ACT; those with the
+real program and with a browser run on the developer's machine for now.
 
 Each step ends with tests of the routes (pytest), of the JavaScript modules
 (the test runner built into Node.js, which needs no build step) and one

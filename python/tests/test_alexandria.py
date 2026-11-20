@@ -183,6 +183,25 @@ class AlexandriaTest(unittest.TestCase):
             with act.commands.edit_ff(ff=written, json=True) as again:
                 self.assertAlmostEqual(new, chi(again.data, "h_z")["value"], places=5)
 
+    def test_molprop_file_as_json(self):
+        """!
+        @brief edit_mp describes the molecules of a molprop file and says
+        whether they are consistent.
+        """
+        molprop = self.data / "molprop" / "ion-water.xml"
+        with act.commands.edit_mp(mp=[molprop], o=True, validate=True, json=True) as res:
+            summary = res.data["summary"]
+            self.assertEqual(len(res.data["molecules"]), summary["molecules"])
+            self.assertGreater(summary["dimers"], 0)
+            self.assertEqual(summary["experiments"],
+                             sum(mol["experiments"] for mol in res.data["molecules"]))
+            first = res.data["molecules"][0]
+            self.assertEqual(2, len(first["fragments"]))
+            self.assertIn("InteractionEnergy", first["properties"])
+            self.assertEqual({"checked": True, "ok": True, "problems": 0, "invalid": [],
+                              "messages": []}, res.data["validation"])
+            self.assertTrue(res.file("o").is_file())
+
     def test_simulation_reports_progress(self):
         """!
         @brief A simulation tells how far it is while it runs.

@@ -37,14 +37,20 @@
 #include <fstream>
 #include <gtest/gtest.h>
 #include <map>
+#include <nlohmann/json.hpp>
 #include <sstream>
 #include <string>
+#include <tuple>
 #include <utility>
 #include <vector>
 
 #include "act/alexandria/alex_modules.h"
+#include "act/molprop/composition.h"
+#include "act/molprop/experiment.h"
+#include "act/molprop/fragment.h"
 #include "act/molprop/molprop.h"
 #include "act/molprop/molprop_xml.h"
+#include "act/molprop/molpropobservable.h"
 #include "testutils/cmdlinetest.h"
 #include "testutils/testfilemanager.h"
 
@@ -226,6 +232,180 @@ TEST_F(EditMPTest, ValidateDimerInBothOrders)
     run({ input }, { { "-validate", "" } });
     const auto text = fileText(log_);
     EXPECT_EQ(std::string::npos, text.find("Error")) << text;
+}
+
+//! \return the content of a JSON file, which has to exist
+static nlohmann::json readJson(const std::string &fileName)
+{
+    std::ifstream in(fileName);
+    EXPECT_TRUE(in.good()) << fileName;
+    return in.good() ? nlohmann::json::parse(in) : nlohmann::json();
+}
+
+// Test: -json describes the molecules that are written: their fragments,
+// the number of experiments and the properties, and the totals
+TEST_F(EditMPTest, Json)
+{
+    const auto input    = fileManager().getInputFilePath("molprop/ion-water.xml");
+    const auto jsonFile = fileManager().getTemporaryFilePath("mp.json");
+    std::filesystem::remove(jsonFile);
+    const auto mps = run({ input }, { { "-json", jsonFile } });
+    const auto j   = readJson(jsonFile);
+    ASSERT_TRUE(j.contains("edit_mp"));
+    const auto &molecules = j.at("edit_mp").at("molecules");
+    ASSERT_EQ(mps.size(), molecules.size());
+    size_t nexp = 0, ndimer = 0, nprop = 0;
+    for (size_t i = 0; i < mps.size(); i++)
+    {
+        const auto &mp = mps[i];
+        const auto &jm = molecules[i];
+        SCOPED_TRACE(mp.getMolname());
+        EXPECT_EQ(mp.getMolname(), jm.at("name").get<std::string>());
+        EXPECT_EQ(mp.formula(), jm.at("formula").get<std::string>());
+        EXPECT_EQ(mp.experimentConst().size(), jm.at("experiments").get<size_t>());
+        ASSERT_EQ(mp.fragments().size(), jm.at("fragments").size());
+        int    charge = 0;
+        size_t natom  = 0;
+        for (size_t f = 0; f < mp.fragments().size(); f++)
+        {
+            const auto &frag = mp.fragments()[f];
+            const auto &jf   = jm.at("fragments")[f];
+            EXPECT_EQ(frag.inchi(), jf.at("inchi").get<std::string>());
+            EXPECT_EQ(frag.formula(), jf.at("formula").get<std::string>());
+            EXPECT_EQ(frag.charge(), jf.at("charge").get<int>());
+            EXPECT_EQ(frag.multiplicity(), jf.at("multiplicity").get<int>());
+            EXPECT_EQ(frag.atoms().size(), jf.at("natom").get<size_t>());
+            charge += frag.charge();
+            natom  += frag.atoms().size();
+        }
+        EXPECT_EQ(charge, jm.at("charge").get<int>());
+        EXPECT_EQ(natom, jm.at("natom").get<size_t>());
+        EXPECT_GT(natom, 0u);
+        // The number of values of each property, over all experiments
+        std::map<std::string, size_t> props;
+        for (const auto &exp : mp.experimentConst())
+        {
+            for (const auto &prop : exp.propertiesConst())
+            {
+                props[mpo_name(prop.first)] += prop.second.size();
+            }
+        }
+        EXPECT_EQ(props.size(), jm.at("properties").size());
+        for (const auto &prop : props)
+        {
+            EXPECT_EQ(prop.second, jm.at("properties").at(prop.first).get<size_t>()) << prop.first;
+            nprop += prop.second;
+        }
+        nexp   += mp.experimentConst().size();
+        ndimer += mp.fragments().size() == 2 ? 1 : 0;
+    }
+    const auto &summary = j.at("edit_mp").at("summary");
+    EXPECT_EQ(mps.size(), summary.at("molecules").get<size_t>());
+    EXPECT_EQ(ndimer, summary.at("dimers").get<size_t>());
+    EXPECT_EQ(nexp, summary.at("experiments").get<size_t>());
+    size_t total = 0;
+    for (const auto &prop : summary.at("properties").items())
+    {
+        total += prop.value().get<size_t>();
+    }
+    EXPECT_EQ(nprop, total);
+    EXPECT_GT(nprop, 0u);
+    EXPECT_GT(ndimer, 0u);
+    // Not asked for
+    EXPECT_FALSE(j.at("edit_mp").at("validation").at("checked").get<bool>());
+}
+
+// Test: The result of -validate is in the JSON output: no problems for a
+// consistent file
+TEST_F(EditMPTest, JsonValidationClean)
+{
+    const auto input    = fileManager().getInputFilePath("molprop/ion-water.xml");
+    const auto jsonFile = fileManager().getTemporaryFilePath("clean.json");
+    run({ input }, { { "-validate", "" }, { "-json", jsonFile } });
+    const auto validation = readJson(jsonFile).at("edit_mp").at("validation");
+    EXPECT_TRUE(validation.at("checked").get<bool>());
+    EXPECT_TRUE(validation.at("ok").get<bool>());
+    EXPECT_EQ(0, validation.at("problems").get<int>());
+    EXPECT_TRUE(validation.at("invalid").is_array());
+    EXPECT_TRUE(validation.at("invalid").empty());
+    EXPECT_TRUE(validation.at("messages").is_array());
+    EXPECT_TRUE(validation.at("messages").empty());
+}
+
+/*! \brief A molecule with one experiment, made of fragments
+ * \param[in] name  The name
+ * \param[in] frags For each fragment its InChI, its name, its formula and
+ *                  the elements of its atoms
+ * \return the molecule
+ */
+static MolProp makeMolecule(const std::string &name,
+                            const std::vector<std::tuple<std::string, std::string, std::string, std::vector<std::string>>> &frags)
+{
+    MolProp    mp;
+    mp.SetMolname(name);
+    Experiment exp("ref", "min");
+    int        natom = 0;
+    for (const auto &f : frags)
+    {
+        std::vector<int> atoms;
+        for (const auto &a : std::get<3>(f))
+        {
+            atoms.push_back(natom);
+            natom += 1;
+            CalcAtom ca(a, a, natom);
+            ca.setCoords(0.1*natom, 0, 0);
+            exp.AddAtom(std::move(ca));
+        }
+        Fragment frag(std::get<0>(f), 1.0, 0, 1, 1, std::get<2>(f), atoms);
+        frag.setIupac(std::get<1>(f));
+        mp.addFragment(frag);
+    }
+    mp.AddExperiment(std::move(exp));
+    return mp;
+}
+
+// Test: A compound with its atoms in another order in one molecule is a
+// problem, which the JSON output names with the molecule and the message
+TEST_F(EditMPTest, JsonValidationProblem)
+{
+    const std::string              inchiWater = "InChI=1S/H2O/h1H2";
+    const std::string              inchiMeoh  = "InChI=1S/CH4O/c1-2/h2H,1H3";
+    const std::vector<std::string> ohh        = { "O", "H", "H" };
+    const std::vector<std::string> hoh        = { "H", "O", "H" };
+    const std::vector<std::string> meoh       = { "C", "O", "H", "H", "H", "H" };
+    std::vector<MolProp>           mps;
+    mps.push_back(makeMolecule("water#methanol", { { inchiWater, "water", "H2O", hoh }, { inchiMeoh, "methanol", "CH4O", meoh } }));
+    mps.push_back(makeMolecule("water", { { inchiWater, "water", "H2O", ohh } }));
+    mps.push_back(makeMolecule("water#water", { { inchiWater, "water", "H2O", ohh }, { inchiWater, "water", "H2O", ohh } }));
+    const auto input = fileManager().getTemporaryFilePath("order.xml");
+    MolPropWrite(input.c_str(), mps, false);
+    const auto jsonFile = fileManager().getTemporaryFilePath("order.json");
+    run({ input }, { { "-validate", "" }, { "-nomolinfo", "" }, { "-json", jsonFile } });
+    const auto validation = readJson(jsonFile).at("edit_mp").at("validation");
+    EXPECT_TRUE(validation.at("checked").get<bool>());
+    EXPECT_FALSE(validation.at("ok").get<bool>());
+    EXPECT_EQ(1, validation.at("problems").get<int>());
+    ASSERT_EQ(1u, validation.at("invalid").size());
+    EXPECT_EQ("water#methanol", validation.at("invalid")[0].get<std::string>());
+    ASSERT_FALSE(validation.at("messages").empty());
+    bool named = false;
+    for (const auto &message : validation.at("messages"))
+    {
+        EXPECT_FALSE(message.at("level").get<std::string>().empty());
+        EXPECT_TRUE(message.contains("kind"));
+        named = named || message.at("text").get<std::string>().find("water#methanol") != std::string::npos;
+    }
+    EXPECT_TRUE(named);
+}
+
+// Test: Without the option no JSON file is written
+TEST_F(EditMPTest, NoJsonByDefault)
+{
+    const auto input = fileManager().getInputFilePath("molprop/ion-water.xml");
+    run({ input });
+    // run() works in the directory of the output files
+    const auto dir = std::filesystem::path(fileManager().getTemporaryFilePath("out.xml")).parent_path();
+    EXPECT_FALSE(std::filesystem::exists(dir / "edit_mp.json"));
 }
 
 // Test: The histograms of the interaction energies are written for each

@@ -111,6 +111,12 @@ std::map<ACTStatus, const char *> statnm = {
     { ACTStatus::Debug, "Debug" }
 };
 
+const char *actStatusName(ACTStatus level)
+{
+    const auto name = statnm.find(level);
+    return name == statnm.end() ? "" : name->second;
+}
+
 const std::string &actMessage(ACTMessage actm)
 {
     const auto m = ACTMessages.find(actm);
@@ -329,6 +335,10 @@ void MsgHandler::msg(ACTStatus         level,
     last_ = actm;
     print(level, actm, msg);
     wcount_.find(actm)->second++;
+    if (record_ && level <= recordLevel_)
+    {
+        record_->push_back({ level, actm, msg });
+    }
 }
 
 void MsgHandler::msg(ACTStatus         level,
@@ -345,6 +355,10 @@ void MsgHandler::msg(ACTStatus         level,
     }
     print(level, actm, msg);
     wcount_.find(actm)->second++;
+    if (record_ && level <= recordLevel_)
+    {
+        record_->push_back({ level, actm, msg });
+    }
 }
 
 void MsgHandler::summary() const
