@@ -247,6 +247,35 @@ class AlexandriaTest(unittest.TestCase):
         with self.assertRaises(act.ActOptionError):
             act.commands.minimize(ff=self.ff, f=self.acetone, on_progress=seen.append)
 
+    def test_training_reports_progress(self):
+        """!
+        @brief Training a force field tells how far it is while it runs.
+        """
+        seen = []
+        ffdir = self.data / "forcefields"
+        mpdir = self.data / "molprop"
+        with act.commands.train_ff(ff=ffdir / "halgren-PG.xml", mp=mpdir / "booze-mono.xml",
+                                   sel=mpdir / "booze-mono.dat", optimizer="MCMC", pop_size=1,
+                                   max_iter=3, seed=219463979, fit="De b c bondlength angle kt",
+                                   fc_epot=1.0, on_progress=seen.append) as res:
+            self.assertGreaterEqual(len(seen), 3)
+            start = seen[0]
+            self.assertEqual("start", start["event"])
+            self.assertEqual("MCMC", start["optimizer"])
+            self.assertEqual(1, start["ngenerations"])
+            self.assertEqual(3, start["niterations"])
+            self.assertGreater(start["nparameters"], 0)
+            self.assertGreater(start["chi2"]["train"], 0)
+            for item in seen[1:-1]:
+                self.assertEqual("step", item["event"])
+                self.assertLess(item["iteration"], 3)
+            end = seen[-1]
+            self.assertEqual("generation", end["event"])
+            self.assertEqual(1, end["generation"])
+            self.assertLessEqual(end["best"]["train"], start["chi2"]["train"])
+            self.assertEqual("s", end["elapsed"]["unit"])
+            self.assertTrue(res.file("o").exists())
+
     def test_missing_molecule_file(self):
         """!
         @brief The program reports a molecule file that does not exist.

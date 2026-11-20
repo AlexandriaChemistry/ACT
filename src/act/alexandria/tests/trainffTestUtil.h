@@ -130,6 +130,26 @@ inline std::vector<std::string> readLines(const std::string &fileName)
     return lines;
 }
 
+/*! \brief Read a progress file of train_ff
+ * Each line has to be a JSON object.
+ * \param[in] fileName The file
+ * \return the objects, in the order of the file
+ */
+inline std::vector<nlohmann::json> readProgress(const std::string &fileName)
+{
+    std::vector<nlohmann::json> objects;
+    for (const auto &line : readLines(fileName))
+    {
+        auto js = nlohmann::json::parse(line, nullptr, false);
+        EXPECT_TRUE(js.is_object()) << "Not a JSON object: " << line;
+        if (js.is_object())
+        {
+            objects.push_back(std::move(js));
+        }
+    }
+    return objects;
+}
+
 /*! \brief Find the chi2 of the training set in the log file
  * \param[in]  log     The lines of the log file
  * \param[out] output  The initial and final chi2

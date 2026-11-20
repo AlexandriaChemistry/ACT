@@ -224,6 +224,7 @@ ACT with its test written first.
 | `minimize`: RMSD and convergence status in the JSON; `-json` takes a file name; the molecule (particles, charges, bonds) and the coordinates before and after, superimposed | Minimization panel, viewer and charge display | done |
 | `nma`: root key `nma`; for each mode the displacement of each particle and the reduced mass; the molecule and the minimized coordinates; `-json` takes a file name | Animation of vibrations | done |
 | `simulate`: the energy and trajectory files are flushed a few times per second, and `-progress` writes a line with a JSON object (step, time, temperature, energies) each time the energies are written | Energy plot that follows the simulation | done |
+| `train_ff`: `-progress` writes a line with a JSON object at the start (optimizer, numbers of generations, iterations, individuals and parameters, chi squared), at the end of each generation (the lowest chi squared so far, whether the generation lowered it, the time since the start) and, a few times per second at most, for a step of the Monte Carlo chain of the master process. The key `event` tells them apart. The chi squared of the test set is there only when the optimizer computes it | Following a training on the desktop and on the cluster | done |
 | `gentop`: `-json` with, for each compound, the particles (atoms, shells, virtual sites), types, charges, bonds and coordinates | Viewer and charge display | done |
 | `edit_ff`: `-json` with the whole force field as it is after the changes (particle types, interactions, options, combination rules, parameters with value, bounds and mutability) and the findings of `-validate` | Force field editor | done |
 | `edit_mp`: `-json` with a summary of the content (monomers, dimers, experiments, values per property), each molecule with its fragments, and the result of `-validate` with the molecules that have problems and the messages | Molprop screens | done |
@@ -304,11 +305,12 @@ of ACT; the others run `minimize` and `nma` with the real program.
 
 Progress during a run: `act.commands.simulate(..., on_progress=function)`
 calls the function with each object of the progress file while the program
-runs.
+runs, and so does `act.commands.train_ff`, whose objects are described in
+the class `TrainProgress` of the program.
 
 *Still to do in A4:* result classes with named fields (`res.rmsd`,
-`modes.frequencies`) once the JSON of all tools has its final form; progress
-of `train_ff`; tests for the remaining subcommands.
+`modes.frequencies`) once the JSON of all tools has its final form; tests
+for the remaining subcommands.
 
 The package is installed with ACT (`python/CMakeLists.txt`, component
 `python`), into `site-packages/act` of the Python that CMake found. The
@@ -614,7 +616,8 @@ one that starts child processes, so the routes and the pages stay the same.
   cases for an option that tries to carry a shell command, a login that
   fails and a connection that is lost; and by hand on csb.
 
-The progress of `train_ff` (step A4) is needed for this step.
+The progress of `train_ff` (step A4) is needed for this step; it is there
+since `train_ff -progress`.
 
 *Status of B10a.* The first job that goes to the cluster is the comparison
 of a force field with a molprop file (`train_ff -nooptimize`). What is

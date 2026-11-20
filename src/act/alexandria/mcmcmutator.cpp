@@ -65,6 +65,7 @@
 #include "gromacs/utility/stringutil.h"
 #include "gromacs/utility/textwriter.h"
 #include "mcmcmutator.h"
+#include "train_progress.h"
 
 namespace alexandria
 {
@@ -530,6 +531,10 @@ bool MCMCMutator::finishStep(MsgHandler                         *msghandler,
     {
         printParameterStep(genome, xiter);
         printChi2Step(*prevEval, xiter);
+    }
+    if (progress_)
+    {
+        progress_->step(iter + (1.0*pp)/genome->nBase(), *prevEval, TrainProgress::chi2(*bestGenome));
     }
     nStep_ += 1;
     return accept;

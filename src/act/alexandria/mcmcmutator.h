@@ -58,6 +58,7 @@ namespace alexandria
 {
 
 class JsonTree;
+class TrainProgress;
 
 /*!
  * \brief Mutator which applies MCMC optimization to an ACMIndividual.
@@ -94,6 +95,8 @@ private:
     std::vector<gmx::FilePtr>  fpc_;
     //! Convergence file for Chi2
     gmx::FilePtr               fpe_;
+    //! Where the steps are reported for a program that follows the training, may be nullptr
+    TrainProgress             *progress_       = nullptr;
     //! Evaluate the test set at each iteration?
     bool                       evaluateTestSet_ = false;
     //! All used randIndices
@@ -371,6 +374,11 @@ public:
      * \param[in] nstFitness Number of steps between writing
      */
     void setNstFitness(int nstFitness) { nstFitness_ = nstFitness; }
+
+    /*! \brief Report the steps for a program that follows the training
+     * \param[in] progress Where to report, nullptr for nowhere
+     */
+    void setProgress(TrainProgress *progress) { progress_ = progress; }
 
     /*!
      * \brief Print the MC statistics to a file.
