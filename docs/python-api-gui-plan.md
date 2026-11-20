@@ -227,7 +227,8 @@ ACT with its test written first.
 | `gentop`: `-json` with, for each compound, the particles (atoms, shells, virtual sites), types, charges, bonds and coordinates | Viewer and charge display | done |
 | `edit_ff`: `-json` with the whole force field as it is after the changes (particle types, interactions, options, combination rules, parameters with value, bounds and mutability) and the findings of `-validate` | Force field editor | done |
 | `edit_mp`: `-json` with a summary of the content (monomers, dimers, experiments, values per property), each molecule with its fragments, and the result of `-validate` with the molecules that have problems and the messages | Molprop screens | done |
-| `gen_ff`, `geometry_ff`: a JSON summary of the force field that was made | Force field generator | to do |
+| `gen_ff`, `geometry_ff`: `-json` with the force field that was made and the findings of the validation, in the form of `edit_ff`; `geometry_ff` adds the number of compounds that were used and how many different bonds, angles and dihedrals were found | Force field generator | done |
+| `edit_ff`: `changed` and `written` in the JSON, since the program writes no file and gives no error when a change changes nothing | Force field editor | done |
 
 The existing tests (`simulateTest`, `nmaTest`, `b2MpiTest`, `trainffTestUtil`)
 already read JSON, so each change extends a test that is there.
@@ -240,8 +241,15 @@ for a program that reports them in another way than in the log file; the
 validation of molprop files uses it. Found on the way, for step B8: `edit_ff -p
 -a` changes the parameters of interactions and the charge and zeta of
 particle types, but not their other parameters such as the mass; it then
-says that nothing changed. The editor has to show those as read-only, or
-`edit_ff` has to learn them.
+says that nothing changed. The editor shows those as read-only until
+`edit_ff` learns them.
+
+Two things were corrected in `gen_ff` on the way. It built each parameter
+with the mutability Fixed, so that setting the value to the minimum was
+ignored: non-negative parameters were then moved to their minimum and marked
+as corrected, and a parameter that may be negative kept the value zero, also
+outside its bounds. And a force field with shells was not marked as
+polarizable before it was described.
 
 **A3. SMILES input.** *(done)* New in ACT: `-smiles` next to `-f` in `CompoundReader`.
 RDKit parses the string, adds hydrogens, makes 3D coordinates (ETKDG) and
@@ -412,7 +420,8 @@ test and one small calculation as package test.
 
 ### Steps
 
-*Status.* Steps B0 to B6 are done in the repository ACT-GUI. Some things
+*Status.* Steps B0 to B8 are done in the repository ACT-GUI, with what is
+listed at the end of this paragraph still open. Some things
 were done differently from the description below. The plots on the page are
 drawn by a small SVG module taken from the mockup, not by uPlot; that can
 change when a plot needs more than lines. The fonts are those of the
@@ -428,6 +437,25 @@ in the mockup makes no sense for one molecule and was left out. Its test
 runs ten steps with OpenMM where OpenMM and ACT-utilities are installed.
 The CI of ACT-GUI runs the tests that need no build of ACT; those with the
 real program and with a browser run on the developer's machine for now.
+
+The force field workspace (B7, B8) has one force field at a time, which is
+made there or opened from a file. Every step (`gen_ff`, `geometry_ff`,
+`edit_ff`) is a job that writes a new file; a later job, also one of the
+molecule workspace, refers to it by the job that wrote it. The table of
+particle types that `gen_ff` reads is made by the module `ffgen.py`, a port
+of the logic of `actgui` without its windows; the atom types and the
+predefined virtual sites are copied from the directory `share` of
+ACT-utilities into the package, and move there for good in step B12. A
+description of a particle type in that table is now in the column `comment`,
+which `gen_ff` reads; `actgui` wrote `Comment`, which it ignores. The step
+of `actgui` that fixes the electronegativity of atoms with one bond after
+`geometry_ff` with SQE is a second job (`edit_ff -p chi -mut Fixed`) that
+the page starts. One parameter is changed at a time. Uploaded XML files may
+have the document type that ACT writes, and no other.
+Still open in B7 and B8: the files of the user with virtual sites and with
+fixed parameters that `actgui` could read (the first comes with B9), the
+comparison of two force fields, changes of parameters of particle types, and
+`geometry_ff` with a selection of compounds.
 
 Each step ends with tests of the routes (pytest), of the JavaScript modules
 (the test runner built into Node.js, which needs no build step) and one
