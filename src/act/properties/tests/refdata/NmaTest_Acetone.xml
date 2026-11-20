@@ -60,13 +60,13 @@
     <Real Name="Zero point energy">200.191</Real>
     <Real Name="Delta H formation">3849.6599999999999</Real>
     <Real Name="Standard entropy Translation">20.786000000000001</Real>
-    <Real Name="Standard entropy Rotation">12.472</Real>
+    <Real Name="Standard entropy Rotation">12.471693927229859</Real>
     <Real Name="Standard entropy Vibration">0</Real>
     <Real Name="Standard entropy Total">33.258000000000003</Real>
-    <Real Name="Heat capacity cV Translation">12.472</Real>
-    <Real Name="Heat capacity cV Rotation">12.472</Real>
+    <Real Name="Heat capacity cV Translation">12.471693927229859</Real>
+    <Real Name="Heat capacity cV Rotation">12.471693927229859</Real>
     <Real Name="Heat capacity cV Vibration">0</Real>
-    <Real Name="Heat capacity cV Total">24.943000000000001</Real>
+    <Real Name="Heat capacity cV Total">24.943387854459719</Real>
     <Real Name="Internal energy Translation">0</Real>
     <Real Name="Internal energy Rotation">0</Real>
     <Real Name="Internal energy Vibration">0</Real>
@@ -79,12 +79,12 @@
     <Real Name="Standard entropy Rotation">95.120000000000005</Real>
     <Real Name="Standard entropy Vibration">24.649999999999999</Real>
     <Real Name="Standard entropy Total">279.28300000000002</Real>
-    <Real Name="Heat capacity cV Translation">12.472</Real>
-    <Real Name="Heat capacity cV Rotation">12.472</Real>
+    <Real Name="Heat capacity cV Translation">12.471693927229859</Real>
+    <Real Name="Heat capacity cV Rotation">12.471693927229859</Real>
     <Real Name="Heat capacity cV Vibration">45.862000000000002</Real>
     <Real Name="Heat capacity cV Total">70.805000000000007</Real>
-    <Real Name="Internal energy Translation">3.718</Real>
-    <Real Name="Internal energy Rotation">3.718</Real>
+    <Real Name="Internal energy Translation">3.7184355444035821</Real>
+    <Real Name="Internal energy Rotation">3.7184355444035821</Real>
     <Real Name="Internal energy Vibration">205.27500000000001</Real>
     <Real Name="Internal energy Total">212.71199999999999</Real>
   </Thermochemistry>
