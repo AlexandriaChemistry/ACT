@@ -170,6 +170,68 @@ TEST_F(TrainFFMpiTest, HybridHydrogenFluoride)
     runAndCheck("4S-lj14-7-pg-hvdw.xml", "hf-hf", options, 4);
 }
 
+// Test: With -progress the master writes a line with a JSON object for the
+// start and for each generation of HYBRID training, with the best chi
+// squared so far
+TEST_F(TrainFFMpiTest, HybridProgress)
+{
+    auto options = combine(gaOptions("HYBRID", 3), mcmcOptions(2));
+    options.emplace_back("-fit", "charge eta chi zeta vs2a sigma epsilon gamma delta");
+    options.emplace_back("-fc_allelec", "1");
+    options.emplace_back("-fc_exch", "1");
+    options.emplace_back("-fc_disp", "1");
+    const auto progress = fileManager().getTemporaryFilePath("hybrid-progress.jsonl");
+    options.emplace_back("-progress", progress);
+    const auto output = trainfftest::runTrainFF(&fileManager(), "hybridprogress", "4S-lj14-7-pg-hvdw.xml", "hf-hf", options);
+    EXPECT_EQ(0, output.status);
+    if (gmx_node_rank() == 0)
+    {
+        const auto lines = trainfftest::readProgress(progress);
+        ASSERT_GE(lines.size(), 4U);
+        const auto &start = lines.front();
+        EXPECT_EQ("start", start["event"].get<std::string>());
+        EXPECT_EQ("HYBRID", start["optimizer"].get<std::string>());
+        EXPECT_EQ(3, start["ngenerations"].get<int>());
+        EXPECT_EQ(2, start["niterations"].get<int>());
+        EXPECT_EQ(popSize, start["population"].get<int>());
+        EXPECT_GT(start["nparameters"].get<int>(), 0);
+        // One line for each generation, in order, others are steps of the
+        // chain of the master
+        int    generation = 0;
+        double best       = 0;
+        for (size_t i = 1; i < lines.size(); i++)
+        {
+            const auto &js    = lines[i];
+            const auto  event = js["event"].get<std::string>();
+            if (event == "step")
+            {
+                EXPECT_EQ(generation + 1, js["generation"].get<int>());
+                continue;
+            }
+            ASSERT_EQ("generation", event);
+            generation += 1;
+            EXPECT_EQ(generation, js["generation"].get<int>());
+            EXPECT_EQ(3, js["ngenerations"].get<int>());
+            ASSERT_TRUE(js["improved"].is_boolean());
+            ASSERT_TRUE(js["best"]["train"].is_number());
+            const double chi2 = js["best"]["train"].get<double>();
+            EXPECT_GT(chi2, 0);
+            if (generation > 1)
+            {
+                // The best individual so far never gets worse
+                EXPECT_LE(chi2, best);
+            }
+            best = chi2;
+            EXPECT_GE(js["elapsed"]["value"].get<double>(), 0);
+        }
+        EXPECT_EQ(3, generation);
+        EXPECT_EQ("generation", lines.back()["event"].get<std::string>());
+        // The log file has six digits
+        EXPECT_NEAR(output.finalChi2, best, 1e-5*output.finalChi2);
+    }
+    trainfftest::barrier();
+}
+
 // Test: GA training of Lennard-Jones parameters on alcohol and water dimers
 TEST_F(TrainFFMpiTest, GAInterBooze)
 {

@@ -57,6 +57,11 @@
 
 struct gmx_output_env;
 
+namespace alexandria
+{
+class TrainProgress;
+} // namespace alexandria
+
 namespace ga
 {
 
@@ -83,6 +88,8 @@ private:
     const char                       *gpout_;
     //! seed for random numbers
     int                               seed_;
+    //! Where the training is reported for a program that follows it, may be nullptr
+    alexandria::TrainProgress        *progress_ = nullptr;
 
     //! The work of a middleman for an individual, see runQueue
     struct QueueTask
@@ -146,6 +153,11 @@ public:
       sii_(sii), gach_(gach), adaptiveSteps_(adaptiveSteps), fitnessFile_(fitnessFileName),
       gpin_(genePoolIn), gpout_(genePoolOut), seed_(seed)
     {}
+
+    /*! \brief Report the training for a program that follows it
+     * \param[in] progress Where to report, nullptr for nowhere
+     */
+    void setProgress(alexandria::TrainProgress *progress) { progress_ = progress; }
 
     //! \copydoc ga::GeneticAlgorithm::evolve
     bool evolve(alexandria::MsgHandler       *msghandler,

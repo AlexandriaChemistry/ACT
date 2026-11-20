@@ -54,6 +54,7 @@ target_sources(actLib
            sensitivity_analysis.cpp
            staticindividualinfo.cpp
            train_ff.cpp
+           train_progress.cpp
            train_utility.cpp          
 	)
 

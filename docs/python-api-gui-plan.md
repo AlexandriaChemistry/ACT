@@ -224,6 +224,7 @@ ACT with its test written first.
 | `minimize`: RMSD and convergence status in the JSON; `-json` takes a file name; the molecule (particles, charges, bonds) and the coordinates before and after, superimposed | Minimization panel, viewer and charge display | done |
 | `nma`: root key `nma`; for each mode the displacement of each particle and the reduced mass; the molecule and the minimized coordinates; `-json` takes a file name | Animation of vibrations | done |
 | `simulate`: the energy and trajectory files are flushed a few times per second, and `-progress` writes a line with a JSON object (step, time, temperature, energies) each time the energies are written | Energy plot that follows the simulation | done |
+| `train_ff`: `-progress` writes a line with a JSON object at the start (optimizer, numbers of generations, iterations, individuals and parameters, chi squared), at the end of each generation (the lowest chi squared so far, whether the generation lowered it, the time since the start) and, a few times per second at most, for a step of the Monte Carlo chain of the master process. The key `event` tells them apart. The chi squared of the test set is there only when the optimizer computes it | Following a training on the desktop and on the cluster | done |
 | `gentop`: `-json` with, for each compound, the particles (atoms, shells, virtual sites), types, charges, bonds and coordinates | Viewer and charge display | done |
 | `edit_ff`: `-json` with the whole force field as it is after the changes (particle types, interactions, options, combination rules, parameters with value, bounds and mutability) and the findings of `-validate` | Force field editor | done |
 | `edit_mp`: `-json` with a summary of the content (monomers, dimers, experiments, values per property), each molecule with its fragments, and the result of `-validate` with the molecules that have problems and the messages | Molprop screens | done |
@@ -304,11 +305,12 @@ of ACT; the others run `minimize` and `nma` with the real program.
 
 Progress during a run: `act.commands.simulate(..., on_progress=function)`
 calls the function with each object of the progress file while the program
-runs.
+runs, and so does `act.commands.train_ff`, whose objects are described in
+the class `TrainProgress` of the program.
 
 *Still to do in A4:* result classes with named fields (`res.rmsd`,
-`modes.frequencies`) once the JSON of all tools has its final form; progress
-of `train_ff`; tests for the remaining subcommands.
+`modes.frequencies`) once the JSON of all tools has its final form; tests
+for the remaining subcommands.
 
 The package is installed with ACT (`python/CMakeLists.txt`, component
 `python`), into `site-packages/act` of the Python that CMake found. The
@@ -614,7 +616,8 @@ one that starts child processes, so the routes and the pages stay the same.
   cases for an option that tries to carry a shell command, a login that
   fails and a connection that is lost; and by hand on csb.
 
-The progress of `train_ff` (step A4) is needed for this step.
+The progress of `train_ff` (step A4) is needed for this step; it is there
+since `train_ff -progress`.
 
 *Status of B10a.* The first job that goes to the cluster is the comparison
 of a force field with a molprop file (`train_ff -nooptimize`). What is
@@ -645,13 +648,32 @@ there, in the modules `cluster_jobs.py`, `cluster_queue.py` and
   statistics and the plots.
 - Nothing is ever removed on the cluster.
 
+- Training (`train_ff` with optimization) is a task as well (`train`, module
+  `training.py`), on the desktop and on the cluster. The request is that
+  of the comparison, with the kinds of parameters to train, the optimizer,
+  the numbers of iterations and generations and the part of the compounds
+  that is kept for testing, drawn with a fixed seed. `train_ff` has an
+  individual for each process, so the number of processes, on the cluster
+  that of the job, is the size of the population. The page follows a
+  training on the desktop with a plot of chi squared from `-progress`. A
+  job on the cluster writes the same file in its directory; the login
+  that asks for the state of the jobs reads its last line, of which a few
+  numbers are kept, and the list of jobs shows the generation and the
+  lowest chi squared. The result is the trained force field, its
+  parameters, the summary of the sensitivity analysis and the comparison
+  of the trained force field with the data.
+
 Still to do: a try on csb itself (so far only the stand-ins of the tests
-were used); training (`train_ff` with optimization) as a task, with its
-progress; the name of the program on the cluster, now `alexandria`, as a
-setting for double precision builds; and results that are larger than
-fits in memory, since the archives are built and read in memory. The
-command is made with the options that the `alexandria` of the desktop
-knows, so the program on the cluster must not be older than that.
+were used); the name of the program on the cluster, now `alexandria`, as a
+setting for double precision builds; results that are larger than fits in
+memory, since the archives are built and read in memory; and for the
+training a choice of the compounds, weights for the properties, the
+parameters to train offered from the force field instead of typed, and
+continuing from the population of an earlier training. A training on the
+desktop ends at the time limit of a calculation. The command is made with
+the options that the `alexandria` of the desktop knows, so the program on
+the cluster must not be older than that: for a training it needs
+`train_ff -progress`.
 
 **B11. Server, stage 1.** Login with the university single sign-on,
 workspaces, quotas, queue, isolation of the workers (section 8); an

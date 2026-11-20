@@ -41,6 +41,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <map>
+#include <memory>
 #include <numeric>
 #include <random>
 #include <set>
@@ -511,6 +512,19 @@ int OptACM::initMaster(const std::vector<t_filenm> &fnm,
     // Initializer
     initializer_ = new ACMInitializer(sii_, gach_.randomInit(), portableSeed(&gen));
 
+    // The progress for a program that follows the training
+    const char *progressFile = opt2fn_null("-progress", fnm.size(), fnm.data());
+    if (progressFile)
+    {
+        const bool onlyMonteCarlo = gach_.optimizer() == OptimizerAlg::MCMC;
+        progress_ = std::make_unique<TrainProgress>(progressFile,
+                                                    optimizerAlgToString(gach_.optimizer()),
+                                                    onlyMonteCarlo ? 1 : gach_.maxGenerations(),
+                                                    gach_.optimizer() == OptimizerAlg::GA ? 0 : bch_.maxIter(),
+                                                    gach_.popSize(), sii_->nParam(),
+                                                    onlyMonteCarlo ? bch_.evaluateTestset() : gach_.evaluateTestset());
+    }
+
     if (gach_.optimizer() == OptimizerAlg::GA)
     {
         mutator_ = new alexandria::PercentMutator(sii_, portableSeed(&gen), algorithm, gach_.percent());
@@ -520,6 +534,7 @@ int OptACM::initMaster(const std::vector<t_filenm> &fnm,
         auto mut = new alexandria::MCMCMutator(portableSeed(&gen), &bch_, fitComp_, sii_, bch_.evaluateTestset(),
                                                algorithm, gach_.maxGenerations());
         mut->setNstFitness(gach_.nstFitness());
+        mut->setProgress(progress_.get());
         //! \todo Only open these files when we are optimizing in verbose mode.
         if (msghandler_.verbose())
         {
@@ -601,7 +616,9 @@ int OptACM::initMaster(const std::vector<t_filenm> &fnm,
     // Initialize the optimizer
     if (gach_.optimizer() == OptimizerAlg::MCMC)
     {
-        ga_ = new ga::MCMC(initializer_, fitComp_, mutator_, sii_, &gach_);
+        auto mcmc = new ga::MCMC(initializer_, fitComp_, mutator_, sii_, &gach_);
+        mcmc->setProgress(progress_.get());
+        ga_ = mcmc;
     }
     else
     {
@@ -622,14 +639,16 @@ int OptACM::initMaster(const std::vector<t_filenm> &fnm,
                                              portableSeed(&gen));
 
         // We pass the global seed to the optimizer
-        ga_ = new ga::HybridGAMC(initializer_, fitComp_, probComputer_,
-                                 selector_, crossover_,
-                                 mutator_, &terminators_, &penalizers_,
-                                 sii_, &gach_,
-                                 opt2fn("-fitness", fnm.size(), fnm.data()),
-                                 opt2fn_null("-gpin", fnm.size(), fnm.data()),
-                                 opt2fn("-gpout", fnm.size(), fnm.data()),
-                                 portableSeed(&gen), bch_.adaptiveStep());
+        auto hybrid = new ga::HybridGAMC(initializer_, fitComp_, probComputer_,
+                                         selector_, crossover_,
+                                         mutator_, &terminators_, &penalizers_,
+                                         sii_, &gach_,
+                                         opt2fn("-fitness", fnm.size(), fnm.data()),
+                                         opt2fn_null("-gpin", fnm.size(), fnm.data()),
+                                         opt2fn("-gpout", fnm.size(), fnm.data()),
+                                         portableSeed(&gen), bch_.adaptiveStep());
+        hybrid->setProgress(progress_.get());
+        ga_ = hybrid;
     }
     if (tw)
     {
@@ -1144,7 +1163,13 @@ int train_ff(int argc, char *argv[])
         "(Intramolecular energy), set the parameters to be investigated with",
         "[TT]-fit 'a b c'[tt], and, finally, turn off optimization and random",
         "parameter initialization with the [TT]-nooptimize[tt] and",
-        "[TT]-norandom_init[tt] flags.[PAR]"
+        "[TT]-norandom_init[tt] flags.[PAR]",
+        "With [TT]-progress[tt], lines with a json object are added to the",
+        "given file while the force field is trained, such that another",
+        "program can follow the training: one line at the start, one at the",
+        "end of each generation with the lowest chi squared so far, and, a",
+        "few times per second at most, one for a step of the Monte Carlo",
+        "chain of the master process."
     };
 
     bool                bcompress           = false;
@@ -1175,7 +1200,8 @@ int train_ff(int argc, char *argv[])
         { efXVG,  "-chi2",    "chi_squared", ffWRITE  },
         { efDAT,  "-fitness", "ga_fitness",  ffWRITE  },
         { efJSON, "-json",    "train_ff",    ffWRITE  },
-        { efJSON, "-sensout", "sensitivity", ffWRITE  }
+        { efJSON, "-sensout", "sensitivity", ffWRITE  },
+        { efJSONL, "-progress", "progress",  ffOPTWR  }
     };
 
     alexandria::OptACM opt;

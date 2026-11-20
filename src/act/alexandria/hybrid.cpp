@@ -49,6 +49,7 @@
 #include "act/alexandria/acminitializer.h"
 #include "act/alexandria/actmiddleman.h"
 #include "act/alexandria/sensitivity_analysis.h"
+#include "act/alexandria/train_progress.h"
 #include "act/basics/msg_handler.h"
 #include "act/forces/forcecomputerstatistics.h"
 #include "act/ga/gene_pool.h"
@@ -379,6 +380,10 @@ bool HybridGAMC::evolve(alexandria::MsgHandler       *msghandler,
         // All genomes have the fitness of the test set as well
         (*bestGenome)[iMolSelect::Test] = pool[pold]->getBest(iMolSelect::Test);
     }
+    if (progress_)
+    {
+        progress_->start(alexandria::TrainProgress::chi2((*bestGenome)[iMolSelect::Train]));
+    }
     // The pool with the best genome so far, also if no better one is found
     if (gpout_)
     {
@@ -496,6 +501,11 @@ bool HybridGAMC::evolve(alexandria::MsgHandler       *msghandler,
         }
         // Increase generation counter
         generation++;
+        if (progress_)
+        {
+            // For the steps of the chain of the master
+            progress_->setGeneration(generation);
+        }
         // Normalize the fitness into a probability
         if (msghandler->debug())
         {
@@ -654,7 +664,8 @@ bool HybridGAMC::evolve(alexandria::MsgHandler       *msghandler,
         // Check if a better genome (for train) was found, and update if so
         const auto tmpGenome   = pool[pold]->getBest(iMolSelect::Train);
         const auto oldBest     = (*bestGenome)[iMolSelect::Train];
-        if (tmpGenome.fitness(iMolSelect::Train) < oldBest.fitness(iMolSelect::Train))
+        const bool improved    = tmpGenome.fitness(iMolSelect::Train) < oldBest.fitness(iMolSelect::Train);
+        if (improved)
         {
             const auto mess = gmx::formatString("\n%s. New best individual for train", msg_start.c_str());
             msghandler->write(tmpGenome.print(mess.c_str()));
@@ -672,6 +683,12 @@ bool HybridGAMC::evolve(alexandria::MsgHandler       *msghandler,
             msghandler->write(gmx::formatString("\n%s. Previous best: %g, current best %g",
                                                 msg_start.c_str(), oldBest.fitness(iMolSelect::Train),
                                                 tmpGenome.fitness(iMolSelect::Train)));
+        }
+        if (progress_)
+        {
+            progress_->generation(generation,
+                                  alexandria::TrainProgress::chi2((*bestGenome)[iMolSelect::Train]),
+                                  improved);
         }
         if (gach_->evaluateTestset())
         {

@@ -48,6 +48,11 @@
 
 struct gmx_output_env;
 
+namespace alexandria
+{
+class TrainProgress;
+} // namespace alexandria
+
 namespace ga
 {
 
@@ -63,6 +68,8 @@ private:
     alexandria::StaticIndividualInfo *sii_;
     //! GAConfigHandler pointer
     alexandria::GAConfigHandler      *gach_;
+    //! Where the training is reported for a program that follows it, may be nullptr
+    alexandria::TrainProgress        *progress_ = nullptr;
 public:
     /*!
      * \brief Constructor for self-building
@@ -76,6 +83,11 @@ public:
                        mutator, nullptr, nullptr),
       sii_(sii), gach_(gach)
     {}
+
+    /*! \brief Report the training for a program that follows it
+     * \param[in] progress Where to report, nullptr for nowhere
+     */
+    void setProgress(alexandria::TrainProgress *progress) { progress_ = progress; }
 
     //! \copydoc ga::GeneticAlgorithm::evolve
     bool evolve(alexandria::MsgHandler       *msghandler,

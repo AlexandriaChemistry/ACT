@@ -37,6 +37,7 @@
 
 #include <cstdio>
 #include <map>
+#include <memory>
 #include <string>
 #include <vector>
 
@@ -46,6 +47,7 @@
 #include "act/alexandria/molgen.h"
 #include "act/alexandria/sensitivity.h"
 #include "act/alexandria/staticindividualinfo.h"
+#include "act/alexandria/train_progress.h"
 #include "act/basics/chargemodel.h"
 #include "act/basics/dataset.h"
 #include "act/basics/msg_handler.h"
@@ -125,6 +127,8 @@ private:
     std::vector<ga::Terminator*> terminators_;
     //! Penalizers
     std::vector<ga::Penalizer*>  penalizers_;
+    //! Reports the training for a program that follows it, with -progress only
+    std::unique_ptr<TrainProgress> progress_;
     /*!
      * \brief Print to log file (if it exists), the estimated number of times
      * we will call calcDeviation per dataset

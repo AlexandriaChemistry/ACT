@@ -46,6 +46,7 @@
 #include "act/utility/communicationrecord.h"
 #include "act/utility/timings.h"
 #include "mcmcmutator.h"
+#include "train_progress.h"
 
 namespace ga
 {
@@ -113,6 +114,10 @@ bool MCMC::evolve(alexandria::MsgHandler       *msghandler,
 
     // Update best genome
     (*bestGenome)[imstr] = pool.getBest(imstr);
+    if (progress_)
+    {
+        progress_->start(alexandria::TrainProgress::chi2((*bestGenome)[imstr]));
+    }
 
     // When random initialization, assume a better minimum has been found no matter what
     bool bMinimum = gach_->randomInit();
@@ -170,6 +175,11 @@ bool MCMC::evolve(alexandria::MsgHandler       *msghandler,
         msghandler->msg(alexandria::ACTStatus::Warning,
                         "No better genome found. Please check your input and output.\n");
         bMinimum = false;
+    }
+    if (progress_)
+    {
+        // Monte Carlo on its own is one generation
+        progress_->generation(1, alexandria::TrainProgress::chi2((*bestGenome)[imstr]), bMinimum);
     }
     // ForceComputer Statistics
     alexandria::ForceComputerStatistics fcStats;

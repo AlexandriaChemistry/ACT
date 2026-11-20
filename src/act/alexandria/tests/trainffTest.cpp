@@ -720,6 +720,80 @@ TEST_F(TrainFFTest, Checkpoint)
     std::filesystem::remove_all(dir);
 }
 
+// Test: With -progress the master writes a line with a JSON object when
+// the training starts, for steps of its Monte Carlo chain and when the
+// training is done, such that a program can follow the training
+TEST_F(TrainFFTest, ProgressFile)
+{
+    auto options = combine(mcmcOptions(3), intraOptions());
+    const auto progress = fileManager().getTemporaryFilePath("progress.jsonl");
+    options.emplace_back("-progress", progress);
+    const auto output = trainfftest::runTrainFF(&fileManager(), "progress", "halgren-PG.xml", "booze-mono", options);
+    ASSERT_EQ(0, output.status);
+    ASSERT_GT(output.finalChi2, 0);
+    const auto lines = trainfftest::readProgress(progress);
+    // The start, at least one step and the end
+    ASSERT_GE(lines.size(), 3U);
+    const auto &start = lines.front();
+    EXPECT_EQ("start", start["event"].get<std::string>());
+    EXPECT_EQ("MCMC", start["optimizer"].get<std::string>());
+    EXPECT_EQ(1, start["ngenerations"].get<int>());
+    EXPECT_EQ(3, start["niterations"].get<int>());
+    EXPECT_EQ(1, start["population"].get<int>());
+    EXPECT_GT(start["nparameters"].get<int>(), 0);
+
+    double iteration = 0;
+    double best      = start["chi2"]["train"].get<double>();
+    EXPECT_GT(best, 0);
+    for (size_t i = 1; i + 1 < lines.size(); i++)
+    {
+        const auto &step = lines[i];
+        EXPECT_EQ("step", step["event"].get<std::string>());
+        EXPECT_EQ(1, step["generation"].get<int>());
+        // The iteration with the fraction of the parameters that were changed
+        ASSERT_TRUE(step["iteration"].is_number());
+        EXPECT_GE(step["iteration"].get<double>(), iteration);
+        EXPECT_LT(step["iteration"].get<double>(), 3);
+        iteration = step["iteration"].get<double>();
+        ASSERT_TRUE(step["chi2"]["train"].is_number());
+        // The best parameters so far never get worse
+        ASSERT_TRUE(step["best"]["train"].is_number());
+        EXPECT_LE(step["best"]["train"].get<double>(), best);
+        EXPECT_LE(step["best"]["train"].get<double>(), step["chi2"]["train"].get<double>());
+        best = step["best"]["train"].get<double>();
+        EXPECT_EQ("s", step["elapsed"]["unit"].get<std::string>());
+        EXPECT_GE(step["elapsed"]["value"].get<double>(), 0);
+    }
+    const auto &end = lines.back();
+    EXPECT_EQ("generation", end["event"].get<std::string>());
+    EXPECT_EQ(1, end["generation"].get<int>());
+    EXPECT_EQ(1, end["ngenerations"].get<int>());
+    ASSERT_TRUE(end["improved"].is_boolean());
+    EXPECT_LE(end["best"]["train"].get<double>(), best);
+    // The log file has six digits
+    EXPECT_NEAR(output.finalChi2, end["best"]["train"].get<double>(), 1e-5*output.finalChi2);
+    EXPECT_GE(end["elapsed"]["value"].get<double>(), 0);
+}
+
+// Test: Without the option there is no progress file, and without training
+// there is none either
+TEST_F(TrainFFTest, NoProgressFileByDefault)
+{
+    const auto dir = std::filesystem::path(fileManager().getTemporaryFilePath("noprogress.log")).parent_path();
+    std::filesystem::remove(dir / "progress.jsonl");
+    auto options = combine(mcmcOptions(1), intraOptions());
+    auto output  = trainfftest::runTrainFF(&fileManager(), "noprogress", "halgren-PG.xml", "booze-mono", options);
+    ASSERT_EQ(0, output.status);
+    EXPECT_FALSE(std::filesystem::exists(dir / "progress.jsonl"));
+
+    const auto progress = fileManager().getTemporaryFilePath("nooptimize.jsonl");
+    options.emplace_back("-progress", progress);
+    options.emplace_back("-nooptimize", "");
+    output = trainfftest::runTrainFF(&fileManager(), "nooptimize", "halgren-PG.xml", "booze-mono", options);
+    ASSERT_EQ(0, output.status);
+    EXPECT_FALSE(std::filesystem::exists(progress));
+}
+
 // Test: The outliers are listed with their structure, from the largest
 // to the smallest deviation
 TEST_F(TrainFFTest, OutlierOverview)
