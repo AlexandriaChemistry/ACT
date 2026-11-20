@@ -52,13 +52,16 @@
 #include "act/forcefield/act_checksum.h"
 #include "act/forcefield/combruleutil.h"
 #include "act/forcefield/forcefield.h"
+#include "act/forcefield/forcefield_json.h"
 #include "act/forcefield/forcefield_parameter.h"
 #include "act/forcefield/forcefield_parameterlist.h"
 #include "act/forcefield/forcefield_parametername.h"
+#include "act/forcefield/forcefield_validation.h"
 #include "act/forcefield/forcefield_xml.h"
 #include "act/forcefield/particletype.h"
 #include "act/forcefield/potential.h"
 #include "act/forces/forcecomputer.h"
+#include "act/utility/jsontree.h"
 #include "act/utility/stringutil.h"
 #include "gromacs/commandline/filenm.h"
 #include "gromacs/commandline/pargs.h"
@@ -372,7 +375,12 @@ int gen_ff(int argc, char*argv[])
         "Some input files are taken from the data directory of ACT, or from",
         "the directory in the ACTDATA environment variable if that is set, namely:[BR]",
         "atomprops.csv - containing properties for atoms.[BR]",
-        "symmetric_charges.csv - containing groups of atoms that should have symmetric charges (optional).",
+        "symmetric_charges.csv - containing groups of atoms that should have symmetric charges (optional).[PAR]",
+        "With [TT]-json[tt] the force field that was made is written in json format",
+        "to the given file, gen_ff.json by default, in the same form as",
+        "edit_ff writes it, together with the result of the checks that",
+        "edit_ff -validate does. This is meant for programs that show the",
+        "force field, such as the user interface of ACT."
     };
     CombRuleUtil crule;
     crule.addInfo(&desc);
@@ -428,7 +436,8 @@ int gen_ff(int argc, char*argv[])
     std::vector<t_filenm> fnm = {
         { efCSV, "-f",   "atomtypes", ffREAD  },
         { efJSON, "-vs", "vsites",    ffOPTRDMULT },
-        { efXML, "-o" ,  "ffout",     ffWRITE }
+        { efXML, "-o" ,  "ffout",     ffWRITE },
+        { efJSON, "-json", "gen_ff",  ffOPTWR }
     };
     gmx_bool useVdwCorr = false;
     std::vector<t_pargs> pa =
@@ -641,7 +650,6 @@ int gen_ff(int argc, char*argv[])
                 if (content[2] == "min")
                 {
                     atomparams[iType][pName].setMinimum(v);
-                    atomparams[iType][pName].setValue(v);
                 }
                 else if (content[2] == "max")
                 {
@@ -662,21 +670,37 @@ int gen_ff(int argc, char*argv[])
             }
             if (!key.empty())
             {
-                for(auto pname : ap->second)
+                for(const auto &pname : ap->second)
                 {
-                    if (nonNegative[ap->first][pname.first])
+                    // The parameter is made anew from what was read, such
+                    // that it starts at its minimum whatever its mutability
+                    // and is not marked as corrected, see
+                    // ForceFieldParameter::wasReset.
+                    const bool nonneg = nonNegative[ap->first][pname.first];
+                    double     pmin   = pname.second.minimum();
+                    double     pmax   = pname.second.maximum();
+                    Mutability pmut   = pname.second.mutability();
+                    if (pmin > pmax)
                     {
-                        pname.second.setNonNegative();
+                        GMX_THROW(gmx::InvalidInputError(gmx::formatString("The minimum %g of %s %s is larger than the maximum %g for atomtype %s",
+                                                                           pmin, interactionTypeToString(ap->first).c_str(),
+                                                                           pname.first.c_str(), pmax, entry.first.c_str()).c_str()));
+                    }
+                    if (nonneg)
+                    {
+                        pmin = std::max(0.0, pmin);
+                        pmax = std::max(pmin, pmax);
                     }
                     if (bPoint && ap->first == InteractionType::ELECTROSTATICS && pname.first == "zeta")
                     {
                         // Point charges have no width
-                        pname.second.setMinimum(0);
-                        pname.second.setMaximum(0);
-                        pname.second.setValue(0);
-                        pname.second.setMutability(Mutability::Fixed);
+                        pmin = 0;
+                        pmax = 0;
+                        pmut = Mutability::Fixed;
                     }
-                    ffpl[ap->first].addParameter(key, pname.first, pname.second);
+                    ffpl[ap->first].addParameter(key, pname.first,
+                                                 ForceFieldParameter(pname.second.unit(), pmin, 0, 0,
+                                                                     pmin, pmax, pmut, true, nonneg));
                 }
             }
         }
@@ -761,6 +785,15 @@ int gen_ff(int argc, char*argv[])
     pd.updateTimeStamp();
     pd.updateCheckSum();
     writeForceField(opt2fn("-o", fnm.size(), fnm.data()), &pd, false);
+    const char *jsonFile = opt2fn_null("-json", fnm.size(), fnm.data());
+    if (jsonFile)
+    {
+        // The force field as it was written, for programs that show it
+        JsonTree jtree("gen_ff");
+        jtree.addObject(forceFieldToJson(pd));
+        jtree.addObject(forceFieldIssuesToJson(validateForceField(pd)));
+        jtree.write(jsonFile, true);
+    }
 
     return 0;
 }

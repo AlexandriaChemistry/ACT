@@ -38,6 +38,8 @@
 #include <fstream>
 #include <gtest/gtest.h>
 #include <map>
+#include <nlohmann/json.hpp>
+#include <sstream>
 #include <string>
 #include <utility>
 #include <vector>
@@ -48,6 +50,7 @@
 #include "act/basics/mutability.h"
 #include "act/forcefield/forcefield.h"
 #include "act/forcefield/forcefield_parameter.h"
+#include "act/forcefield/forcefield_validation.h"
 #include "act/forcefield/forcefield_xml.h"
 #include "act/forcefield/potential.h"
 #include "gromacs/utility/exceptions.h"
@@ -315,6 +318,160 @@ TEST_F(GenFFTest, VirtualSiteErrors)
     auto cmd = commandLine({ { "-o", fileManager().getTemporaryFilePath("generated.xml") } }, vsfile);
     EXPECT_THROW(gen_ff(cmd.argc(), cmd.argv()), gmx::InvalidInputError);
 }
+
+/*! \brief Copy the atom types of the tests with other bounds for chi of fluorine
+ * \param[in] fileManager The test files
+ * \param[in] name        Name of the copy
+ * \param[in] min         The minimum of chi
+ * \param[in] max         The maximum of chi
+ * \param[in] nonneg      Whether chi must be non-negative
+ * \return the name of the copy with its path
+ */
+static std::string chiFile(gmx::test::TestFileManager *fileManager, const std::string &name,
+                           const std::string &min, const std::string &max, bool nonneg)
+{
+    std::ifstream in(fileManager->getInputFilePath("forcefields/genff-atomtypes.csv"));
+    auto          copy = fileManager->getTemporaryFilePath(name);
+    std::ofstream out(copy);
+    const std::string prefix = "ELECTRONEGATIVITYEQUALIZATION:chi:";
+    std::map<std::string, size_t> column;
+    std::string line;
+    while (std::getline(in, line))
+    {
+        std::vector<std::string> words;
+        std::istringstream       stream(line);
+        std::string              word;
+        while (std::getline(stream, word, '|'))
+        {
+            words.push_back(word);
+        }
+        if (column.empty())
+        {
+            for (size_t i = 0; i < words.size(); i++)
+            {
+                column[words[i]] = i;
+            }
+        }
+        else if (words.size() > column[prefix + "nonneg"] && words[column["acmtype"]] == "f_z")
+        {
+            words[column[prefix + "min"]]    = min;
+            words[column[prefix + "max"]]    = max;
+            words[column[prefix + "nonneg"]] = nonneg ? "True" : "False";
+            line.clear();
+            for (size_t i = 0; i < words.size(); i++)
+            {
+                line += (i > 0 ? "|" : "") + words[i];
+            }
+        }
+        out << line << "\n";
+    }
+    return copy;
+}
+
+// Test: A parameter starts at its minimum, also one that may be negative,
+// and a new force field has no parameters that were corrected. A minimum
+// that is larger than the maximum is an error.
+TEST_F(GenFFTest, ParametersStartAtMinimum)
+{
+    const auto output = fileManager().getTemporaryFilePath("generated.xml");
+    {
+        gmx::test::CommandLine cmd;
+        cmd.append("gen_ff");
+        cmd.addOption("-f", chiFile(&fileManager(), "negative.csv", "-3", "5", false));
+        cmd.addOption("-o", output);
+        ASSERT_EQ(0, gen_ff(cmd.argc(), cmd.argv()));
+        ForceField pd;
+        readForceField(output, &pd);
+        bool found = false;
+        for (const auto &p : pd.findForcesConst(InteractionType::ELECTRONEGATIVITYEQUALIZATION).parametersConst())
+        {
+            if (p.first.id() == "f_z")
+            {
+                const auto &chi = p.second.find("chi")->second;
+                EXPECT_DOUBLE_EQ(-3, chi.value());
+                EXPECT_DOUBLE_EQ(-3, chi.minimum());
+                EXPECT_DOUBLE_EQ(5, chi.maximum());
+                EXPECT_FALSE(chi.nonNegative());
+                found = true;
+            }
+            else if (p.first.id() == "hf_z")
+            {
+                // As it is in the file of the tests
+                EXPECT_DOUBLE_EQ(4, p.second.find("chi")->second.value());
+            }
+        }
+        EXPECT_TRUE(found);
+        EXPECT_TRUE(validateForceField(pd).empty());
+    }
+    {
+        gmx::test::CommandLine cmd;
+        cmd.append("gen_ff");
+        cmd.addOption("-f", chiFile(&fileManager(), "wrong.csv", "6", "5", true));
+        cmd.addOption("-o", output);
+        EXPECT_THROW(gen_ff(cmd.argc(), cmd.argv()), gmx::InvalidInputError);
+    }
+}
+
+// Test: With -json the force field that was written is described in JSON,
+// with the result of the validation, and not without that option
+TEST_F(GenFFTest, Json)
+{
+    const auto jsonFile = fileManager().getTemporaryFilePath("generated.json");
+    std::filesystem::remove(jsonFile);
+    std::filesystem::remove("gen_ff.json");
+    const auto pd = generate({ { "-json", jsonFile } });
+    EXPECT_FALSE(std::filesystem::exists("gen_ff.json"));
+    std::ifstream in(jsonFile);
+    ASSERT_TRUE(in.good());
+    const auto j = nlohmann::json::parse(in);
+    ASSERT_TRUE(j.contains("gen_ff"));
+    const auto &ff = j.at("gen_ff").at("forcefield");
+    // It is the force field of the file
+    EXPECT_EQ(pd.checkSum(), ff.at("checksum").get<std::string>());
+    EXPECT_EQ(pd.polarizable(), ff.at("polarizable").get<bool>());
+    const auto &ptypes = ff.at("particletypes").at("types");
+    ASSERT_EQ(pd.particleTypesConst().size(), ptypes.size());
+    bool foundHF = false;
+    for (const auto &jpt : ptypes)
+    {
+        if (jpt.at("identifier").get<std::string>() != "hf")
+        {
+            continue;
+        }
+        foundHF = true;
+        for (const auto &jp : jpt.at("parameters"))
+        {
+            if (jp.at("type").get<std::string>() == "charge")
+            {
+                EXPECT_DOUBLE_EQ(0.25, jp.at("value").get<double>());
+                EXPECT_DOUBLE_EQ(0.5, jp.at("maximum").get<double>());
+            }
+        }
+    }
+    EXPECT_TRUE(foundHF);
+    // The interactions, with the virtual sites of the file
+    std::map<std::string, std::string> functions;
+    for (const auto &jfs : ff.at("interactions"))
+    {
+        functions[jfs.at("type").get<std::string>()] = jfs.at("function").get<std::string>();
+    }
+    for (const auto itype : { InteractionType::BONDS, InteractionType::VDW, InteractionType::VSITE2 })
+    {
+        const auto name = interactionTypeToString(itype);
+        ASSERT_EQ(1u, functions.count(name)) << name;
+        EXPECT_EQ(potentialToString(pd.findForcesConst(itype).potential()), functions[name]);
+    }
+    // A new force field has no problems
+    const auto &validation = j.at("gen_ff").at("validation");
+    EXPECT_TRUE(validation.at("ok").get<bool>());
+    EXPECT_TRUE(validation.at("issues").empty());
+    // No file without the option
+    std::filesystem::remove(jsonFile);
+    generate({});
+    EXPECT_FALSE(std::filesystem::exists(jsonFile));
+    EXPECT_FALSE(std::filesystem::exists("gen_ff.json"));
+}
+
 } // namespace
 
 } // namespace alexandria

@@ -186,6 +186,11 @@ namespace alexandria
          * \param[in] oenv GROMACS output environment structure
          */
         void writeHistogram(const gmx_output_env_t *oenv);
+
+        /*! \brief How many different bonds, angles etc. were extracted
+         * \return for each interaction type the number of identifiers
+         */
+        std::map<InteractionType, size_t> counts() const;
             
         /*! \brief Store the bond lengths etc. in the force field
          * \param[in]  tw  To print information to

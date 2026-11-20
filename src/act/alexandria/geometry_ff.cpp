@@ -47,14 +47,17 @@
 #include "act/basics/identifier.h"
 #include "act/basics/interactiontype.h"
 #include "act/basics/mutability.h"
+#include "act/forcefield/forcefield_json.h"
 #include "act/forcefield/forcefield_parameter.h"
 #include "act/forcefield/forcefield_parameterlist.h"
+#include "act/forcefield/forcefield_validation.h"
 #include "act/forcefield/forcefield_xml.h"
 #include "act/forcefield/particletype.h"
 #include "act/molprop/molprop.h"
 #include "act/molprop/molprop_util.h"
 #include "act/topology/actmol.h"
 #include "act/utility/communicationrecord.h"
+#include "act/utility/jsontree.h"
 #include "act/utility/memory_check.h"
 #include "gromacs/commandline/filenm.h"
 #include "gromacs/commandline/pargs.h"
@@ -160,14 +163,20 @@ int geometry_ff(int argc, char *argv[])
     std::vector<const char *> desc = {
         "geometry_ff read a series of molecules and extracts average geometries from",
         "those. First atomtypes are determined and then bond-lengths, bond-angles",
-        "and dihedral angles are extracted. The results are stored in the updated force field file (aff_out.xml).[PAR]"
+        "and dihedral angles are extracted. The results are stored in the updated force field file (aff_out.xml).[PAR]",
+        "With [TT]-json[tt] a summary is written in json format to the given",
+        "file, geometry_ff.json by default: the number of compounds that were",
+        "used, how many different bonds, angles and dihedrals were extracted,",
+        "and the force field that was made with the result of the checks of",
+        "edit_ff -validate, in the same form as edit_ff writes them."
     };
 
     std::vector<t_filenm> fnm = {
         { efXML, "-mp",  "allmols",      ffRDMULT },
         { efXML, "-ff",  "aff",          ffOPTRD },
         { efXML, "-o",   "aff_out",      ffWRITE },
-        { efDAT, "-sel", "molselect",    ffOPTRD }
+        { efDAT, "-sel", "molselect",    ffOPTRD },
+        { efJSON, "-json", "geometry_ff", ffOPTWR }
     };
 
     real                             delta_eta    = 5;
@@ -296,6 +305,23 @@ int geometry_ff(int argc, char *argv[])
     pd.updateCheckSum();
     writeForceField(opt2fn("-o", fnm.size(), fnm.data()), &pd, compress);
     bonds.writeSummary(tw);
+    const char *jsonFile = opt2fn_null("-json", fnm.size(), fnm.data());
+    if (jsonFile)
+    {
+        // What was done and the force field as it was written, for
+        // programs that show it
+        JsonTree jtree("geometry_ff");
+        jtree.addObject("compounds", static_cast<int>(actmols.size()));
+        auto extracted = JsonTree::object("extracted");
+        for (const auto &n : bonds.counts())
+        {
+            extracted.addObject(interactionTypeToString(n.first), static_cast<int>(n.second));
+        }
+        jtree.addObject(extracted);
+        jtree.addObject(forceFieldToJson(pd));
+        jtree.addObject(forceFieldIssuesToJson(validateForceField(pd)));
+        jtree.write(jsonFile, true);
+    }
     msghandler.writeDebug(memory_usage());
     return 0;
 }
