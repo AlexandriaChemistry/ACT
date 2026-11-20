@@ -595,11 +595,20 @@ one that starts child processes, so the routes and the pages stay the same.
   the server and the working directory there, and keeps them in a JSON
   file in the configuration directory of the user
   (`~/.config/act-gui/settings.json`), which is read when the interface
-  starts. Jobs are submitted from the working directory. *(Done: the tab
-  Cluster with a test of the login, module `cluster.py` of ACT-GUI.
-  Decided 2026-11-20.)* Still to add when jobs are sent: the partition and
-  the account, the largest number of nodes and the longest wall time, and
-  how ACT is loaded there (a module or a conda environment).
+  starts. Jobs are submitted from the working directory. The same file
+  says how ACT is made available in a job, which the user can choose: a
+  module (on csb `ACT`, loaded with `module load`), a file that the shell
+  reads such as the `ACTRC` of an installation, a conda environment, or
+  nothing. It also has the partitions for jobs without a GPU (on csb
+  `CLUSTER,CLUSTER-AMD`) and with one (`GPU,CLUSTER-AMD`, with
+  `--gres gpu:1`), an account, the program that starts parallel jobs and
+  the time between two questions for the state of a job. The values for
+  csb are what the form proposes. None of these is free text: each is one
+  of a list or a checked name, so that the batch script has no text of the
+  user. *(Done: the tab Cluster with a test of the login, and the function
+  that makes the batch script, module `cluster.py` of ACT-GUI. Decided
+  2026-11-20.)* The number of processes and the wall time are chosen for
+  each job.
 - *Tests.* Against small scripts that imitate `ssh`, `scp`, `sbatch`,
   `squeue` and `scancel`, so that CI needs no cluster and no login, with
   cases for an option that tries to carry a shell command, a login that
