@@ -616,6 +616,43 @@ one that starts child processes, so the routes and the pages stay the same.
 
 The progress of `train_ff` (step A4) is needed for this step.
 
+*Status of B10a.* The first job that goes to the cluster is the comparison
+of a force field with a molprop file (`train_ff -nooptimize`). What is
+there, in the modules `cluster_jobs.py`, `cluster_queue.py` and
+`cluster_api.py` of ACT-GUI:
+
+- The request for a job on the cluster is the request for the same
+  calculation on the desktop, with a name, a number of processes, a time
+  limit and a GPU or not. It goes through the same checks, and the command
+  is made by `act.build_arguments()`, as for a run on the desktop. The
+  files that the command reads are sent along under a name after their
+  option (`ff.xml`, `mp.xml`); a command that would still name a file of
+  the desktop is refused.
+- The page shows the script and the files before anything is sent. Sending
+  is one login: an archive goes to `ssh`, which unpacks it in a new
+  directory and starts `sbatch`. No `scp` or `rsync` is used.
+- What is known about a job is kept in a file on the desktop, in
+  `~/.local/share/act-gui/cluster-jobs`, with the results once they are
+  fetched, so that jobs are there when the interface starts again.
+- One login asks for the state of all jobs, not more often than the
+  setting says, and only while the page is open; the user can ask sooner,
+  but not within half a minute. The script leaves the exit status of the
+  program in a file, which tells how a job ended whatever Slurm still
+  knows about it. After a login that did not work the cluster is asked
+  again only when the user says so.
+- The results are fetched in one login and handed to the job engine, where
+  they are those of a calculation as any other: the same page shows the
+  statistics and the plots.
+- Nothing is ever removed on the cluster.
+
+Still to do: a try on csb itself (so far only the stand-ins of the tests
+were used); training (`train_ff` with optimization) as a task, with its
+progress; the name of the program on the cluster, now `alexandria`, as a
+setting for double precision builds; and results that are larger than
+fits in memory, since the archives are built and read in memory. The
+command is made with the options that the `alexandria` of the desktop
+knows, so the program on the cluster must not be older than that.
+
 **B11. Server, stage 1.** Login with the university single sign-on,
 workspaces, quotas, queue, isolation of the workers (section 8); an
 administration page; documentation for installing it.
