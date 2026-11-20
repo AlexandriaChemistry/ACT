@@ -54,6 +54,7 @@
 #include "act/forces/forcecomputer.h"
 #include "act/molprop/experiment.h"
 #include "act/molprop/molprop.h"
+#include "act/molprop/molprop_json.h"
 #include "act/molprop/molprop_sqlite3.h"
 #include "act/molprop/molprop_util.h"
 #include "act/molprop/molprop_xml.h"
@@ -62,6 +63,7 @@
 #include "act/statistics/statistics.h"
 #include "act/topology/actmol.h"
 #include "act/topology/actmol_low.h"
+#include "act/utility/jsontree.h"
 #include "act/utility/units.h"
 #include "gromacs/commandline/filenm.h"
 #include "gromacs/commandline/pargs.h"
@@ -492,7 +494,12 @@ int edit_mp(int argc, char *argv[])
         "order in all molecules; the atoms of each fragment have to match its formula; the",
         "fragments of a dimer may not be bonded to each other; and a dimer A#B may not occur",
         "as B#A as well, nor have its fragments in the order of B#A. The problems are",
-        "printed and written to the log file.[PAR]"
+        "printed and written to the log file.[PAR]",
+        "With [TT]-json[tt] a description of the molecules that are written goes to",
+        "the given file in json format, edit_mp.json by default: for each molecule",
+        "its fragments, the number of experiments and the number of values of each",
+        "property, the totals, and the result of [TT]-validate[tt] with the names of",
+        "the molecules that have problems and the messages."
 
     };
     std::vector<t_filenm> fnm =
@@ -500,7 +507,8 @@ int edit_mp(int argc, char *argv[])
         { efXML, "-mp",  "data",    ffOPTRDMULT },
         { efXML, "-o",   "allmols", ffWRITE     },
         { efXML, "-ff",  "aff",     ffOPTRD     },
-        { efDAT, "-db",  "sqlite",  ffOPTRD     }
+        { efDAT, "-db",  "sqlite",  ffOPTRD     },
+        { efJSON, "-json", "edit_mp", ffOPTWR    }
     };
     bool     compress    = false;
     real     temperature = 298.15;
@@ -585,11 +593,19 @@ int edit_mp(int argc, char *argv[])
                                  [&failed](const MolProp &mp) { return failed.count(mp.getMolname()) > 0; }),
                   mpt.end());
     }
+    // The result of the validation for the JSON output
+    JsonTree jvalidation("validation");
+    jvalidation.addBool("checked", false);
     if (validate)
     {
         // The problems are errors of the message handler, but the molecules
         // are written anyway, without the experiments that were removed
-        auto nproblem = validateMolProps(&msghandler, &mpt).nproblem;
+        std::vector<ACTRecordedMessage> messages;
+        msghandler.record(&messages, ACTStatus::Warning);
+        const auto validation = validateMolProps(&msghandler, &mpt);
+        msghandler.record(nullptr);
+        jvalidation   = molPropValidationToJson(validation, messages);
+        auto nproblem = validation.nproblem;
         printf("Validation of %zu molecules: %zu problem(s)%s\n", mpt.size(), nproblem,
                nproblem > 0 ? gmx::formatString(", see %s", msghandler.filename().c_str()).c_str() : "");
     }
@@ -603,6 +619,21 @@ int edit_mp(int argc, char *argv[])
     }
     printf("Will store %zu molprops in output file %s\n", mpt.size(), molpropout);
     MolPropWrite(molpropout, mpt, compress);
+    const char *jsonFile = opt2fn_null("-json", fnm.size(), fnm.data());
+    if (jsonFile)
+    {
+        // What was written, for programs that show it
+        JsonTree jtree("edit_mp");
+        jtree.addObject(molPropSummaryToJson(mpt));
+        JsonTree jmols = JsonTree::array("molecules");
+        for (const auto &mp : mpt)
+        {
+            jmols.addObject(molPropToJson(mp));
+        }
+        jtree.addObject(jmols);
+        jtree.addObject(jvalidation);
+        jtree.write(jsonFile, true);
+    }
     return 0;
 }
 

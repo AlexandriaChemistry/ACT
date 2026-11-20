@@ -107,6 +107,33 @@ TEST_F(MsgHandlerTest, NonVerbose)
     runTest(ACTStatus::Error);
 }
 
+// Test: Messages can be kept, for programs that report them in another
+// way than in the log file, from a level of seriousness on
+TEST(MsgHandlerRecordTest, Record)
+{
+    MsgHandler                      mh;
+    std::vector<ACTRecordedMessage> kept;
+    // Nothing is printed
+    mh.setPrintLevel(ACTStatus::Fatal);
+    mh.record(&kept, ACTStatus::Warning);
+    mh.msg(ACTStatus::Error, ACTMessage::NoInChI, "first");
+    mh.msg(ACTStatus::Warning, "second");
+    mh.msg(ACTStatus::Info, "not serious enough");
+    ASSERT_EQ(2u, kept.size());
+    EXPECT_EQ(ACTStatus::Error, kept[0].level);
+    EXPECT_EQ(ACTMessage::NoInChI, kept[0].actm);
+    EXPECT_EQ("first", kept[0].text);
+    EXPECT_EQ(ACTStatus::Warning, kept[1].level);
+    EXPECT_EQ(ACTMessage::Silent, kept[1].actm);
+    EXPECT_EQ("second", kept[1].text);
+    // No longer
+    mh.record(nullptr);
+    mh.msg(ACTStatus::Error, "after");
+    EXPECT_EQ(2u, kept.size());
+    EXPECT_STREQ("Error", actStatusName(ACTStatus::Error));
+    EXPECT_STREQ("Warning", actStatusName(ACTStatus::Warning));
+}
+
 TEST_F(MsgHandlerTest, Fatal) 
 {
     EXPECT_THROW(runTest(ACTStatus::Fatal), gmx::InvalidInputError);

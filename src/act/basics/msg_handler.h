@@ -161,6 +161,23 @@ enum class ACTStatus {
     Debug = 6
 };
 
+/*! \brief The name of a level
+ * \param[in] level The level
+ * \return the name, for instance Warning
+ */
+const char *actStatusName(ACTStatus level);
+
+//! A message that was kept, see MsgHandler::record
+struct ACTRecordedMessage
+{
+    //! How serious it is
+    ACTStatus   level;
+    //! What kind of message, Silent if none was given
+    ACTMessage  actm;
+    //! The text
+    std::string text;
+};
+
 /*! \brief Simple class to print message to a file or stdout
  * ACTStatus level can be set.
  * Messages are counted and can be summarized
@@ -190,6 +207,10 @@ class MsgHandler
         ACTMessage       last_;
         //! Warning count per type
         std::map<ACTMessage, unsigned int> wcount_;
+        //! Where messages are kept, see record()
+        std::vector<ACTRecordedMessage>   *record_      = nullptr;
+        //! The least serious level of the messages that are kept
+        ACTStatus                          recordLevel_ = ACTStatus::Warning;
         /*! \brief Print at different levels of seriousness
          * \param[in] level Seriousness
          * \param[in] actm  The message type
@@ -235,6 +256,18 @@ class MsgHandler
 
         //! \brief Reset severity level
         void resetStatus() { status_ = ACTStatus::Debug; }
+        /*! \brief Keep the messages, next to printing them, for programs
+         * that report them in another way, such as in a JSON file
+         * \param[in] record Where the messages are added, nullptr to stop.
+         *                   It has to exist as long as messages are kept.
+         * \param[in] level  The least serious level of the messages to keep
+         */
+        void record(std::vector<ACTRecordedMessage> *record,
+                    ACTStatus                        level = ACTStatus::Warning)
+        {
+            record_      = record;
+            recordLevel_ = level;
+        }
 
         /*! \brief Fatal error message, will throw a fatal error
          * \param[in] actm The message type
