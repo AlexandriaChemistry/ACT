@@ -602,6 +602,9 @@ TEST_F(EditFFTest, Json)
         run(input, { { "-json", jsonFile } }, "");
         const auto j = readJson(jsonFile);
         ASSERT_TRUE(j.contains("edit_ff"));
+        // Nothing was asked for, so nothing changed and nothing was written
+        EXPECT_FALSE(j.at("edit_ff").at("changed").get<bool>());
+        EXPECT_FALSE(j.at("edit_ff").at("written").get<bool>());
         const auto pd = read(input);
         expectForceField(j.at("edit_ff").at("forcefield"), pd);
         EXPECT_EQ(pd.checkSum(), j.at("edit_ff").at("forcefield").at("checksum").get<std::string>());
@@ -622,7 +625,10 @@ TEST_F(EditFFTest, JsonAfterChange)
                                         { "-json", jsonFile } }, "changed.xml");
     const auto pd = read(out);
     expectRealEq(3.6, acm(pd, "h_z", "chi").value());
-    const auto ff = readJson(jsonFile).at("edit_ff").at("forcefield");
+    const auto root = readJson(jsonFile).at("edit_ff");
+    EXPECT_TRUE(root.at("changed").get<bool>());
+    EXPECT_TRUE(root.at("written").get<bool>());
+    const auto &ff = root.at("forcefield");
     expectForceField(ff, pd);
     bool found = false;
     for (const auto &jfs : ff.at("interactions"))
@@ -649,6 +655,30 @@ TEST_F(EditFFTest, JsonAfterChange)
         }
     }
     EXPECT_TRUE(found);
+}
+
+// Test: A change of a type that is not in the force field changes nothing:
+// no file is written, and the JSON output says so
+TEST_F(EditFFTest, JsonNothingChanged)
+{
+    const auto jsonFile = fileManager().getTemporaryFilePath("same.json");
+    const auto output   = fileManager().getTemporaryFilePath("same.xml");
+    std::filesystem::remove(output);
+    gmx::test::CommandLine cmd;
+    cmd.append("edit_ff");
+    cmd.addOption("-ff", input_);
+    cmd.addOption("-o", output);
+    cmd.addOption("-p", "chi");
+    cmd.addOption("-a", "nosuchtype_z");
+    cmd.addOption("-val", "3.6");
+    cmd.addOption("-g", fileManager().getTemporaryFilePath("edit_ff.log"));
+    cmd.addOption("-json", jsonFile);
+    ASSERT_EQ(0, edit_ff(cmd.argc(), cmd.argv()));
+    EXPECT_FALSE(std::filesystem::exists(output));
+    const auto root = readJson(jsonFile).at("edit_ff");
+    EXPECT_FALSE(root.at("changed").get<bool>());
+    EXPECT_FALSE(root.at("written").get<bool>());
+    expectForceField(root.at("forcefield"), read(input_));
 }
 
 // Test: The problems that -validate prints are in the JSON output, with

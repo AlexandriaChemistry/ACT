@@ -927,8 +927,10 @@ int edit_ff(int argc, char*argv[])
         "given file, edit_ff.json by default, as it is after the changes that",
         "were asked for: the particle types and the interactions with their",
         "options, combination rules and parameters (value, uncertainty,",
-        "minimum, maximum, mutability), and the problems that [TT]-validate[tt]",
-        "looks for.[PAR]",
+        "minimum, maximum, mutability), the problems that [TT]-validate[tt]",
+        "looks for, whether the force field differs from the one that was",
+        "read ([TT]changed[tt]) and whether a file was written with [TT]-o[tt]",
+        "([TT]written[tt]). A force field without changes is not written.[PAR]",
         "With [TT]-validate[tt] the parameters are checked: values have to be",
         "within their bounds, the minimum must not be larger than the maximum,",
         "parameters that may not be negative must not be, and each parameter",
@@ -1173,10 +1175,13 @@ int edit_ff(int argc, char*argv[])
     {
         its[InteractionType::VDW]->removeOption("combination_rule");
     }
+    // Whether the force field differs from the one that was read
+    const std::string checkSum = forcefieldCheckSum(&pd);
+    const bool        changed  = (checkSum != readCheckSum || nRuleChanged > 0);
+    bool              written  = false;
     if (opt2bSet("-o", fnm.size(), fnm.data()))
     {
-        const std::string checkSum = forcefieldCheckSum(&pd);
-        if (checkSum == readCheckSum && !forceWrite && nRuleChanged == 0)
+        if (!changed && !forceWrite)
         {
             printf("No changes to forcefield structure, not writing a new file.");
         }
@@ -1185,14 +1190,18 @@ int edit_ff(int argc, char*argv[])
             pd.updateTimeStamp();
             pd.setCheckSum(checkSum);
             writeForceField(opt2fn("-o", fnm.size(), fnm.data()), &pd, false);
+            written = true;
         }
     }
     // After writing, such that the checksum is that of the new file
     const char *jsonFile = opt2fn_null("-json", fnm.size(), fnm.data());
     if (jsonFile)
     {
-        // The force field as it is now, for programs that show or edit it
+        // The force field as it is now, for programs that show or edit it,
+        // and whether what was asked for changed anything
         JsonTree jtree("edit_ff");
+        jtree.addBool("changed", changed);
+        jtree.addBool("written", written);
         jtree.addObject(forceFieldToJson(pd));
         jtree.addObject(forceFieldIssuesToJson(validateForceField(pd)));
         jtree.write(jsonFile, true);
