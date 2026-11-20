@@ -70,14 +70,16 @@ protected:
      * \param[in] options Command line options, an empty value for a flag
      * \param[in] vsites  File with virtual sites in this directory or with an
      *                    absolute path, none if empty
+     * \param[in] atomtypes The file with atom types in the test data
      * \return the command line for gen_ff
      */
     gmx::test::CommandLine commandLine(const std::vector<std::pair<std::string, std::string>> &options,
-                                       const std::string &vsites)
+                                       const std::string &vsites,
+                                       const std::string &atomtypes = "forcefields/genff-atomtypes.csv")
     {
         gmx::test::CommandLine cmd;
         cmd.append("gen_ff");
-        cmd.addOption("-f", fileManager().getInputFilePath("forcefields/genff-atomtypes.csv"));
+        cmd.addOption("-f", fileManager().getInputFilePath(atomtypes));
         if (!vsites.empty())
         {
             cmd.addOption("-vs", vsites[0] == '/' ? vsites : fileManager().getInputFilePath(vsites));
@@ -317,6 +319,35 @@ TEST_F(GenFFTest, VirtualSiteErrors)
     }
     auto cmd = commandLine({ { "-o", fileManager().getTemporaryFilePath("generated.xml") } }, vsfile);
     EXPECT_THROW(gen_ff(cmd.argc(), cmd.argv()), gmx::InvalidInputError);
+}
+
+// Test: A force field with shells is described as polarizable in the JSON
+// output, as it is when the file is read, and one without is not
+TEST_F(GenFFTest, JsonPolarizable)
+{
+    for (const auto &input : std::vector<std::pair<std::string, bool>>{
+             { "forcefields/genff-atomtypes-shells.csv", true },
+             { "forcefields/genff-atomtypes.csv", false } })
+    {
+        SCOPED_TRACE(input.first);
+        const auto output   = fileManager().getTemporaryFilePath("polarizable.xml");
+        const auto jsonFile = fileManager().getTemporaryFilePath("polarizable.json");
+        auto cmd = commandLine({ { "-o", output }, { "-json", jsonFile } }, "", input.first);
+        ASSERT_EQ(0, gen_ff(cmd.argc(), cmd.argv()));
+        ForceField pd;
+        readForceField(output, &pd);
+        EXPECT_EQ(input.second, pd.polarizable());
+        std::ifstream in(jsonFile);
+        ASSERT_TRUE(in.good());
+        const auto ff = nlohmann::json::parse(in).at("gen_ff").at("forcefield");
+        EXPECT_EQ(input.second, ff.at("polarizable").get<bool>());
+        if (input.second)
+        {
+            // An atom with a shell is a point charge, the shell is not
+            ASSERT_TRUE(pd.hasParticleType("c3_s"));
+            EXPECT_EQ("c3_s", pd.findParticleType("c3")->optionValue("poltype"));
+        }
+    }
 }
 
 /*! \brief Copy the atom types of the tests with other bounds for chi of fluorine

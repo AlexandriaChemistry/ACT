@@ -782,6 +782,8 @@ int gen_ff(int argc, char*argv[])
     {
         add_symm_charges(&pd);
     }
+    // As when a force field is read, for the description in JSON
+    pd.checkForPolarizability();
     pd.updateTimeStamp();
     pd.updateCheckSum();
     writeForceField(opt2fn("-o", fnm.size(), fnm.data()), &pd, false);
