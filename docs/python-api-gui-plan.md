@@ -420,8 +420,8 @@ test and one small calculation as package test.
 
 ### Steps
 
-*Status.* Steps B0 to B8 are done in the repository ACT-GUI, with what is
-listed at the end of this paragraph still open. Some things
+*Status.* Steps B0 to B10 are done in the repository ACT-GUI, with what is
+listed at the end of this status still open. Some things
 were done differently from the description below. The plots on the page are
 drawn by a small SVG module taken from the mockup, not by uPlot; that can
 change when a plot needs more than lines. The fonts are those of the
@@ -452,19 +452,49 @@ of `actgui` that fixes the electronegativity of atoms with one bond after
 `geometry_ff` with SQE is a second job (`edit_ff -p chi -mut Fixed`) that
 the page starts. One parameter is changed at a time. Uploaded XML files may
 have the document type that ACT writes, and no other.
-Still open in B7 and B8: the files of the user with virtual sites and with
-fixed parameters that `actgui` could read (the first comes with B9), the
-comparison of two force fields, changes of parameters of particle types, and
-`geometry_ff` with a selection of compounds.
+Still open in B7 and B8: the file of the user with fixed parameters that
+`actgui` could read, reading a file with virtual sites of the user (they
+are made by point and click and can be saved), the comparison of two force
+fields, changes of parameters of particle types, and `geometry_ff` with a
+selection of compounds.
 
-Of the molprop workspace (B10) the first part is done: a file is opened and
+Virtual sites by point and click (B9) are done, without layer 2: the page
+computes the position of a site itself, with the formulas of
+`vsitehandler.cpp`, for the preview only. The kinds are VSITE2, VSITE2FD,
+VSITE3, VSITE3S, VSITE3FD, VSITE3OUT, VSITE3OUTS, VSITE4, VSITE4S and
+VSITE4S3. A definition is on the bond types of the picked atoms and goes to
+`gen_ff -vs` with the other choices when a force field is generated; the
+server checks it against the atom types that are selected. One thing is
+different from the description of the step. ACT gives a molecule the atom
+types of the force field it is read with, and the specific ones (such as
+`ow` and `hw` for water) only when that force field has the bonds between
+them. A new force field has no bonds before `geometry_ff`, and
+`gentop -allowmissing` is an option without effect (nothing reads it since
+the code for reading compounds was moved to `compound_reader.cpp`). So the
+molecule is read with the force field of the workspace or the default one,
+the page proposes for each atom a type that a new force field can have, and
+the user chooses another type of the same element where needed. If `gentop`
+could type a molecule for a force field without bonded parameters, the
+choice would not be needed.
+
+Of the molprop workspace (B10) two parts are done. A file is opened and
 the page shows the compounds, the number of values of each property and
-the result of `edit_mp -validate`. The evaluation of a force field with
-`train_ff -nooptimize`, the correlation plots and the histograms are still
-to do. Found on the way: `edit_mp -ff` stops with "No such QM property
-dipole" on a file with dimers, so the page does not give it a force field;
-and `edit_mp` always writes its output file (`allmols.xml`), which is a
-second copy of a large file in the directory of the job.
+the result of `edit_mp -validate`. A force field is compared with the data
+of the file by `train_ff -nooptimize` (task `evaluate`): the user chooses
+the properties, the server writes a selection with all compounds for
+training from the names that `edit_mp` read, and the page shows the
+statistics and plots the values of the force field against the reference
+values from the files that `train_ff` writes for each property. The result
+of `train_ff` in JSON has the atoms of every compound with their forces
+and every data point; the server keeps only the statistics, the compounds
+and a few outliers for the page. Still to do in B10: a choice of the
+compounds and of the data sets for training and testing, and the
+histograms of the energies of a compound. Found on the way: `edit_mp -ff`
+stops with "No such QM property dipole" on a file with dimers, so the page
+does not give it a force field; `edit_mp` always writes its output file
+(`allmols.xml`), which is a second copy of a large file in the directory
+of the job; and `train_ff` without a selection file uses no compound at
+all and stops with "No molecules to train on".
 
 Each step ends with tests of the routes (pytest), of the JavaScript modules
 (the test runner built into Node.js, which needs no build step) and one
