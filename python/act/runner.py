@@ -66,7 +66,9 @@ class Config:
         ## The alexandria program: a path, a name that is looked up in the
         ## PATH, or a list of words such as a container command followed by
         ## the name of the program. None means: ACT_ALEXANDRIA if it is
-        ## set, otherwise alexandria from the PATH.
+        ## set, otherwise the program that was installed together with this
+        ## package, otherwise alexandria, or alexandria_d of a double
+        ## precision build, from the PATH.
         self.executable: Union[None, PathLike, Sequence[str]] = None
         ## The launcher for several processes, a name or a list of words.
         ## None means: ACT_MPIEXEC if it is set, otherwise mpirun, mpiexec
@@ -86,7 +88,8 @@ class Config:
         """
         choice = self.executable
         if choice is None:
-            choice = os.environ.get("ACT_ALEXANDRIA") or "alexandria"
+            choice = (os.environ.get("ACT_ALEXANDRIA") or installed_program()
+                      or _program_in_path())
         words = _as_words(choice)
         found = shutil.which(words[0])
         if found is None:
@@ -125,6 +128,50 @@ class Config:
         if found is None:
             raise ActNotFoundError("Cannot find the launcher '%s'" % words[0])
         return [found] + words[1:] + [self.mpi_processes_flag, str(processes)]
+
+
+## The names of the alexandria program: a double precision build installs
+## alexandria_d, such that it can be next to a single precision build
+PROGRAM_NAMES = ("alexandria", "alexandria_d")
+
+
+def installed_program(package_dir: Optional[PathLike] = None) -> Optional[str]:
+    """!
+    @brief The alexandria program that was installed together with this
+    package, which is the one whose options the package knows best.
+    @param package_dir The directory of the package, by default that of
+    this file.
+    @return The path of the program. None if the package is used from the
+    source code, was installed on its own, or if the program is gone.
+
+    The installation of ACT writes the module _installed with the path of
+    the program relative to the package, such that the installation can be
+    moved as a whole.
+    """
+    try:
+        from . import _installed  # pylint: disable=import-outside-toplevel
+    except ImportError:
+        return None
+    relative = getattr(_installed, "EXECUTABLE", None)
+    if not isinstance(relative, str) or not relative:
+        return None
+    if package_dir is None:
+        package_dir = os.path.dirname(os.path.abspath(__file__))
+    path = os.path.normpath(os.path.join(os.fspath(package_dir), relative))
+    if os.path.isfile(path) and os.access(path, os.X_OK):
+        return path
+    return None
+
+
+def _program_in_path() -> str:
+    """!
+    @brief The name under which the alexandria program is in the PATH.
+    @return The first of PROGRAM_NAMES that is found, alexandria if none is.
+    """
+    for name in PROGRAM_NAMES:
+        if shutil.which(name):
+            return name
+    return PROGRAM_NAMES[0]
 
 
 def _as_words(choice: Union[PathLike, Sequence[str]]) -> List[str]:

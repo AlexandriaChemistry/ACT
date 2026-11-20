@@ -51,13 +51,27 @@ ACTLIB=${ACTPREFIX}/lib
 PKG_CONFIG_PATH=${ACTLDLIB}/pkgconfig${PKG_CONFIG_PATH:+:}${PKG_CONFIG_PATH}
 PATH=${ACTBIN}${PATH:+:}${PATH}
 
-PYTHONADD=${ACTPREFIX}/@CMAKE_INSTALL_PYTHON_LIBDIR@/act
-
-if [ -z "${PYTHONPATH}" ]; then
-  PYTHONPATH=${PYTHONADD}
-else
-  PYTHONPATH=${PYTHONPATH}:${PYTHONADD}
+# The Python modules of ACT-utilities, and the directory with the Python
+# package act of ACT. The latter only if this prefix has no Python of its
+# own: the Python of, for instance, a conda environment finds its own
+# packages, and its site-packages should not be forced upon another Python.
+ACTPYTHON=${ACTPREFIX}/@CMAKE_INSTALL_PYTHON_LIBDIR@
+PYTHONADD=${ACTPYTHON}/act_utilities
+if [ ! -x "${ACTPREFIX}/bin/python3" ] && [ ! -x "${ACTPREFIX}/bin/python" ]; then
+  PYTHONADD=${PYTHONADD}:${ACTPYTHON}
 fi
+
+# remove the ACT part of PYTHONPATH, also that of versions that had the
+# modules in site-packages/act
+tmppath=""
+for i in $PYTHONPATH; do
+  if test "$i" != "${ACTPYTHON}/act" && test "$i" != "${ACTPYTHON}/act_utilities" &&
+     test "$i" != "${ACTPYTHON}"; then
+    tmppath="${tmppath}${tmppath:+:}${i}"
+  fi
+done
+PYTHONPATH=${tmppath}${tmppath:+:}${PYTHONADD}
+unset tmppath
 #debian/ubuntu needs a : at the end
 MANPATH=${ACTMAN}:${MANPATH}
 

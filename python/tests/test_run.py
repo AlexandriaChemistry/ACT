@@ -370,6 +370,141 @@ class LegacyTest(unittest.TestCase):
         with self.assertRaises(AttributeError):
             act.NoSuchName  # pylint: disable=pointless-statement
 
+    def test_class_comes_from_act_legacy(self):
+        """!
+        @brief act.legacy takes the class from the module act_legacy of
+        ACT-utilities.
+        """
+        saved = {name: sys.modules.pop(name, None) for name in ("act.legacy", "act_legacy")}
+        had_attribute = getattr(act, "legacy", None)
+        with tempfile.TemporaryDirectory() as tmp:
+            Path(tmp, "act_legacy.py").write_text(
+                "class ACT:\n    marker = 'stand-in'\n"
+                "class Alg:\n    pass\nclass Target:\n    pass\n")
+            sys.path.insert(0, tmp)
+            try:
+                import importlib  # pylint: disable=import-outside-toplevel
+                legacy = importlib.import_module("act.legacy")
+                self.assertEqual("stand-in", legacy.ACT.marker)
+                self.assertTrue(inspect.isclass(legacy.Alg))
+                self.assertTrue(inspect.isclass(legacy.Target))
+            finally:
+                sys.path.remove(tmp)
+                for name, module in saved.items():
+                    sys.modules.pop(name, None)
+                    if module is not None:
+                        sys.modules[name] = module
+                if had_attribute is None:
+                    if "legacy" in vars(act):
+                        delattr(act, "legacy")
+                else:
+                    setattr(act, "legacy", had_attribute)
+
+
+class ProgramLookupTest(unittest.TestCase):
+    """!
+    @brief Which alexandria program is run when none is chosen.
+    """
+
+    def setUp(self):
+        """!
+        @brief No choice in the settings or in the environment, and a
+        directory for stand-in programs.
+        """
+        self._executable = act.config.executable
+        act.config.executable = None
+        self._environment = {name: os.environ.get(name) for name in ("ACT_ALEXANDRIA", "PATH")}
+        os.environ.pop("ACT_ALEXANDRIA", None)
+        self._installed = sys.modules.pop("act._installed", None)
+        self._tmp = tempfile.TemporaryDirectory()
+        self.dir = Path(os.path.realpath(self._tmp.name))
+
+    def tearDown(self):
+        """!
+        @brief Restore the settings and the environment.
+        """
+        act.config.executable = self._executable
+        for name, value in self._environment.items():
+            if value is None:
+                os.environ.pop(name, None)
+            else:
+                os.environ[name] = value
+        sys.modules.pop("act._installed", None)
+        if self._installed is not None:
+            sys.modules["act._installed"] = self._installed
+        if "_installed" in vars(act) and self._installed is None:
+            delattr(act, "_installed")
+        self._tmp.cleanup()
+
+    def program(self, name: str) -> Path:
+        """!
+        @brief Make a stand-in program.
+        @param name The path of the program relative to the directory.
+        @return The path of the program.
+        """
+        path = self.dir / name
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text("#!/bin/sh\nexit 0\n")
+        path.chmod(0o755)
+        return path
+
+    def pretend_installed(self, relative: str):
+        """!
+        @brief Pretend that the installation wrote the module _installed.
+        @param relative The path of the program relative to the package.
+        """
+        import types  # pylint: disable=import-outside-toplevel
+        module = types.ModuleType("act._installed")
+        module.EXECUTABLE = relative
+        sys.modules["act._installed"] = module
+
+    def test_double_precision_name(self):
+        """!
+        @brief alexandria_d is used if it is the only one in the PATH.
+        """
+        if self._installed is not None:
+            self.skipTest("The package was installed with a program")
+        program = self.program("bin/alexandria_d")
+        os.environ["PATH"] = str(program.parent)
+        self.assertEqual([str(program)], act.config.executable_words())
+        # The single precision program goes first
+        single = self.program("bin/alexandria")
+        self.assertEqual([str(single)], act.config.executable_words())
+
+    def test_program_of_the_installation(self):
+        """!
+        @brief The program that was installed with the package is found
+        relative to the package, and only if it is there.
+        """
+        package = self.dir / "lib" / "site-packages" / "act"
+        package.mkdir(parents=True)
+        self.pretend_installed("../../../bin/alexandria")
+        self.assertIsNone(act.runner.installed_program(package))
+        program = self.program("bin/alexandria")
+        self.assertEqual(str(program), act.runner.installed_program(package))
+
+    def test_no_installation(self):
+        """!
+        @brief Without the module of the installation there is no such
+        program, and an empty or wrong module is ignored.
+        """
+        if self._installed is None:
+            self.assertIsNone(act.runner.installed_program(self.dir))
+        self.pretend_installed("")
+        self.assertIsNone(act.runner.installed_program(self.dir))
+        self.pretend_installed("nothing-here")
+        self.assertIsNone(act.runner.installed_program(self.dir))
+
+    def test_environment_goes_first(self):
+        """!
+        @brief ACT_ALEXANDRIA goes before the PATH.
+        """
+        self.program("bin/alexandria")
+        other = self.program("other/my-alexandria")
+        os.environ["PATH"] = str(self.dir / "bin")
+        os.environ["ACT_ALEXANDRIA"] = str(other)
+        self.assertEqual([str(other)], act.config.executable_words())
+
 
 if __name__ == "__main__":
     unittest.main()
