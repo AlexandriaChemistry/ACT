@@ -11,4 +11,5 @@ User Manual
    performance
    simulation
    properties
-
+   python
+   gui
