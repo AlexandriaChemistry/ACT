@@ -685,6 +685,16 @@ void AllBondeds::extractGeometries(MsgHandler           *msghandler,
     }
 }
 
+std::map<InteractionType, size_t> AllBondeds::counts() const
+{
+    std::map<InteractionType, size_t> n;
+    for (const auto &bb : bondeds_)
+    {
+        n[bb.first] = bb.second.size();
+    }
+    return n;
+}
+
 void AllBondeds::writeSummary(gmx::TextWriter *tw)
 {
     for(auto &bb : bondeds_)

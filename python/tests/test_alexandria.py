@@ -183,6 +183,33 @@ class AlexandriaTest(unittest.TestCase):
             with act.commands.edit_ff(ff=written, json=True) as again:
                 self.assertAlmostEqual(new, chi(again.data, "h_z")["value"], places=5)
 
+    def test_generated_force_field_as_json(self):
+        """!
+        @brief gen_ff describes the force field it makes, and geometry_ff
+        the one it fills with the geometries of a molprop file.
+        """
+        atomtypes = self.data / "forcefields" / "genff-atomtypes.csv"
+        with act.commands.gen_ff(f=atomtypes, o=True, json=True) as res:
+            self.assertTrue(res.file("o").is_file())
+            described = res.data["forcefield"]
+            names = [ptype["identifier"] for ptype in described["particletypes"]["types"]]
+            self.assertIn("hf", names)
+            kinds = {inter["type"]: inter["function"] for inter in described["interactions"]}
+            self.assertEqual("LJ12_6", kinds["VANDERWAALS"])
+            self.assertTrue(res.data["validation"]["ok"])
+        with act.commands.gen_ff(f=atomtypes, vdwfn="LJ14_7", o=True, json=True) as res:
+            kinds = {inter["type"]: inter["function"]
+                     for inter in res.data["forcefield"]["interactions"]}
+            self.assertEqual("LJ14_7", kinds["VANDERWAALS"])
+        with act.commands.geometry_ff(ff=self.data / "forcefields" / "ACS-g1.xml",
+                                      mp=[self.data / "molprop" / "molprop.xml"],
+                                      o=True, json=True) as res:
+            self.assertEqual(3, res.data["compounds"])
+            self.assertGreater(res.data["extracted"]["BONDS"], 3)
+            bonds = [inter for inter in res.data["forcefield"]["interactions"]
+                     if inter["type"] == "BONDS"][0]
+            self.assertEqual(res.data["extracted"]["BONDS"], len(bonds["parameterlists"]))
+
     def test_molprop_file_as_json(self):
         """!
         @brief edit_mp describes the molecules of a molprop file and says

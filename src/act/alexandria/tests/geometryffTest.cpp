@@ -32,7 +32,10 @@
 
 #include "actpre.h"
 
+#include <filesystem>
+#include <fstream>
 #include <gtest/gtest.h>
+#include <nlohmann/json.hpp>
 #include <string>
 
 #include "act/alexandria/alex_modules.h"
@@ -97,6 +100,75 @@ TEST_F(GeometryFFTest, AlcoholAndAcetone)
     EXPECT_GE(energy.maximum(), energy.value());
     // The bonds are made from the compounds only
     EXPECT_EQ(nullptr, bond(pd, "c3_b~cl_b"));
+}
+
+
+// Test: With -json the number of compounds, what was extracted and the force
+// field that was written are described in JSON, and not without that option
+TEST_F(GeometryFFTest, Json)
+{
+    const auto output   = fileManager().getTemporaryFilePath("geometry.xml");
+    const auto jsonFile = fileManager().getTemporaryFilePath("geometry.json");
+    std::filesystem::remove(jsonFile);
+    std::filesystem::remove("geometry_ff.json");
+    gmx::test::CommandLine cmd;
+    cmd.append("geometry_ff");
+    cmd.addOption("-mp", fileManager().getInputFilePath("molprop/molprop.xml"));
+    cmd.addOption("-ff", fileManager().getInputFilePath("forcefields/ACS-g1.xml"));
+    cmd.addOption("-o", output);
+    cmd.addOption("-g", fileManager().getTemporaryFilePath("geometry.log"));
+    {
+        gmx::test::CommandLine without(cmd);
+        ASSERT_EQ(0, geometry_ff(without.argc(), without.argv()));
+        EXPECT_FALSE(std::filesystem::exists("geometry_ff.json"));
+    }
+    cmd.addOption("-json", jsonFile);
+    ASSERT_EQ(0, geometry_ff(cmd.argc(), cmd.argv()));
+    ForceField pd;
+    readForceField(output, &pd);
+    std::ifstream in(jsonFile);
+    ASSERT_TRUE(in.good());
+    const auto j = nlohmann::json::parse(in);
+    ASSERT_TRUE(j.contains("geometry_ff"));
+    const auto &root = j.at("geometry_ff");
+    // Two structures of butanol and one of acetone
+    EXPECT_EQ(3, root.at("compounds").get<int>());
+    const auto &extracted = root.at("extracted");
+    ASSERT_TRUE(extracted.is_object());
+    const auto bondName = interactionTypeToString(InteractionType::BONDS);
+    ASSERT_TRUE(extracted.contains(bondName));
+    const auto nbonds = pd.findForcesConst(InteractionType::BONDS).parametersConst().size();
+    EXPECT_EQ(nbonds, extracted.at(bondName).get<size_t>());
+    // The force field is the one of the file
+    const auto &ff = root.at("forcefield");
+    EXPECT_EQ(pd.checkSum(), ff.at("checksum").get<std::string>());
+    bool found = false;
+    for (const auto &jfs : ff.at("interactions"))
+    {
+        if (jfs.at("type").get<std::string>() != bondName)
+        {
+            continue;
+        }
+        EXPECT_EQ(nbonds, jfs.at("parameterlists").size());
+        for (const auto &jlist : jfs.at("parameterlists"))
+        {
+            if (jlist.at("identifier").get<std::string>() != "c3_b~h_b")
+            {
+                continue;
+            }
+            for (const auto &jp : jlist.at("parameters"))
+            {
+                if (jp.at("type").get<std::string>() == "bondlength")
+                {
+                    found = true;
+                    EXPECT_EQ(24u, jp.at("ntrain").get<unsigned int>());
+                    EXPECT_NEAR(109.4, jp.at("value").get<double>(), 0.05);
+                }
+            }
+        }
+    }
+    EXPECT_TRUE(found);
+    EXPECT_TRUE(root.at("validation").at("issues").is_array());
 }
 
 } // namespace
