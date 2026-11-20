@@ -109,6 +109,18 @@ jobs:
           mpirun --oversubscribe -np 4 ./bin/utility-mpi-test
           mpirun --oversubscribe -np 4 ./bin/forcefield-mpi-test
           mpirun --oversubscribe -np 4 ./bin/molprop-mpi-test
+      - name: Test the Python interface
+        timeout-minutes: 10
+        shell: bash -el {0}
+        run: |
+          source ${{ github.workspace }}/../tools/bin/ACTRC
+          # The package act from the source code with the program of this
+          # build, and the installation of the package in the build tree
+          cd ${{ github.workspace }}/build
+          ctest -L PythonTest --output-on-failure
+          # The installed package runs the installed program
+          cd ${{ github.workspace }}/..
+          python -c "import os, act; words = act.config.executable_words(); print(act.__file__, words); assert os.path.basename(words[0]) == 'alexandria_d', words; assert 'minimize' in act.commands.available()"
       - name: Test the OpenMM interface
         shell: bash -el {0}
         run: |
