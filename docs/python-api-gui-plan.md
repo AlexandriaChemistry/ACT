@@ -590,10 +590,16 @@ one that starts child processes, so the routes and the pages stay the same.
   step A1, numbers within limits, and names of directories and files that
   the interface made itself. Every word is quoted for the shell, and no
   text of the user enters the command or the script.
-- *Settings per user.* The name of the host as in the configuration of
-  `ssh`, the directory on the cluster, the partition and the account, the
-  largest number of nodes and the longest wall time, and how ACT is loaded
-  there (a module or a conda environment).
+- *Settings per user.* The interface asks for the name of the server (a
+  host name or a name from the configuration of `ssh`), the user name on
+  the server and the working directory there, and keeps them in a JSON
+  file in the configuration directory of the user
+  (`~/.config/act-gui/settings.json`), which is read when the interface
+  starts. Jobs are submitted from the working directory. *(Done: the tab
+  Cluster with a test of the login, module `cluster.py` of ACT-GUI.
+  Decided 2026-11-20.)* Still to add when jobs are sent: the partition and
+  the account, the largest number of nodes and the longest wall time, and
+  how ACT is loaded there (a module or a conda environment).
 - *Tests.* Against small scripts that imitate `ssh`, `scp`, `sbatch`,
   `squeue` and `scancel`, so that CI needs no cluster and no login, with
   cases for an option that tries to carry a shell command, a login that
