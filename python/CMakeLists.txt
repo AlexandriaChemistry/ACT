@@ -12,11 +12,35 @@
 # unittest module, such that they run with any Python 3.9 or newer without
 # other packages; pytest runs them as well.
 #
-# The package is not installed yet: the directory site-packages/act is where
-# ACT-utilities puts its modules, and it adds that directory to the path of
-# Python, which would make the modules of this package importable under
-# their bare names (commands, options, ...) as well. See
-# docs/python-api-gui-plan.md.
+# The package is installed in site-packages/act of the Python that CMake
+# found. ACT-utilities, which had its modules there until version 1.9b, has
+# them in site-packages/act_utilities now. A build for a package manager that
+# puts the Python code in a package of its own can switch the installation
+# off.
+option(ACT_INSTALL_PYTHON_PACKAGE "Install the Python package act, the interface to the alexandria program" ON)
+
+if(ACT_INSTALL_PYTHON_PACKAGE)
+    set(ACT_PYTHON_PACKAGE_DIR ${CMAKE_INSTALL_PYTHON_LIBDIR}/act)
+    file(GLOB ACT_PYTHON_PACKAGE_FILES CONFIGURE_DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/act/*.py)
+    install(FILES ${ACT_PYTHON_PACKAGE_FILES}
+            DESTINATION ${ACT_PYTHON_PACKAGE_DIR} COMPONENT python)
+    # Where the program is, relative to the package, such that the package
+    # runs the alexandria it was installed with, and the installation can
+    # be moved as a whole.
+    file(RELATIVE_PATH ACT_PYTHON_TO_BINDIR
+         ${CMAKE_INSTALL_PREFIX}/${ACT_PYTHON_PACKAGE_DIR}
+         ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_BINDIR})
+    file(GENERATE OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/_installed.py
+         CONTENT "\"\"\"!
+@file
+@brief Written by the installation of ACT: where the program is.
+\"\"\"
+## The alexandria program, relative to the directory of this package
+EXECUTABLE = \"${ACT_PYTHON_TO_BINDIR}/$<TARGET_FILE_NAME:alexandria>\"
+")
+    install(FILES ${CMAKE_CURRENT_BINARY_DIR}/_installed.py
+            DESTINATION ${ACT_PYTHON_PACKAGE_DIR} COMPONENT python)
+endif()
 
 if(BUILD_TESTING AND Python3_Interpreter_FOUND)
     add_test(NAME PythonInterfaceTests
@@ -30,4 +54,20 @@ if(BUILD_TESTING AND Python3_Interpreter_FOUND)
         ENVIRONMENT "ACT_ALEXANDRIA=$<TARGET_FILE:alexandria>;ACT_TESTDATA=${CMAKE_SOURCE_DIR}/src/act/testdata"
         LABELS "PythonTest"
         TIMEOUT 300)
+    if(ACT_INSTALL_PYTHON_PACKAGE)
+        # Installs the package in a directory of the build tree and imports
+        # it from there
+        add_test(NAME PythonInstallTest
+                 COMMAND ${CMAKE_COMMAND}
+                         -DACT_BINARY_DIR=${CMAKE_BINARY_DIR}
+                         -DACT_PYTHON=${Python3_EXECUTABLE}
+                         -DACT_SITE_DIR=${CMAKE_INSTALL_PYTHON_LIBDIR}
+                         -DACT_BIN_DIR=${CMAKE_INSTALL_BINDIR}
+                         -DACT_PROGRAM=$<TARGET_FILE_NAME:alexandria>
+                         -DACT_CHECK=${CMAKE_CURRENT_SOURCE_DIR}/tests/check_installed.py
+                         -P ${CMAKE_CURRENT_SOURCE_DIR}/tests/install_test.cmake)
+        set_tests_properties(PythonInstallTest PROPERTIES
+            LABELS "PythonTest"
+            TIMEOUT 120)
+    endif()
 endif()

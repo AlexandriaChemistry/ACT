@@ -116,7 +116,9 @@ The Python modules and scripts of ACT, for instance *coords2molprop*, *gauss2mol
   cmake -S ACT-utilities -B ACT-utilities/build -DCMAKE_INSTALL_PREFIX=<prefix>
   cmake --install ACT-utilities/build
 
-The modules go to *<prefix>/lib/pythonX.Y/site-packages/act* and the scripts to *<prefix>/bin*. A Python that uses this site-packages, such as that of a conda environment, finds the modules by itself; otherwise *source <prefix>/bin/ACTRC* adds them to *PYTHONPATH*, which *cmake* also looks at.
+The modules go to *<prefix>/lib/pythonX.Y/site-packages/act_utilities* and the scripts to *<prefix>/bin*. A Python that uses this site-packages, such as that of a conda environment, finds the modules by itself; otherwise *source <prefix>/bin/ACTRC* adds them to *PYTHONPATH*, which *cmake* also looks at.
+
+Until version 1.9b the modules were in *site-packages/act*. That directory now holds the Python package *act* of ACT, with which the *alexandria* program is run from Python (*import act*), and which ACT installs itself. If *cmake* reports an ACT-utilities that is too old, install the current one into the same prefix as before: that removes the old files. The class *ACT* of the earlier module *act.py* is available as *act.legacy.ACT*.
 
 .. _ACT-utilities: https://github.com/AlexandriaChemistry/ACT-utilities
 .. _Yml: https://github.com/dspoel/ACT/blob/main/ACT.yml

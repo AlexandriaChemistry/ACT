@@ -13,12 +13,25 @@
 # them, either from its own site-packages, for instance in a conda
 # environment, or from the installation prefix of ACT, where ACTRC adds them
 # to PYTHONPATH.
+#
+# The modules are in site-packages/act_utilities. Until ACT-utilities 1.9b
+# they were in site-packages/act, which is now the directory of the Python
+# package act of ACT (see python/CMakeLists.txt): such an installation has to
+# be updated, since its module act.py would hide the package.
 
 if(NOT Python3_Interpreter_FOUND)
     message(FATAL_ERROR "ACT needs Python 3 with the modules of ACT-utilities, but no Python 3 was found")
 endif()
 
-set(_act_utilities_path "${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_PYTHON_LIBDIR}/act")
+set(_act_utilities_site "${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_PYTHON_LIBDIR}")
+set(_act_utilities_path "${_act_utilities_site}/act_utilities")
+set(_act_utilities_update
+    "Update ACT-utilities, either with conda:\n"
+    "  conda install -c conda-forge act-utilities\n"
+    "or from source, into the same prefix as before, which also removes the old files:\n"
+    "  git clone https://github.com/AlexandriaChemistry/ACT-utilities.git\n"
+    "  cmake -S ACT-utilities -B ACT-utilities/build -DCMAKE_INSTALL_PREFIX=<prefix>\n"
+    "  cmake --install ACT-utilities/build\n")
 if(DEFINED ENV{PYTHONPATH} AND NOT "$ENV{PYTHONPATH}" STREQUAL "")
     string(APPEND _act_utilities_path ":$ENV{PYTHONPATH}")
 endif()
@@ -31,7 +44,7 @@ execute_process(
     OUTPUT_STRIP_TRAILING_WHITESPACE)
 if(NOT _act_utilities_result EQUAL 0)
     # ACT-utilities installed for another version of Python?
-    file(GLOB _act_utilities_other "${CMAKE_INSTALL_PREFIX}/lib/python*/site-packages/act/actutils.py")
+    file(GLOB _act_utilities_other "${CMAKE_INSTALL_PREFIX}/lib/python*/site-packages/act_utilities/actutils.py")
     if(_act_utilities_other)
         list(GET _act_utilities_other 0 _act_utilities_other)
         message(FATAL_ERROR
@@ -51,6 +64,20 @@ if(NOT _act_utilities_result EQUAL 0)
         "  cmake --install ACT-utilities/build\n")
 endif()
 get_filename_component(_act_utilities_dir "${_act_utilities_file}" DIRECTORY)
+# An installation from before the modules moved to site-packages/act_utilities:
+# it has the module act.py, which got the name act_legacy.py
+if(EXISTS "${_act_utilities_dir}/act.py" AND NOT EXISTS "${_act_utilities_dir}/act_legacy.py")
+    message(FATAL_ERROR
+        "The ACT-utilities in ${_act_utilities_dir} is too old for this version of ACT: "
+        "its module act.py has the name of the Python package act of ACT and would "
+        "hide it.\n" ${_act_utilities_update})
+endif()
+# Files of the old layout that are left where the package act is installed
+if(EXISTS "${_act_utilities_site}/act/actutils.py" OR EXISTS "${_act_utilities_site}/act.pth")
+    message(FATAL_ERROR
+        "There are files of an earlier ACT-utilities, version 1.9b or older, in ${_act_utilities_site}/act, "
+        "where the Python package act of ACT is installed.\n" ${_act_utilities_update})
+endif()
 message(STATUS "Found the Python modules of ACT-utilities in ${_act_utilities_dir}")
 
 # The data files of ACT-utilities, which alexandria reads as well, such as

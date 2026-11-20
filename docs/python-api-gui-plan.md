@@ -39,6 +39,7 @@ the molprop screens.
 | Long jobs | The server can send them to Slurm on csb for the local users (step B11) | `train_ff -nooptimize` on large molprop files and long simulations do not belong on the web server. |
 | Login for stage 1 | The university single sign-on, through OpenID Connect | The same identity can later own the jobs on csb. Single sign-on for csb itself is a separate issue (section 11). |
 | Account for jobs on csb | The service account `act-user`, for now | Jobs under the user's own csb account need single sign-on on csb. The name of the account is a setting of the server. |
+| Where the Python package is installed | `site-packages/act`, by ACT. ACT-utilities moves its modules from that directory to `site-packages/act_utilities`, with the file `act_utilities.pth`, and its module `act.py` becomes `act_legacy.py`. Installing ACT-utilities removes the files of the earlier layout; the CMake files of ACT refuse an ACT-utilities with the earlier layout. | A module `act.py` on the path hides the package, and a `.pth` file pointing into the package makes its modules importable under their bare names (`commands`, `options`, `errors`). |
 | Where the server runs | On a machine connected to the csb cluster: it can call `sbatch` and shares a file system with the compute nodes | The Slurm back end needs no SSH connection and can read the progress of a job from its directory. |
 
 ## 2. What exists today
@@ -177,10 +178,11 @@ The API has to live in ACT because it must match the C++ code of the same
 commit and is tested in the same CI. The interface gets its own repository,
 like plotXVG, because its tools and tests are different.
 
-The new package takes the name `act`. Step A4 moves the class `ACT` of
-ACT-utilities to `act.legacy` unchanged, with a deprecation warning, and
-ACT-utilities stops installing its own `act.py` in the same release, so that
-the two packages never install the same file.
+The new package takes the name `act`. The class `ACT` of ACT-utilities is
+available as `act.legacy.ACT`, and as `act.ACT` with a deprecation warning.
+The class itself stays in ACT-utilities, whose module `act.py` got the name
+`act_legacy.py` and whose modules moved to `site-packages/act_utilities`, so
+that the two packages never install the same file (section 1).
 
 ## 5. Part A: the Python API
 
@@ -282,8 +284,16 @@ runs.
 
 *Still to do in A4:* result classes with named fields (`res.rmsd`,
 `modes.frequencies`) once the JSON of all tools has its final form; progress
-of `train_ff`; tests for the remaining subcommands; the installation of the
-package (section 11, question 1).
+of `train_ff`; tests for the remaining subcommands.
+
+The package is installed with ACT (`python/CMakeLists.txt`, component
+`python`), into `site-packages/act` of the Python that CMake found. The
+installation writes where the program is relative to the package, so that
+the package runs the `alexandria` it was installed with unless
+`ACT_ALEXANDRIA` or `act.config.executable` say otherwise. ACTRC adds the
+package to `PYTHONPATH` when the prefix has no Python of its own. The test
+`PythonInstallTest` installs the package in the build tree and imports it
+from there.
 
 After A1 to A4 the interface can be built. Layer 2 can proceed in parallel.
 
@@ -625,35 +635,29 @@ Milestones:
 
 ## 11. Open questions
 
-The questions on the name of the package, the repository, the default force
-field, Slurm, the login, the account for jobs on csb and the place of the
-server are answered; the answers are in section 1. What remains:
+The questions on the name of the package, where it is installed, the
+repository, the default force field, Slurm, the login, the account for jobs
+on csb and the place of the server are answered; the answers are in
+section 1. What remains:
 
-1. **Where the Python package is installed.** ACT-utilities installs its
-   modules as loose files in `site-packages/act` and adds that directory to
-   the path of Python with `act.pth`. The package `act` belongs in the same
-   directory. `import act` then gives the new package, but the modules of
-   the package would also be importable under their bare names (`commands`,
-   `options`, `errors`), which can hide modules of other packages. Proposal:
-   ACT-utilities moves its files to `site-packages/act_utilities`, with its
-   `.pth` file, the check in the CMake files of ACT and ACTRC following. That
-   is a change in ACT-utilities and in both conda recipes, so the package is
-   not installed yet: it is used from the source tree and tested by ctest.
-   The old class is reachable as `act.legacy.ACT` when ACT-utilities is
-   installed, and `from act import ACT` still works with a warning.
-2. **Single sign-on on csb (separate issue).** For jobs under the user's own
+1. **Single sign-on on csb (separate issue).** For jobs under the user's own
    csb account, the identity of the university login must map to a csb
    account, and the server must be allowed to submit for that user. Until
    that exists the jobs run as `act-user` (step B11).
-3. **Precision.** The conda packages are single precision. Proposal: the
+2. **Precision.** The conda packages are single precision. Proposal: the
    Python module follows the build it belongs to, and the first release is
    single precision only.
-4. **GPU.** Small molecules do not gain from the GPU. Proposal: the
+3. **GPU.** Small molecules do not gain from the GPU. Proposal: the
    interactive calculations run on the CPU; `train_ff -nooptimize` on large
    molprop files may use the GPU as the program does now, also on csb.
-5. **Which wavenumber direction for spectra?** The mockup plots increasing
+4. **Which wavenumber direction for spectra?** The mockup plots increasing
    wavenumbers, as the xvg file of `nma` and plotXVG do. Spectroscopists
    often plot them decreasing.
 
-None of these blocks the work on the steps A1 to A8 and B0 to B10. The
-first has to be answered before a release (steps A9 and B12).
+None of these blocks the work on the steps A1 to A8 and B0 to B10.
+
+One thing is left for the release (step A9): the conda package `alexandria`
+does not contain the Python package, because it does not depend on a Python
+version while the package is installed in the site-packages of one. The
+package needs a conda package of its own (noarch), whose name has to be
+chosen; the name `act` is taken on conda-forge by another program.
