@@ -628,6 +628,32 @@ TEST_F(NmaTest, SymmetryNumber)
     }
 }
 
+// Test: The title of the infrared spectrum says which molecule it is of,
+// with the formula for a molecule without a name
+TEST_F(NmaTest, InfraredSpectrumTitle)
+{
+    NmaOutput out;
+    ASSERT_EQ(0, runNma("acetone.sdf", "irtitle", {}, &out));
+    const auto        molecule = out.json.at("nma").at("molecule");
+    const std::string formula  = molecule.at("formula").get<std::string>();
+    ASSERT_FALSE(formula.empty());
+    // The test molecule has no name in its file
+    ASSERT_TRUE(molecule.at("name").get<std::string>().empty());
+    std::ifstream in(out.spectrum);
+    ASSERT_TRUE(in.good());
+    std::string   line;
+    std::string   title;
+    while (std::getline(in, line))
+    {
+        if (line.find("title") != std::string::npos)
+        {
+            title = line;
+            break;
+        }
+    }
+    EXPECT_NE(std::string::npos, title.find("Infrared spectrum for " + formula)) << title;
+}
+
 // Test: The infrared spectrum has its peak at the most intense mode
 TEST_F(NmaTest, InfraredSpectrum)
 {
