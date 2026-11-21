@@ -465,9 +465,10 @@ compounds that are left out it gets no selection, as before.
 Of a particle type the parameters of its charge (`charge`, `zeta`,
 `chargeVS`, `zetaVS`) are changed like those of an interaction; `edit_ff`
 does not change the mass or the reference enthalpy.
+A file with virtual sites of the user, in the form of `gen_ff -vs`, is
+read into the list of sites; they can be saved in the same form.
 Still open in B7 and B8: the file of the user with fixed parameters that
-`actgui` could read, and reading a file with virtual sites of the user
-(they are made by point and click and can be saved).
+`actgui` could read.
 
 Virtual sites by point and click (B9) are done, without layer 2: the page
 computes the position of a site itself, with the formulas of
