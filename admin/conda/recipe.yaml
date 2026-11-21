@@ -19,8 +19,11 @@ recipe:
 source:
   path: ${{ env.get("ACT_SOURCE", default="../..") }}
 
+# The number goes up with each upload of the same version: the upload skips
+# files that are on the channel already, and alexandria-python requires the
+# alexandria of its own build, by its name.
 build:
-  number: 2
+  number: 3
   skip:
     - not ((osx and arm64) or (linux and (x86_64 or aarch64)))
 
