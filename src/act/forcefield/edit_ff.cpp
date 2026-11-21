@@ -60,6 +60,7 @@
 #include "act/forcefield/particletype.h"
 #include "act/forces/forcecomputer.h"
 #include "act/utility/jsontree.h"
+#include "edit_ff.h"
 #include "gromacs/commandline/filenm.h"
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/fileio/filetypes.h"
@@ -906,6 +907,205 @@ static size_t printValidation(const ForceField  *pd,
  * \param[in] argv The actual arguments
  * \return 0 if ok, 1 otherwise
  */
+void EditFFOptions::check() const
+{
+    if (forceFieldFile.empty())
+    {
+        GMX_THROW(gmx::InvalidInputError("There is no force field file (-ff)"));
+    }
+    const std::vector<std::pair<const char *, std::optional<double>>> numbers = {
+        { "-min", minimum }, { "-val", value }, { "-max", maximum }, { "-scale", scale }, { "-limits", limits }
+    };
+    for (const auto &n : numbers)
+    {
+        if (n.second && !std::isfinite(*n.second))
+        {
+            GMX_THROW(gmx::InvalidInputError(gmx::formatString("The value of %s is not a number", n.first)));
+        }
+    }
+    if (mutability)
+    {
+        Mutability mut;
+        if (!nameToMutability(*mutability, &mut))
+        {
+            GMX_THROW(gmx::InvalidInputError(gmx::formatString("Unknown mutability '%s' of -mut", mutability->c_str())));
+        }
+    }
+    // These need the second force field, without it they would do nothing
+    for (const auto &kind : { std::make_pair("-copy_missing", &copyMissing), std::make_pair("-replace", &replace),
+                              std::make_pair("-implant", &implant) })
+    {
+        if (!kind.second->empty() && secondForceFieldFile.empty())
+        {
+            GMX_THROW(gmx::InvalidInputError(gmx::formatString("%s needs a second force field (-ff2)", kind.first)));
+        }
+    }
+}
+
+void runEditFF(MsgHandler *msghandler, const EditFFOptions &options)
+{
+    options.check();
+    ForceField pd;
+    // A force field that is repaired with parameters of a second one need
+    // not be consistent before, but it has to be afterwards.
+    const bool repair = (!options.secondForceFieldFile.empty() &&
+                         (!options.copyMissing.empty() || !options.replace.empty() || !options.implant.empty()));
+    alexandria::readForceField(options.forceFieldFile, &pd, msghandler, true, !repair);
+    // The checksum of the force field as it was read, which differs from
+    // that in the file if it was converted, see ForceField::convertCoulomb
+    const std::string readCheckSum = forcefieldCheckSum(&pd);
+    (void) pd.verifyCheckSum(msghandler, readCheckSum);
+    bool forceWrite = options.forceWrite;
+    if (!options.secondForceFieldFile.empty())
+    {
+        alexandria::ForceField pd2;
+        // The second force field is only a source of parameters
+        alexandria::readForceField(options.secondForceFieldFile, &pd2, msghandler, true, false);
+        (void) pd2.verifyCheckSum(msghandler, forcefieldCheckSum(&pd2));
+
+        if (repair)
+        {
+            if (!options.copyMissing.empty())
+            {
+                copy_missing(&pd2, &pd, options.copyMissing, false);
+            }
+            else if (!options.replace.empty())
+            {
+                copy_missing(&pd2, &pd, options.replace, true);
+            }
+            else
+            {
+                implant_values(&pd2, &pd, options.implant, options.particles, options.parameter, false);
+            }
+            pd.checkConsistency(msghandler);
+        }
+        else
+        {
+            compare_pd(&pd, &pd2, options.parameter);
+        }
+    }
+    else if (options.bounds)
+    {
+        analyzeForceField(&pd);
+    }
+    else if (options.validate)
+    {
+        auto nfixed = printValidation(&pd, options.forceFieldFile, !options.outputFile.empty());
+        // The corrections were made when reading, write them
+        forceWrite = forceWrite || nfixed > 0;
+    }
+    else if (!options.analyze.empty())
+    {
+        if (!options.particles.empty() && !options.dumpFile.empty())
+        {
+            dumpForceField(&pd, options.analyze, options.particles, options.dumpFile);
+        }
+        else if (options.plot)
+        {
+            generateDependentParameter(msghandler, &pd);
+            plotInteractions(msghandler, &pd, options.analyze);
+        }
+    }
+    else if (options.remove)
+    {
+        removeParticles(&pd, options.particles);
+    }
+    else
+    {
+        bool   bLimits = options.limits.has_value();
+        double limits  = options.limits.value_or(1);
+        if (bLimits && limits <= 0)
+        {
+            fprintf(stderr, "%g is an inappropriate value for the limits option\n", limits);
+            limits  = 1;
+            bLimits = false;
+        }
+        else if (limits > 1)
+        {
+            limits = 1.0/limits;
+        }
+        const bool bNonNeg = options.nonNegative.has_value();
+        if (bNonNeg)
+        {
+            (void) setNonNegative(&pd, options.parameter, options.particles, *options.nonNegative);
+        }
+        const bool other = (options.minimum || options.value || options.maximum || options.mutability ||
+                            options.scale || options.stretch || bLimits);
+        if (other || !bNonNeg)
+        {
+            modifyForceField(&pd, options.parameter, options.particles,
+                             options.minimum.has_value(), options.minimum.value_or(0),
+                             options.value.has_value(), options.value.value_or(0),
+                             options.maximum.has_value(), options.maximum.value_or(0),
+                             options.mutability.has_value(), options.mutability.value_or(""),
+                             options.scale.has_value(), options.scale.value_or(1),
+                             options.force, options.stretch, bLimits, limits);
+        }
+    }
+    // Fetch new combination rules if necessary
+    std::map<InteractionType, ForceFieldParameterList *> its =
+        {
+            { InteractionType::VDW,                  nullptr },
+            { InteractionType::VDWCORRECTION ,       nullptr },
+            { InteractionType::INDUCTIONCORRECTION , nullptr }
+        };
+
+    for(auto &fst : its)
+    {
+        if (pd.interactionPresent(fst.first))
+        {
+            fst.second = pd.findForces(fst.first);
+        }
+    }
+    CombRuleUtil crule;
+    crule.setRules(options.combinationRules);
+    int nRuleChanged = crule.extract(&pd);
+    if (nRuleChanged > 0)
+    {
+        printf("Inserted %d new style combination rules from command line.\n",
+               nRuleChanged);
+    }
+    else
+    {
+        nRuleChanged = crule.convert(its[InteractionType::VDW]);
+        printf("Converted old style comb rule to %d new style combination rules.\n", nRuleChanged);
+    }
+    if (its[InteractionType::VDW])
+    {
+        its[InteractionType::VDW]->removeOption("combination_rule");
+    }
+    // Whether the force field differs from the one that was read
+    const std::string checkSum = forcefieldCheckSum(&pd);
+    const bool        changed  = (checkSum != readCheckSum || nRuleChanged > 0);
+    bool              written  = false;
+    if (!options.outputFile.empty())
+    {
+        if (!changed && !forceWrite)
+        {
+            printf("No changes to forcefield structure, not writing a new file.");
+        }
+        else
+        {
+            pd.updateTimeStamp();
+            pd.setCheckSum(checkSum);
+            writeForceField(options.outputFile, &pd, false);
+            written = true;
+        }
+    }
+    // After writing, such that the checksum is that of the new file
+    if (!options.jsonFile.empty())
+    {
+        // The force field as it is now, for programs that show or edit it,
+        // and whether what was asked for changed anything
+        JsonTree jtree("edit_ff");
+        jtree.addBool("changed", changed);
+        jtree.addBool("written", written);
+        jtree.addObject(forceFieldToJson(pd));
+        jtree.addObject(forceFieldIssuesToJson(validateForceField(pd)));
+        jtree.write(options.jsonFile, true);
+    }
+}
+
 int edit_ff(int argc, char*argv[])
 {
     std::vector<const char *> desc =
@@ -966,7 +1166,6 @@ int edit_ff(int argc, char*argv[])
     gmx_bool     bounds     = false;
     gmx_bool     validate   = false;
     const char  *nonneg[]   = { nullptr, "unchanged", "yes", "no", nullptr };
-    gmx_bool     verbose    = false;
     gmx_bool     remove     = false;
     char        *missing    = (char *)"";
     char        *replace    = (char *)"";
@@ -1033,181 +1232,75 @@ int edit_ff(int argc, char*argv[])
         return 0;
     }
 
-    ForceField pd;
-    // A force field that is repaired with parameters of a second one need
-    // not be consistent before, but it has to be afterwards.
-    bool repair = (opt2bSet("-ff2", fnm.size(), fnm.data()) &&
-                   (strlen(missing) > 0 || strlen(replace) > 0 || strlen(implant) > 0));
-    try 
+    try
     {
-        alexandria::readForceField(opt2fn("-ff", fnm.size(), fnm.data()), &pd, &msghandler,
-                                   true, !repair);
-    }
-    GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
-    // The checksum of the force field as it was read, which differs from
-    // that in the file if it was converted, see ForceField::convertCoulomb
-    const std::string readCheckSum = forcefieldCheckSum(&pd);
-    (void) pd.verifyCheckSum(&msghandler, readCheckSum);
-    if (opt2bSet("-ff2", fnm.size(), fnm.data()))
-    {
-        alexandria::ForceField pd2;
-        try
+        EditFFOptions options;
+        options.forceFieldFile = opt2fn("-ff", fnm.size(), fnm.data());
+        const auto setFile     = [&fnm](const char *option)
         {
-            // The second force field is only a source of parameters
-            alexandria::readForceField(opt2fn("-ff2", fnm.size(), fnm.data()), &pd2, &msghandler,
-                                       true, false);
-        }
-        GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
-        (void) pd2.verifyCheckSum(&msghandler, forcefieldCheckSum(&pd2));
-        
-        if (repair)
-        {
-            if (strlen(missing) > 0)
-            {
-                copy_missing(&pd2, &pd, missing, false);
-            }
-            else if (strlen(replace) > 0)
-            {
-                copy_missing(&pd2, &pd, replace, true);
-            }
-            else
-            {
-                implant_values(&pd2, &pd, implant, particle, parameter, verbose);
-            }
-            try
-            {
-                pd.checkConsistency(&msghandler);
-            }
-            GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
-        }
-        else
-        {
-            compare_pd(&pd, &pd2, parameter);
-        }
-    }
-    else if (bounds)
-    {
-        analyzeForceField(&pd);
-    }
-    else if (validate)
-    {
-        auto nfixed = printValidation(&pd, opt2fn("-ff", fnm.size(), fnm.data()),
-                                      opt2bSet("-o", fnm.size(), fnm.data()));
-        // The corrections were made when reading, write them
-        forceWrite = forceWrite || nfixed > 0;
-    }
-    else if (strlen(analyze) > 0)
-    {
-        auto dumpfn = opt2fn_null("-dump", fnm.size(), fnm.data());
-        if (strlen(particle) > 0 && dumpfn)
-        {
-            dumpForceField(&pd, analyze, particle, dumpfn);
-        }
-        else if (plot)
-        {
-            generateDependentParameter(&msghandler, &pd);
-            plotInteractions(&msghandler, &pd, analyze);
-        }
-    }
-    else if (remove)
-    {
-        removeParticles(&pd, particle);
-    }
-    else
-    {
-        bool bLimits = opt2parg_bSet("-limits", pa.size(), pa.data());
-        if (limits <= 0)
-        {
-            fprintf(stderr, "%g is an inappropriate value for the limits option\n", limits);
-            limits  = 1;
-            bLimits = false;
-        }
-        else if (limits > 1)
-        {
-            limits = 1.0/limits;
-        }
-        bool bNonNeg = std::string(nonneg[0]) != "unchanged";
-        if (bNonNeg)
-        {
-            (void) setNonNegative(&pd, parameter, particle, std::string(nonneg[0]) == "yes");
-        }
-        bool other = (opt2parg_bSet("-min", pa.size(), pa.data()) || opt2parg_bSet("-val", pa.size(), pa.data()) ||
-                      opt2parg_bSet("-max", pa.size(), pa.data()) || opt2parg_bSet("-mut", pa.size(), pa.data()) ||
-                      opt2parg_bSet("-scale", pa.size(), pa.data()) || stretch || bLimits);
-        if (other || !bNonNeg)
-        {
-            modifyForceField(&pd, parameter, particle,
-                             opt2parg_bSet("-min", pa.size(), pa.data()), pmin,
-                             opt2parg_bSet("-val", pa.size(), pa.data()), pval,
-                             opt2parg_bSet("-max", pa.size(), pa.data()), pmax,
-                             opt2parg_bSet("-mut", pa.size(), pa.data()), mutability,
-                             opt2parg_bSet("-scale", pa.size(), pa.data()), scale,
-                             force, stretch, bLimits, limits);
-        }
-    }
-    // Fetch new combination rules if necessary
-    std::map<InteractionType, ForceFieldParameterList *> its =
-        {
-            { InteractionType::VDW,                  nullptr },
-            { InteractionType::VDWCORRECTION ,       nullptr },
-            { InteractionType::INDUCTIONCORRECTION , nullptr }
+            return opt2bSet(option, fnm.size(), fnm.data()) ? std::string(opt2fn(option, fnm.size(), fnm.data()))
+                                                            : std::string();
         };
-
-    for(auto &fst : its)
-    {
-        if (pd.interactionPresent(fst.first))
+        options.secondForceFieldFile = setFile("-ff2");
+        options.outputFile           = setFile("-o");
+        const char *dump             = opt2fn_null("-dump", fnm.size(), fnm.data());
+        options.dumpFile             = dump ? dump : "";
+        const char *json             = opt2fn_null("-json", fnm.size(), fnm.data());
+        options.jsonFile             = json ? json : "";
+        options.parameter            = parameter;
+        options.particles            = particle;
+        const auto given             = [&pa](const char *option)
         {
-            fst.second = pd.findForces(fst.first);
-        }
-    }
-    int nRuleChanged = crule.extract(&pd);
-    if (nRuleChanged > 0)
-    {
-        printf("Inserted %d new style combination rules from command line.\n",
-               nRuleChanged);
-    }
-    else
-    {
-        nRuleChanged = crule.convert(its[InteractionType::VDW]);
-        printf("Converted old style comb rule to %d new style combination rules.\n", nRuleChanged);
-    }
-    if (its[InteractionType::VDW])
-    {
-        its[InteractionType::VDW]->removeOption("combination_rule");
-    }
-    // Whether the force field differs from the one that was read
-    const std::string checkSum = forcefieldCheckSum(&pd);
-    const bool        changed  = (checkSum != readCheckSum || nRuleChanged > 0);
-    bool              written  = false;
-    if (opt2bSet("-o", fnm.size(), fnm.data()))
-    {
-        if (!changed && !forceWrite)
+            return opt2parg_bSet(option, pa.size(), pa.data());
+        };
+        if (given("-min"))
         {
-            printf("No changes to forcefield structure, not writing a new file.");
+            options.minimum = pmin;
         }
-        else
+        if (given("-val"))
         {
-            pd.updateTimeStamp();
-            pd.setCheckSum(checkSum);
-            writeForceField(opt2fn("-o", fnm.size(), fnm.data()), &pd, false);
-            written = true;
+            options.value = pval;
         }
+        if (given("-max"))
+        {
+            options.maximum = pmax;
+        }
+        if (given("-scale"))
+        {
+            options.scale = scale;
+        }
+        if (given("-mut"))
+        {
+            options.mutability = mutability;
+        }
+        if (given("-limits"))
+        {
+            options.limits = limits;
+        }
+        if (std::string(nonneg[0]) != "unchanged")
+        {
+            options.nonNegative = std::string(nonneg[0]) == "yes";
+        }
+        options.remove           = remove;
+        options.force            = force;
+        options.stretch          = stretch;
+        options.bounds           = bounds;
+        options.validate         = validate;
+        options.plot             = plot;
+        options.forceWrite       = forceWrite;
+        options.analyze          = analyze;
+        options.copyMissing      = missing;
+        options.replace          = replace;
+        options.implant          = implant;
+        options.combinationRules = crule.rules();
+        runEditFF(&msghandler, options);
     }
-    // After writing, such that the checksum is that of the new file
-    const char *jsonFile = opt2fn_null("-json", fnm.size(), fnm.data());
-    if (jsonFile)
+    catch (const gmx::InvalidInputError &ex)
     {
-        // The force field as it is now, for programs that show or edit it,
-        // and whether what was asked for changed anything
-        JsonTree jtree("edit_ff");
-        jtree.addBool("changed", changed);
-        jtree.addBool("written", written);
-        jtree.addObject(forceFieldToJson(pd));
-        jtree.addObject(forceFieldIssuesToJson(validateForceField(pd)));
-        jtree.write(jsonFile, true);
+        fprintf(stderr, "%s\n", ex.what());
+        return 1;
     }
     return 0;
 }
 
 } // namespace alexandria
-

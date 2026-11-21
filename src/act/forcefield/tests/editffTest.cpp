@@ -51,6 +51,7 @@
 #include "act/basics/interactiontype.h"
 #include "act/basics/mutability.h"
 #include "act/forcefield/combinationkernels.h"
+#include "act/forcefield/edit_ff.h"
 #include "act/forcefield/forcefield.h"
 #include "act/forcefield/forcefield_parameter.h"
 #include "act/forcefield/forcefield_validation.h"
@@ -58,6 +59,7 @@
 #include "act/forcefield/particletype.h"
 #include "act/forcefield/potential.h"
 #include "act/testutils/output_checks.h"
+#include "gromacs/utility/exceptions.h"
 #include "testutils/cmdlinetest.h"
 #include "testutils/refdata.h"
 #include "testutils/testfilemanager.h"
@@ -230,6 +232,81 @@ TEST_F(EditFFResultsTest, CombinationRule)
     // A small force field, since all pairs of types change
     checkChanges({ { "-cr", "VANDERWAALS:sigma:Arithmetic" } },
                  fileManager().getInputFilePath("forcefields/TIP5P.xml"));
+}
+
+// The editing without a command line, as a program that uses ACT does it
+
+TEST_F(EditFFTest, WithoutCommandLineSameAsTheProgram)
+{
+    // A change of bounds and value of two types, and a combination rule
+    const auto tool = read(run(input_, { { "-p", "chi" }, { "-a", "h_z f_z" }, { "-min", "3" }, { "-max", "8" },
+                                         { "-val", "4.5" }, { "-cr", "VANDERWAALS:sigma:Arithmetic" } },
+                               "tool.xml"));
+    EditFFOptions options;
+    options.forceFieldFile   = input_;
+    options.outputFile       = fileManager().getTemporaryFilePath("direct.xml");
+    options.parameter        = "chi";
+    options.particles        = "h_z f_z";
+    options.minimum          = 3;
+    options.maximum          = 8;
+    options.value            = 4.5;
+    options.combinationRules = "VANDERWAALS:sigma:Arithmetic";
+    MsgHandler msghandler;
+    msghandler.setPrintLevel(ACTStatus::Fatal);
+    runEditFF(&msghandler, options);
+    const auto direct = read(options.outputFile);
+    // As text: gtest cannot print a JSON value
+    EXPECT_EQ("{}", forceFieldChanges(tool, direct).dump());
+    // Something did change
+    EXPECT_NE("{}", forceFieldChanges(read(input_), direct).dump());
+}
+
+TEST_F(EditFFTest, WithoutCommandLineWrongOptions)
+{
+    const auto valid = [this]()
+    {
+        EditFFOptions options;
+        options.forceFieldFile = input_;
+        options.outputFile     = fileManager().getTemporaryFilePath("wrong.xml");
+        options.parameter      = "chi";
+        return options;
+    };
+    std::vector<std::pair<EditFFOptions, std::string>> wrong;
+    {
+        auto o = valid();
+        o.forceFieldFile.clear();
+        wrong.emplace_back(o, "-ff");
+    }
+    {
+        auto o = valid();
+        o.mutability = "Changeable";
+        wrong.emplace_back(o, "-mut");
+    }
+    {
+        auto o = valid();
+        o.scale = std::nan("");
+        wrong.emplace_back(o, "-scale");
+    }
+    {
+        auto o = valid();
+        o.copyMissing = "EEM";
+        wrong.emplace_back(o, "-ff2");
+    }
+    for (const auto &w : wrong)
+    {
+        MsgHandler msghandler;
+        msghandler.setPrintLevel(ACTStatus::Fatal);
+        try
+        {
+            runEditFF(&msghandler, w.first);
+            ADD_FAILURE() << "Accepted options with a wrong " << w.second;
+        }
+        catch (const gmx::InvalidInputError &ex)
+        {
+            EXPECT_NE(std::string::npos, std::string(ex.what()).find(w.second)) << ex.what();
+        }
+        EXPECT_FALSE(std::filesystem::exists(w.first.outputFile)) << w.second;
+    }
 }
 
 TEST_F(EditFFTest, MutabilityOfSeveralIdentifiers)
