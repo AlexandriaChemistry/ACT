@@ -249,6 +249,22 @@ void CompoundReader::setCharges(MsgHandler          *msghandler,
     }
 }
 
+void CompoundReader::setFileName(const std::string &fileName)
+{
+    ownFilename_ = fileName;
+    ownSmiles_.clear();
+    filename_    = ownFilename_.data();
+    smiles_      = ownSmiles_.data();
+}
+
+void CompoundReader::setSmiles(const std::string &smiles)
+{
+    ownSmiles_ = smiles;
+    ownFilename_.clear();
+    smiles_    = ownSmiles_.data();
+    filename_  = ownFilename_.data();
+}
+
 void CompoundReader::readFile(MsgHandler          *msghandler,
                               ForceField          &pd,
                               std::vector<ACTMol> *mols)

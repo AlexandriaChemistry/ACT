@@ -131,7 +131,7 @@ if(BUILD_TESTING AND Python3_Interpreter_FOUND)
                          ${CMAKE_CURRENT_SOURCE_DIR}/tests/test_core.py -v
                  WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/python)
         set_tests_properties(PythonClassTests PROPERTIES
-            ENVIRONMENT "ACT_PYTHON_PATH=${CMAKE_BINARY_DIR}/python;ACT_TESTDATA=${CMAKE_SOURCE_DIR}/src/act/testdata;ACT_REQUIRE_CLASSES=1"
+            ENVIRONMENT "ACT_PYTHON_PATH=${CMAKE_BINARY_DIR}/python;ACT_ALEXANDRIA=$<TARGET_FILE:alexandria>;ACT_TESTDATA=${CMAKE_SOURCE_DIR}/src/act/testdata;ACT_REQUIRE_CLASSES=1"
             LABELS "PythonTest"
             TIMEOUT 300)
     endif()

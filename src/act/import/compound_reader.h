@@ -81,6 +81,8 @@ namespace alexandria
         ChargeMap   qmap_;
         //! MolSelect structre if data was provided by the user
         MolSelect   molselect_;
+        //! The file name and the SMILES string that a program gave, see setFileName and setSmiles
+        std::string ownFilename_, ownSmiles_;
 
     public:
         //! Constructor
@@ -101,6 +103,25 @@ namespace alexandria
          */
         void optionsFinished(MsgHandler                  *msghandler,
                              const std::vector<t_filenm> &filenm);
+
+        /*! \brief Read the structure from a file, as the option -f does
+         * For a program that uses this class without a command line. The
+         * SMILES string, if any, is forgotten. Do not copy the reader afterwards.
+         * \param[in] fileName The file
+         */
+        void setFileName(const std::string &fileName);
+
+        /*! \brief Make the structure from a SMILES string, as the option -smiles does
+         * For a program that uses this class without a command line. The
+         * file name, if any, is forgotten. Do not copy the reader afterwards.
+         * \param[in] smiles The SMILES string
+         */
+        void setSmiles(const std::string &smiles);
+
+        /*! \brief Set the total charge of the compound, as the option -qtot does
+         * \param[in] qtot The charge
+         */
+        void setTotalCharge(double qtot) { qtot_ = qtot; }
 
         //! \return whether there is one H only
         bool oneH() const { return oneH_; }

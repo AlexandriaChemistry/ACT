@@ -54,8 +54,10 @@
 #include <string>
 #include <vector>
 
+#include "act/alexandria/confighandler.h"
 #include "act/basics/act_particle.h"
 #include "act/basics/interactiontype.h"
+#include "act/basics/msg_handler.h"
 #include "act/basics/mutability.h"
 #include "act/forcefield/forcefield.h"
 #include "act/forcefield/forcefield_json.h"
@@ -63,6 +65,11 @@
 #include "act/forcefield/forcefield_validation.h"
 #include "act/forcefield/forcefield_xml.h"
 #include "act/forcefield/particletype.h"
+#include "act/forces/forcecomputer.h"
+#include "act/import/compound_reader.h"
+#include "act/topology/actmol.h"
+#include "act/topology/actmol_json.h"
+#include "act/utility/jsontree.h"
 #include "gromacs/utility/errorcodes.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
@@ -131,6 +138,25 @@ void translateException(std::exception_ptr pointer)
                 raise("ActError", ex.what());
                 break;
         }
+    }
+    catch (const py::error_already_set &)
+    {
+        // An error of Python itself, which Python gets as it is
+        throw;
+    }
+    catch (const py::builtin_exception &)
+    {
+        // A TypeError, ValueError and so on of this module
+        throw;
+    }
+    catch (const std::bad_alloc &)
+    {
+        throw;
+    }
+    catch (const std::exception &ex)
+    {
+        // Of a library that ACT uses, such as the one that reads structure files
+        raise("ActError", ex.what());
     }
 }
 
@@ -559,6 +585,304 @@ void defineForceField(py::module_ &module)
              });
 }
 
+/*! \brief Give Python what a JSON tree has
+ * The descriptions that the programs of ACT write in their json files are
+ * what the classes tell Python, such that both say the same.
+ * \param[in] tree The tree
+ * \return A dict, a list, a number or a text
+ */
+py::object toPython(const JsonTree &tree)
+{
+    JsonTree root("root");
+    root.addObject(tree);
+    int        indent = 0;
+    const auto text   = root.writeString(true, &indent);
+    return py::module_::import("json").attr("loads")(text)["root"][py::str(tree.key())];
+}
+
+/*! \brief A message handler that keeps what it is told instead of printing it
+ * A function of ACT that cannot do what it is asked tells its message
+ * handler and returns. The messages are for the exception that Python gets.
+ */
+class QuietMessages
+{
+public:
+    QuietMessages()
+    {
+        // Only what ends a program is printed, and that throws here
+        handler_.setPrintLevel(ACTStatus::Fatal);
+        handler_.record(&messages_, ACTStatus::Warning);
+    }
+    //! \return The message handler to give to a function of ACT
+    MsgHandler *handler() { return &handler_; }
+    /*! \brief Throw if a function reported an error
+     * \param[in] what What was being done, for the message
+     * \throws gmx::InvalidInputError with the errors that were reported
+     */
+    void check(const std::string &what) const
+    {
+        if (handler_.ok())
+        {
+            return;
+        }
+        std::string text;
+        for (const auto &message : messages_)
+        {
+            if (message.level <= ACTStatus::Error && !message.text.empty())
+            {
+                text += (text.empty() ? "" : " ") + message.text;
+            }
+        }
+        // Messages end with a new line of their own
+        while (!text.empty() && (text.back() == '\n' || text.back() == ' '))
+        {
+            text.pop_back();
+        }
+        GMX_THROW(gmx::InvalidInputError(what + (text.empty() ? "" : ": " + text)));
+    }
+
+private:
+    //! The message handler
+    MsgHandler                      handler_;
+    //! What it was told
+    std::vector<ACTRecordedMessage> messages_;
+};
+
+/*! \brief A molecule as Python has it
+ * With the force field it was made for, which lives as long as the
+ * molecule does, and what is needed to compute its energy.
+ */
+struct Molecule
+{
+    //! The force field object of Python, which keeps the force field alive
+    py::object                     forcefield;
+    //! The force field
+    ForceField                    *pd = nullptr;
+    //! The molecule with its topology and charges
+    ACTMol                         mol;
+    //! Computes energies and forces
+    std::unique_ptr<ForceComputer> forceComp;
+    //! The coordinates of all particles in nm
+    std::vector<gmx::RVec>         coords;
+};
+
+/*! \brief Make a molecule with its topology and charges, as the programs of ACT do
+ * \param[in] forcefield The force field object of Python
+ * \param[in] fileName   A structure file, empty to make the structure from the SMILES string
+ * \param[in] smiles     A SMILES string
+ * \return The molecule
+ * \throws gmx::InvalidInputError if no molecule can be made of it with this force field
+ */
+std::unique_ptr<Molecule> makeMolecule(const py::object &forcefield, const std::string &fileName,
+                                       const std::string &smiles)
+{
+    if (!py::isinstance<ForceField>(forcefield))
+    {
+        throw py::type_error("The force field of a molecule must be an act.ForceField");
+    }
+    auto made        = std::make_unique<Molecule>();
+    made->forcefield = forcefield;
+    made->pd         = forcefield.cast<ForceField *>();
+    // As alexandria minimize sets it up
+    const SimulationConfigHandler sch;
+    double                        shellToler = 1e-6;
+    if (shellToler >= sch.forceTolerance())
+    {
+        shellToler = sch.forceTolerance()/10;
+    }
+    made->forceComp = std::make_unique<ForceComputer>();
+    made->forceComp->init(shellToler, sch.shellMaxIter(), made->pd->epsilonr());
+
+    QuietMessages  messages;
+    CompoundReader reader;
+    const auto     what = fileName.empty() ? "No molecule could be made from the SMILES string '" + smiles + "'" :
+        "No molecule could be read from " + fileName;
+    if (fileName.empty())
+    {
+        reader.setSmiles(smiles);
+    }
+    else
+    {
+        if (!std::filesystem::exists(fileName))
+        {
+            GMX_THROW(gmx::FileIOError("Could not find the structure file " + fileName));
+        }
+        reader.setFileName(fileName);
+    }
+    std::vector<ACTMol> mols;
+    try
+    {
+        reader.read(messages.handler(), *made->pd, made->forceComp.get(), &mols);
+    }
+    catch (const gmx::GromacsException &)
+    {
+        throw;
+    }
+    catch (const std::exception &ex)
+    {
+        // The library that reads structures and SMILES strings has exceptions of its own
+        GMX_THROW(gmx::InvalidInputError(what + ": " + ex.what()));
+    }
+    messages.check(what);
+    if (mols.empty())
+    {
+        GMX_THROW(gmx::InvalidInputError(what));
+    }
+    made->mol    = std::move(mols[0]);
+    made->coords = made->mol.xOriginal();
+    return made;
+}
+
+/*! \brief Compute the energy and the forces of a molecule
+ * \param[in]  molecule The molecule
+ * \param[out] forces   The force on each particle in kJ/mol nm
+ * \return The energy by term in kJ/mol
+ * \throws gmx::InvalidInputError if the energy cannot be computed
+ */
+std::map<InteractionType, double> computeEnergy(const Molecule &molecule, std::vector<gmx::RVec> *forces)
+{
+    QuietMessages                     messages;
+    std::map<InteractionType, double> energies;
+    // The shells find their place for these positions of the atoms, in a copy
+    auto coords = molecule.coords;
+    forces->assign(coords.size(), { 0, 0, 0 });
+    molecule.forceComp->compute(messages.handler(), molecule.pd, molecule.mol.topology(), &coords, forces,
+                                &energies);
+    messages.check("The energy could not be computed");
+    return energies;
+}
+
+//! \return The coordinates or forces of all particles as a list of lists of three numbers
+py::list listOfVectors(const std::vector<gmx::RVec> &vectors)
+{
+    py::list all;
+    for (const auto &vector : vectors)
+    {
+        py::list one;
+        for (int dim = 0; dim < 3; dim++)
+        {
+            one.append(static_cast<double>(vector[dim]));
+        }
+        all.append(one);
+    }
+    return all;
+}
+
+/*! \brief Tell Python about the class Molecule
+ * A lambda that returns one item of what toPython gives has to say that it
+ * returns an object: an item of a temporary is otherwise looked up after
+ * the temporary is gone.
+ */
+void defineMolecule(py::module_ &module)
+{
+    py::class_<Molecule>(module, "Molecule",
+                         "A molecule for a force field: its particles with their charges, its bonds,\n"
+                         "its structure and its energy.\n\n"
+                         "Make one with Molecule.from_smiles(smiles, forcefield) or\n"
+                         "Molecule.from_file(file, forcefield).")
+        .def_static("from_smiles",
+                    [](const std::string &smiles, const py::object &forcefield)
+                    {
+                        return makeMolecule(forcefield, "", smiles);
+                    },
+                    py::arg("smiles"), py::arg("forcefield"),
+                    "Make a molecule from a SMILES string: a structure, the topology for the\n"
+                    "force field and the charges, as the programs of ACT make them.\n\n"
+                    "Raises ActInputError if the string is no molecule or the force field has\n"
+                    "no types for its atoms.")
+        .def_static("from_file",
+                    [](const std::filesystem::path &fileName, const py::object &forcefield)
+                    {
+                        return makeMolecule(forcefield, fileName.string(), "");
+                    },
+                    py::arg("file"), py::arg("forcefield"),
+                    "Read a molecule from a structure file, such as an sdf or pdb file, and make\n"
+                    "the topology for the force field and the charges.\n\n"
+                    "Raises ActFileError if the file is not there, and ActInputError if no\n"
+                    "molecule can be made of it with this force field.")
+        .def_readonly("forcefield", &Molecule::forcefield, "The force field the molecule was made for.")
+        .def_property_readonly("formula",
+                               [](const Molecule &molecule) -> py::object
+                               {
+                                   return toPython(moleculeToJson(&molecule.mol))["formula"];
+                               },
+                               "The chemical formula.")
+        .def_property_readonly("name",
+                               [](const Molecule &molecule) -> py::object
+                               {
+                                   return toPython(moleculeToJson(&molecule.mol))["name"];
+                               },
+                               "The name of the molecule, empty if it has none.")
+        .def_property_readonly("charge",
+                               [](const Molecule &molecule) -> py::object
+                               {
+                                   return toPython(moleculeToJson(&molecule.mol))["charge"];
+                               },
+                               "The total charge in e.")
+        .def_property_readonly("mass",
+                               [](const Molecule &molecule) -> py::object
+                               {
+                                   return toPython(moleculeToJson(&molecule.mol))["mass"]["value"];
+                               },
+                               "The mass in g/mol.")
+        .def_property_readonly("atoms",
+                               [](const Molecule &molecule) -> py::object
+                               {
+                                   return toPython(moleculeToJson(&molecule.mol))["particles"];
+                               },
+                               "The particles: atoms, shells and virtual sites. For each its name,\n"
+                               "element, type in the force field, kind (particletype), mass and charge,\n"
+                               "in the order of the coordinates.")
+        .def_property_readonly("bonds",
+                               [](const Molecule &molecule) -> py::object
+                               {
+                                   return toPython(moleculeToJson(&molecule.mol))["bonds"];
+                               },
+                               "The bonds: for each the two particles, counted from zero, and the bond order.")
+        .def_property_readonly("charges",
+                               [](const Molecule &molecule)
+                               {
+                                   py::list charges;
+                                   for (const auto &atom : molecule.mol.atomsConst())
+                                   {
+                                       charges.append(static_cast<double>(atom.charge()));
+                                   }
+                                   return charges;
+                               },
+                               "The charge of each particle in e.")
+        .def_property_readonly("coordinates",
+                               [](const Molecule &molecule) { return listOfVectors(molecule.coords); },
+                               "The position of each particle in nm, as a list of x, y and z.")
+        .def("energy",
+             [](const Molecule &molecule)
+             {
+                 std::vector<gmx::RVec> forces;
+                 py::dict               energy;
+                 for (const auto &term : computeEnergy(molecule, &forces))
+                 {
+                     energy[py::str(interactionTypeToString(term.first))] = term.second;
+                 }
+                 return energy;
+             },
+             "The energy in kJ/mol for the structure of the molecule: a dict with the terms\n"
+             "of the force field and their sum, EPOT.")
+        .def("forces",
+             [](const Molecule &molecule)
+             {
+                 std::vector<gmx::RVec> forces;
+                 (void) computeEnergy(molecule, &forces);
+                 return listOfVectors(forces);
+             },
+             "The force on each particle in kJ/mol nm, as a list of x, y and z.")
+        .def("__repr__",
+             [](const Molecule &molecule)
+             {
+                 const auto described = toPython(moleculeToJson(&molecule.mol));
+                 return "<act.Molecule " + described["formula"].cast<std::string>() + ", " +
+                        std::to_string(molecule.mol.atomsConst().size()) + " particles>";
+             });
+}
+
 } // namespace
 
 } // namespace alexandria
@@ -571,4 +895,5 @@ PYBIND11_MODULE(_core, module)
     py::register_exception_translator(&alexandria::translateException);
     alexandria::defineParameters(module);
     alexandria::defineForceField(module);
+    alexandria::defineMolecule(module);
 }

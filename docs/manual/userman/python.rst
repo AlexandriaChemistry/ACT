@@ -134,7 +134,7 @@ The options of the program as data
 ========================
 The classes of ACT
 ========================
-When ACT is built with *-DACT_PYTHON=ON*, which needs `pybind11`_, the package also has classes that use the code of ACT directly, without a program in between. *act.classes_available()* tells whether an installation has them. So far there is the force field; molecules with their energies are next.
+When ACT is built with *-DACT_PYTHON=ON*, which needs `pybind11`_, the package also has classes that use the code of ACT directly, without a program in between. *act.classes_available()* tells whether an installation has them. So far there are the force field and the molecule with its energy; minimization, normal modes and simulation are next.
 
 .. code-block:: python
 
@@ -155,7 +155,23 @@ When ACT is built with *-DACT_PYTHON=ON*, which needs `pybind11`_, the package a
 
 A parameter that is asked for is a copy of what the force field has at that moment; it is changed through the force field, which checks the change first: the value stays within the bounds, the minimum below the maximum, and a parameter that cannot be negative stays so. A change that is refused changes nothing.
 
-Errors are exceptions, and Python lives on: *act.ActFileError* (also an *OSError*) for a file that is missing, is not what it should be or cannot be written, *act.ActInputError* (also a *ValueError*) for input that is not accepted, such as a parameter that does not exist, and *act.ActInternalError* for what should not happen inside ACT. All are subclasses of *act.ActError*.
+A molecule is made for a force field, from a SMILES string or a structure file, with its topology and charges as the programs of ACT make them:
+
+.. code-block:: python
+
+   mol = act.Molecule.from_smiles("CC(=O)C", ff)      # or act.Molecule.from_file("acetone.sdf", ff)
+   print(mol.formula, mol.charge, mol.mass)
+   for atom in mol.atoms[:4]:
+       print(atom["name"], atom["type"], atom["particletype"], atom["charge"])
+   print(mol.bonds[0])            # {'atoms': [0, 2], 'order': 1}
+   print(mol.coordinates[0])      # x, y and z in nm
+   energy = mol.energy()          # by term, in kJ/mol
+   print(energy["EPOT"], energy["COULOMB"])
+   forces = mol.forces()          # on each particle, in kJ/mol nm
+
+The particles are the atoms, shells and virtual sites of the molecule, in the order of the coordinates. The numbers are those that *alexandria gentop* and *alexandria minimize* report for the same molecule and force field. A molecule keeps the force field it was made for, with the parameters that the force field had at that moment.
+
+Errors are exceptions, and Python lives on: *act.ActFileError* (also an *OSError*) for a file that is missing, is not what it should be or cannot be written, *act.ActInputError* (also a *ValueError*) for input that is not accepted, such as a parameter that does not exist, a SMILES string that is no molecule or a molecule that the force field has no types for, and *act.ActInternalError* for what should not happen inside ACT. All are subclasses of *act.ActError*.
 
 .. _pybind11: https://pybind11.readthedocs.io
 
