@@ -52,6 +52,7 @@
 #include "act/forcefield/forcefield_parameter.h"
 #include "act/forcefield/forcefield_validation.h"
 #include "act/forcefield/forcefield_xml.h"
+#include "act/forcefield/gen_ff.h"
 #include "act/forcefield/potential.h"
 #include "act/testutils/output_checks.h"
 #include "gromacs/utility/exceptions.h"
@@ -240,6 +241,123 @@ TEST_F(GenFFResultsTest, VirtualSites)
     gmx::test::TestReferenceChecker checker(this->rootChecker());
     checker.setDefaultTolerance(buildTolerance(1e-6, 1e-8, 1e-6));
     checkJson(&checker, forceFieldChanges(plain, sites), "changes");
+}
+
+//! \return the contents of a force field file without its version, which has the time
+static std::string forceFieldText(const std::string &fileName)
+{
+    std::ifstream in(fileName);
+    std::string   text;
+    for (std::string line; std::getline(in, line); )
+    {
+        if (line.find("<version") == std::string::npos)
+        {
+            text += line + "\n";
+        }
+    }
+    return text;
+}
+
+// The force field without a command line, as a program that uses ACT makes it
+
+TEST_F(GenFFTest, WithoutCommandLineSameAsTheProgram)
+{
+    // The defaults with virtual sites, and other options
+    {
+        const auto tool = fileManager().getTemporaryFilePath("tool-defaults.xml");
+        auto       cmd  = commandLine({}, "forcefields/genff-vsites.json");
+        cmd.addOption("-o", tool);
+        ASSERT_EQ(0, gen_ff(cmd.argc(), cmd.argv()));
+        GenFFOptions options;
+        options.atomTypesFile = fileManager().getInputFilePath("forcefields/genff-atomtypes.csv");
+        options.virtualSiteFiles.push_back(fileManager().getInputFilePath("forcefields/genff-vsites.json"));
+        options.outputFile = fileManager().getTemporaryFilePath("direct-defaults.xml");
+        runGenFF(options);
+        EXPECT_EQ(forceFieldText(tool), forceFieldText(options.outputFile));
+    }
+    {
+        const auto tool = fileManager().getTemporaryFilePath("tool-options.xml");
+        auto       cmd  = commandLine({ { "-nexcl", "3" }, { "-epsilonr", "1.7" }, { "-shellmaxdistance", "0.03" },
+                                        { "-noqsymm", "" }, { "-qdist", "SLATER" }, { "-bondfn", "MORSE_BONDS" },
+                                        { "-anglefn", "UREY_BRADLEY_ANGLES" }, { "-dihfn", "PROPER_DIHEDRALS" },
+                                        { "-vdwfn", "WANG_BUCKINGHAM" }, { "-vdwcorr", "" }, { "-icfn", "MORSE_BONDS" },
+                                        { "-cr", "VANDERWAALS:sigma:Arithmetic" } },
+                                      "", "forcefields/genff-atomtypes-shells.csv");
+        cmd.addOption("-o", tool);
+        ASSERT_EQ(0, gen_ff(cmd.argc(), cmd.argv()));
+        GenFFOptions options;
+        options.atomTypesFile       = fileManager().getInputFilePath("forcefields/genff-atomtypes-shells.csv");
+        options.outputFile          = fileManager().getTemporaryFilePath("direct-options.xml");
+        options.nexcl               = 3;
+        options.epsilonr            = static_cast<real>(1.7);
+        options.shellMaxDistance    = static_cast<real>(0.03);
+        options.symmetricCharges    = false;
+        options.chargeDistribution  = ChargeDistributionType::Slater;
+        options.bondPotential       = Potential::MORSE_BONDS;
+        options.anglePotential      = Potential::UREY_BRADLEY_ANGLES;
+        options.dihedralPotential   = Potential::PROPER_DIHEDRALS;
+        options.vdwPotential        = Potential::WANG_BUCKINGHAM;
+        options.vdwCorrection       = true;
+        options.inductionCorrection = Potential::MORSE_BONDS;
+        options.combinationRules    = "VANDERWAALS:sigma:Arithmetic";
+        runGenFF(options);
+        EXPECT_EQ(forceFieldText(tool), forceFieldText(options.outputFile));
+    }
+}
+
+TEST_F(GenFFTest, WithoutCommandLineWrongOptions)
+{
+    const auto valid = [this]()
+    {
+        GenFFOptions options;
+        options.atomTypesFile = fileManager().getInputFilePath("forcefields/genff-atomtypes-shells.csv");
+        options.outputFile    = fileManager().getTemporaryFilePath("wrong.xml");
+        return options;
+    };
+    std::vector<std::pair<GenFFOptions, std::string>> wrong;
+    {
+        auto o = valid();
+        o.atomTypesFile.clear();
+        wrong.emplace_back(o, "-f");
+    }
+    {
+        auto o = valid();
+        o.outputFile.clear();
+        wrong.emplace_back(o, "-o");
+    }
+    {
+        auto o = valid();
+        o.nexcl = -1;
+        wrong.emplace_back(o, "-nexcl");
+    }
+    {
+        auto o = valid();
+        o.epsilonr = 0;
+        wrong.emplace_back(o, "-epsilonr");
+    }
+    {
+        auto o = valid();
+        o.bondPotential = Potential::LJ12_6;
+        wrong.emplace_back(o, "-bondfn");
+    }
+    {
+        auto o = valid();
+        o.vdwPotential = Potential::HARMONIC_BONDS;
+        wrong.emplace_back(o, "-vdwfn");
+    }
+    for (const auto &w : wrong)
+    {
+        try
+        {
+            runGenFF(w.first);
+            ADD_FAILURE() << "Accepted options with a wrong " << w.second;
+        }
+        catch (const gmx::InvalidInputError &ex)
+        {
+            EXPECT_NE(std::string::npos, std::string(ex.what()).find(w.second)) << ex.what();
+        }
+        EXPECT_FALSE(std::filesystem::exists(w.first.outputFile)) << w.second;
+    }
 }
 
 // Test: The obsolete options for the exclusions are accepted if they are

@@ -73,17 +73,18 @@ void CombRuleUtil::addInfo(std::vector<const char *> *crinfo)
 
 void CombRuleUtil::addPargs(std::vector<t_pargs> *pa)
 {
-    pa->push_back( {"-cr", FALSE, etSTR, {&rules_},
+    pa->push_back( {"-cr", FALSE, etSTR, {&parsed_},
             "Specify all combination rules on one line according to the format specified in the help text."} );
 }
 
 int CombRuleUtil::extract(ForceField *pd)
 {
     int changed = 0;
+    const auto               given = this->rules();
     std::vector<std::string> rules;
-    if (rules_ != nullptr)
+    if (!given.empty())
     {
-        rules = split(rules_, ' ');
+        rules = split(given, ' ');
     }
     printf("There are %zu combination rules\n", rules.size());
     for (const auto &r : rules)

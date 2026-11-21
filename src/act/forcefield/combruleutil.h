@@ -33,6 +33,7 @@
 #ifndef COMBRULEUTIL_H
 #define COMBRULEUTIL_H
 
+#include <string>
 #include <vector>
 
 #include "act/forcefield/forcefield.h"
@@ -49,9 +50,27 @@ namespace alexandria
     class CombRuleUtil
     {
     private:
-        //! Storage for the combination rules string given with -cr
-        char *rules_ = nullptr;
+        //! The combination rules as the parser of -cr sets them, which point into the command line
+        const char *parsed_ = nullptr;
+        //! The combination rules that were set, see setRules
+        std::string rules_;
     public:
+        /*! \brief The combination rules, as -cr has them
+         * \return the rules of the command line if it had -cr, otherwise
+         * those that were set, see setRules
+         */
+        std::string rules() const { return parsed_ ? std::string(parsed_) : rules_; }
+
+        /*! \brief Set the combination rules, as -cr does
+         * For a program that has no command line. Replaces the rules of
+         * a command line, if any.
+         * \param[in] rules The rules, separated by spaces, see addInfo
+         */
+        void setRules(const std::string &rules)
+        {
+            rules_  = rules;
+            parsed_ = nullptr;
+        }
         /*! \brief Utility to make command line information about combrules
          * \param[inout] crinfo Array of strings to be edited
          */
