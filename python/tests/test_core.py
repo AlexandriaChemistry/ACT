@@ -20,6 +20,7 @@ import threading
 import time
 import unittest
 from pathlib import Path
+from xml.etree import ElementTree
 
 # The package of the build tree has the module with the classes; the tests
 # of a build say where it is. Otherwise the package of the source code.
@@ -830,6 +831,128 @@ class MoleculeTest(unittest.TestCase):
         # A larger time step is taken as it is
         self.assertAlmostEqual(0.0005, mol.simulate(steps=3, timestep=0.0005).energy_times[1],
                                places=9)
+
+    def test_write_openmm(self):
+        """!
+        @brief The force field file with which OpenMM simulates the molecule,
+        and a structure file that goes with it.
+        """
+        mol = act.Molecule.from_smiles("CC(=O)C", self.ff)
+        xml = self.dir / "acetone-openmm.xml"
+        pdb = self.dir / "acetone.pdb"
+        mol.write_openmm(xml, structure=pdb)
+        text = xml.read_text()
+        self.assertIn("<ForceField>", text)
+        self.assertIn("<AtomTypes>", text)
+        self.assertIn("<Residue ", text)
+        atoms = [line for line in pdb.read_text().splitlines() if line.startswith("ATOM")]
+        # The atoms without their shells, which OpenMM adds itself
+        self.assertEqual(10, len(atoms))
+        # The residue of the structure is the one of the force field file
+        residue = atoms[0][17:20].strip()
+        self.assertIn('<Residue name="%s"' % residue, text)
+        # With the shells on request, and without a structure file
+        shells = self.dir / "shells.pdb"
+        mol.write_openmm(self.dir / "again.xml", structure=shells, shells=True)
+        self.assertEqual(20, len([line for line in shells.read_text().splitlines()
+                                  if line.startswith(("ATOM", "HETATM"))]))
+        mol.write_openmm(self.dir / "only.xml")
+        self.assertEqual(text, (self.dir / "only.xml").read_text())
+        # The structure is the one the molecule has now
+        mol.minimize()
+        moved = self.dir / "minimized.pdb"
+        mol.write_openmm(self.dir / "minimized.xml", structure=moved)
+        self.assertNotEqual(pdb.read_text(), moved.read_text())
+        for wrong in (dict(drude_mass=-0.1), dict(drude_mass=float("nan")),
+                      dict(min_training=-1)):
+            with self.assertRaises(act.ActInputError, msg=repr(wrong)):
+                mol.write_openmm(self.dir / "wrong.xml", **wrong)
+        with self.assertRaises(act.ActFileError):
+            mol.write_openmm(self.dir / "no" / "such" / "directory" / "o.xml")
+        with self.assertRaises(act.ActFileError):
+            mol.write_openmm(self.dir / "o.xml",
+                             structure=self.dir / "no" / "such" / "directory" / "c.pdb")
+        with self.assertRaises(TypeError):
+            mol.write_openmm()  # pylint: disable=no-value-for-parameter
+
+    @unittest.skipUnless(os.environ.get("ACT_ALEXANDRIA"), "ACT_ALEXANDRIA is not set")
+    def test_write_openmm_same_as_the_program(self):
+        """!
+        @brief The files are those that alexandria gentop -openmm writes.
+        """
+        mol = act.Molecule.from_smiles("CC(=O)C", self.ff)
+        xml = self.dir / "o.xml"
+        pdb = self.dir / "c.pdb"
+        mol.write_openmm(xml, structure=pdb)
+        with act.commands.gentop(ff=self.ffname, smiles="CC(=O)C", openmm=True, c=True) as told:
+            theirs = ElementTree.parse(told.file("openmm")).getroot()
+            self.assertEqual(told.file("c").read_text(), pdb.read_text())
+        ours = ElementTree.parse(xml).getroot()
+
+        def same(first, second, where):
+            """Compare two elements: the same tags and attributes, numbers as numbers.
+
+            The program has the mass of a shell in single precision, so that
+            masses differ in the eighth digit.
+            """
+            self.assertEqual(first.tag, second.tag, where)
+            self.assertEqual(sorted(first.attrib), sorted(second.attrib), where)
+            for key, value in first.attrib.items():
+                try:
+                    self.assertAlmostEqual(float(value), float(second.attrib[key]),
+                                           delta=1e-6 * max(1.0, abs(float(value))),
+                                           msg="%s %s" % (where, key))
+                except ValueError:
+                    self.assertEqual(value, second.attrib[key], "%s %s" % (where, key))
+            self.assertEqual(len(first), len(second), where)
+            for one, other in zip(first, second):
+                same(one, other, where + "/" + one.tag)
+        same(theirs, ours, theirs.tag)
+
+    def test_charges(self):
+        """!
+        @brief The charges are made again, for the structure the molecule has
+        now, or set by hand.
+        """
+        mol = act.Molecule.from_smiles("CC(=O)C", self.ff)
+        first = mol.charges
+        # For the same structure the same charges
+        mol.generate_charges()
+        for before, after in zip(first, mol.charges):
+            self.assertAlmostEqual(before, after, places=8)
+        # The algorithm by name: the one of the force field, or its charges as they are
+        mol.generate_charges("SQE")
+        for before, after in zip(first, mol.charges):
+            self.assertAlmostEqual(before, after, places=8)
+        # In another structure the charges are other ones, with the same sum
+        energy = mol.energy()["EPOT"]
+        mol.minimize()
+        mol.generate_charges()
+        self.assertAlmostEqual(0.0, sum(mol.charges), places=6)
+        self.assertGreater(max(abs(a - b) for a, b in zip(first, mol.charges)), 1e-6)
+        self.assertNotEqual(energy, mol.energy()["EPOT"])
+        # By hand: a charge for each particle
+        mine = [0.0] * len(mol.atoms)
+        mol.set_charges(mine)
+        self.assertEqual(mine, mol.charges)
+        self.assertAlmostEqual(0.0, mol.energy()["COULOMB"], places=6)
+        mine[0], mine[2] = 0.5, -0.5
+        mol.set_charges(mine)
+        self.assertEqual(mine, mol.charges)
+        self.assertNotAlmostEqual(0.0, mol.energy()["COULOMB"], places=3)
+        self.assertEqual([a["charge"] for a in mol.atoms], mol.charges)
+        for wrong in ([0.0], mine + [0.1], [float("nan")] * len(mine)):
+            with self.assertRaises(act.ActInputError):
+                mol.set_charges(wrong)
+        self.assertEqual(mine, mol.charges)
+        for wrong in ("Mulliken", "sqe", "", "ESP", "Read", "Custom"):
+            with self.assertRaises(act.ActInputError, msg=wrong):
+                mol.generate_charges(wrong)
+        with self.assertRaises(TypeError):
+            mol.set_charges("zero")
+        # And back to those of the force field
+        mol.generate_charges()
+        self.assertGreater(max(abs(q) for q in mol.charges), 0.1)
 
     def test_molecule_from_file(self):
         """!

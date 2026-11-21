@@ -199,6 +199,17 @@ A molecular dynamics simulation, as *alexandria simulate* does it, starts from t
 
 The times are in ps. Without a temperature the atoms start at rest; with one they get velocities for it, the same each time for the same seed. Other threads of Python run while the simulation does, and Ctrl-C ends it the next time the energies are due.
 
+The charges of ACT depend on the structure. They are made when the molecule is made, and again on request, for the structure the molecule has then; they can also be set by hand. The files for a simulation with OpenMM, see :ref:`sec-simulations`, are those of *alexandria gentop -openmm*:
+
+.. code-block:: python
+
+   mol.minimize()
+   mol.generate_charges()                     # for the minimized structure
+   mol.set_charges([0.0] * len(mol.atoms))    # or one charge for each particle
+   mol.generate_charges("SQE")
+
+   mol.write_openmm("acetone-openmm.xml", structure="acetone.pdb")
+
 A minimization that does not converge is told in the result, with the structure of the lowest energy that was found; *update=False* leaves the structure of the molecule as it is. Normal modes of a structure that is no minimum make no sense, so there a minimization that does not converge raises an error.
 
 The particles are the atoms, shells and virtual sites of the molecule, in the order of the coordinates. The numbers are those that *alexandria gentop*, *minimize* and *nma* report for the same molecule and force field. *act.data_directory()* tells where the classes look for the data files of ACT, after the directory in the environment variable *ACTDATA*. A molecule keeps the force field it was made for, with the parameters that the force field had at that moment.

@@ -59,8 +59,10 @@
 
 #include "act/alexandria/confighandler.h"
 #include "act/alexandria/molhandler.h"
+#include "act/alexandria/openmm_xml.h"
 #include "act/alexandria/train_utility.h"
 #include "act/basics/atomization_energy.h"
+#include "act/basics/chargemodel.h"
 #include "act/basics/act_particle.h"
 #include "act/basics/interactiontype.h"
 #include "act/basics/msg_handler.h"
@@ -728,8 +730,13 @@ struct Molecule
     py::object                     forcefield;
     //! The force field
     ForceField                    *pd = nullptr;
-    //! The molecule with its topology and charges
-    ACTMol                         mol;
+    //! The molecule with its topology and charges, as the only one of a list,
+    //! which is what the functions of ACT for several molecules take
+    std::vector<ACTMol>            mols;
+    //! \return The molecule
+    ACTMol       &mol() { return mols[0]; }
+    //! \return The molecule
+    const ACTMol &mol() const { return mols[0]; }
     //! Computes energies and forces
     std::unique_ptr<ForceComputer> forceComp;
     //! The coordinates of all particles in nm
@@ -798,8 +805,8 @@ std::unique_ptr<Molecule> makeMolecule(const py::object &forcefield, const std::
     {
         GMX_THROW(gmx::InvalidInputError(what));
     }
-    made->mol    = std::move(mols[0]);
-    made->coords = made->mol.xOriginal();
+    made->mols.push_back(std::move(mols[0]));
+    made->coords = made->mol().xOriginal();
     return made;
 }
 
@@ -816,7 +823,7 @@ std::map<InteractionType, double> computeEnergy(const Molecule &molecule, std::v
     // The shells find their place for these positions of the atoms, in a copy
     auto coords = molecule.coords;
     forces->assign(coords.size(), { 0, 0, 0 });
-    molecule.forceComp->compute(messages.handler(), molecule.pd, molecule.mol.topology(), &coords, forces,
+    molecule.forceComp->compute(messages.handler(), molecule.pd, molecule.mol().topology(), &coords, forces,
                                 &energies);
     messages.check("The energy could not be computed");
     return energies;
@@ -913,7 +920,7 @@ Minimization minimizeMolecule(Molecule *molecule, const std::optional<std::strin
         sch.setForceTolerance(*tolerance);
     }
     // The minimizer counts the atoms without shells and virtual sites
-    const auto      &atoms = molecule->mol.atomsConst();
+    const auto      &atoms = molecule->mol().atomsConst();
     std::vector<int> frozen;
     for (int index : freeze)
     {
@@ -949,7 +956,7 @@ Minimization minimizeMolecule(Molecule *molecule, const std::optional<std::strin
     std::map<InteractionType, double> energies;
     auto                              xmin = molecule->coords;
     const MolHandler                  molhandler;
-    const auto status = molhandler.minimizeCoordinates(messages.handler(), molecule->pd, molecule->mol.topology(),
+    const auto status = molhandler.minimizeCoordinates(messages.handler(), molecule->pd, molecule->mol().topology(),
                                                        molecule->forceComp.get(), sch, &xmin, &energies, frozen);
     messages.check("The minimization failed");
     if (eMinimizeStatus::OK != status && !minimizationDidNotConverge(status))
@@ -1046,7 +1053,7 @@ NormalModes normalModes(Molecule *molecule, bool minimize, const std::optional<s
     auto             coords = molecule->coords;
     const MolHandler molhandler;
     // Without a file for the spectrum, and with the motion of the particles
-    doFrequencyAnalysis(messages.handler(), molecule->pd, &molecule->mol, molhandler, molecule->forceComp.get(),
+    doFrequencyAnalysis(messages.handler(), molecule->pd, &molecule->mol(), molhandler, molecule->forceComp.get(),
                         &coords, atomenergy, nullptr, &jtree, nullptr, 24, nullptr, false, true);
     messages.check("The normal modes could not be computed");
     const py::dict told = toPython(jtree);
@@ -1277,7 +1284,7 @@ Trajectory simulateMolecule(Molecule &molecule, int steps, double timestep, doub
         // simulation starts from the coordinates that are given and keeps
         // its own, so the structure of the molecule is not changed.
         const py::gil_scoped_release release;
-        molhandler.simulate(messages.handler(), molecule.pd, &molecule.mol, molecule.coords,
+        molhandler.simulate(messages.handler(), molecule.pd, &molecule.mol(), molecule.coords,
                             molecule.forceComp.get(), sch, nullptr, nullptr, nullptr, nullptr, &observer);
     }
     if (failed)
@@ -1322,6 +1329,130 @@ void defineTrajectory(py::module_ &module)
              });
 }
 
+/*! \brief Write the files with which OpenMM simulates a molecule, as alexandria gentop -openmm does
+ * \param[in] molecule     The molecule
+ * \param[in] fileName     The force field file for OpenMM
+ * \param[in] structure    A pdb file with the structure the molecule has now, with the
+ *                         names of the force field file, if given
+ * \param[in] drudeMass    The mass of a shell in g/mol, which is taken from its atom
+ * \param[in] minTraining  The least number of data points a parameter must have been
+ *                         trained on to be written, see alexandria gentop -ntrain
+ * \param[in] numberTypes  Whether each atom gets a type of its own, see gentop -numberAtypes
+ * \param[in] shells       Whether the structure file has the shells
+ * \throws gmx::InvalidInputError for settings that make no sense, gmx::FileIOError if a
+ * file cannot be written
+ */
+void writeOpenMMFiles(Molecule &molecule, const std::filesystem::path &fileName,
+                      const std::optional<std::filesystem::path> &structure, double drudeMass, int minTraining,
+                      bool numberTypes, bool shells)
+{
+    if (!std::isfinite(drudeMass) || drudeMass < 0)
+    {
+        GMX_THROW(gmx::InvalidInputError("The mass of a shell for OpenMM cannot be negative"));
+    }
+    if (minTraining < 0)
+    {
+        GMX_THROW(gmx::InvalidInputError("The least number of data points of a parameter for OpenMM cannot be negative"));
+    }
+    // The files are opened by code that ends the program if it cannot
+    for (const auto &file : { std::optional<std::filesystem::path>(fileName), structure })
+    {
+        std::error_code ignored;
+        if (file && !file->parent_path().empty() && !std::filesystem::is_directory(file->parent_path(), ignored))
+        {
+            GMX_THROW(gmx::FileIOError("Cannot write " + file->string() + ": there is no directory " +
+                                       file->parent_path().string()));
+        }
+    }
+    QuietMessages messages;
+    // The same residue names in both files
+    auto          residueNames = openMMResidueNames(messages.handler(), molecule.mols, "");
+    messages.check("The residue names for OpenMM could not be made");
+    auto       &mol        = molecule.mol();
+    const auto &fragIds    = mol.fragmentHandler()->ids();
+    const auto &topologies = mol.fragmentHandler()->topologies();
+    for (size_t fragment = 0; fragment < topologies.size(); fragment++)
+    {
+        for (const auto &atom : topologies[fragment].atoms())
+        {
+            if (atom.residueNumber() >= 0)
+            {
+                mol.topologyPtr()->setResidueName(atom.residueNumber(), residueNames[fragIds[fragment]]);
+            }
+        }
+    }
+    if (structure)
+    {
+        matrix box = { { 5, 0, 0 }, { 0, 5, 0 }, { 0, 0, 5 } };
+        mol.PrintConformation(structure->string().c_str(), molecule.coords, shells, box);
+    }
+    writeOpenMM(messages.handler(), fileName.string(), molecule.pd, molecule.mols, drudeMass, minTraining,
+                numberTypes, residueNames);
+    messages.check("The force field file for OpenMM could not be written");
+}
+
+/*! \brief Make the charges of a molecule again, for the structure it has now
+ * \param[in] molecule  The molecule
+ * \param[in] algorithm EEM or SQE to make them with the charge model of the force field,
+ *                      NONE for the charges of the particle types as they are; as when
+ *                      the molecule was made if not given
+ * \throws gmx::InvalidInputError for an algorithm that is not known or needs data
+ * that a molecule in Python does not have
+ */
+void generateCharges(Molecule &molecule, const std::optional<std::string> &algorithm)
+{
+    // What the programs do without the option -qalg
+    auto alg = CompoundReader().algorithm();
+    if (algorithm)
+    {
+        // Throws for a name that is not known
+        alg = nameToChargeGenerationAlgorithm(*algorithm);
+        if (alg != ChargeGenerationAlgorithm::EEM && alg != ChargeGenerationAlgorithm::SQE &&
+            alg != ChargeGenerationAlgorithm::NONE)
+        {
+            GMX_THROW(gmx::InvalidInputError("Charges from " + *algorithm + " need data that a molecule in Python does not have: "
+                                             "use EEM, SQE or NONE, or set the charges with set_charges"));
+        }
+    }
+    QuietMessages          messages;
+    auto                   coords = molecule.coords;
+    std::vector<gmx::RVec> forces(coords.size());
+    auto                  &mol = molecule.mol();
+    if (ChargeGenerationAlgorithm::NONE == alg)
+    {
+        mol.setCharges(messages.handler(), molecule.pd);
+    }
+    else
+    {
+        mol.generateCharges(messages.handler(), molecule.pd, molecule.forceComp.get(), alg, &coords, &forces);
+    }
+    messages.check("The charges could not be made");
+}
+
+/*! \brief Give the particles of a molecule charges
+ * \param[in] molecule The molecule
+ * \param[in] charges  A charge in e for each particle, in the order of the particles
+ * \throws gmx::InvalidInputError if there is not a finite charge for each particle,
+ * or a particle that cannot have a charge gets one
+ */
+void setCharges(Molecule &molecule, const std::vector<double> &charges)
+{
+    auto &mol = molecule.mol();
+    if (charges.size() != mol.atomsConst().size())
+    {
+        GMX_THROW(gmx::InvalidInputError(gmx::formatString("%zu charges for the %zu particles of the molecule", charges.size(),
+                                                           mol.atomsConst().size())));
+    }
+    for (double charge : charges)
+    {
+        if (!std::isfinite(charge))
+        {
+            GMX_THROW(gmx::InvalidInputError("A charge is not a finite number"));
+        }
+    }
+    mol.setCharges(charges);
+}
+
 /*! \brief Tell Python about the class Molecule
  * A lambda that returns one item of what toPython gives has to say that it
  * returns an object: an item of a temporary is otherwise looked up after
@@ -1358,31 +1489,31 @@ void defineMolecule(py::module_ &module)
         .def_property_readonly("formula",
                                [](const Molecule &molecule) -> py::object
                                {
-                                   return toPython(moleculeToJson(&molecule.mol))["formula"];
+                                   return toPython(moleculeToJson(&molecule.mol()))["formula"];
                                },
                                "The chemical formula.")
         .def_property_readonly("name",
                                [](const Molecule &molecule) -> py::object
                                {
-                                   return toPython(moleculeToJson(&molecule.mol))["name"];
+                                   return toPython(moleculeToJson(&molecule.mol()))["name"];
                                },
                                "The name of the molecule, empty if it has none.")
         .def_property_readonly("charge",
                                [](const Molecule &molecule) -> py::object
                                {
-                                   return toPython(moleculeToJson(&molecule.mol))["charge"];
+                                   return toPython(moleculeToJson(&molecule.mol()))["charge"];
                                },
                                "The total charge in e.")
         .def_property_readonly("mass",
                                [](const Molecule &molecule) -> py::object
                                {
-                                   return toPython(moleculeToJson(&molecule.mol))["mass"]["value"];
+                                   return toPython(moleculeToJson(&molecule.mol()))["mass"]["value"];
                                },
                                "The mass in g/mol.")
         .def_property_readonly("atoms",
                                [](const Molecule &molecule) -> py::object
                                {
-                                   return toPython(moleculeToJson(&molecule.mol))["particles"];
+                                   return toPython(moleculeToJson(&molecule.mol()))["particles"];
                                },
                                "The particles: atoms, shells and virtual sites. For each its name,\n"
                                "element, type in the force field, kind (particletype), mass and charge,\n"
@@ -1390,14 +1521,14 @@ void defineMolecule(py::module_ &module)
         .def_property_readonly("bonds",
                                [](const Molecule &molecule) -> py::object
                                {
-                                   return toPython(moleculeToJson(&molecule.mol))["bonds"];
+                                   return toPython(moleculeToJson(&molecule.mol()))["bonds"];
                                },
                                "The bonds: for each the two particles, counted from zero, and the bond order.")
         .def_property_readonly("charges",
                                [](const Molecule &molecule)
                                {
                                    py::list charges;
-                                   for (const auto &atom : molecule.mol.atomsConst())
+                                   for (const auto &atom : molecule.mol().atomsConst())
                                    {
                                        charges.append(static_cast<double>(atom.charge()));
                                    }
@@ -1443,6 +1574,24 @@ void defineMolecule(py::module_ &module)
              "minimize, and the molecule keeps that structure; give minimize=False for a\n"
              "molecule that is at its minimum already. Raises ActError if the minimization\n"
              "does not converge. Returns a NormalModes.")
+        .def("generate_charges", &generateCharges, py::arg("algorithm") = py::none(),
+             "Make the charges again, for the structure the molecule has now.\n\n"
+             "algorithm is EEM or SQE for the charge model of the force field, or NONE for the\n"
+             "charges of the particle types as they are; as when the molecule was made if not\n"
+             "given. The charges of ACT depend on the structure, so after a minimization\n"
+             "they are other ones than before.")
+        .def("set_charges", &setCharges, py::arg("charges"),
+             "Give each particle a charge in e, in the order of atoms.")
+        .def("write_openmm", &writeOpenMMFiles, py::arg("file"), py::kw_only(),
+             py::arg("structure") = py::none(), py::arg("drude_mass") = 0.1, py::arg("min_training") = 1,
+             py::arg("number_types") = true, py::arg("shells") = false,
+             "Write the force field file with which OpenMM simulates this molecule, as\n"
+             "alexandria gentop -openmm does.\n\n"
+             "structure is a pdb file to write as well, with the structure the molecule has\n"
+             "now and the names of the force field file, with the shells if shells is True.\n"
+             "drude_mass is the mass in g/mol of a shell, which is taken from its atom.\n"
+             "A parameter is written if it was trained on min_training data points at least.\n"
+             "With number_types each atom gets a type of its own.")
         .def("simulate", &simulateMolecule, py::kw_only(), py::arg("steps"), py::arg("timestep") = 0.0002,
              py::arg("temperature") = 0.0, py::arg("seed") = 0, py::arg("energy_interval") = 1,
              py::arg("frame_interval") = 1, py::arg("on_energies") = py::none(),
@@ -1458,9 +1607,9 @@ void defineMolecule(py::module_ &module)
         .def("__repr__",
              [](const Molecule &molecule)
              {
-                 const auto described = toPython(moleculeToJson(&molecule.mol));
+                 const auto described = toPython(moleculeToJson(&molecule.mol()));
                  return "<act.Molecule " + described["formula"].cast<std::string>() + ", " +
-                        std::to_string(molecule.mol.atomsConst().size()) + " particles>";
+                        std::to_string(molecule.mol().atomsConst().size()) + " particles>";
              });
 }
 
