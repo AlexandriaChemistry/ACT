@@ -375,9 +375,12 @@ throw when it is loaded, and turns the exceptions of ACT into
 whether a package has the classes; without them the rest works as before.
 The module finds shared libraries of ACT from the build tree and from the
 installation. The test `PythonClassTests` runs with the module of the
-build tree. Not done yet: `MsgHandler` to `logging`, and a build of the
-module in CI and in the conda package, which both need pybind11 in their
-environment. XML
+build tree. The test workflows build the module (`-DACT_PYTHON=ON`, with
+pybind11 from conda-forge): statically linked in double precision on Linux
+and macOS, with the shared libraries in single precision on Linux. The
+conda package `alexandria-python` has the package `act` with the module, for
+each Python version, see section 14 of `docs/conda-packaging-plan.md`. Not
+done yet: `MsgHandler` to `logging`. XML
 files are read without the messages that libxml2 prints; what the parser
 found is in the exception.
 
@@ -996,8 +999,9 @@ section 1. What remains:
 
 None of these blocks the work on the steps A1 to A8 and B0 to B10.
 
-One thing is left for the release (step A9): the conda package `alexandria`
-does not contain the Python package, because it does not depend on a Python
-version while the package is installed in the site-packages of one. The
-package needs a conda package of its own (noarch), whose name has to be
-chosen; the name `act` is taken on conda-forge by another program.
+The conda package `alexandria` does not contain the Python package, because
+it does not depend on a Python version while the package is installed in the
+site-packages of one. The Python package is in the conda package
+`alexandria-python`, built by the same recipe for each Python version; the
+name `act` is taken on conda-forge by another program, so only the import
+name is `act`.
