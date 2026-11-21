@@ -55,6 +55,7 @@
 #include <vector>
 
 #include "act/alexandria/confighandler.h"
+#include "act/alexandria/molhandler.h"
 #include "act/basics/act_particle.h"
 #include "act/basics/interactiontype.h"
 #include "act/basics/msg_handler.h"
@@ -768,6 +769,165 @@ py::list listOfVectors(const std::vector<gmx::RVec> &vectors)
     return all;
 }
 
+//! \return The energies by the names of their terms, for Python
+py::dict energyDict(const std::map<InteractionType, double> &energies)
+{
+    py::dict energy;
+    for (const auto &term : energies)
+    {
+        energy[py::str(interactionTypeToString(term.first))] = term.second;
+    }
+    return energy;
+}
+
+//! The result of a minimization as Python sees it
+struct Minimization
+{
+    //! Whether the forces are within the tolerance
+    bool        converged = false;
+    //! OK, or why the minimizer stopped, as alexandria minimize tells it
+    std::string status;
+    //! The distance between the structures before and after in nm, after superposition
+    double      rmsd = 0;
+    //! The energy by term in kJ/mol before and after
+    py::dict    energyBefore, energyAfter;
+    //! The position of each particle in nm at the lowest energy found
+    py::list    coordinates;
+};
+
+/*! \brief Minimize the energy of a molecule, as alexandria minimize does
+ * \param[in] molecule  The molecule
+ * \param[in] algorithm LBFGS, Steep or Newton, the default of the program if not given
+ * \param[in] maxIter   The largest number of iterations, the default of the program if not given
+ * \param[in] tolerance The mean square force at which to stop, the default of the program if not given
+ * \param[in] freeze    The particles, as in the list of atoms, that stay where they are
+ * \param[in] update    Whether the molecule gets the structure that is found
+ * \return How it went and the structure
+ * \throws gmx::InvalidInputError for settings that make no sense, gmx::ToleranceError
+ * if the minimizer failed
+ */
+Minimization minimizeMolecule(Molecule *molecule, const std::optional<std::string> &algorithm,
+                              std::optional<int> maxIter, std::optional<double> tolerance,
+                              const std::vector<int> &freeze, bool update)
+{
+    SimulationConfigHandler sch;
+    if (algorithm)
+    {
+        bool known = false;
+        for (auto minAlg : { eMinimizeAlgorithm::LBFGS, eMinimizeAlgorithm::Steep, eMinimizeAlgorithm::Newton })
+        {
+            if (eMinimizeAlgorithmToString(minAlg) == *algorithm)
+            {
+                sch.setMinimizeAlgorithm(minAlg);
+                known = true;
+            }
+        }
+        if (!known)
+        {
+            GMX_THROW(gmx::InvalidInputError(gmx::formatString("Unknown algorithm '%s' to minimize with: use LBFGS, Steep or Newton", algorithm->c_str())));
+        }
+    }
+    if (maxIter)
+    {
+        if (*maxIter < 1)
+        {
+            GMX_THROW(gmx::InvalidInputError("The number of iterations of a minimization is at least one"));
+        }
+        sch.setMaxIter(*maxIter);
+    }
+    if (tolerance)
+    {
+        if (!std::isfinite(*tolerance) || *tolerance <= 0)
+        {
+            GMX_THROW(gmx::InvalidInputError("The tolerance of a minimization is a number above zero"));
+        }
+        sch.setForceTolerance(*tolerance);
+    }
+    // The minimizer counts the atoms without shells and virtual sites
+    const auto      &atoms = molecule->mol.atomsConst();
+    std::vector<int> frozen;
+    for (int index : freeze)
+    {
+        if (index < 0 || index >= static_cast<int>(atoms.size()))
+        {
+            GMX_THROW(gmx::InvalidInputError(gmx::formatString("There is no particle %d to freeze, the molecule has %zu", index, atoms.size())));
+        }
+        if (atoms[index].pType() != ActParticle::Atom)
+        {
+            GMX_THROW(gmx::InvalidInputError(gmx::formatString("Particle %d is a %s, only atoms can be frozen", index,
+                                                               actParticleToString(atoms[index].pType()).c_str())));
+        }
+        int number = 0;
+        for (int i = 0; i < index; i++)
+        {
+            number += (atoms[i].pType() == ActParticle::Atom) ? 1 : 0;
+        }
+        frozen.push_back(number);
+    }
+    // The shells more precisely than the atoms, as the program has it
+    double shellToler = 1e-6;
+    if (shellToler >= sch.forceTolerance())
+    {
+        shellToler = sch.forceTolerance()/10;
+    }
+    molecule->forceComp->init(shellToler, sch.shellMaxIter(), molecule->pd->epsilonr());
+
+    Minimization           result;
+    std::vector<gmx::RVec> forces;
+    result.energyBefore = energyDict(computeEnergy(*molecule, &forces));
+
+    QuietMessages                     messages;
+    std::map<InteractionType, double> energies;
+    auto                              xmin = molecule->coords;
+    const MolHandler                  molhandler;
+    const auto status = molhandler.minimizeCoordinates(messages.handler(), molecule->pd, molecule->mol.topology(),
+                                                       molecule->forceComp.get(), sch, &xmin, &energies, frozen);
+    messages.check("The minimization failed");
+    if (eMinimizeStatus::OK != status && !minimizationDidNotConverge(status))
+    {
+        GMX_THROW(gmx::ToleranceError("The minimization failed: " +
+                                      minimizeStatusMessage(status, energies[InteractionType::EPOT])));
+    }
+    result.converged   = (eMinimizeStatus::OK == status);
+    result.status      = eMinimizeStatusToString(status);
+    // On top of the structure it started from
+    result.rmsd        = molhandler.coordinateRmsd(atoms, molecule->coords, &xmin);
+    result.energyAfter = energyDict(energies);
+    result.coordinates = listOfVectors(xmin);
+    if (update)
+    {
+        molecule->coords = xmin;
+    }
+    return result;
+}
+
+//! Tell Python about the result of a minimization
+void defineMinimization(py::module_ &module)
+{
+    py::class_<Minimization>(module, "Minimization", "The result of Molecule.minimize.")
+        .def_readonly("converged", &Minimization::converged,
+                      "Whether the forces are within the tolerance.")
+        .def_readonly("status", &Minimization::status,
+                      "OK, or why the minimizer stopped, such as Too many steps. The structure is\n"
+                      "then the one with the lowest energy that was found.")
+        .def_readonly("rmsd", &Minimization::rmsd,
+                      "The root mean square distance in nm between the atoms before and after,\n"
+                      "with the structures on top of each other.")
+        .def_readonly("energy_before", &Minimization::energyBefore,
+                      "The energy by term in kJ/mol of the structure it started from.")
+        .def_readonly("energy_after", &Minimization::energyAfter,
+                      "The energy by term in kJ/mol of the structure that was found.")
+        .def_readonly("coordinates", &Minimization::coordinates,
+                      "The position of each particle in nm in the structure that was found.")
+        .def("__repr__",
+             [](const Minimization &result)
+             {
+                 return gmx::formatString("<act.Minimization %s (%s), RMSD %g nm>",
+                                          result.converged ? "converged" : "not converged",
+                                          result.status.c_str(), result.rmsd);
+             });
+}
+
 /*! \brief Tell Python about the class Molecule
  * A lambda that returns one item of what toPython gives has to say that it
  * returns an object: an item of a temporary is otherwise looked up after
@@ -857,12 +1017,7 @@ void defineMolecule(py::module_ &module)
              [](const Molecule &molecule)
              {
                  std::vector<gmx::RVec> forces;
-                 py::dict               energy;
-                 for (const auto &term : computeEnergy(molecule, &forces))
-                 {
-                     energy[py::str(interactionTypeToString(term.first))] = term.second;
-                 }
-                 return energy;
+                 return energyDict(computeEnergy(molecule, &forces));
              },
              "The energy in kJ/mol for the structure of the molecule: a dict with the terms\n"
              "of the force field and their sum, EPOT.")
@@ -874,6 +1029,17 @@ void defineMolecule(py::module_ &module)
                  return listOfVectors(forces);
              },
              "The force on each particle in kJ/mol nm, as a list of x, y and z.")
+        .def("minimize", &minimizeMolecule, py::kw_only(), py::arg("algorithm") = py::none(),
+             py::arg("max_iter") = py::none(), py::arg("tolerance") = py::none(),
+             py::arg("freeze") = std::vector<int>(), py::arg("update") = true,
+             "Minimize the energy with respect to the positions of the atoms, as alexandria\n"
+             "minimize does, and give the molecule the structure that is found.\n\n"
+             "algorithm is LBFGS, Steep or Newton, max_iter the largest number of iterations\n"
+             "and tolerance the mean square force at which to stop; what is not given is as\n"
+             "in the program. The particles in freeze, numbered as in atoms, stay where they\n"
+             "are. With update=False the molecule keeps its structure. Returns a Minimization\n"
+             "with whether it converged, the energies before and after, the RMSD and the\n"
+             "structure. A minimization that does not converge is told there, not raised.")
         .def("__repr__",
              [](const Molecule &molecule)
              {
@@ -895,5 +1061,6 @@ PYBIND11_MODULE(_core, module)
     py::register_exception_translator(&alexandria::translateException);
     alexandria::defineParameters(module);
     alexandria::defineForceField(module);
+    alexandria::defineMinimization(module);
     alexandria::defineMolecule(module);
 }

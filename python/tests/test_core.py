@@ -459,6 +459,112 @@ class MoleculeTest(unittest.TestCase):
             self.assertAlmostEqual(value["value"], energy[name],
                                    delta=1e-3 + 1e-5 * abs(value["value"]), msg=name)
 
+    def test_minimize(self):
+        """!
+        @brief The energy of a molecule is minimized: the molecule gets the
+        structure of the minimum, and the result tells how it went.
+        """
+        mol = act.Molecule.from_smiles("CC(=O)C", self.ff)
+        start = mol.coordinates
+        before = mol.energy()["EPOT"]
+        res = mol.minimize()
+        self.assertTrue(res.converged)
+        self.assertEqual("OK", res.status)
+        self.assertAlmostEqual(before, res.energy_before["EPOT"], places=6)
+        self.assertLess(res.energy_after["EPOT"], before)
+        self.assertEqual(set(res.energy_before), set(res.energy_after))
+        # It moved a little, and not far
+        self.assertGreater(res.rmsd, 1e-5)
+        self.assertLess(res.rmsd, 0.05)
+        # The molecule has the new structure and its energy
+        self.assertEqual(res.coordinates, mol.coordinates)
+        self.assertNotEqual(start, mol.coordinates)
+        self.assertAlmostEqual(res.energy_after["EPOT"], mol.energy()["EPOT"],
+                               delta=1e-4 * abs(before))
+        # The forces on the atoms are gone
+        atoms = [i for i, a in enumerate(mol.atoms) if a["particletype"] == "Atom"]
+        forces = mol.forces()
+        self.assertLess(max(abs(forces[i][dim]) for i in atoms for dim in range(3)), 1.0)
+        self.assertIn("converged", repr(res))
+        # From the minimum there is nowhere to go
+        again = mol.minimize()
+        self.assertLess(again.rmsd, 1e-3)
+        self.assertAlmostEqual(res.energy_after["EPOT"], again.energy_after["EPOT"],
+                               delta=1e-4 * abs(before))
+
+    def test_minimize_without_moving_the_molecule(self):
+        """!
+        @brief On request the molecule keeps its structure and only the
+        result has the minimum.
+        """
+        mol = act.Molecule.from_smiles("CC(=O)C", self.ff)
+        start = mol.coordinates
+        res = mol.minimize(update=False)
+        self.assertTrue(res.converged)
+        self.assertEqual(start, mol.coordinates)
+        self.assertNotEqual(start, res.coordinates)
+        self.assertEqual(len(start), len(res.coordinates))
+        self.assertAlmostEqual(res.energy_before["EPOT"], mol.energy()["EPOT"], places=6)
+
+    @unittest.skipUnless(os.environ.get("ACT_ALEXANDRIA"), "ACT_ALEXANDRIA is not set")
+    def test_minimize_same_as_the_program(self):
+        """!
+        @brief The minimization gives what alexandria minimize gives.
+        """
+        mol = act.Molecule.from_smiles("CC(=O)C", self.ff)
+        res = mol.minimize()
+        with act.commands.minimize(ff=self.ffname, smiles="CC(=O)C") as told:
+            data = told.data
+        self.assertEqual(data["converged"], res.converged)
+        self.assertEqual(data["status"], res.status)
+        self.assertAlmostEqual(data["rmsd"]["value"], res.rmsd, places=6)
+        for name, value in data["Energies after"].items():
+            self.assertAlmostEqual(value["value"], res.energy_after[name],
+                                   delta=1e-3 + 1e-5 * abs(value["value"]), msg=name)
+
+    def test_minimize_settings(self):
+        """!
+        @brief The algorithm, the number of iterations, the tolerance and
+        atoms that stay where they are.
+        """
+        mol = act.Molecule.from_smiles("CC(=O)C", self.ff)
+        # Two steps of steepest descent do not get there, which is told, not raised
+        res = mol.minimize(algorithm="Steep", max_iter=2, update=False)
+        self.assertFalse(res.converged)
+        self.assertEqual("Too many steps", res.status)
+        self.assertLessEqual(res.energy_after["EPOT"], res.energy_before["EPOT"])
+        for algorithm in ("LBFGS", "Newton"):
+            self.assertTrue(mol.minimize(algorithm=algorithm, update=False).converged, algorithm)
+        # A looser tolerance is reached as well
+        self.assertTrue(mol.minimize(tolerance=1e-3, update=False).converged)
+        # Frozen atoms keep their place: the two that make the C=O bond
+        double = [b for b in mol.bonds if b["order"] == 2][0]["atoms"]
+        start = mol.coordinates
+        res = mol.minimize(freeze=double, update=False)
+        free = act.Molecule.from_smiles("CC(=O)C", self.ff).minimize(update=False)
+        self.assertGreater(res.energy_after["EPOT"], free.energy_after["EPOT"] - 1e-6)
+
+        def distance(coordinates, i, j):
+            return sum((coordinates[i][d] - coordinates[j][d]) ** 2 for d in range(3)) ** 0.5
+        self.assertAlmostEqual(distance(start, *double), distance(res.coordinates, *double),
+                               places=7)
+        self.assertNotAlmostEqual(distance(start, *double), distance(free.coordinates, *double),
+                                  places=7)
+        wrong = [dict(algorithm="Simplex"), dict(algorithm=""), dict(max_iter=0),
+                 dict(max_iter=-5), dict(tolerance=0.0), dict(tolerance=-1e-6),
+                 dict(tolerance=float("nan")), dict(freeze=[999]), dict(freeze=[-1]),
+                 # A shell cannot be frozen, it follows its atom
+                 dict(freeze=[i for i, a in enumerate(mol.atoms)
+                              if a["particletype"] == "Shell"][:1])]
+        for settings in wrong:
+            with self.assertRaises(act.ActInputError, msg=repr(settings)):
+                mol.minimize(**settings)
+        self.assertEqual(start, mol.coordinates)
+        with self.assertRaises(TypeError):
+            mol.minimize("LBFGS")  # pylint: disable=too-many-function-args
+        with self.assertRaises(TypeError):
+            mol.minimize(max_iter="many")
+
     def test_molecule_from_file(self):
         """!
         @brief A molecule is read from a structure file.
