@@ -702,7 +702,10 @@ there, in the modules `cluster_jobs.py`, `cluster_queue.py` and
   `train_ff -maxh` (class `TimeLimit`, checked before each Monte Carlo
   iteration on every process and after each generation), and can then be
   continued like one that is complete. A chain that runs on the GPU is not
-  interrupted; there the time is checked between generations only.
+  interrupted; there the time is checked between generations only. The
+  interface gives a training the time of its calculation, on the desktop
+  or of the job on the cluster, less a tenth (two minutes at least, half
+  an hour at most), when the `alexandria` of the desktop has the option.
 
 Still to do: a try on csb itself (so far only the stand-ins of the tests
 were used); and results that are larger than fits in memory, since the
