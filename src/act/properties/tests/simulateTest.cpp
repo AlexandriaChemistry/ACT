@@ -1526,7 +1526,8 @@ TEST_F(SimulateTest, MinimizeToolNotConverged)
 }
 
 // Test: alexandria minimize relaxes the shells, the induction energy is
-// negative before and after minimization
+// negative before and after minimization, and so is that of the interaction
+// energy of the dimer after minimization
 TEST_F(SimulateTest, MinimizeToolShells)
 {
     const auto confout = fileManager().getTemporaryFilePath("shells-confout.pdb");
@@ -1546,7 +1547,7 @@ TEST_F(SimulateTest, MinimizeToolShells)
             induction.push_back(value);
         }
     }
-    ASSERT_EQ(2u, induction.size());
+    ASSERT_EQ(3u, induction.size());
     for (auto ind : induction)
     {
         EXPECT_LT(ind, 0);
