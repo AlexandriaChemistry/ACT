@@ -32,7 +32,9 @@
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
 
+#include <array>
 #include <cctype>
+#include <cmath>
 #include <cstdio>
 #include <cstdlib>
 #include <string>
@@ -49,6 +51,8 @@
 #include "act/topology/actmol.h"
 #include "act/topology/actmol_json.h"
 #include "act/utility/jsontree.h"
+#include "act/utility/output_environment.h"
+#include "gentop.h"
 #include "gromacs/commandline/filenm.h"
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/fileio/filetypes.h"
@@ -60,6 +64,196 @@
 
 namespace alexandria
 {
+
+namespace
+{
+
+//! \return the name of a file for the functions that take nullptr for none
+const char *fileOrNull(const std::string &fileName)
+{
+    return fileName.empty() ? nullptr : fileName.c_str();
+}
+
+} // namespace
+
+void GentopOptions::check() const
+{
+    if (forceFieldFile.empty())
+    {
+        GMX_THROW(gmx::InvalidInputError("There is no force field file (-ff)"));
+    }
+    if (std::string(compounds.fileName()).empty() && std::string(compounds.smiles()).empty() &&
+        std::string(compounds.dbName()).empty() && compounds.molselect().nMol() == 0)
+    {
+        GMX_THROW(gmx::InvalidInputError("There is no compound: give a structure file (-f), a SMILES string (-smiles), or compounds of the charge file (-db or -sel)"));
+    }
+    if (!std::isfinite(drudeMass) || drudeMass < 0)
+    {
+        GMX_THROW(gmx::InvalidInputError(gmx::formatString("The value %g of -mDrude should be zero or more", drudeMass)));
+    }
+    if (minTraining < 0)
+    {
+        GMX_THROW(gmx::InvalidInputError(gmx::formatString("The value %d of -ntrain should be zero or more", minTraining)));
+    }
+    if (!std::isfinite(spacing) || spacing <= 0)
+    {
+        GMX_THROW(gmx::InvalidInputError(gmx::formatString("The value %g of -spacing should be more than zero", spacing)));
+    }
+    if (!std::isfinite(border) || border < 0)
+    {
+        GMX_THROW(gmx::InvalidInputError(gmx::formatString("The value %g of -border should be zero or more", border)));
+    }
+    if (box)
+    {
+        for (double side : *box)
+        {
+            if (!std::isfinite(side) || side < 0)
+            {
+                GMX_THROW(gmx::InvalidInputError(gmx::formatString("The value %g of -box should be zero or more", side)));
+            }
+        }
+    }
+}
+
+int runGentop(MsgHandler *msghandler, const GentopOptions &options, gmx_output_env_t *oenv)
+{
+    options.check();
+    ForceField pd;
+    readForceField(options.forceFieldFile, &pd, msghandler);
+    (void) pd.verifyCheckSum(msghandler);
+    // GROMACS and OpenMM do not support second charges, use virtual sites instead
+    pd.expandSecondCharges(msghandler);
+
+    std::string my_pol;
+    if (pd.polarizable())
+    {
+        my_pol.assign(" polarizable");
+    }
+    auto qType = pd.chargeDistribution();
+    printf("Using%s force field file %s and charge distribution model %s\n",
+           my_pol.c_str(), options.forceFieldFile.c_str(), chargeDistributionTypeName(qType).c_str());
+    msghandler->write(gmx::formatString("Read force field information. There are %zu atomtypes.\n",
+                                        pd.getNatypes()));
+
+    ForceComputer       forceComputer;
+    auto               *forceComp = &forceComputer;
+    std::vector<ACTMol> actmols;
+    // Reading changes the reader
+    auto                compR = options.compounds;
+    compR.read(msghandler, pd, forceComp, &actmols);
+    // Compounds without a topology are left out
+    if (actmols.empty())
+    {
+        msghandler->msg(ACTStatus::Error, "No compound with a topology, nothing to write.");
+        return 1;
+    }
+    // Write information about force field
+    msghandler->write("");
+    for (const auto &ii : pd.info())
+    {
+        msghandler->write(ii);
+    }
+
+    // The same residue names in the OpenMM and the PDB file
+    auto residueNames = openMMResidueNames(msghandler, actmols, options.residueNames);
+    if (!msghandler->ok())
+    {
+        return 1;
+    }
+    for (auto &actmol : actmols)
+    {
+        const auto &fragIds    = actmol.fragmentHandler()->ids();
+        const auto &topologies = actmol.fragmentHandler()->topologies();
+        for (size_t fff = 0; fff < topologies.size(); fff++)
+        {
+            for (const auto &atom : topologies[fff].atoms())
+            {
+                if (atom.residueNumber() >= 0)
+                {
+                    actmol.topologyPtr()->setResidueName(atom.residueNumber(),
+                                                         residueNames[fragIds[fff]]);
+                }
+            }
+        }
+    }
+    // A program without a command line has no output environment for the
+    // histograms of the potential
+    const OutputEnvironment output(oenv);
+    int mp_index   = 1;
+    // The compounds in json format, in the file of -json if it is given
+    JsonTree    jmolecules = JsonTree::array("molecules");
+    for(auto actmol = actmols.begin(); actmol < actmols.end(); ++actmol)
+    {
+        std::vector<gmx::RVec> forces(actmol->atomsConst().size());
+        std::vector<gmx::RVec> coords = actmol->xOriginal();
+        forceComp->generateVsites(actmol->topology(), &coords);
+        actmol->updateQprops(&pd, forceComp, &forces);
+        if (!options.jsonFile.empty())
+        {
+            JsonTree jmol("compound");
+            jmol.addObject(moleculeToJson(&(*actmol)));
+            JsonTree jcoords("coordinates");
+            jcoords.addObject("unit", "nm");
+            jcoords.addObject(coordinatesToJson("positions", coords));
+            jmol.addObject(jcoords);
+            jmolecules.addObject(jmol);
+        }
+        actmol->GenerateCube(msghandler, &pd, coords, forceComp,
+                             options.spacing, options.border,
+                             fileOrNull(options.referencePotential),
+                             fileOrNull(options.potentialComparison),
+                             fileOrNull(options.pdbDifference),
+                             fileOrNull(options.potential),
+                             fileOrNull(options.density),
+                             fileOrNull(options.potentialHistogram),
+                             fileOrNull(options.potentialDifference),
+                             fileOrNull(options.differenceHistogram),
+                             output.get());
+
+        std::string index;
+        if (actmols.size() > 1)
+        {
+            index = gmx::formatString("%d_", mp_index);
+        }
+        if (options.openmmFile.empty() && !options.topologyFile.empty())
+        {
+            const std::string tfn = index + options.topologyFile;
+            actmol->PrintTopology(msghandler, tfn.c_str(), &pd, forceComp,
+                                  coords, options.includeTopology);
+        }
+        for(const auto &c : actmol->generateCommercials(msghandler, &pd, forceComp, coords))
+        {
+            msghandler->write(c);
+        }
+
+        if (!options.structureFile.empty())
+        {
+            matrix box = { { 5, 0, 0 }, { 0, 5, 0 }, { 0, 0, 5 }};
+            const std::string cfn = index + options.structureFile;
+            if (options.box)
+            {
+                for(int m = 0; m < DIM; m++)
+                {
+                    box[m][m] = (*options.box)[m];
+                }
+            }
+            actmol->PrintConformation(cfn.c_str(), coords, options.writeShells, box);
+        }
+        mp_index++;
+    }
+    if (!options.openmmFile.empty())
+    {
+        writeOpenMM(msghandler, options.openmmFile, &pd, actmols, options.drudeMass,
+                    options.minTraining, options.numberTypes, residueNames);
+    }
+    if (!options.jsonFile.empty())
+    {
+        JsonTree jtree("gentop");
+        jtree.addObject(jmolecules);
+        jtree.write(options.jsonFile, true);
+    }
+    return msghandler->ok() ? 0 : 1;
+}
 
 int gentop(int argc, char *argv[])
 {
@@ -109,20 +303,22 @@ int gentop(int argc, char *argv[])
         { efJSON, "-json",      "gentop",    ffOPTWR }
     };
 
+    GentopOptions                    options;
+    // -nsymm, -symm, -conf, -jobtype and -allowmissing are accepted, but
+    // have no effect
     int                              nsymm          = 0;
-    int                              ntrain         = 1;
-    real                             spacing        = 0.01;
-    real                             border         = 0.2;
-    real                             mDrude         = 0.1;
+    int                              ntrain         = options.minTraining;
+    real                             spacing        = options.spacing;
+    real                             border         = options.border;
+    real                             mDrude         = options.drudeMass;
     char                            *symm_string    = (char *)"";
     char                            *conf           = (char *)"minimum";
     char                            *jobtype        = (char *)"Opt";
     char                            *resnames       = (char *)"";
     //! Write shells to trajectory and coordinates
-    bool                             writeShells    = false;
-    gmx_bool                         bITP           = false;
+    bool                             writeShells    = options.writeShells;
     gmx_bool                         bAllowMissing  = false;
-    gmx_bool                         addNumbersToAtoms = true;
+    gmx_bool                         addNumbersToAtoms = options.numberTypes;
     rvec                             mybox           = { 0, 0, 0 };
 
     std::vector<t_pargs> pa =
@@ -155,10 +351,8 @@ int gentop(int argc, char *argv[])
           "Residue names for the compounds, at most four letters or digits each, separated by spaces or commas. An entry [TT]methanol=MOH[tt] names the compound methanol, which can be given as its name or its InChi, an entry [TT]MOH[tt] names the next compound without a name, in the order of the input. Residues known to OpenMM, such as HOH, cannot be used. Compounds without a name get one made from their IUPAC name." }
     };
     MsgHandler          msghandler;
-    CompoundReader      compR;
-    compR.addOptions(&pa, &fnm, &desc);
+    options.compounds.addOptions(&pa, &fnm, &desc);
     msghandler.addOptions(&pa, &fnm, "gentop.log");
-    int status = 0;
     if (!parse_common_args(&argc, argv, 0, fnm.size(), fnm.data(), pa.size(), pa.data(),
                            desc.size(), desc.data(), 0, nullptr, &oenv))
     {
@@ -167,169 +361,63 @@ int gentop(int argc, char *argv[])
     CommunicationRecord cr;
     cr.init(cr.size());
     msghandler.optionsFinished(fnm, &cr);
-    
-    compR.optionsFinished(&msghandler, fnm);
-    if (!msghandler.ok())
-    {
-        return 1;
-    }
-    ForceField          pd;
-    std::string         method, basis;
-
-    /* Check the options */
-    bITP = opt2bSet("-oi", fnm.size(), fnm.data());
-
-    const char *gentop_fnm = opt2fn_null("-ff", fnm.size(), fnm.data());
-    if (nullptr == gentop_fnm)
-    {
-        fprintf(stderr, "Please pass me a force field file name with the -ff option.\n");
-        return 1;
-    }
-
     try
     {
-        readForceField(gentop_fnm, &pd, &msghandler);
+        options.compounds.optionsFinished(&msghandler, fnm);
+        if (!msghandler.ok())
+        {
+            return 1;
+        }
+        const char *forceField = opt2fn_null("-ff", fnm.size(), fnm.data());
+        if (nullptr == forceField)
+        {
+            fprintf(stderr, "Please pass me a force field file name with the -ff option.\n");
+            return 1;
+        }
+        options.forceFieldFile  = forceField;
+        options.includeTopology = opt2bSet("-oi", fnm.size(), fnm.data());
+        // A topology is written also without -p, unless there is an OpenMM file
+        options.topologyFile    = options.includeTopology ? ftp2fn(efITP, fnm.size(), fnm.data())
+                                                          : ftp2fn(efTOP, fnm.size(), fnm.data());
+        const auto setFile      = [&fnm](const char *option)
+        {
+            return opt2bSet(option, fnm.size(), fnm.data()) ? std::string(opt2fn(option, fnm.size(), fnm.data()))
+                                                            : std::string();
+        };
+        options.openmmFile    = setFile("-openmm");
+        options.structureFile = setFile("-c");
+        const auto optional   = [&fnm](const char *option)
+        {
+            const char *name = opt2fn_null(option, fnm.size(), fnm.data());
+            return std::string(name ? name : "");
+        };
+        options.jsonFile            = optional("-json");
+        options.referencePotential  = optional("-ref");
+        options.potentialComparison = optional("-pc");
+        options.pdbDifference       = optional("-pdbdiff");
+        options.potential           = optional("-pot");
+        options.density             = optional("-rho");
+        options.potentialHistogram  = optional("-his");
+        options.potentialDifference = optional("-diff");
+        options.differenceHistogram = optional("-diffhist");
+        if (opt2parg_bSet("-box", pa.size(), pa.data()))
+        {
+            options.box = std::array<double, 3>{ mybox[XX], mybox[YY], mybox[ZZ] };
+        }
+        options.writeShells  = writeShells;
+        options.drudeMass    = mDrude;
+        options.minTraining  = ntrain;
+        options.numberTypes  = addNumbersToAtoms;
+        options.residueNames = resnames;
+        options.spacing      = spacing;
+        options.border       = border;
+        return runGentop(&msghandler, options, oenv);
     }
-    GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
-    (void) pd.verifyCheckSum(&msghandler);
-    // GROMACS and OpenMM do not support second charges, use virtual sites instead
-    pd.expandSecondCharges(&msghandler);
-
-    std::string my_pol;
-    if (pd.polarizable())
+    catch (const gmx::InvalidInputError &ex)
     {
-        my_pol.assign(" polarizable");
-    }
-    auto qType = pd.chargeDistribution();
-    printf("Using%s force field file %s and charge distribution model %s\n",
-           my_pol.c_str(), gentop_fnm, chargeDistributionTypeName(qType).c_str());
-    msghandler.write(gmx::formatString("Read force field information. There are %zu atomtypes.\n",
-                                       pd.getNatypes()));
-
-    auto forceComp = new ForceComputer();
-    std::vector<ACTMol> actmols;
-    compR.read(&msghandler, pd, forceComp, &actmols);
-    // Compounds without a topology are left out
-    if (actmols.empty())
-    {
-        msghandler.msg(ACTStatus::Error, "No compound with a topology, nothing to write.");
+        fprintf(stderr, "%s\n", ex.what());
         return 1;
     }
-    // Write information about force field
-    msghandler.write("");
-    for (const auto &ii : pd.info())
-    {
-        msghandler.write(ii);
-    }
-
-    // The same residue names in the OpenMM and the PDB file
-    auto residueNames = openMMResidueNames(&msghandler, actmols, resnames);
-    if (!msghandler.ok())
-    {
-        return 1;
-    }
-    for (auto &actmol : actmols)
-    {
-        const auto &fragIds    = actmol.fragmentHandler()->ids();
-        const auto &topologies = actmol.fragmentHandler()->topologies();
-        for (size_t fff = 0; fff < topologies.size(); fff++)
-        {
-            for (const auto &atom : topologies[fff].atoms())
-            {
-                if (atom.residueNumber() >= 0)
-                {
-                    actmol.topologyPtr()->setResidueName(atom.residueNumber(),
-                                                         residueNames[fragIds[fff]]);
-                }
-            }
-        }
-    }
-    int mp_index   = 1;
-    // The compounds in json format, in the file of -json if it is given
-    const char *jsonFile   = opt2fn_null("-json", fnm.size(), fnm.data());
-    JsonTree    jmolecules = JsonTree::array("molecules");
-    for(auto actmol = actmols.begin(); actmol < actmols.end(); ++actmol)
-    {
-        std::vector<gmx::RVec> forces(actmol->atomsConst().size());
-        std::vector<gmx::RVec> coords = actmol->xOriginal();
-        forceComp->generateVsites(actmol->topology(), &coords);
-        actmol->updateQprops(&pd, forceComp, &forces);
-        if (jsonFile)
-        {
-            JsonTree jmol("compound");
-            jmol.addObject(moleculeToJson(&(*actmol)));
-            JsonTree jcoords("coordinates");
-            jcoords.addObject("unit", "nm");
-            jcoords.addObject(coordinatesToJson("positions", coords));
-            jmol.addObject(jcoords);
-            jmolecules.addObject(jmol);
-        }
-        actmol->GenerateCube(&msghandler, &pd, coords, forceComp,
-                             spacing, border,
-                             opt2fn_null("-ref",      fnm.size(), fnm.data()),
-                             opt2fn_null("-pc",       fnm.size(), fnm.data()),
-                             opt2fn_null("-pdbdiff",  fnm.size(), fnm.data()),
-                             opt2fn_null("-pot",      fnm.size(), fnm.data()),
-                             opt2fn_null("-rho",      fnm.size(), fnm.data()),
-                             opt2fn_null("-his",      fnm.size(), fnm.data()),
-                             opt2fn_null("-diff",     fnm.size(), fnm.data()),
-                             opt2fn_null("-diffhist", fnm.size(), fnm.data()),
-                             oenv);
-
-        std::string index;
-        if (actmols.size() > 1)
-        {
-            index = gmx::formatString("%d_", mp_index);
-        }
-        if (!opt2bSet("-openmm", fnm.size(), fnm.data()))
-        {
-            const std::string tfn = gmx::formatString("%s%s", index.c_str(),
-                                                      bITP ? ftp2fn(efITP, fnm.size(), fnm.data()) : ftp2fn(efTOP, fnm.size(), fnm.data()));
-            actmol->PrintTopology(&msghandler, tfn.c_str(), &pd, forceComp,
-                                  coords, bITP);
-        }
-        for(const auto &c : actmol->generateCommercials(&msghandler, &pd, forceComp, coords))
-        {
-            msghandler.write(c);
-        }
-
-        if (opt2bSet("-c", fnm.size(), fnm.data()))
-        {
-            matrix box = { { 5, 0, 0 }, { 0, 5, 0 }, { 0, 0, 5 }};
-            const std::string cfn = gmx::formatString("%s%s", index.c_str(),
-                                                      opt2fn("-c", fnm.size(), fnm.data()));
-            if (opt2parg_bSet("-box", pa.size(), pa.data()))
-            {
-                for(int m = 0; m < DIM; m++)
-                {
-                    box[m][m] = mybox[m];
-                    }
-            }
-            actmol->PrintConformation(cfn.c_str(), coords, writeShells, box);
-        }
-        mp_index++;
-    }
-    if (!actmols.empty())
-    {
-        if (opt2bSet("-openmm", fnm.size(), fnm.data()))
-        {
-            writeOpenMM(&msghandler,
-                        opt2fn("-openmm", fnm.size(), fnm.data()),
-                        &pd, actmols, mDrude, ntrain, addNumbersToAtoms,
-                        residueNames);
-        }
-    }
-    if (jsonFile)
-    {
-        JsonTree jtree("gentop");
-        jtree.addObject(jmolecules);
-        jtree.write(jsonFile, true);
-    }
-    if (!msghandler.ok())
-    {
-        status = 1;
-    }
-    return status;
 }
 
 } // namespace alexandria

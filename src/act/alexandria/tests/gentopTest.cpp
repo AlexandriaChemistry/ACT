@@ -48,6 +48,7 @@
 #include <vector>
 
 #include "act/alexandria/alex_modules.h"
+#include "act/alexandria/gentop.h"
 #include "act/basics/chargemodel.h"
 #include "act/basics/identifier.h"
 #include "act/basics/interactiontype.h"
@@ -873,6 +874,127 @@ TEST_F(GentopResultsTest, TotalCharge)
     check("forcefields/ACS-g1.xml",
           { { "-f", fileManager().getInputFilePath("molecules/sodium#water.pdb") }, { "-qtot", "1" } },
           { { "-json", "qtot.json" } });
+}
+
+//! \return the contents of a file
+static std::string fileContents(const std::string &fileName)
+{
+    const std::ifstream in(fileName);
+    std::stringstream text;
+    text << in.rdbuf();
+    return text.str();
+}
+
+// The topologies without a command line, as a program that uses ACT makes them
+
+TEST_F(GentopTest, WithoutCommandLineSameAsTheProgram)
+{
+    const auto acetone = fileManager().getInputFilePath("molecules/acetone.sdf");
+    // A topology, a structure and the compounds in JSON
+    {
+        std::map<std::string, std::string> files = { { "-p", "tool.top" }, { "-c", "tool.pdb" },
+                                                     { "-json", "tool.json" } };
+        run("forcefields/ACS-g1.xml", { { "-f", acetone } }, &files);
+        GentopOptions options;
+        options.forceFieldFile = fileManager().getInputFilePath("forcefields/ACS-g1.xml");
+        options.compounds.setFileName(acetone);
+        options.topologyFile  = fileManager().getTemporaryFilePath("direct.top");
+        options.structureFile = fileManager().getTemporaryFilePath("direct.pdb");
+        options.jsonFile      = fileManager().getTemporaryFilePath("direct.json");
+        MsgHandler msghandler;
+        msghandler.setPrintLevel(ACTStatus::Fatal);
+        EXPECT_EQ(0, alexandria::runGentop(&msghandler, options));
+        EXPECT_EQ(fileContents(files["-p"]), fileContents(options.topologyFile));
+        EXPECT_EQ(fileContents(files["-c"]), fileContents(options.structureFile));
+        EXPECT_EQ(fileContents(files["-json"]), fileContents(options.jsonFile));
+    }
+    // OpenMM with other options, and a structure with the shells in another box
+    {
+        std::map<std::string, std::string> files = { { "-openmm", "tool-openmm.xml" }, { "-c", "tool-openmm.pdb" } };
+        run("forcefields/ACS-pg1.xml", { { "-f", acetone }, { "-mDrude", "0.4" }, { "-ntrain", "0" },
+                                         { "-numberAtypes", "no" }, { "-ws", "yes" } }, &files);
+        GentopOptions options;
+        options.forceFieldFile = fileManager().getInputFilePath("forcefields/ACS-pg1.xml");
+        options.compounds.setFileName(acetone);
+        options.openmmFile    = fileManager().getTemporaryFilePath("direct-openmm.xml");
+        options.structureFile = fileManager().getTemporaryFilePath("direct-openmm.pdb");
+        // As the program reads it, a real
+        options.drudeMass     = static_cast<real>(0.4);
+        options.minTraining   = 0;
+        options.numberTypes   = false;
+        options.writeShells   = true;
+        MsgHandler msghandler;
+        msghandler.setPrintLevel(ACTStatus::Fatal);
+        EXPECT_EQ(0, alexandria::runGentop(&msghandler, options));
+        EXPECT_EQ(fileContents(files["-openmm"]), fileContents(options.openmmFile));
+        EXPECT_EQ(fileContents(files["-c"]), fileContents(options.structureFile));
+        // The box of the structure file
+        options.box = std::array<double, 3>{ 3, 4, 5 };
+        EXPECT_EQ(0, alexandria::runGentop(&msghandler, options));
+        EXPECT_NE(std::string::npos, fileContents(options.structureFile).find("CRYST1   30.000   40.000   50.000"));
+    }
+}
+
+TEST_F(GentopTest, WithoutCommandLineWrongOptions)
+{
+    const auto valid = [this]()
+    {
+        GentopOptions options;
+        options.forceFieldFile = fileManager().getInputFilePath("forcefields/ACS-g1.xml");
+        options.compounds.setFileName(fileManager().getInputFilePath("molecules/acetone.sdf"));
+        return options;
+    };
+    std::vector<std::pair<GentopOptions, std::string>> wrong;
+    {
+        auto o = valid();
+        o.forceFieldFile.clear();
+        wrong.emplace_back(o, "-ff");
+    }
+    {
+        GentopOptions o;
+        o.forceFieldFile = fileManager().getInputFilePath("forcefields/ACS-g1.xml");
+        wrong.emplace_back(o, "-f");
+    }
+    {
+        auto o = valid();
+        o.drudeMass = -0.1;
+        wrong.emplace_back(o, "-mDrude");
+    }
+    {
+        auto o = valid();
+        o.minTraining = -1;
+        wrong.emplace_back(o, "-ntrain");
+    }
+    {
+        auto o = valid();
+        o.spacing = 0;
+        wrong.emplace_back(o, "-spacing");
+    }
+    {
+        auto o = valid();
+        o.box = std::array<double, 3>{ 3, -1, 3 };
+        wrong.emplace_back(o, "-box");
+    }
+    for (const auto &w : wrong)
+    {
+        MsgHandler msghandler;
+        msghandler.setPrintLevel(ACTStatus::Fatal);
+        try
+        {
+            alexandria::runGentop(&msghandler, w.first);
+            ADD_FAILURE() << "Accepted options with a wrong " << w.second;
+        }
+        catch (const gmx::InvalidInputError &ex)
+        {
+            EXPECT_NE(std::string::npos, std::string(ex.what()).find(w.second)) << ex.what();
+        }
+    }
+    // The program says the same and stops
+    std::map<std::string, std::string> files = { { "-p", "wrong.top" } };
+    EXPECT_EQ(1, status("forcefields/ACS-g1.xml",
+                        { { "-f", fileManager().getInputFilePath("molecules/acetone.sdf") }, { "-ntrain", "-2" } },
+                        &files));
+    EXPECT_FALSE(std::filesystem::exists(files["-p"]));
 }
 
 class GentopMissingTest : public GentopTest
