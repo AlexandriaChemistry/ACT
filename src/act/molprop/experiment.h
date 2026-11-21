@@ -86,6 +86,59 @@ const char *dataSourceName(DataSource ds);
  */
 DataSource dataSourceFromName(const std::string &name);
 
+/*! \brief The properties of an experiment by observable
+ *
+ * A map that copies its properties, of the classes they have, when it is
+ * copied, such that an experiment, and a compound with its experiments, can
+ * be copied.
+ */
+class PropertyMap : public std::map<MolPropObservable, std::vector<std::unique_ptr<GenericProperty>>>
+{
+public:
+    //! An empty map
+    PropertyMap() = default;
+    //! A copy, with copies of the properties
+    PropertyMap(const PropertyMap &other) : std::map<MolPropObservable, std::vector<std::unique_ptr<GenericProperty>>>()
+    {
+        copyFrom(other);
+    }
+    /*! \brief Replace the properties by copies of those of another map
+     * \param[in] other The other map
+     * \return this map
+     */
+    PropertyMap &operator=(const PropertyMap &other)
+    {
+        if (this != &other)
+        {
+            clear();
+            copyFrom(other);
+        }
+        return *this;
+    }
+    //! Moves the properties
+    PropertyMap(PropertyMap &&) noexcept = default;
+    //! Moves the properties
+    PropertyMap &operator=(PropertyMap &&) noexcept = default;
+    //! Destructor
+    ~PropertyMap() = default;
+
+private:
+    /*! \brief Add copies of the properties of another map
+     * \param[in] other The other map
+     */
+    void copyFrom(const PropertyMap &other)
+    {
+        for (const auto &observable : other)
+        {
+            auto &properties = (*this)[observable.first];
+            for (const auto &property : observable.second)
+            {
+                properties.push_back(property->clone());
+            }
+        }
+    }
+};
+
 /*! \brief
  * Contains molecular data based on experiments
  *
@@ -285,7 +338,7 @@ private:
     //! Experiment ID
     int                                  id_ = 0;
     //! Properties, indexed by observable type
-    std::map<MolPropObservable, std::vector<std::unique_ptr<GenericProperty > > > property_;
+    PropertyMap                          property_;
     
     // std::vector<ElectrostaticPotential>  potential_;
     //! Atomic coordinates, converted to GROMACS units (nm)

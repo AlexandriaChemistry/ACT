@@ -35,6 +35,7 @@
 #ifndef MOLPROPOBSERVABLE_H
 #define MOLPROPOBSERVABLE_H
 
+#include <memory>
 #include <string>
 #include <vector>
 
@@ -190,6 +191,9 @@ private:
      * Phase in which the property is measured or computed: e.x. Gas, Liquid, and Solid
      */
     ePhase            eP_ = ePhase::PLASMA;
+protected:
+    //! For the copies of the derived classes, see clone
+    GenericProperty(const GenericProperty &) = default;
 public:
     //! Default constructor
     GenericProperty() = default;
@@ -215,7 +219,10 @@ public:
     //! Destructor
     virtual ~GenericProperty() = default;
 
-    //! Copy constructor
+    //! \return a copy of this property, of the class it has
+    virtual std::unique_ptr<GenericProperty> clone() const = 0;
+
+    //! Move constructor
     GenericProperty(GenericProperty &&) = default;
 
     /*! \brief
@@ -317,6 +324,9 @@ private:
     //! The values of the electric multipole
     std::vector<double> values_;
 public:
+    //! \return a copy of this property
+    std::unique_ptr<GenericProperty> clone() const override { return std::make_unique<MolecularMultipole>(*this); }
+
     //! Default constructor
     MolecularMultipole() = default;
     
@@ -398,6 +408,9 @@ private:
     //! The frequencies
     std::vector<double> values_;
 public:
+    //! \return a copy of this property
+    std::unique_ptr<GenericProperty> clone() const override { return std::make_unique<Harmonics>(*this); }
+
     //! Default constructor
     Harmonics() = default;
     
@@ -477,6 +490,9 @@ private:
     //! The polarizability tensor
     tensor alpha_ = {{ 0 }};
 public:
+    //! \return a copy of this property
+    std::unique_ptr<GenericProperty> clone() const override { return std::make_unique<MolecularPolarizability>(*this); }
+
     //! Default constructor
     MolecularPolarizability() = default;
     
@@ -561,6 +577,9 @@ private:
     //! The error, converted to GROMACS units (e.g. kJ/mol)
     double error_  = 0;
 public:
+    //! \return a copy of this property
+    std::unique_ptr<GenericProperty> clone() const override { return std::make_unique<MolecularEnergy>(*this); }
+
     //! Default constructor needed for receiving over a network
     MolecularEnergy() = default;
 
@@ -649,6 +668,9 @@ private:
     //! Potential values
     std::vector<double>    V_;
 public:
+    //! \return a copy of this property
+    std::unique_ptr<GenericProperty> clone() const override { return std::make_unique<ElectrostaticPotential>(*this); }
+
     //! Default constructor
     ElectrostaticPotential() = default;
     

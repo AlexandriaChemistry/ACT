@@ -55,6 +55,7 @@
 #include <map>
 #include <memory>
 #include <optional>
+#include <set>
 #include <string>
 #include <vector>
 
@@ -1922,6 +1923,55 @@ void defineMolProps(py::module_ &module)
              "each: reference, conformation, method, basisset, program, jobtype, datafile,\n"
              "the atoms, their coordinates in nm, and the properties, each with observable,\n"
              "type, value, error, unit, temperature and, for a vector or tensor, vector.")
+        .def("select",
+             [](const MolProps &molprops, const std::vector<py::object> &compounds)
+             {
+                 MolProps selected;
+                 for (const auto &which : compounds)
+                 {
+                     selected.mps.push_back(compoundOf(molprops, which));
+                 }
+                 return selected;
+             },
+             py::arg("compounds"),
+             "A new set with the given compounds, by place or name, in the order given.\n"
+             "Raises KeyError or IndexError for one that is not there.")
+        .def("exclude",
+             [](const MolProps &molprops, const std::vector<py::object> &compounds)
+             {
+                 std::set<const MolProp *> leftOut;
+                 for (const auto &which : compounds)
+                 {
+                     leftOut.insert(&compoundOf(molprops, which));
+                 }
+                 MolProps kept;
+                 for (const auto &mp : molprops.mps)
+                 {
+                     if (leftOut.count(&mp) == 0)
+                     {
+                         kept.mps.push_back(mp);
+                     }
+                 }
+                 return kept;
+             },
+             py::arg("compounds"),
+             "A new set without the given compounds, by place or name.\n"
+             "Raises KeyError or IndexError for one that is not there.")
+        .def("merge",
+             [](const MolProps &molprops, const MolProps &other)
+             {
+                 MolProps merged;
+                 merged.mps = molprops.mps;
+                 merged.mps.insert(merged.mps.end(), other.mps.begin(), other.mps.end());
+                 QuietMessages messages;
+                 mergeMolProps(messages.handler(), &merged.mps);
+                 messages.check("The compounds could not be merged");
+                 return merged;
+             },
+             py::arg("other"),
+             "A new set with the compounds of both, sorted by name, and the calculations of\n"
+             "a compound that both have merged into one, as alexandria edit_mp merges\n"
+             "molprop files.")
         .def("validate",
              [](MolProps &molprops)
              {

@@ -177,6 +177,14 @@ void merge_xml(MsgHandler                             *msg_handler,
         }
     }
     auto mpBefore = mpout->size();
+    mergeMolProps(msg_handler, mpout);
+    printf("There were %zu molecule entries before merging, %zu after.\n",
+           mpBefore, mpout->size());
+}
+
+void mergeMolProps(MsgHandler                       *msg_handler,
+                   std::vector<alexandria::MolProp> *mpout)
+{
     gmx::TextWriter *tw = nullptr;
     if (msg_handler && msg_handler->debug())
     {
@@ -192,8 +200,6 @@ void merge_xml(MsgHandler                             *msg_handler,
     std::sort(mpout->begin(), mpout->end(),
               [](const MolProp &ma, const MolProp &mb) { return ma.getMolname() < mb.getMolname(); });
     MergeDoubleMolprops(msg_handler, mpout);
-    printf("There were %zu molecule entries before merging, %zu after.\n",
-           mpBefore, mpout->size());
 }
 
 /*! \brief The first experiment of a molecule that has atoms

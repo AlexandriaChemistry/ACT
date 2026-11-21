@@ -35,6 +35,7 @@
 
 #include <fstream>
 #include <gtest/gtest.h>
+#include <iterator>
 #include <libxml/xmlversion.h>
 #include <string>
 #include <vector>
@@ -178,6 +179,49 @@ TEST(MolpropFileErrorsTest, CompressedFile)
     MolPropRead(nullptr, packed.c_str(), &again);
     EXPECT_EQ(mps.size(), again.size());
     EXPECT_GT(again.size(), 0U);
+}
+
+//! \return The contents of a file
+std::string contents(const std::string &fileName)
+{
+    std::ifstream in(fileName);
+    return std::string((std::istreambuf_iterator<char>(in)), std::istreambuf_iterator<char>());
+}
+
+// Test: A copy of compounds is a copy of all they have, including the
+// properties of their experiments, and does not share them
+TEST(MolpropCopyTest, CopiesAreDeep)
+{
+    const auto           mps  = testCompounds();
+    std::vector<MolProp> copy = mps;
+    gmx::test::TestFileManager fileManager;
+    const std::string          original = fileManager.getTemporaryFilePath("original.xml");
+    const std::string          copied   = fileManager.getTemporaryFilePath("copied.xml");
+    MolPropWrite(original.c_str(), mps, false);
+    MolPropWrite(copied.c_str(), copy, false);
+    EXPECT_EQ(contents(original), contents(copied));
+    // Without the properties of the copy the original keeps its own
+    size_t before = 0;
+    for (const auto &experiment : mps[0].experimentConst())
+    {
+        before += experiment.propertiesConst().size();
+    }
+    ASSERT_GT(before, 0U);
+    for (auto &experiment : *copy[0].experiment())
+    {
+        experiment.properties()->clear();
+    }
+    size_t after = 0;
+    for (const auto &experiment : mps[0].experimentConst())
+    {
+        after += experiment.propertiesConst().size();
+    }
+    EXPECT_EQ(before, after);
+    // And a copy that is assigned
+    std::vector<MolProp> assigned;
+    assigned = mps;
+    MolPropWrite(copied.c_str(), assigned, false);
+    EXPECT_EQ(contents(original), contents(copied));
 }
 
 } // namespace
