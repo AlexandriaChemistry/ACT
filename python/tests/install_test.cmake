@@ -21,11 +21,16 @@ execute_process(
 if(NOT _result EQUAL 0)
     message(FATAL_ERROR "Installing the Python package failed:\n${_output}")
 endif()
+# Whether the installed package must have the classes of ACT
+set(_classes "")
+if(ACT_CLASSES)
+    set(_classes "classes")
+endif()
 # -E -s: without PYTHONPATH and the packages of the user, which may have
 # another act
 execute_process(
     COMMAND ${ACT_PYTHON} -E -s ${ACT_CHECK}
-            ${_prefix}/${ACT_SITE_DIR} ${_prefix}/${ACT_BIN_DIR}/${ACT_PROGRAM}
+            ${_prefix}/${ACT_SITE_DIR} ${_prefix}/${ACT_BIN_DIR}/${ACT_PROGRAM} ${_classes}
     WORKING_DIRECTORY ${_prefix}
     RESULT_VARIABLE _result)
 if(NOT _result EQUAL 0)

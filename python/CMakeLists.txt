@@ -60,7 +60,9 @@ if(ACT_PYTHON)
     set_target_properties(act_python_core PROPERTIES
                           OUTPUT_NAME _core
                           LIBRARY_OUTPUT_DIRECTORY ${ACT_PYTHON_BUILD_PACKAGE})
-    target_link_libraries(act_python_core PRIVATE actLib)
+    # dladdr, to find where the module is, is in a library of its own on
+    # systems with an older C library
+    target_link_libraries(act_python_core PRIVATE actLib ${CMAKE_DL_LIBS})
     # From the package where the module is installed to the installation
     # prefix, where the data files of ACT are
     file(RELATIVE_PATH ACT_PYTHON_TO_PREFIX
@@ -142,7 +144,12 @@ if(BUILD_TESTING AND Python3_Interpreter_FOUND)
     endif()
     if(ACT_INSTALL_PYTHON_PACKAGE)
         # Installs the package in a directory of the build tree and imports
-        # it from there
+        # it from there. With the module of the classes, if that has the
+        # libraries of ACT in it: shared libraries are not in that directory.
+        set(ACT_PYTHON_INSTALL_TEST_CLASSES OFF)
+        if(ACT_PYTHON AND NOT BUILD_SHARED_LIBS)
+            set(ACT_PYTHON_INSTALL_TEST_CLASSES ON)
+        endif()
         add_test(NAME PythonInstallTest
                  COMMAND ${CMAKE_COMMAND}
                          -DACT_BINARY_DIR=${CMAKE_BINARY_DIR}
@@ -150,6 +157,7 @@ if(BUILD_TESTING AND Python3_Interpreter_FOUND)
                          -DACT_SITE_DIR=${CMAKE_INSTALL_PYTHON_LIBDIR}
                          -DACT_BIN_DIR=${CMAKE_INSTALL_BINDIR}
                          -DACT_PROGRAM=$<TARGET_FILE_NAME:alexandria>
+                         -DACT_CLASSES=${ACT_PYTHON_INSTALL_TEST_CLASSES}
                          -DACT_CHECK=${CMAKE_CURRENT_SOURCE_DIR}/tests/check_installed.py
                          -P ${CMAKE_CURRENT_SOURCE_DIR}/tests/install_test.cmake)
         set_tests_properties(PythonInstallTest PROPERTIES

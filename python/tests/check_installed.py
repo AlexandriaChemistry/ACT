@@ -10,10 +10,11 @@
 @file
 @brief Check of an installed package act, run by install_test.cmake.
 
-Usage: check_installed.py SITE_DIR PROGRAM, with the directory in which the
-package was installed and the path at which the installation puts the
-alexandria program. The program itself need not be there: this script puts
-a stand-in at that path.
+Usage: check_installed.py SITE_DIR PROGRAM [classes], with the directory in
+which the package was installed and the path at which the installation puts
+the alexandria program. The program itself need not be there: this script
+puts a stand-in at that path. With the word classes the installed package
+must have the classes of ACT, the module act._core, as well.
 """
 import os
 import stat
@@ -38,6 +39,20 @@ def main() -> int:
     for name in ("commands", "errors", "legacy", "options", "runner", "_installed"):
         if not os.path.isfile(os.path.join(package_dir, name + ".py")):
             print("The module %s was not installed" % name)
+            return 1
+
+    if "classes" in sys.argv[3:]:
+        # The installed module, not one from somewhere else, and it loads
+        if not act.classes_available():
+            print("The module with the classes of ACT was not installed in %s, "
+                  "or cannot be loaded" % package_dir)
+            return 1
+        module = sys.modules["act._core"]
+        if os.path.dirname(os.path.realpath(module.__file__)) != package_dir:
+            print("Imported %s, which is not the installed module" % module.__file__)
+            return 1
+        if act.ForceField.__module__ != "act._core":
+            print("The class ForceField is not that of the module")
             return 1
 
     from act import runner  # pylint: disable=import-outside-toplevel

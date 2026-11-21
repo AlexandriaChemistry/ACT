@@ -115,8 +115,8 @@ public:
     ModuleContext()
     {
         Dl_info info;
-        // The file that this very function was loaded from
-        if (dladdr(reinterpret_cast<const void *>(&anchor), &info) != 0 && info.dli_fname != nullptr)
+        // The file that this very module was loaded from
+        if (dladdr(&anchor_, &info) != 0 && info.dli_fname != nullptr)
         {
             std::error_code ignored;
             path_ = info.dli_fname;
@@ -149,8 +149,8 @@ public:
     }
 
 private:
-    //! A function of this module, to find the file it is in
-    static void anchor() {}
+    //! Something of this module, to find the file it is in
+    static inline const int anchor_ = 0;
     //! The file of this module and the installation prefix, empty if not found
     std::string path_, prefix_;
 };
