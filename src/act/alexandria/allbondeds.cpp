@@ -56,6 +56,7 @@
 #include "act/statistics/statistics.h"
 #include "act/topology/actmol.h"
 #include "act/topology/actmol_low.h"
+#include "act/utility/jsontree.h"
 #include "act/utility/units.h"
 #include "allbondeds.h"
 #include "gromacs/commandline/pargs.h"
@@ -82,6 +83,7 @@ namespace alexandria
 
 void OneBonded::addPoint(double x)
 {
+    values_.push_back(x);
     auto N  = lsq_.get_npoints();
     auto ok = lsq_.add_point(N, x, 0, 0);
 
@@ -198,7 +200,8 @@ void AllBondeds::addBondeds(MsgHandler             *msghandler,
         // the virtual sites cannot be constructed since the topology is built
         // without parameters, see missingParameters::Generate.
         const auto coords = mmi.experCoords(exper.getCoordinates(), false);
-        addBonded(msghandler, iType, mmi, bondId, atomid, coords);
+        addBonded(msghandler, iType, mmi, bondId, atomid, coords,
+                  static_cast<int>(&exper - mmi.experimentConst().data()));
     }
 }
 
@@ -207,7 +210,8 @@ void AllBondeds::addBonded(MsgHandler                   *msghandler,
                            const ACTMol                 &mmi,
                            const Identifier             &bondId,
                            const std::vector<int>       &atomid,
-                           const std::vector<gmx::RVec> &x)
+                           const std::vector<gmx::RVec> &x,
+                           int                           experiment)
 {
     // We need to check for linear angles here before we
     // add this to the tables.
@@ -303,6 +307,10 @@ void AllBondeds::addBonded(MsgHandler                   *msghandler,
         ob = bondeds_[iType].end()-1;
     }
     ob->addPoint(refValue);
+    if (keepSamples_ && !molecules_.empty())
+    {
+        ob->addSample({ refValue, static_cast<int>(molecules_.size()) - 1, experiment, atomid });
+    }
 
     msghandler->msg(ACTStatus::Verbose,
                     gmx::formatString("%s %s-%s %g\n",
@@ -672,6 +680,21 @@ void AllBondeds::extractGeometries(MsgHandler           *msghandler,
                     continue;
                 }
             }
+            if (keepSamples_)
+            {
+                // Where the values of this molecule come from
+                SampledMolecule sampled;
+                sampled.name = mmi.getMolname();
+                for (const auto &exper : mmi.experimentConst())
+                {
+                    sampled.datafiles.push_back(exper.getDatafile());
+                }
+                for (const auto &atom : mmi.topology()->atoms())
+                {
+                    sampled.atomNames.push_back(atom.name());
+                }
+                molecules_.push_back(std::move(sampled));
+            }
             for(const auto &entry : mmi.topology()->entries())
             {
                 for (const auto &topentry : entry.second)
@@ -683,6 +706,86 @@ void AllBondeds::extractGeometries(MsgHandler           *msghandler,
             actmols->push_back(std::move(mmi));
         }
     }
+}
+
+JsonTree AllBondeds::histogramsToJson(size_t maxSamples) const
+{
+    // The unit and the width of a bin, as the files of -histo have them,
+    // with angles of linear angles in degrees as well
+    const std::map<InteractionType, std::pair<std::string, double>> scales = {
+        { InteractionType::BONDS,              { "pm", bspacing_ } },
+        { InteractionType::ANGLES,             { "degree", aspacing_ } },
+        { InteractionType::LINEAR_ANGLES,      { "degree", aspacing_ } },
+        { InteractionType::PROPER_DIHEDRALS,   { "degree", dspacing_ } },
+        { InteractionType::IMPROPER_DIHEDRALS, { "degree", dspacing_ } }
+    };
+    JsonTree jh = JsonTree::object("histograms");
+    for (const auto &bb : bondeds_)
+    {
+        const auto scale = scales.find(bb.first);
+        if (scales.end() == scale)
+        {
+            continue;
+        }
+        const double width = scale->second.second > 0 ? scale->second.second : 1;
+        JsonTree     jtype = JsonTree::array(interactionTypeToString(bb.first));
+        for (const auto &ob : bb.second)
+        {
+            JsonTree jo("");
+            jo.addObject("identifier", ob.id().id());
+            jo.addObject("unit", scale->second.first);
+            jo.addObject("binwidth", width);
+            jo.addObject("count", static_cast<int>(ob.values().size()));
+            // The values in each bin, by the number of the bin
+            std::map<long, std::vector<size_t>> bins;
+            for (size_t i = 0; i < ob.values().size(); i++)
+            {
+                bins[static_cast<long>(std::floor(ob.values()[i]/width))].push_back(i);
+            }
+            const bool withSamples = maxSamples > 0 && ob.samples().size() == ob.values().size();
+            JsonTree   jbins       = JsonTree::array("bins");
+            for (const auto &bin : bins)
+            {
+                JsonTree jb("");
+                jb.addObject("value", (bin.first + 0.5)*width);
+                jb.addObject("count", static_cast<int>(bin.second.size()));
+                if (withSamples)
+                {
+                    JsonTree jsamples = JsonTree::array("samples");
+                    const auto n      = std::min(maxSamples, bin.second.size());
+                    for (size_t k = 0; k < n; k++)
+                    {
+                        const auto &sample   = ob.samples()[bin.second[k]];
+                        const auto &molecule = molecules_[sample.molecule];
+                        JsonTree    js("");
+                        js.addObject("value", sample.value);
+                        js.addObject("molecule", molecule.name);
+                        js.addObject("calculation",
+                                     sample.experiment >= 0 && sample.experiment < static_cast<int>(molecule.datafiles.size())
+                                     ? molecule.datafiles[sample.experiment] : std::string());
+                        std::vector<int> numbers;
+                        std::string      names;
+                        for (const auto a : sample.atoms)
+                        {
+                            numbers.push_back(a + 1);
+                            const auto name = a < static_cast<int>(molecule.atomNames.size()) ? molecule.atomNames[a] : std::string("?");
+                            names += gmx::formatString("%s%s%d", names.empty() ? "" : "-", name.c_str(), a + 1);
+                        }
+                        js.addArray("atoms", numbers);
+                        js.addObject("names", names);
+                        jsamples.addObject(js);
+                    }
+                    jb.addObject(jsamples);
+                    jb.addObject("more", static_cast<int>(bin.second.size() - n));
+                }
+                jbins.addObject(jb);
+            }
+            jo.addObject(jbins);
+            jtype.addObject(jo);
+        }
+        jh.addObject(jtype);
+    }
+    return jh;
 }
 
 std::map<InteractionType, size_t> AllBondeds::counts() const

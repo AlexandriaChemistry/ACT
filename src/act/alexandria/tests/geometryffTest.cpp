@@ -32,10 +32,12 @@
 
 #include "actpre.h"
 
+#include <algorithm>
 #include <filesystem>
 #include <fstream>
 #include <gtest/gtest.h>
 #include <nlohmann/json.hpp>
+#include <set>
 #include <string>
 
 #include "act/alexandria/alex_modules.h"
@@ -169,6 +171,86 @@ TEST_F(GeometryFFTest, Json)
     }
     EXPECT_TRUE(found);
     EXPECT_TRUE(root.at("validation").at("issues").is_array());
+}
+
+// Test: With -json the histograms of the bond lengths and angles are there,
+// and with -samples each bin says, for some of its values, the compound,
+// the calculation and the atoms they come from
+TEST_F(GeometryFFTest, Histograms)
+{
+    const auto jsonFile = fileManager().getTemporaryFilePath("histograms.json");
+    gmx::test::CommandLine cmd;
+    cmd.append("geometry_ff");
+    cmd.addOption("-mp", fileManager().getInputFilePath("molprop/molprop.xml"));
+    cmd.addOption("-ff", fileManager().getInputFilePath("forcefields/ACS-g1.xml"));
+    cmd.addOption("-o", fileManager().getTemporaryFilePath("histograms.xml"));
+    cmd.addOption("-g", fileManager().getTemporaryFilePath("histograms.log"));
+    cmd.addOption("-json", jsonFile);
+    {
+        // Without -samples: the numbers only
+        gmx::test::CommandLine counts(cmd);
+        ASSERT_EQ(0, geometry_ff(counts.argc(), counts.argv()));
+        std::ifstream in(jsonFile);
+        const auto j = nlohmann::json::parse(in);
+        const auto &bonds = j.at("geometry_ff").at("histograms").at("BONDS");
+        ASSERT_FALSE(bonds.empty());
+        for (const auto &bin : bonds[0].at("bins"))
+        {
+            EXPECT_FALSE(bin.contains("samples"));
+        }
+    }
+    cmd.addOption("-samples", 3);
+    ASSERT_EQ(0, geometry_ff(cmd.argc(), cmd.argv()));
+    std::ifstream in(jsonFile);
+    const auto j    = nlohmann::json::parse(in);
+    const auto &all = j.at("geometry_ff").at("histograms");
+    ASSERT_TRUE(all.contains("BONDS"));
+    ASSERT_TRUE(all.contains("ANGLES"));
+    const nlohmann::json *ch = nullptr;
+    for (const auto &h : all.at("BONDS"))
+    {
+        if (h.at("identifier").get<std::string>() == "c3_b~h_b")
+        {
+            ch = &h;
+        }
+    }
+    ASSERT_NE(nullptr, ch);
+    // Nine C-H bonds in each of two structures of butanol, six in acetone
+    EXPECT_EQ(24, ch->at("count").get<int>());
+    EXPECT_EQ("pm", ch->at("unit").get<std::string>());
+    EXPECT_DOUBLE_EQ(1.0, ch->at("binwidth").get<double>());
+    int    total = 0;
+    double last  = -1;
+    std::set<std::string> molecules;
+    for (const auto &bin : ch->at("bins"))
+    {
+        const auto count = bin.at("count").get<int>();
+        const auto value = bin.at("value").get<double>();
+        EXPECT_GT(value, last);
+        last   = value;
+        total += count;
+        const auto &samples = bin.at("samples");
+        EXPECT_EQ(std::min(count, 3), static_cast<int>(samples.size()));
+        EXPECT_EQ(count - static_cast<int>(samples.size()), bin.at("more").get<int>());
+        for (const auto &sample : samples)
+        {
+            molecules.insert(sample.at("molecule").get<std::string>());
+            EXPECT_FALSE(sample.at("calculation").get<std::string>().empty());
+            const auto atoms = sample.at("atoms").get<std::vector<int>>();
+            ASSERT_EQ(2u, atoms.size());
+            EXPECT_GE(atoms[0], 1);
+            // The names of the atoms with their numbers, a C and an H
+            const auto names = sample.at("names").get<std::string>();
+            const bool carbonFirst = names.rfind("C", 0) == 0;
+            EXPECT_NE(std::string::npos, names.find((carbonFirst ? "C" : "H") + std::to_string(atoms[0]))) << names;
+            EXPECT_NE(std::string::npos, names.find((carbonFirst ? "H" : "C") + std::to_string(atoms[1]))) << names;
+            EXPECT_NEAR(value, sample.at("value").get<double>(), 0.5 + 1e-9);
+        }
+    }
+    EXPECT_EQ(24, total);
+    EXPECT_FALSE(molecules.empty());
+    // The angles are in degrees
+    EXPECT_EQ("degree", all.at("ANGLES")[0].at("unit").get<std::string>());
 }
 
 } // namespace
