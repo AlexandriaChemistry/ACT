@@ -932,12 +932,14 @@ void EditFFOptions::check() const
         }
     }
     // These need the second force field, without it they would do nothing
-    for (const auto &kind : { std::make_pair("-copy_missing", &copyMissing), std::make_pair("-replace", &replace),
-                              std::make_pair("-implant", &implant) })
+    const std::vector<std::pair<std::string, std::string>> needSecond = {
+        { "-copy_missing", copyMissing }, { "-replace", replace }, { "-implant", implant }
+    };
+    for (const auto &kind : needSecond)
     {
-        if (!kind.second->empty() && secondForceFieldFile.empty())
+        if (!kind.second.empty() && secondForceFieldFile.empty())
         {
-            GMX_THROW(gmx::InvalidInputError(gmx::formatString("%s needs a second force field (-ff2)", kind.first)));
+            GMX_THROW(gmx::InvalidInputError(gmx::formatString("%s needs a second force field (-ff2)", kind.first.c_str())));
         }
     }
 }
