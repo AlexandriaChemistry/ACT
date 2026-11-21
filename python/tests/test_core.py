@@ -1012,5 +1012,159 @@ class MoleculeTest(unittest.TestCase):
             act.Molecule.from_smiles("O")  # pylint: disable=no-value-for-parameter
 
 
+@unittest.skipUnless(act.classes_available(), "ACT was built without its Python classes")
+@unittest.skipUnless(os.path.isdir(TESTDATA), "ACT_TESTDATA is not set")
+class MolPropsTest(unittest.TestCase):
+    """!
+    @brief The compounds of a molprop file with their reference data.
+    """
+
+    def setUp(self):
+        """!
+        @brief Find the test data and make a directory for files.
+        """
+        self.mpdir = Path(TESTDATA) / "molprop"
+        self._tmp = tempfile.TemporaryDirectory()
+        self.dir = Path(self._tmp.name)
+
+    def tearDown(self):
+        """!
+        @brief Remove the files.
+        """
+        self._tmp.cleanup()
+
+    def test_read_a_molprop_file(self):
+        """!
+        @brief The compounds of a file, what each is and what data it has.
+        """
+        mps = act.read_molprop(self.mpdir / "molprop.xml")
+        self.assertEqual(3, len(mps))
+        self.assertEqual(["1-butanol", "acetone", "water"], mps.names)
+        self.assertEqual(str(self.mpdir / "molprop.xml"), mps.filename)
+        self.assertIn("3 compounds", repr(mps))
+        summary = mps.summary
+        self.assertEqual((3, 3, 0), (summary["molecules"], summary["monomers"],
+                                     summary["dimers"]))
+        self.assertGreater(summary["properties"]["DeltaHform"], 0)
+        # A compound by its place or by its name
+        water = mps[2]
+        self.assertEqual(water, mps["water"])
+        self.assertEqual(water, mps[-1])
+        self.assertEqual(("water", "H2O", 3, 0), (water["name"], water["formula"],
+                                                  water["natom"], water["charge"]))
+        self.assertEqual(1, len(water["fragments"]))
+        self.assertGreater(water["experiments"], 0)
+        self.assertEqual([c["name"] for c in mps], mps.names)
+        for wrong in (3, -4):
+            with self.assertRaises(IndexError):
+                mps[wrong]  # pylint: disable=pointless-statement
+        with self.assertRaises(KeyError):
+            mps["no such compound"]  # pylint: disable=pointless-statement
+        with self.assertRaises(TypeError):
+            mps[1.5]  # pylint: disable=pointless-statement
+        # Dimers
+        dimers = act.read_molprop(str(self.mpdir / "mpdimer.xml"))
+        self.assertEqual(3, dimers.summary["dimers"])
+        self.assertEqual(2, len(dimers["1-propanol#ethane"]["fragments"]))
+
+    def test_calculations_of_a_compound(self):
+        """!
+        @brief The calculations of a compound: how each was done, the
+        structure and the values of the properties.
+        """
+        mps = act.read_molprop(self.mpdir / "molprop.xml")
+        calculations = mps.calculations("water")
+        self.assertEqual(mps["water"]["experiments"], len(calculations))
+        self.assertEqual(calculations, mps.calculations(2))
+        first = calculations[0]
+        for key in ("reference", "conformation", "method", "basisset", "program", "jobtype",
+                    "datafile", "atoms", "coordinates", "properties"):
+            self.assertIn(key, first)
+        # The atoms of water with a position in nm for each
+        self.assertEqual(["H", "H", "O"], sorted(atom["name"][0] for atom in first["atoms"]))
+        self.assertEqual(3, len(first["coordinates"]))
+        distances = [sum((first["coordinates"][0][d] - first["coordinates"][k][d]) ** 2
+                         for d in range(3)) ** 0.5 for k in (1, 2)]
+        self.assertTrue(all(0.05 < distance < 0.2 for distance in distances), distances)
+        # Each property with what it is, its value and its unit
+        properties = [p for c in calculations for p in c["properties"]]
+        self.assertGreater(len(properties), 0)
+        for item in properties:
+            self.assertEqual({"observable", "type", "value", "error", "unit", "temperature",
+                              "vector"}, set(item))
+            # A number, or the components of a vector or tensor; None for
+            # what a property is not, such as an electrostatic potential
+            self.assertTrue(item["value"] is None or isinstance(item["value"], float))
+            self.assertTrue(item["vector"] is None or isinstance(item["vector"], list))
+        enthalpy = [item for item in properties if item["observable"] == "DeltaHform"][0]
+        self.assertIsInstance(enthalpy["value"], float)
+        self.assertTrue(enthalpy["unit"])
+        dipoles = [item for item in properties if item["observable"] == "dipole"]
+        if dipoles:
+            self.assertEqual(3, len(dipoles[0]["vector"]))
+        self.assertIn("DeltaHform", {item["observable"] for item in properties})
+        # The number of values is that of the description
+        counted = {}
+        for item in properties:
+            counted[item["observable"]] = counted.get(item["observable"], 0) + 1
+        self.assertEqual(mps["water"]["properties"], counted)
+        # Interaction energies of a dimer, one for each structure
+        dimers = act.read_molprop(self.mpdir / "mpdimer.xml")
+        energies = [p["value"] for c in dimers.calculations(0) for p in c["properties"]
+                    if p["observable"] == "InteractionEnergy"]
+        self.assertEqual(dimers[0]["properties"]["InteractionEnergy"], len(energies))
+        self.assertGreater(len(set(energies)), 1)
+        with self.assertRaises(KeyError):
+            mps.calculations("no such compound")
+        with self.assertRaises(IndexError):
+            mps.calculations(17)
+
+    def test_validate(self):
+        """!
+        @brief The check of edit_mp -validate, with what it found.
+        """
+        mps = act.read_molprop(self.mpdir / "molprop.xml")
+        checked = mps.validate()
+        self.assertEqual((True, True, 0, []), (checked["checked"], checked["ok"],
+                                               checked["problems"], checked["invalid"]))
+        self.assertIsInstance(checked["messages"], list)
+        # Dimers, of which the compounds are compared with each other
+        checked = act.read_molprop(self.mpdir / "booze-inter.xml").validate()
+        self.assertEqual({"checked", "ok", "problems", "invalid", "messages"}, set(checked))
+        self.assertTrue(checked["ok"])
+        # A file with a problem is in the tests of edit_mp, which uses the same check
+
+    def test_write_and_errors(self):
+        """!
+        @brief The compounds are written to a file that reads back the same,
+        and a file that cannot be read or written raises an error.
+        """
+        mps = act.read_molprop(self.mpdir / "molprop.xml")
+        out = self.dir / "written.xml"
+        mps.write(out)
+        again = act.read_molprop(out)
+        self.assertEqual(mps.names, again.names)
+        self.assertEqual(mps.summary, again.summary)
+        self.assertEqual(mps.calculations("water"), again.calculations("water"))
+        packed = self.dir / "packed.xml"
+        mps.write(packed, compress=True)
+        self.assertLess(packed.stat().st_size, out.stat().st_size)
+        self.assertEqual(mps.names, act.read_molprop(packed).names)
+        with self.assertRaises(act.ActFileError) as caught:
+            act.read_molprop(self.dir / "no-such-file.xml")
+        self.assertIn("no-such-file.xml", str(caught.exception))
+        notxml = self.dir / "notxml.xml"
+        notxml.write_text("water|Train\n")
+        with self.assertRaises(act.ActFileError):
+            act.read_molprop(notxml)
+        with self.assertRaises(act.ActFileError):
+            mps.write(self.dir / "no" / "such" / "directory" / "mp.xml")
+        for wrong in (None, 3):
+            with self.assertRaises(TypeError):
+                act.read_molprop(wrong)
+        # Still alive
+        self.assertEqual(3, len(act.read_molprop(self.mpdir / "molprop.xml")))
+
+
 if __name__ == "__main__":
     unittest.main()

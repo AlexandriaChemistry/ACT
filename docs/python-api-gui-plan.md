@@ -432,7 +432,14 @@ is repaired in `importSmiles`. `mol.write_openmm(file, structure=)` writes
 the files of `gentop -openmm`, `mol.generate_charges(algorithm)` makes the
 charges again for the structure of that moment (EEM, SQE or NONE; ESP and
 Read need data that a molecule in Python does not have) and
-`mol.set_charges(list)` sets them. Next: `act.MolProp`.
+`mol.set_charges(list)` sets them. `act.read_molprop(file)` gives an
+`act.MolProps`: `len`, `names`, `summary`, a compound by place or name
+(as `edit_mp -json` describes it), `calculations(compound)` with the
+structure and the values of the properties of each calculation,
+`validate()` and `write(file)`. With that every row of the table below has
+a first version. Not done: making or changing the compounds of a molprop,
+interaction energies of dimers from `Molecule`, and what the status of A6
+lists.
 
 This is the API of issue 59, with other names:
 
