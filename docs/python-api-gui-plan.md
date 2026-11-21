@@ -475,6 +475,38 @@ function does the work from that structure. The existing regression tests
 protect each split. After this, layer 1 and layer 2 share one
 implementation, and the subcommands are easier to test.
 
+*Status of A8.* Done for all seven tools. Before the split, the results of
+the tools were fixed as reference data for the defaults and for other
+options (`src/act/testutils/output_checks.h`), and what the command lines
+of the settings classes give was tested. Each tool now has a structure
+`MinimizeOptions`, `NmaOptions`, `SimulateOptions`, `GentopOptions`,
+`GenFFOptions`, `EditFFOptions` or `EditMPOptions` that owns all it needs,
+with a `check()` that throws `gmx::InvalidInputError` naming the option,
+and a function `runMinimize`, `runNma` and so on that checks the structure
+and does the work; the tool only fills the structure. For each tool there
+are tests that a structure set by a program gives the same results as the
+command line, and that wrong settings are refused before anything is
+written. What came up on the way:
+
+- `SimulationConfigHandler` kept its choices in arrays that all objects
+  shared, so that one command line could change the settings of another;
+  each object has its own now, `validate()` replaces assertions, and the
+  shell tolerance is set in one place (`shellTolerance`).
+- `CompoundReader` and `CombRuleUtil` kept pointers into the command line;
+  they own their strings now and can be copied.
+- `analyse_multipoles` crashed without a log file; the run functions make
+  an output environment for xvg files if they get none.
+- Options that have no effect: `gentop -conf, -nsymm, -symm, -jobtype,
+  -allowmissing` and the files `-n` and `-q`, and `edit_mp -maxwarn`. They
+  are still accepted.
+- Still to do: the generator of dimers of `simulate -traj` and `b2`
+  (`DimerGenerator`) keeps file names that point into the command line and
+  its choices in a shared array, and cannot be copied; `SimulateOptions`
+  has it only from the command line. The Python classes still have their
+  own versions of minimize, nma, simulate and write_openmm, which work on a
+  molecule in memory instead of files; they use the same settings classes
+  and checks.
+
 **A9. Documentation and packaging.** A chapter "Using ACT from Python" in the
 manual with the examples above, an API reference generated from the
 docstrings, and the option `ACT_PYTHON=ON` in the conda recipe with an import
