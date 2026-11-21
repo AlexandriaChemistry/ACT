@@ -444,8 +444,10 @@ Read need data that a molecule in Python does not have) and
 structure and the values of the properties of each calculation,
 `validate()` and `write(file)`. With that every row of the table below has
 a first version. `Molecule.interaction_energy()` gives the interaction
-energy of a dimer by term, as `simulate -sp` reports it. Not done: making
-or changing the compounds of a molprop, and numpy arrays.
+energy of a dimer by term, as `simulate -sp` reports it. Coordinates,
+forces, charges, frequencies, spectra and the series of a trajectory are
+numpy arrays (copies); the conda package requires numpy. Not done: making
+or changing the compounds of a molprop.
 
 This is the API of issue 59, with other names:
 

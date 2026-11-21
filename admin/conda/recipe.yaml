@@ -133,6 +133,8 @@ outputs:
         - ${{ mpi }}
         - python ${{ act_python }}.*
         - pybind11 >=2.10
+        # The classes give numbers as numpy arrays, also in the tests of build-python.sh
+        - numpy
         # The program for the tests in build-python.sh
         - ${{ pin_subpackage('alexandria', exact=True) }}
         - act-utilities ==${{ version }}
@@ -145,6 +147,7 @@ outputs:
         - libsqlite
       run:
         - python
+        - numpy
         - ${{ mpi }}
         - ${{ pin_subpackage('alexandria', exact=True) }}
         - ${{ pin_compatible('librdkit', upper_bound='x.x.x') }}
