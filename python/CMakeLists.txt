@@ -47,7 +47,7 @@ endif()
 # the package can be used and tested from there with
 # PYTHONPATH=<build>/python.
 if(ACT_PYTHON)
-    if(NOT Python3_Development_FOUND)
+    if(NOT Python3_Development.Module_FOUND)
         message(FATAL_ERROR "ACT_PYTHON needs the headers of Python ${Python3_VERSION}, "
                             "which were not found for ${Python3_EXECUTABLE}")
     endif()
