@@ -32,27 +32,34 @@
  */
 #include <cmath>
 #include <cstddef>
+#include <filesystem>
 #include <gtest/gtest.h>
 #include <limits>
 #include <map>
 #include <string>
+#include <utility>
 #include <vector>
 
+#include "act/alexandria/alex_modules.h"
 #include "act/basics/msg_handler.h"
 #include "act/forces/simd_information.h"
 #include "act/properties/b2data.h"
 #include "act/properties/dimergenerator.h"
 #include "act/properties/secondvirial.h"
 #include "act/qgen/qgen_resp.h"
+#include "act/testutils/output_checks.h"
+#include "act/utility/communicationrecord.h"
 #include "gromacs/fileio/oenv.h"
 #include "gromacs/math/functions.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/vectypes.h"
+#include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/real.h"
 #include "gromacs/utility/stringutil.h"
 #include "testutils/cmdlinetest.h"
 #include "testutils/refdata.h"
 #include "testutils/testasserts.h"
+#include "testutils/testfilemanager.h"
 
 namespace alexandria
 {
@@ -246,6 +253,136 @@ double sphereVolume()
 const double integrationTolerance = 1e-5;
 
 // Test: The classical second virial of hard spheres is 2 pi sigma^3/3
+// The second virial without a command line, as a program that uses ACT computes it
+
+//! Runs b2 from the command line and without, for the water dimer
+class SecondVirialWithoutCommandLineTest : public gmx::test::CommandLineTestBase
+{
+protected:
+    /*! \brief The options of a short calculation
+     * \param[in] label For the names of the files
+     * \return The options
+     */
+    B2Options shortCalculation(const std::string &label)
+    {
+        B2Options options;
+        options.forceFieldFile = fileManager().getInputFilePath("forcefields/SPCE.xml");
+        options.compounds.setFileName(fileManager().getInputFilePath("molecules/water_dimer.pdb"));
+        options.maxDimers = 64;
+        options.rerun.setTemperatures(400, 500, 100);
+        options.rerun.setOutputFiles(fileManager().getTemporaryFilePath(label + "-mayer.xvg"),
+                                     fileManager().getTemporaryFilePath(label + "-B2T.xvg"));
+        options.rerun.gendimers()->setDistances(0.1, 1.2, 111);
+        options.rerun.gendimers()->finishSettings();
+        options.jsonFile = fileManager().getTemporaryFilePath(label + ".json");
+        return options;
+    }
+};
+
+TEST_F(SecondVirialWithoutCommandLineTest, SameAsTheProgram)
+{
+    gmx::test::CommandLine cmd;
+    cmd.append("b2");
+    cmd.addOption("-ff", fileManager().getInputFilePath("forcefields/SPCE.xml"));
+    cmd.addOption("-f", fileManager().getInputFilePath("molecules/water_dimer.pdb"));
+    cmd.addOption("-mindist", 0.1);
+    cmd.addOption("-maxdist", 1.2);
+    cmd.addOption("-ndist", 111);
+    cmd.addOption("-maxdimer", 64);
+    cmd.addOption("-T1", 400.0);
+    cmd.addOption("-T2", 500.0);
+    cmd.addOption("-dT", 100.0);
+    const auto toolJson = fileManager().getTemporaryFilePath("tool.json");
+    const auto toolB2   = fileManager().getTemporaryFilePath("tool-B2T.xvg");
+    cmd.addOption("-json", toolJson);
+    cmd.addOption("-b2", toolB2);
+    cmd.addOption("-eh", fileManager().getTemporaryFilePath("tool-mayer.xvg"));
+    cmd.addOption("-g", fileManager().getTemporaryFilePath("tool.log"));
+    ASSERT_EQ(0, b2(cmd.argc(), cmd.argv()));
+
+    const auto          options = shortCalculation("direct");
+    CommunicationRecord cr;
+    cr.init(cr.size());
+    MsgHandler          msghandler;
+    msghandler.setPrintLevel(ACTStatus::Fatal);
+    // A copy of the options, without an output environment
+    const auto &copy = options;
+    EXPECT_EQ(0, runSecondVirial(&cr, &msghandler, copy));
+    const auto tool   = readJsonOutput(toolJson);
+    const auto direct = readJsonOutput(options.jsonFile);
+    const std::string key("Second virial coefficients");
+    ASSERT_TRUE(tool.contains("SecondVirialCoefficient") && direct.contains("SecondVirialCoefficient"));
+    ASSERT_TRUE(tool["SecondVirialCoefficient"].contains(key));
+    // As text: gtest cannot print a JSON value
+    EXPECT_EQ(tool["SecondVirialCoefficient"][key].dump(), direct["SecondVirialCoefficient"][key].dump());
+    EXPECT_EQ(textWithoutComments(toolB2), textWithoutComments(fileManager().getTemporaryFilePath("direct-B2T.xvg")));
+}
+
+TEST_F(SecondVirialWithoutCommandLineTest, WrongOptions)
+{
+    std::vector<std::pair<B2Options, std::string>> wrong;
+    {
+        auto o = shortCalculation("w1");
+        o.forceFieldFile.clear();
+        wrong.emplace_back(o, "-ff");
+    }
+    {
+        auto o = shortCalculation("w2");
+        o.compounds = CompoundReader();
+        wrong.emplace_back(o, "-f");
+    }
+    {
+        auto o = shortCalculation("w3");
+        o.maxDimers = 0;
+        wrong.emplace_back(o, "-maxdimer");
+    }
+    {
+        auto o = shortCalculation("w4");
+        o.shellMaxIter = 0;
+        wrong.emplace_back(o, "-shellMaxIter");
+    }
+    {
+        auto o = shortCalculation("w5");
+        o.rerun.setTemperatures(400, 300, 10);
+        wrong.emplace_back(o, "-T2");
+    }
+    {
+        auto o = shortCalculation("w6");
+        o.rerun.setTemperatures(0, 400, 100);
+        wrong.emplace_back(o, "-T1");
+    }
+    {
+        auto o = shortCalculation("w7");
+        o.rerun.setBlockSize(-1);
+        wrong.emplace_back(o, "-block");
+    }
+    CommunicationRecord cr;
+    cr.init(cr.size());
+    for (const auto &w : wrong)
+    {
+        MsgHandler msghandler;
+        msghandler.setPrintLevel(ACTStatus::Fatal);
+        try
+        {
+            runSecondVirial(&cr, &msghandler, w.first);
+            ADD_FAILURE() << "Accepted options with a wrong " << w.second;
+        }
+        catch (const gmx::InvalidInputError &ex)
+        {
+            EXPECT_NE(std::string::npos, std::string(ex.what()).find(w.second)) << ex.what();
+        }
+        EXPECT_FALSE(std::filesystem::exists(w.first.jsonFile)) << w.second;
+    }
+    // The program says the same and stops
+    gmx::test::CommandLine cmd;
+    cmd.append("b2");
+    cmd.addOption("-ff", fileManager().getInputFilePath("forcefields/SPCE.xml"));
+    cmd.addOption("-f", fileManager().getInputFilePath("molecules/water_dimer.pdb"));
+    cmd.addOption("-T1", -10.0);
+    cmd.addOption("-g", fileManager().getTemporaryFilePath("wrong.log"));
+    EXPECT_EQ(1, b2(cmd.argc(), cmd.argv()));
+}
+
 TEST(B2DataTest, HardSpheres)
 {
     double    F2[2]      = { 0, 0 };

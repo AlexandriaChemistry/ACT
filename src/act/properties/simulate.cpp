@@ -423,7 +423,7 @@ int simulate(int argc, char *argv[])
         {
             return 1;
         }
-        options.rerun->gendimers()->finishOptions(fnm);
+        options.rerun->finishOptions(fnm);
         print_header(msghandler.tw(), pa, fnm);
         options.shellTolerance = shellToler;
         options.forceFieldFile = opt2fn("-ff", fnm.size(), fnm.data());

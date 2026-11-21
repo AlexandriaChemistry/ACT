@@ -40,6 +40,7 @@
 
 #include "act/forcefield/forcefield.h"
 #include "act/forces/forcecomputer.h"
+#include "act/import/compound_reader.h"
 #include "act/properties/dimergenerator.h"
 #include "act/topology/actmol.h"
 #include "act/utility/communicationrecord.h"
@@ -101,6 +102,10 @@ private:
     real                eMin_        = -1000;
     //! Largest number of distances of an orientation computed together, 0 means all
     int                 blockSize_   = 264;
+    //! The file for the Mayer functions (-eh), none if empty
+    std::string         mayerFile_;
+    //! The file for the second virial as a function of the temperature (-b2), none if empty
+    std::string         b2File_;
     //! The temperature array
     std::vector<double> Temperatures_;
     //! Second virial as a function of T for all components (see function temperatures)
@@ -143,6 +148,51 @@ public:
                     std::vector<t_filenm>     *filenm,
                     std::vector<const char *> *desc);
     
+    /*! \brief Take the settings of the command line
+     * The output files, then see DimerGenerator::finishOptions and validate.
+     * \param[in] filenm The file options after parsing
+     * \throws gmx::InvalidInputError for settings that make no sense
+     */
+    void finishOptions(const std::vector<t_filenm> &filenm);
+
+    /*! \brief Check the settings
+     * \throws gmx::InvalidInputError that names the option of a setting that is out of range
+     */
+    void validate() const;
+
+    /*! \brief Set the temperatures, as -T1, -T2 and -dT
+     * \param[in] T1     The lowest temperature in K
+     * \param[in] T2     The highest temperature in K
+     * \param[in] deltaT The step in K
+     */
+    void setTemperatures(double T1, double T2, double deltaT)
+    {
+        T1_     = T1;
+        T2_     = T2;
+        deltaT_ = deltaT;
+        Temperatures_.clear();
+    }
+
+    /*! \brief Set the energy below which dimers are taken as overlapping, as -emin
+     * \param[in] eMin The energy in kJ/mol
+     */
+    void setEMin(double eMin) { eMin_ = eMin; }
+
+    /*! \brief Set the largest number of distances computed together, as -block
+     * \param[in] blockSize The number, 0 for all
+     */
+    void setBlockSize(int blockSize) { blockSize_ = blockSize; }
+
+    /*! \brief Set the output files, as -eh and -b2
+     * \param[in] mayerFile The Mayer functions, none if empty
+     * \param[in] b2File    The second virial as a function of the temperature, none if empty
+     */
+    void setOutputFiles(const std::string &mayerFile, const std::string &b2File)
+    {
+        mayerFile_ = mayerFile;
+        b2File_    = b2File;
+    }
+
     /*! \brief Set the interaction energy flag
      * \param[in] eInter The value
      */
@@ -167,14 +217,12 @@ public:
      * \param[inout] actmol   Structure with molecule info, the dimers are
      *                        stored in it as its conformations
      * \param[in] maxdimer   Number of dimers to generate (if any)
-     * \param[in] fnm        The filenames
      */
-    void runB2(CommunicationRecord         *cr,
-               MsgHandler                  *msghandler,
-               const ForceField            *pd,
-               ACTMol                      *actmol,
-               int                          maxdimer,
-               const std::vector<t_filenm> &fnm);
+    void runB2(CommunicationRecord *cr,
+               MsgHandler          *msghandler,
+               const ForceField    *pd,
+               ACTMol              *actmol,
+               int                  maxdimer);
 
     /*! \brief Add the second virial coefficients to a JSON tree
      * For each temperature the components and the total in cm^3/mol, with
@@ -185,6 +233,49 @@ public:
     void addB2(JsonTree *jtree);
 
 };
+
+/*! \brief What alexandria b2 does, as its command line gives it
+ *
+ * The program fills it from the command line, a program without one sets
+ * the members. runSecondVirial checks it, see check.
+ */
+struct B2Options
+{
+    //! The force field file (-ff)
+    std::string    forceFieldFile;
+    //! The file for part of the output in JSON, with the second virials (-json), none if empty
+    std::string    jsonFile;
+    //! The number of orientations of the dimers, unless they come from a trajectory or a grid (-maxdimer)
+    int            maxDimers      = 1024;
+    //! The tolerance for relaxing the shells (-shelltoler)
+    double         shellTolerance = 1e-6;
+    //! The largest number of iterations for relaxing the shells (-shellMaxIter)
+    int            shellMaxIter   = 25;
+    //! The temperatures, the dimers, and the output files of the second virial (-T1, -randalg, -b2 and so on)
+    ReRunner       rerun { true };
+    //! The dimer and the charges of its compounds (-f, -charges, -qalg and so on)
+    CompoundReader compounds;
+
+    /*! \brief Check that the options make sense
+     * \throws gmx::InvalidInputError that says which option is wrong
+     */
+    void check() const;
+};
+
+/*! \brief The second virial coefficient of a dimer, as alexandria b2 computes it
+ * \param[in] cr         The processes, which share the orientations
+ * \param[in] msghandler For output and errors
+ * \param[in] options    What to do
+ * \param[in] oenv       The output environment for the xvg files; one with
+ *                       the defaults is made if it is nullptr
+ * \return 0 if it went well, 1 if reading the input failed
+ * \throws gmx::InvalidInputError for options that make no sense, see
+ * B2Options::check
+ */
+int runSecondVirial(CommunicationRecord *cr,
+                    MsgHandler          *msghandler,
+                    const B2Options     &options,
+                    gmx_output_env_t    *oenv = nullptr);
 
 } // namespace alexandria
 
