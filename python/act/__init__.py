@@ -24,9 +24,14 @@ help(act.commands.nma)            # the options of a command
 @endcode
 A program that fails raises act.ActError with the reason; a wrong option or
 a missing input file raises an error before anything is started.
+
+The classes of ACT give their warnings and information to the logger
+"act" of the module logging; nothing is shown unless the program asks for
+it, for instance with logging.basicConfig(level=logging.INFO).
 """
 from __future__ import annotations
 
+import logging
 import warnings
 from typing import Any
 
@@ -35,6 +40,9 @@ from .errors import (ActCancelledError, ActError, ActFileError, ActInputError,
                      ActInternalError, ActNotFoundError, ActOptionError, ActTimeoutError)
 from .options import CommandInfo, OptionInfo, ProgramInfo
 from .runner import Result, build_arguments, config, program_info, run
+
+# A library leaves showing its messages to the program that uses it
+logging.getLogger("act").addHandler(logging.NullHandler())
 
 # The classes use the code of ACT directly, see the module _core. They are
 # there when ACT was built with -DACT_PYTHON=ON, and the rest of the package

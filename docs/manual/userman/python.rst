@@ -233,6 +233,13 @@ The coordinates are in nm and the values in the units that ACT computes with, wh
 
 Errors are exceptions, and Python lives on: *act.ActFileError* (also an *OSError*) for a file that is missing, is not what it should be or cannot be written, *act.ActInputError* (also a *ValueError*) for input that is not accepted, such as a parameter that does not exist, a SMILES string that is no molecule or a molecule that the force field has no types for, and *act.ActInternalError* for what should not happen inside ACT. All are subclasses of *act.ActError*.
 
+The warnings and the information of ACT, such as an atom type that the force field does not have, go to the logger *act* of the module *logging*. Nothing is shown unless the program asks for it:
+
+.. code-block:: python
+
+   import logging
+   logging.basicConfig(level=logging.INFO)   # or logging.WARNING for the warnings only
+
 .. _pybind11: https://pybind11.readthedocs.io
 
 ====================================
