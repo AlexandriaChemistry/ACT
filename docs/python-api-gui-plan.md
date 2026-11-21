@@ -462,10 +462,12 @@ one of them has. The page computes this from the two descriptions that
 `geometry_ff` takes the file of the molprop workspace with the compounds
 that are ticked there, as a selection that the server writes; without
 compounds that are left out it gets no selection, as before.
+Of a particle type the parameters of its charge (`charge`, `zeta`,
+`chargeVS`, `zetaVS`) are changed like those of an interaction; `edit_ff`
+does not change the mass or the reference enthalpy.
 Still open in B7 and B8: the file of the user with fixed parameters that
-`actgui` could read, reading a file with virtual sites of the user (they
-are made by point and click and can be saved), and changes of parameters
-of particle types.
+`actgui` could read, and reading a file with virtual sites of the user
+(they are made by point and click and can be saved).
 
 Virtual sites by point and click (B9) are done, without layer 2: the page
 computes the position of a site itself, with the formulas of
