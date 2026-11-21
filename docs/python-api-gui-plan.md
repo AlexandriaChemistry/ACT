@@ -443,9 +443,9 @@ Read need data that a molecule in Python does not have) and
 (as `edit_mp -json` describes it), `calculations(compound)` with the
 structure and the values of the properties of each calculation,
 `validate()` and `write(file)`. With that every row of the table below has
-a first version. Not done: making or changing the compounds of a molprop,
-interaction energies of dimers from `Molecule`, and what the status of A6
-lists.
+a first version. `Molecule.interaction_energy()` gives the interaction
+energy of a dimer by term, as `simulate -sp` reports it. Not done: making
+or changing the compounds of a molprop, and numpy arrays.
 
 This is the API of issue 59, with other names:
 

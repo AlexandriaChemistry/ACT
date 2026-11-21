@@ -928,6 +928,38 @@ py::dict energyDict(const std::map<InteractionType, double> &energies)
     return energy;
 }
 
+/*! \brief The interaction energy of a dimer, as alexandria simulate -sp reports it
+ * The energy of the dimer minus those of its two compounds, with the shells
+ * relaxed in each, by term, with the correction of the induction energy in
+ * the induction energy.
+ * \param[in] molecule The molecule, of two compounds
+ * \return The terms in kJ/mol
+ * \throws gmx::InvalidInputError if the molecule is not made of two compounds
+ */
+py::dict interactionEnergy(Molecule *molecule)
+{
+    auto       &mol       = molecule->mol();
+    const auto  compounds = mol.fragmentHandler()->topologies().size();
+    if (compounds != 2)
+    {
+        GMX_THROW(gmx::InvalidInputError(gmx::formatString("The interaction energy is that between two compounds, "
+                                                           "the molecule has %zu", compounds)));
+    }
+    QuietMessages                                  messages;
+    std::vector<std::vector<gmx::RVec>>            coords = { molecule->coords };
+    std::vector<std::map<InteractionType, double>> einter;
+    std::vector<double>                            epot;
+    std::vector<std::vector<gmx::RVec>>            forces;
+    molecule->forceComp->computeInteraction(messages.handler(), molecule->pd, &mol, &coords, false,
+                                            &einter, &epot, &forces);
+    messages.check("The interaction energy could not be computed");
+    if (einter.size() != 1)
+    {
+        GMX_THROW(gmx::InternalError("The interaction energy of one structure gave no result"));
+    }
+    return energyDict(einter[0]);
+}
+
 //! The result of a minimization as Python sees it
 struct Minimization
 {
@@ -1617,6 +1649,11 @@ void defineMolecule(py::module_ &module)
              },
              "The energy in kJ/mol for the structure of the molecule: a dict with the terms\n"
              "of the force field and their sum, EPOT.")
+        .def("interaction_energy", &interactionEnergy,
+             "The interaction energy in kJ/mol between the two compounds of a dimer, for\n"
+             "the structure it has: the energy of the dimer minus those of the compounds,\n"
+             "with the shells relaxed in each, by term, as alexandria simulate -sp reports it.\n"
+             "Raises ActInputError for a molecule that is not made of two compounds.")
         .def("forces",
              [](const Molecule &molecule)
              {

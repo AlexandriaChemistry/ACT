@@ -169,6 +169,13 @@ A molecule is made for a force field, from a SMILES string or a structure file, 
    print(energy["EPOT"], energy["COULOMB"])
    forces = mol.forces()          # on each particle, in kJ/mol nm
 
+For a dimer, a structure of two compounds, the interaction energy is the energy of the dimer minus those of the compounds, as *alexandria simulate -sp* reports it:
+
+.. code-block:: python
+
+   dimer = act.Molecule.from_file("water_dimer.pdb", ff)
+   print(dimer.interaction_energy())   # by term, in kJ/mol
+
 The energy is minimized and the vibrations are computed as *alexandria minimize* and *alexandria nma* do it:
 
 .. code-block:: python
