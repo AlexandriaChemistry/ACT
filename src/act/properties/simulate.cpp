@@ -158,12 +158,7 @@ int simulate(int argc, char *argv[])
 
     print_header(msghandler.tw(), pa, fnm);
 
-    if (shellToler >= sch.forceTolerance())
-    {
-        shellToler = sch.forceTolerance()/10;
-        msghandler.msg(ACTStatus::Warning,
-                       gmx::formatString("\nShell tolerance larger than atom tolerance, changing it to %g\n", shellToler));
-    }
+    shellToler = sch.shellTolerance(shellToler, &msghandler);
     ForceField        pd;
     try
     {

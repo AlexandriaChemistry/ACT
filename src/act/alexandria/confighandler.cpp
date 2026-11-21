@@ -34,6 +34,7 @@
  */
 
 #include <algorithm>
+#include <cmath>
 #include <cstring>
 #include <ctime>
 #include <map>
@@ -424,15 +425,6 @@ void GAConfigHandler::check_pargs(MsgHandler *msghandler)
 * BEGIN: SimulationConfigHandler           *
 * * * * * * * * * * * * * * * * * * * * * */
 
-//! \brief Couple of string to use in cmdline option for the minimizer algorithm
-static const char *eminAlgs[5] = {nullptr, "LBFGS", "Newton", "Steep", nullptr};
-
-//! \brief Strings to use in the cmdline option for constraints
-static const char *constrainStr[5] = {nullptr, "no", "bonds", "angles", nullptr};
-
-//! \brief Strings to use in the cmdline option for removing the center of mass motion
-static const char *commStr[5] = {nullptr, "angular", "linear", "none", nullptr};
-
 //! \brief Map from enum to string
 std::map<eMinimizeAlgorithm, std::string> eMinAlg2String = {
     { eMinimizeAlgorithm::LBFGS,  "LBFGS"  },
@@ -447,15 +439,14 @@ const std::string &eMinimizeAlgorithmToString(eMinimizeAlgorithm e)
 
 eMinimizeAlgorithm stringToEMinimizeAlgorithm(const std::string &str)
 {
-    auto eMinA = eMinimizeAlgorithm::Newton;
     for(const auto &m : eMinAlg2String)
     {
         if (str == m.second)
         {
-            eMinA = m.first;
+            return m.first;
         }
     }
-    return eMinA;
+    GMX_THROW(gmx::InvalidInputError("Unknown minimization algorithm " + str));
 }
 
 void SimulationConfigHandler::add_options(std::vector<t_pargs>             *pargs,
@@ -479,10 +470,10 @@ void SimulationConfigHandler::add_minimize_options(std::vector<t_pargs> *pargs,
 {
     // The parser stores the choice in the first element of an enum, which
     // would otherwise become the default when the options are parsed again.
-    eminAlgs[0]     = nullptr;
-    constrainStr[0] = nullptr;
+    minAlgChoice_[0]    = nullptr;
+    constrainChoice_[0] = nullptr;
     std::vector<t_pargs> extra = {
-        { "-minalg",   FALSE, etENUM, {&eminAlgs}, 
+        { "-minalg",   FALSE, etENUM, {minAlgChoice_.data()}, 
           "Algorithm to use for minimization. LBFGS is usually the fastest. Newton uses the Hessian, computed from the forces, and converges in few steps, which are expensive for large molecules. Steep is steepest descent, which needs thousands of steps for molecules with stiff bonds." },
         { "-maxiter",FALSE, etINT,  {&maxIter_},
           "Maximum number of iterations of the minimizers, 0 is until convergence (see -toler). The structure with the lowest energy is written also if the minimization does not converge." },
@@ -502,7 +493,7 @@ void SimulationConfigHandler::add_minimize_options(std::vector<t_pargs> *pargs,
           "Force constant (kJ/mol/nm2) for flat-bottom position restraints, zero means no restraints" },
         { "-r0fbpr", FALSE, etREAL, {&r0FBPR_},
           "Radius (nm) for flat-bottom position restraints, around the center of mass of the starting structure. The motion of the center of mass is not removed with position restraints." },
-        { "-constrain", FALSE, etENUM, {constrainStr},
+        { "-constrain", FALSE, etENUM, {constrainChoice_.data()},
           "Constrain bond lengths, or bond lengths and angles, in energy minimization and MD simulations. Angle constraints keep the distance between the outer atoms of each angle constant." },
         { "-constr_maxiter", FALSE, etINT, {&constraintMaxIter_},
           "Max number of iterations for SHAKE" },
@@ -522,8 +513,7 @@ void SimulationConfigHandler::add_minimize_options(std::vector<t_pargs> *pargs,
 
 void SimulationConfigHandler::add_MD_options(std::vector<t_pargs> *pargs)
 {
-    commStr[0] = nullptr;
-    mdOptions_ = true;
+    commChoice_[0] = nullptr;
     const std::vector<t_pargs> MDextra = {
         { "-nsteps", FALSE, etINT, {&nsteps_},
           "Number of integration steps." },
@@ -541,7 +531,7 @@ void SimulationConfigHandler::add_MD_options(std::vector<t_pargs> *pargs)
           "Number of steps between writing velocities." },
         { "-nstener", FALSE, etINT, {&nstener_},
           "Number of steps between writing energies. With shells, the induction energy that is written needs one more energy calculation, with the shells on their parent particles, in the steps in which the energies are written." },
-        { "-comm",    FALSE, etENUM, {commStr},
+        { "-comm",    FALSE, etENUM, {commChoice_.data()},
           "Motion of the center of mass to remove: angular removes the translation of and the rotation around the center of mass, linear only the translation." },
         { "-nstcomm", FALSE, etINT, {&nstcomm_},
           "Number of steps between removing the motion of the center of mass. It is always removed from the initial velocities, 0 means only then." }
@@ -554,19 +544,74 @@ void SimulationConfigHandler::add_MD_options(std::vector<t_pargs> *pargs)
 
 void SimulationConfigHandler::check_pargs(MsgHandler *)
 {
-    GMX_RELEASE_ASSERT(nsteps_ >= 0, "Number of steps must be larger than zero");
-    GMX_RELEASE_ASSERT(temperature_ >= 0, "Temperature must be larger than zero");
-    GMX_RELEASE_ASSERT(deltat_ > 0, "Integration time step must be larger than zero");
-    minAlg_    = stringToEMinimizeAlgorithm(eminAlgs[0]);
-    constrain_ = stringToConstraintType(constrainStr[0]);
-    // The choices are kept in arrays that all handlers share. Without the MD
-    // options on this command line, the array has the choice of an earlier
-    // command line in the same process, if any.
-    if (mdOptions_ && commStr[0])
+    // Without a command line that was parsed, the choices are not set
+    if (minAlgChoice_[0])
     {
-        commRemoval_ = stringToCOMMRemoval(commStr[0]);
+        minAlg_    = stringToEMinimizeAlgorithm(minAlgChoice_[0]);
     }
-    GMX_RELEASE_ASSERT(nstcomm_ >= 0, "Number of steps between removing the center of mass motion must not be negative");
+    if (constrainChoice_[0])
+    {
+        constrain_ = stringToConstraintType(constrainChoice_[0]);
+    }
+    if (commChoice_[0])
+    {
+        commRemoval_ = stringToCOMMRemoval(commChoice_[0]);
+    }
+    validate();
+}
+
+void SimulationConfigHandler::validate() const
+{
+    // Each setting with its option, and whether it may be zero
+    struct Limit
+    {
+        const char *option;
+        double      value;
+        bool        zeroAllowed;
+    };
+    const std::vector<Limit> limits = {
+        { "-nsteps", static_cast<double>(nsteps_), true },
+        { "-deltat", deltat_, false },
+        { "-temp", temperature_, true },
+        { "-nstxout", static_cast<double>(nstxout_), true },
+        { "-nstvout", static_cast<double>(nstvout_), true },
+        { "-nstener", static_cast<double>(nstener_), true },
+        { "-nstcomm", static_cast<double>(nstcomm_), true },
+        { "-maxiter", static_cast<double>(maxIter_), true },
+        { "-shell_max_iter", static_cast<double>(shellMaxIter_), true },
+        { "-maxretries", static_cast<double>(minimizeRetries_), true },
+        { "-maxdisplacement", minimizeDisplacement_, true },
+        { "-toler", forceToler_, false },
+        { "-overrelax", overRelax_, false },
+        { "-kfbpr", kFBPR_, true },
+        { "-r0fbpr", r0FBPR_, true },
+        { "-constr_maxiter", static_cast<double>(constraintMaxIter_), true },
+        { "-constr_toler", constraintTolerance_, false }
+    };
+    for (const auto &limit : limits)
+    {
+        if (!std::isfinite(limit.value) || limit.value < 0 || (!limit.zeroAllowed && limit.value == 0))
+        {
+            GMX_THROW(gmx::InvalidInputError(gmx::formatString("The value %g of %s should be %s", limit.value,
+                                                               limit.option,
+                                                               limit.zeroAllowed ? "zero or more" : "more than zero")));
+        }
+    }
+}
+
+double SimulationConfigHandler::shellTolerance(double requested, MsgHandler *msghandler) const
+{
+    if (requested < forceToler_)
+    {
+        return requested;
+    }
+    const double tolerance = forceToler_/10;
+    if (msghandler)
+    {
+        msghandler->msg(ACTStatus::Warning,
+                        gmx::formatString("Shell tolerance larger than atom tolerance, changing it to %g", tolerance));
+    }
+    return tolerance;
 }
 
 /* * * * * * * * * * * * * * * * * * * * * *

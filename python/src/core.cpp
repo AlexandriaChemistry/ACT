@@ -771,13 +771,8 @@ std::unique_ptr<Molecule> makeMolecule(const py::object &forcefield, const std::
     made->pd         = forcefield.cast<ForceField *>();
     // As alexandria minimize sets it up
     const SimulationConfigHandler sch;
-    double                        shellToler = 1e-6;
-    if (shellToler >= sch.forceTolerance())
-    {
-        shellToler = sch.forceTolerance()/10;
-    }
     made->forceComp = std::make_unique<ForceComputer>();
-    made->forceComp->init(shellToler, sch.shellMaxIter(), made->pd->epsilonr());
+    made->forceComp->init(sch.shellTolerance(1e-6, nullptr), sch.shellMaxIter(), made->pd->epsilonr());
 
     QuietMessages  messages;
     CompoundReader reader;
@@ -928,6 +923,8 @@ Minimization minimizeMolecule(Molecule *molecule, const std::optional<std::strin
         }
         sch.setForceTolerance(*tolerance);
     }
+    // The checks of the programs as well
+    sch.validate();
     // The minimizer counts the atoms without shells and virtual sites
     const auto      &atoms = molecule->mol().atomsConst();
     std::vector<int> frozen;
@@ -950,12 +947,7 @@ Minimization minimizeMolecule(Molecule *molecule, const std::optional<std::strin
         frozen.push_back(number);
     }
     // The shells more precisely than the atoms, as the program has it
-    double shellToler = 1e-6;
-    if (shellToler >= sch.forceTolerance())
-    {
-        shellToler = sch.forceTolerance()/10;
-    }
-    molecule->forceComp->init(shellToler, sch.shellMaxIter(), molecule->pd->epsilonr());
+    molecule->forceComp->init(sch.shellTolerance(1e-6, nullptr), sch.shellMaxIter(), molecule->pd->epsilonr());
 
     Minimization           result;
     std::vector<gmx::RVec> forces;
@@ -1221,6 +1213,8 @@ Trajectory simulateMolecule(Molecule &molecule, int steps, double timestep, doub
     }
     SimulationConfigHandler sch;
     sch.setSimulation(steps, timestep, temperature, seed, energyInterval, frameInterval);
+    // The checks of the programs as well
+    sch.validate();
 
     Trajectory result;
     result.steps    = steps;

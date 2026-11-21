@@ -125,11 +125,7 @@ int min_complex(int argc, char *argv[])
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
     
     (void) pd.verifyCheckSum(&msghandler);
-    if (shellToler >= sch.forceTolerance())
-    {
-        shellToler = sch.forceTolerance()/10;
-        tw->writeStringFormatted("Shell tolerance larger than atom tolerance, changing it to %g\n", shellToler);
-    }
+    shellToler = sch.shellTolerance(shellToler, &msghandler);
     ForceComputer forceComp;
     double epsilonr;
     epsilonr = pd.epsilonr();

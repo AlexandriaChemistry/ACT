@@ -35,6 +35,7 @@
 #ifndef ALEXANDRIA_CONFIGHANDLER_H
 #define ALEXANDRIA_CONFIGHANDLER_H
 
+#include <array>
 #include <string>
 #include <vector>
 
@@ -575,8 +576,16 @@ private:
     int                nstcomm_              = 100;
     //! Whether the warning that the force tolerance is too strict was given, see toleranceWarning
     mutable bool       toleranceWarned_      = false;
-    //! Whether the MD options were added to a command line, see add_MD_options
-    bool               mdOptions_            = false;
+    /*! \brief The choices of the enumerated options, as the command line
+     * parser keeps them: the first element points to the choice, nullptr
+     * before a command line was parsed. Each handler has its own, such that
+     * the choices of one command line do not reach another handler.
+     */
+    std::array<const char *, 5> minAlgChoice_    = { nullptr, "LBFGS", "Newton", "Steep", nullptr };
+    //! See minAlgChoice_, for -constrain
+    std::array<const char *, 5> constrainChoice_ = { nullptr, "no", "bonds", "angles", nullptr };
+    //! See minAlgChoice_, for -comm
+    std::array<const char *, 5> commChoice_      = { nullptr, "angular", "linear", "none", nullptr };
 public:
     /*!
      * \brief Add command-line arguments to a vector
@@ -602,11 +611,32 @@ public:
 
 
     /*!
-     * \brief Check the validity of the provided arguments
-     * Throw an exception if an invalid combination of arguments is encountered
+     * \brief Take the choices of the command line and check the settings
      * \param[in] msghandler Message handler
+     * \throws gmx::InvalidInputError for a setting out of range, see validate
      */
     void check_pargs(MsgHandler *msghandler) override;
+
+    /*! \brief Check that the settings make sense
+     *
+     * For settings made with the setters, by a program that has no
+     * command line, and by check_pargs for those of a command line.
+     * \throws gmx::InvalidInputError that names the option of the first
+     * setting that is out of range
+     */
+    void validate() const;
+
+    /*! \brief The tolerance for relaxing the shells that goes with the force
+     * tolerance of the minimization
+     *
+     * The shells have to be relaxed more precisely than the atoms are
+     * minimized: a tolerance that is not below the force tolerance is
+     * replaced by a tenth of it.
+     * \param[in] requested  The tolerance asked for, as with -shelltoler
+     * \param[in] msghandler Gets a warning if the tolerance is changed, may be nullptr
+     * \return the tolerance to use
+     */
+    double shellTolerance(double requested, MsgHandler *msghandler) const;
 
     //! \return number of MD steps
     int nsteps() const { return nsteps_; }
