@@ -31,10 +31,12 @@
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
 #include <cctype>
+#include <cmath>
 #include <cstdio>
 #include <cstdlib>
 #include <exception>
 #include <map>
+#include <memory>
 #include <string>
 #include <utility>
 #include <vector>
@@ -57,6 +59,7 @@
 #include "act/topology/actmol.h"
 #include "act/topology/fragmenthandler.h"
 #include "act/utility/jsontree.h"
+#include "act/utility/output_environment.h"
 #include "act/utility/stringutil.h"
 #include "act/utility/timings.h"
 #include "act/utility/units.h"
@@ -70,6 +73,7 @@
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/real.h"
 #include "gromacs/utility/stringutil.h"
+#include "simulate.h"
 
 namespace alexandria
 {
@@ -79,10 +83,276 @@ namespace alexandria
  * \param[in] argv The actual arguments
  * \return 0 if ok, 1 otherwise
  */
+namespace
+{
+
+//! \return the name of a file for the functions that take nullptr for none
+const char *fileOrNull(const std::string &fileName)
+{
+    return fileName.empty() ? nullptr : fileName.c_str();
+}
+
+} // namespace
+
+void SimulateOptions::check() const
+{
+    if (forceFieldFile.empty())
+    {
+        GMX_THROW(gmx::InvalidInputError("There is no force field file (-ff)"));
+    }
+    if (std::string(compounds.fileName()).empty() && std::string(compounds.smiles()).empty() &&
+        std::string(compounds.dbName()).empty())
+    {
+        GMX_THROW(gmx::InvalidInputError("There is no molecule: give a structure file (-f), a SMILES string (-smiles) or a compound of the charge file (-db)"));
+    }
+    if (!std::isfinite(shellTolerance) || shellTolerance <= 0)
+    {
+        GMX_THROW(gmx::InvalidInputError(gmx::formatString("The value %g of -shelltoler should be more than zero",
+                                                           shellTolerance)));
+    }
+    simulation.validate();
+}
+
+int runSimulate(MsgHandler                *msghandler,
+                const SimulateOptions     &options,
+                gmx_output_env_t          *oenv,
+                const CommunicationRecord *cr)
+{
+    options.check();
+    // Time the phases, see printTimings
+    PhaseTimer phase("Startup");
+    // The settings may change below
+    auto       sch    = options.simulation;
+    const bool json   = !options.jsonFile.empty();
+    int        status = 0;
+    // A program without a command line has no output environment for the
+    // energies
+    const OutputEnvironment output(oenv);
+    const double shellToler = sch.shellTolerance(options.shellTolerance, msghandler);
+    ForceField        pd;
+    readForceField(options.forceFieldFile, &pd, msghandler);
+    (void) pd.verifyCheckSum(msghandler);
+    for(const auto &ss : pd.info())
+    {
+        msghandler->write(ss);
+    }
+
+    ForceComputer forceComp;
+    double epsilonr;
+    epsilonr = pd.epsilonr();
+    forceComp.init(shellToler, sch.shellMaxIter(), epsilonr);
+
+    std::vector<ACTMol> actmols;
+    // Reading changes the reader
+    auto                compR = options.compounds;
+    try
+    {
+        compR.read(msghandler, pd, &forceComp, &actmols);
+    }
+    catch (const std::exception &ex)
+    {
+        // E.g. a file that does not exist
+        msghandler->msg(ACTStatus::Error,
+                       gmx::formatString("Could not read molecules: %s", ex.what()));
+        actmols.clear();
+    }
+    if (actmols.empty())
+    {
+        fprintf(stderr, "Could not read or process molecules. Please check the log file for more information.\n");
+        return 1;
+    }
+    auto &actmol = actmols[0];
+    // Check whether we need to add position restraints
+    if (sch.kFBPR() > 0)
+    {
+        actmol.topologyPtr()->addFBPR(msghandler, sch.kFBPR(), sch.r0FBPR(), actmol.xOriginal());
+        // The restraints move the center of mass and rotate around it,
+        // removing that motion would counteract them
+        if (COMMRemoval::None != sch.commRemoval())
+        {
+            msghandler->msg(ACTStatus::Warning,
+                           "The motion of the center of mass is not removed, since there are position restraints.");
+            sch.setCommRemoval(COMMRemoval::None);
+        }
+    }
+    JsonTree jtree("simulate");
+    if (msghandler->info())
+    {
+        forceFieldSummary(&jtree, &pd);
+    }
+
+    if (pd.polarizable())
+    {
+        phase.next("Polarizability");
+        // Make a copy since it maybe changed
+        const auto xx     = actmol.xOriginal();
+        auto qprops = actmol.qProps();
+        for(auto qp = qprops->begin(); qp < qprops->end(); ++qp)
+        {
+            auto qCalc = qp->qPact();
+            qCalc->initializeMoments();
+            qCalc->calcPolarizability(msghandler, &pd, actmol.topology(), &forceComp);
+            auto alpha = qCalc->polarizabilityTensor();
+            const std::string unit("A^3");
+            double fac = convertFromGromacs(1, unit);
+            JsonTree poltree("Polarizability");
+
+            poltree.addValueUnit("XX", fac*alpha[XX][XX], unit);
+            poltree.addValueUnit("YY", fac*alpha[YY][YY], unit);
+            poltree.addValueUnit("ZZ", fac*alpha[ZZ][ZZ], unit);
+            poltree.addValueUnit("Average", fac*qCalc->isotropicPolarizability(), unit);
+            jtree.addObject(poltree);
+        }
+    }
+
+    if (msghandler->debug())
+    {
+        actmol.topology()->dump(msghandler->twDebug());
+    }
+    auto   eMin = eMinimizeStatus::OK;
+    // The potential energy after minimizing
+    double epot = 0;
+    /* Generate output file for debugging if requested */
+    if (options.rerun && options.rerun->gendimers()->hasTrajectory())
+    {
+        phase.next("Rerun");
+        options.rerun->setFunctions(&forceComp, output.get());
+        options.rerun->setEInteraction(actmol.fragmentHandler()->topologies().size() > 1);
+        options.rerun->rerun(msghandler, &pd, &actmol, msghandler->verbose());
+    }
+    else
+    {
+        const MolHandler molhandler;
+        const std::vector<gmx::RVec> coords = actmol.xOriginal();
+        std::vector<gmx::RVec> xmin   = coords;
+        auto nfrag = actmol.fragmentHandler()->topologies().size();
+        msghandler->msg(ACTStatus::Info, gmx::formatString("There are %lu fragments.", nfrag));
+        if (sch.singlePoint())
+        {
+            phase.next("Single point");
+            std::map<InteractionType, double> energies;
+            std::vector<gmx::RVec> forces(actmol.atomsConst().size());
+            forceComp.compute(msghandler, &pd, actmol.topology(), &xmin, &forces, &energies);
+            JsonTree jtener("Energies before");
+            const std::string unit("kJ/mol");
+            for (const auto &ener : energies)
+            {
+                const auto val = gmx::formatString("%.4f", ener.second);
+                jtener.addValueUnit(interactionTypeToString(ener.first),
+                                    val, unit);
+            }
+            jtree.addObject(jtener);
+            if (nfrag == 2)
+            {
+                // Make a copy to keep the correct shell coordinates when saving the structure.
+                std::vector<std::vector<gmx::RVec>>            newxmin = { xmin };
+                std::vector<std::map<InteractionType, double>> einter;
+                std::vector<double>                            epot;
+                std::vector<std::vector<gmx::RVec>>            interactionForces;
+                bool                                           separateInductionCorrection = false;
+                forceComp.computeInteraction(msghandler, &pd, &actmol, &newxmin,
+                                             separateInductionCorrection,
+                                             &einter, &epot, &interactionForces);
+                for(const auto &ec : einter)
+                {
+                    for(const auto &ei : ec)
+                    {
+                        msghandler->msg(ACTStatus::Info,
+                                       gmx::formatString("Interaction energy %s: %g",
+                                                         interactionTypeToString(ei.first).c_str(), ei.second));
+                    }
+                }
+            }
+        }
+        else if (sch.minimize())
+        {
+            phase.next("Energy minimization");
+            eMin = minimizeMolecule(msghandler, &pd, &forceComp, sch,
+                                    fileOrNull(options.freezeFile),
+                                    &actmol, &xmin, &jtree, &epot);
+        }
+        // Without a lower minimum the structure is usable, see minimumUsable
+        if (minimumUsable(eMin) && sch.nsteps() > 0)
+        {
+            phase.next("Molecular dynamics");
+            // Start from the minimized coordinates, if we minimized
+            molhandler.simulate(msghandler, &pd, &actmol, xmin, &forceComp, sch,
+                                fileOrNull(options.trajectoryFile),
+                                fileOrNull(options.energyFile),
+                                output.get(),
+                                fileOrNull(options.progressFile));
+        }
+        phase.next("Output");
+        auto confout = fileOrNull(options.confout);
+        if (confout && minimumUsable(eMin))
+        {
+            matrix box = { { 2, 0, 0 }, { 0, 2, 0 }, { 0, 0, 2 } };
+            actmol.PrintConformation(confout, xmin, sch.writeShells(), box);
+        }
+    }
+    phase.next("Output");
+    auto omp = fileOrNull(options.molpropFile);
+    if (omp)
+    {
+        std::vector<MolProp> mpt;
+        // We cannot use the actmol after this move command.
+        mpt.push_back(std::move(*actmol.molProp()));
+        MolPropWrite(omp, mpt, false);
+    }
+
+    auto imm = ACTMessage::OK;
+    if (eMinimizeStatus::NoMinimum == eMin)
+    {
+        fprintf(stderr, "Minimization did not converge: %s, check log file %s\n",
+                minimizeStatusMessage(eMin, epot).c_str(),
+                msghandler->filename().c_str());
+    }
+    else if (eMinimizeStatus::OK != eMin)
+    {
+        fprintf(stderr, "Minimization failed: %s, check log file %s\n",
+                minimizeStatusMessage(eMin, epot).c_str(),
+                msghandler->filename().c_str());
+        status = 1;
+    }
+    else if (ACTMessage::OK != imm)
+    {
+        msghandler->msg(ACTStatus::Error, ACTMessage::MinimizationFailed,
+                       gmx::formatString("Please check the log file %s for error messages.\n",
+                                         msghandler->filename().c_str()));
+        status = 1;
+    }
+    if (pd.polarizable() && cr)
+    {
+        // The number of shell iterations per force calculation
+        ForceComputerStatistics fcStats;
+        msghandler->write(fcStats.statistics(cr, &forceComp, 0, true));
+    }
+    if (!json)
+    {
+        int indent = 0;
+        msghandler->write(jtree.writeString(json, &indent));
+    }
+    phase.stop();
+    // The timings go into the json file, or else only into the log file
+    if (cr)
+    {
+        const auto peak = theoreticalPeakPerCore();
+        printTimings(cr, msghandler->tw(), phase.wallTime(), json ? &jtree : nullptr, &peak);
+    }
+    if (json)
+    {
+        jtree.write(options.jsonFile, json);
+    }
+    if (!msghandler->ok())
+    {
+        printf("Simulate failed with an error:\n");
+    }
+    return status;
+}
+
+
 int simulate(int argc, char *argv[])
 {
-    // Time the phases of the program, see printTimings.
-    PhaseTimer phase("Startup");
     std::vector<const char *> desc = {
         "alexandria simulate performs a proof-of-principle MD simulation, using",
         "a force field derived by the Alexandria Chemistry Toolkit.", 
@@ -120,21 +390,19 @@ int simulate(int argc, char *argv[])
         { efJSONL, "-progress", "progress", ffOPTWR }
     };
     gmx_output_env_t         *oenv;
-    real                      shellToler = 1e-6;
+    SimulateOptions           options;
+    real                      shellToler = options.shellTolerance;
     std::vector<t_pargs>      pa = {
         { "-shelltoler", FALSE, etREAL, {&shellToler},
           "Tolerance for shell force optimization (mean square force)" }
     };
-    SimulationConfigHandler  sch;
-    sch.add_options(&pa, &fnm);
-    sch.add_MD_options(&pa);
-    ReRunner                 rerun(false);
-    rerun.addOptions(&pa, &fnm, &desc);
-    CompoundReader compR;
-    compR.addOptions(&pa, &fnm, &desc);
+    options.simulation.add_options(&pa, &fnm);
+    options.simulation.add_MD_options(&pa);
+    options.rerun = std::make_shared<ReRunner>(false);
+    options.rerun->addOptions(&pa, &fnm, &desc);
+    options.compounds.addOptions(&pa, &fnm, &desc);
     MsgHandler msghandler;
     msghandler.addOptions(&pa, &fnm, "simulate");
-    int status = 0;
     if (!parse_common_args(&argc, argv, 0, 
                            fnm.size(), fnm.data(), pa.size(), pa.data(),
                            desc.size(), desc.data(), 0, nullptr, &oenv))
@@ -144,239 +412,38 @@ int simulate(int argc, char *argv[])
     CommunicationRecord cr;
     cr.init(cr.size());
     msghandler.optionsFinished(fnm, &cr);
-    // Part of the output in json format, in the file of -json if it is given
-    const char *jsonFile = opt2fn_null("-json", fnm.size(), fnm.data());
-    bool        json     = jsonFile != nullptr;
-
-    sch.check_pargs(&msghandler);
-    compR.optionsFinished(&msghandler, fnm);
-    if (!msghandler.ok())
-    {
-        return 1;
-    }
-    rerun.gendimers()->finishOptions(fnm);
-
-    print_header(msghandler.tw(), pa, fnm);
-
-    shellToler = sch.shellTolerance(shellToler, &msghandler);
-    ForceField        pd;
     try
     {
-        readForceField(opt2fn("-ff", fnm.size(), fnm.data()), &pd, &msghandler);
+        // What the command line asks for
+        options.simulation.check_pargs(&msghandler);
+        options.compounds.optionsFinished(&msghandler, fnm);
+        if (!msghandler.ok())
+        {
+            return 1;
+        }
+        options.rerun->gendimers()->finishOptions(fnm);
+        print_header(msghandler.tw(), pa, fnm);
+        options.shellTolerance = shellToler;
+        options.forceFieldFile = opt2fn("-ff", fnm.size(), fnm.data());
+        options.trajectoryFile = opt2fn("-o", fnm.size(), fnm.data());
+        options.energyFile     = opt2fn("-e", fnm.size(), fnm.data());
+        const auto optional    = [&fnm](const char *option)
+        {
+            const char *name = opt2fn_null(option, fnm.size(), fnm.data());
+            return std::string(name ? name : "");
+        };
+        options.confout      = optional("-c");
+        options.freezeFile   = optional("-freeze");
+        options.molpropFile  = optional("-omp");
+        options.jsonFile     = optional("-json");
+        options.progressFile = optional("-progress");
+        return runSimulate(&msghandler, options, oenv, &cr);
     }
-    GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
-    (void) pd.verifyCheckSum(&msghandler);
-    for(const auto &ss : pd.info())
+    catch (const gmx::InvalidInputError &ex)
     {
-        msghandler.write(ss);
-    }
-
-    ForceComputer forceComp;
-    double epsilonr;
-    epsilonr = pd.epsilonr();
-    forceComp.init(shellToler, sch.shellMaxIter(), epsilonr);
-
-    std::vector<ACTMol> actmols;
-    try
-    {
-        compR.read(&msghandler, pd, &forceComp, &actmols);
-    }
-    catch (const std::exception &ex)
-    {
-        // E.g. a file that does not exist
-        msghandler.msg(ACTStatus::Error,
-                       gmx::formatString("Could not read molecules: %s", ex.what()));
-        actmols.clear();
-    }
-    if (actmols.empty())
-    {
-        fprintf(stderr, "Could not read or process molecules. Please check the log file for more information.\n");
+        fprintf(stderr, "%s\n", ex.what());
         return 1;
     }
-    auto &actmol = actmols[0];
-    // Check whether we need to add position restraints
-    if (sch.kFBPR() > 0)
-    {
-        actmol.topologyPtr()->addFBPR(&msghandler, sch.kFBPR(), sch.r0FBPR(), actmol.xOriginal());
-        // The restraints move the center of mass and rotate around it,
-        // removing that motion would counteract them
-        if (COMMRemoval::None != sch.commRemoval())
-        {
-            msghandler.msg(ACTStatus::Warning,
-                           "The motion of the center of mass is not removed, since there are position restraints.");
-            sch.setCommRemoval(COMMRemoval::None);
-        }
-    }
-    JsonTree jtree("simulate");
-    if (msghandler.info())
-    {
-        forceFieldSummary(&jtree, &pd);
-    }
-
-    if (pd.polarizable())
-    {
-        phase.next("Polarizability");
-        // Make a copy since it maybe changed
-        const auto xx     = actmol.xOriginal();
-        auto qprops = actmol.qProps();
-        for(auto qp = qprops->begin(); qp < qprops->end(); ++qp)
-        {
-            auto qCalc = qp->qPact();
-            qCalc->initializeMoments();
-            qCalc->calcPolarizability(&msghandler, &pd, actmol.topology(), &forceComp);
-            auto alpha = qCalc->polarizabilityTensor();
-            const std::string unit("A^3");
-            double fac = convertFromGromacs(1, unit);
-            JsonTree poltree("Polarizability");
-
-            poltree.addValueUnit("XX", fac*alpha[XX][XX], unit);
-            poltree.addValueUnit("YY", fac*alpha[YY][YY], unit);
-            poltree.addValueUnit("ZZ", fac*alpha[ZZ][ZZ], unit);
-            poltree.addValueUnit("Average", fac*qCalc->isotropicPolarizability(), unit);
-            jtree.addObject(poltree);
-        }
-    }
-
-    if (msghandler.debug())
-    {
-        actmol.topology()->dump(msghandler.twDebug());
-    }
-    auto   eMin = eMinimizeStatus::OK;
-    // The potential energy after minimizing
-    double epot = 0;
-    /* Generate output file for debugging if requested */
-    if (rerun.gendimers()->hasTrajectory())
-    {
-        phase.next("Rerun");
-        rerun.setFunctions(&forceComp, oenv);
-        rerun.setEInteraction(actmol.fragmentHandler()->topologies().size() > 1);
-        rerun.rerun(&msghandler, &pd, &actmol, msghandler.verbose());
-    }
-    else
-    {
-        const MolHandler molhandler;
-        const std::vector<gmx::RVec> coords = actmol.xOriginal();
-        std::vector<gmx::RVec> xmin   = coords;
-        auto nfrag = actmol.fragmentHandler()->topologies().size();
-        msghandler.msg(ACTStatus::Info, gmx::formatString("There are %lu fragments.", nfrag));
-        if (sch.singlePoint())
-        {
-            phase.next("Single point");
-            std::map<InteractionType, double> energies;
-            std::vector<gmx::RVec> forces(actmol.atomsConst().size());
-            forceComp.compute(&msghandler, &pd, actmol.topology(), &xmin, &forces, &energies);
-            JsonTree jtener("Energies before");
-            const std::string unit("kJ/mol");
-            for (const auto &ener : energies)
-            {
-                const auto val = gmx::formatString("%.4f", ener.second);
-                jtener.addValueUnit(interactionTypeToString(ener.first),
-                                    val, unit);
-            }
-            jtree.addObject(jtener);
-            if (nfrag == 2)
-            {
-                // Make a copy to keep the correct shell coordinates when saving the structure.
-                std::vector<std::vector<gmx::RVec>>            newxmin = { xmin };
-                std::vector<std::map<InteractionType, double>> einter;
-                std::vector<double>                            epot;
-                std::vector<std::vector<gmx::RVec>>            interactionForces;
-                bool                                           separateInductionCorrection = false;
-                forceComp.computeInteraction(&msghandler, &pd, &actmol, &newxmin,
-                                             separateInductionCorrection,
-                                             &einter, &epot, &interactionForces);
-                for(const auto &ec : einter)
-                {
-                    for(const auto &ei : ec)
-                    {
-                        msghandler.msg(ACTStatus::Info,
-                                       gmx::formatString("Interaction energy %s: %g",
-                                                         interactionTypeToString(ei.first).c_str(), ei.second));
-                    }
-                }
-            }
-        }
-        else if (sch.minimize())
-        {
-            phase.next("Energy minimization");
-            eMin = minimizeMolecule(&msghandler, &pd, &forceComp, sch,
-                                    opt2fn_null("-freeze", fnm.size(),fnm.data()),
-                                    &actmol, &xmin, &jtree, &epot);
-        }
-        // Without a lower minimum the structure is usable, see minimumUsable
-        if (minimumUsable(eMin) && sch.nsteps() > 0)
-        {
-            phase.next("Molecular dynamics");
-            // Start from the minimized coordinates, if we minimized
-            molhandler.simulate(&msghandler, &pd, &actmol, xmin, &forceComp, sch,
-                                opt2fn("-o", fnm.size(),fnm.data()),
-                                opt2fn("-e", fnm.size(),fnm.data()),
-                                oenv,
-                                opt2fn_null("-progress", fnm.size(), fnm.data()));
-        }
-        phase.next("Output");
-        auto confout = opt2fn_null("-c", fnm.size(),fnm.data());
-        if (confout && minimumUsable(eMin))
-        {
-            matrix box = { { 2, 0, 0 }, { 0, 2, 0 }, { 0, 0, 2 } };
-            actmol.PrintConformation(confout, xmin, sch.writeShells(), box);
-        }
-    }
-    phase.next("Output");
-    auto omp = opt2fn_null("-omp", fnm.size(),fnm.data());
-    if (omp)
-    {
-        std::vector<MolProp> mpt;
-        // We cannot use the actmol after this move command.
-        mpt.push_back(std::move(*actmol.molProp()));
-        MolPropWrite(omp, mpt, false);
-    }
-
-    auto imm = ACTMessage::OK;
-    if (eMinimizeStatus::NoMinimum == eMin)
-    {
-        fprintf(stderr, "Minimization did not converge: %s, check log file %s\n",
-                minimizeStatusMessage(eMin, epot).c_str(),
-                msghandler.filename().c_str());
-    }
-    else if (eMinimizeStatus::OK != eMin)
-    {
-        fprintf(stderr, "Minimization failed: %s, check log file %s\n",
-                minimizeStatusMessage(eMin, epot).c_str(),
-                msghandler.filename().c_str());
-        status = 1;
-    }
-    else if (ACTMessage::OK != imm)
-    {
-        msghandler.msg(ACTStatus::Error, ACTMessage::MinimizationFailed,
-                       gmx::formatString("Please check the log file %s for error messages.\n",
-                                         msghandler.filename().c_str()));
-        status = 1;
-    }
-    if (pd.polarizable())
-    {
-        // The number of shell iterations per force calculation
-        ForceComputerStatistics fcStats;
-        msghandler.write(fcStats.statistics(&cr, &forceComp, 0, true));
-    }
-    if (!json)
-    {
-        int indent = 0;
-        msghandler.write(jtree.writeString(json, &indent));
-    }
-    phase.stop();
-    // The timings go into the json file, or else only into the log file
-    const auto peak = theoreticalPeakPerCore();
-    printTimings(&cr, msghandler.tw(), phase.wallTime(), json ? &jtree : nullptr, &peak);
-    if (json)
-    {
-        jtree.write(jsonFile, json);
-    }
-    if (!msghandler.ok())
-    {
-        printf("Simulate failed with an error:\n");
-    }
-    return status;
 }
 
 } // namespace alexandria

@@ -43,8 +43,11 @@
 #include "act/basics/msg_handler.h"
 #include "act/molprop/molprop.h"
 #include "act/molprop/molprop_xml.h"
+#include "act/properties/simulate.h"
+#include "act/testutils/output_checks.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/vectypes.h"
+#include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/stringutil.h"
 #include "testutils/cmdlinetest.h"
 #include "testutils/refdata.h"
@@ -465,6 +468,102 @@ TEST_F(SimulateTest, ResultsRestrained)
     const auto xvg = readXvg(files.energy);
     ASSERT_EQ(10u, xvg.rows.size());
     checkEnergies(xvg);
+}
+
+// The simulation without a command line, as a program that uses ACT runs it
+
+TEST_F(SimulateTest, WithoutCommandLineSameAsTheProgram)
+{
+    // Minimized first, then 100 steps from velocities at 300 K
+    SimulateFiles files;
+    auto cmd = baseCommand("acetone.sdf", "direct-tool", &files);
+    addMD(&cmd, 300, 1993);
+    cmd.addOption("-minimize");
+    ASSERT_EQ(0, run(&cmd));
+
+    SimulateOptions options;
+    options.forceFieldFile = alexandriaFile("forcefields/ACS-g1.xml");
+    options.compounds.setFileName(alexandriaFile("molecules/acetone.sdf"));
+    options.energyFile     = fileManager().getTemporaryFilePath("direct-energy.xvg");
+    options.trajectoryFile = fileManager().getTemporaryFilePath("direct-traj.pdb");
+    options.simulation.setSimulation(100, 0.0002, 300, 1993, 10, 50);
+    options.simulation.setMinimize(true);
+    MsgHandler msghandler;
+    msghandler.setPrintLevel(ACTStatus::Fatal);
+    // Without an output environment and without the processes
+    EXPECT_EQ(0, alexandria::runSimulate(&msghandler, options));
+    EXPECT_EQ(textWithoutComments(files.energy), textWithoutComments(options.energyFile));
+    EXPECT_EQ(textWithoutComments(files.trajectory), textWithoutComments(options.trajectoryFile));
+
+    // Without any file
+    SimulateOptions quiet = options;
+    quiet.energyFile.clear();
+    quiet.trajectoryFile.clear();
+    EXPECT_EQ(0, alexandria::runSimulate(&msghandler, quiet));
+}
+
+TEST_F(SimulateTest, WithoutCommandLineWrongOptions)
+{
+    const auto valid = [this]()
+    {
+        SimulateOptions options;
+        options.forceFieldFile = alexandriaFile("forcefields/ACS-g1.xml");
+        options.compounds.setFileName(alexandriaFile("molecules/acetone.sdf"));
+        options.simulation.setSimulation(10, 0.0002, 300, 1993, 1, 1);
+        return options;
+    };
+    std::vector<std::pair<SimulateOptions, std::string>> wrong;
+    {
+        auto o = valid();
+        o.forceFieldFile.clear();
+        wrong.emplace_back(o, "-ff");
+    }
+    {
+        SimulateOptions o;
+        o.forceFieldFile = alexandriaFile("forcefields/ACS-g1.xml");
+        wrong.emplace_back(o, "-f");
+    }
+    {
+        auto o = valid();
+        o.shellTolerance = 0;
+        wrong.emplace_back(o, "-shelltoler");
+    }
+    {
+        auto o = valid();
+        o.simulation.setSimulation(10, 0, 300, 1993, 1, 1);
+        wrong.emplace_back(o, "-deltat");
+    }
+    {
+        auto o = valid();
+        o.simulation.setSimulation(-10, 0.0002, 300, 1993, 1, 1);
+        wrong.emplace_back(o, "-nsteps");
+    }
+    {
+        auto o = valid();
+        o.simulation.setSimulation(10, 0.0002, -300, 1993, 1, 1);
+        wrong.emplace_back(o, "-temp");
+    }
+    for (const auto &w : wrong)
+    {
+        MsgHandler msghandler;
+        msghandler.setPrintLevel(ACTStatus::Fatal);
+        try
+        {
+            alexandria::runSimulate(&msghandler, w.first);
+            ADD_FAILURE() << "Accepted options with a wrong " << w.second;
+        }
+        catch (const gmx::InvalidInputError &ex)
+        {
+            EXPECT_NE(std::string::npos, std::string(ex.what()).find(w.second)) << ex.what();
+        }
+    }
+    // The program says the same and stops, before it writes anything
+    SimulateFiles files;
+    auto cmd = baseCommand("acetone.sdf", "wrongdeltat", &files);
+    cmd.addOption("-nsteps", 10);
+    cmd.addOption("-deltat", 0);
+    EXPECT_EQ(1, run(&cmd));
+    EXPECT_FALSE(fileNotEmpty(files.energy));
 }
 
 TEST_F(SimulateTest, EnergyConservation)

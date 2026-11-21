@@ -115,6 +115,13 @@ void checkTextFile(gmx::test::TestReferenceChecker *checker,
 nlohmann::json forceFieldChanges(const ForceField &before,
                                  const ForceField &after);
 
+/*! \brief Read a text file without its comments
+ * \param[in] fileName The file
+ * \return The lines that do not start with #, for instance those of an
+ * xvg file without the time and the command line it was written with
+ */
+std::string textWithoutComments(const std::string &fileName);
+
 /*! \brief Read a JSON file
  * \param[in] fileName The file
  * \return The contents, a discarded value if the file is no JSON
