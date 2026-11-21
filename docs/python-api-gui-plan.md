@@ -496,9 +496,11 @@ written. What came up on the way:
   they own their strings now and can be copied.
 - `analyse_multipoles` crashed without a log file; the run functions make
   an output environment for xvg files if they get none.
-- Options that have no effect: `gentop -conf, -nsymm, -symm, -jobtype,
-  -allowmissing` and the files `-n` and `-q`, and `edit_mp -maxwarn`. They
-  are still accepted.
+- Options that had no effect were removed: `gentop -conf, -nsymm, -symm,
+  -jobtype, -allowmissing` and the files `-n` and `-q`, and `edit_mp
+  -maxwarn` (which `generate_mp` of ACT-utilities passed). `gentop` writes
+  a topology only with `-p` or `-oi`, also together with `-openmm`;
+  before, it wrote `out.top` unless there was an OpenMM file.
 - Still to do: the generator of dimers of `simulate -traj` and `b2`
   (`DimerGenerator`) keeps file names that point into the command line and
   its choices in a shared array, and cannot be copied; `SimulateOptions`
@@ -592,8 +594,9 @@ different from the description of the step. ACT gives a molecule the atom
 types of the force field it is read with, and the specific ones (such as
 `ow` and `hw` for water) only when that force field has the bonds between
 them. A new force field has no bonds before `geometry_ff`, and
-`gentop -allowmissing` is an option without effect (nothing reads it since
-the code for reading compounds was moved to `compound_reader.cpp`). So the
+`gentop -allowmissing` had no effect (nothing read it since the code for
+reading compounds was moved to `compound_reader.cpp`, and it was removed in
+step A8). So the
 molecule is read with the force field of the workspace or the default one,
 the page proposes for each atom a type that a new force field can have, and
 the user chooses another type of the same element where needed. If `gentop`

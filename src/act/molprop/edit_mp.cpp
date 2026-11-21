@@ -624,7 +624,6 @@ int edit_mp(int argc, char *argv[])
     real     temperature = 298.15;
     bool     energyHisto = false;
     bool     molinfo     = true;
-    int      maxwarn     = 0;
     real     ewarnLow    = -20;
     real     ewarnHi     = 100;
     bool     validate    = false;
@@ -632,8 +631,6 @@ int edit_mp(int argc, char *argv[])
     {
         { "-compress", FALSE, etBOOL, {&compress},
           "Compress output XML files" },
-        { "-maxwarn", FALSE, etINT, {&maxwarn},
-          "Will only write output if number of warnings is at most this." },
         { "-temperature", FALSE, etREAL, {&temperature},
           "Temperature for properties to extract from the SQLite database" },
         { "-molinfo", FALSE, etBOOL, {&molinfo},

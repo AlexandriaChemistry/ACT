@@ -57,9 +57,7 @@ struct GentopOptions
 {
     //! The force field file (-ff)
     std::string                          forceFieldFile;
-    /*! \brief The GROMACS topology to write (-p, or -oi for an include
-     * topology), none if empty; it is not written with an OpenMM file
-     */
+    //! The GROMACS topology to write (-p, or -oi for an include topology), none if empty
     std::string                          topologyFile;
     //! Whether the topology is an include topology (-oi)
     bool                                 includeTopology  = false;

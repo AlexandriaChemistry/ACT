@@ -885,6 +885,32 @@ static std::string fileContents(const std::string &fileName)
     return text.str();
 }
 
+// Test: A topology is written only when it is asked for, also with an OpenMM file
+TEST_F(GentopTest, TopologyOnlyWhenAskedFor)
+{
+    const auto acetone = fileManager().getInputFilePath("molecules/acetone.sdf");
+    const auto dir     = std::filesystem::path(fileManager().getTemporaryFilePath("x")).parent_path();
+    const auto old     = std::filesystem::current_path();
+    // In a directory of its own, where the default name would be used
+    const auto work    = dir / "topology-only-when-asked";
+    std::filesystem::create_directories(work);
+    std::filesystem::current_path(work);
+    {
+        std::map<std::string, std::string> files = { { "-c", "structure.pdb" } };
+        run("forcefields/ACS-g1.xml", { { "-f", acetone } }, &files);
+        EXPECT_TRUE(std::filesystem::exists(files["-c"]));
+        EXPECT_TRUE(std::filesystem::is_empty(work));
+    }
+    {
+        std::map<std::string, std::string> files = { { "-openmm", "both.xml" }, { "-p", "both.top" } };
+        run("forcefields/ACS-g1.xml", { { "-f", acetone } }, &files);
+        EXPECT_TRUE(std::filesystem::exists(files["-openmm"]));
+        EXPECT_TRUE(std::filesystem::exists(files["-p"]));
+        EXPECT_FALSE(section(readTopology(files["-p"]), "atoms").empty());
+    }
+    std::filesystem::current_path(old);
+}
+
 // The topologies without a command line, as a program that uses ACT makes them
 
 TEST_F(GentopTest, WithoutCommandLineSameAsTheProgram)
