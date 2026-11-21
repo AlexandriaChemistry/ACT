@@ -45,6 +45,10 @@
 #include "act/molprop/molprop_xml.h"
 #include "act/properties/simulate.h"
 #include "act/testutils/output_checks.h"
+#include "act/utility/communicationrecord.h"
+#include "gromacs/commandline/filenm.h"
+#include "gromacs/commandline/pargs.h"
+#include "gromacs/fileio/oenv.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/vectypes.h"
 #include "gromacs/utility/exceptions.h"
@@ -681,6 +685,53 @@ TEST_F(SimulateTest, Rerun)
         // the energy of the bonds by up to a few tenths of a kJ/mol.
         EXPECT_NEAR(xvg.rows[row][cEpot], epot[i], i == 0 ? 1e-4 : 0.5) << "frame " << i;
     }
+}
+
+// Test: A rerun that a program sets up, without the options of a command
+// line, gives the energies of the program
+TEST_F(SimulateTest, RerunWithoutCommandLine)
+{
+    SimulateFiles md;
+    auto cmd = baseCommand("water_dimer.pdb", "md-direct", &md);
+    addMD(&cmd, 300, 1993);
+    ASSERT_EQ(0, run(&cmd));
+    SimulateFiles rerun;
+    auto cmd2 = baseCommand("water_dimer.pdb", "rerun-tool", &rerun);
+    cmd2.addOption("-traj", md.trajectory);
+    ASSERT_EQ(0, run(&cmd2));
+
+    const auto log = fileManager().getTemporaryFilePath("rerun-direct.log");
+    {
+        // A log, which has the energies of the rerun
+        MsgHandler            msghandler;
+        std::vector<t_pargs>  pa;
+        std::vector<t_filenm> fnm;
+        msghandler.addOptions(&pa, &fnm, "rerun-direct");
+        gmx::test::CommandLine logOnly;
+        logOnly.append("test");
+        logOnly.addOption("-g", log);
+        gmx_output_env_t *oenv = nullptr;
+        ASSERT_TRUE(parse_common_args(&logOnly.argc(), logOnly.argv(), 0, fnm.size(), fnm.data(),
+                                      pa.size(), pa.data(), 0, nullptr, 0, nullptr, &oenv));
+        output_env_done(oenv);
+        CommunicationRecord cr;
+        cr.init(cr.size());
+        msghandler.optionsFinished(fnm, &cr);
+
+        SimulateOptions options;
+        options.forceFieldFile = alexandriaFile("forcefields/ACS-g1.xml");
+        options.compounds.setFileName(alexandriaFile("molecules/water_dimer.pdb"));
+        options.rerun.emplace(false);
+        options.rerun->gendimers()->setTrajectory(md.trajectory);
+        options.rerun->gendimers()->finishSettings();
+        // The options can be copied, with the rerun
+        const auto copy = options;
+        EXPECT_EQ(0, alexandria::runSimulate(&msghandler, copy, nullptr, &cr));
+    }
+    const auto tool   = rerunEpot(rerun.log);
+    const auto direct = rerunEpot(log);
+    ASSERT_EQ(2u, tool.size());
+    EXPECT_EQ(tool, direct);
 }
 
 // Test: Rerunning a trajectory of the atoms only with a model with shells

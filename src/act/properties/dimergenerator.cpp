@@ -37,6 +37,7 @@
 #include <cstring>
 #include <map>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "act/alexandria/confighandler.h"
@@ -100,13 +101,13 @@ static std::vector<const char *> dg_desc = {
     "orientations, and -maxdimer is not used. For linear molecules, ngamma can be one.[PAR]"
 };
 
-//! \brief Couple of string to use in cmdline option for the algorithm
-static const char *randAlgStr[6] = {nullptr, "Sobol", "SobolOwen", "Pseudo", "Gauss", nullptr};
-
 void DimerGenerator::addOptions(std::vector<t_pargs>      *pa,
                                 std::vector<t_filenm>     *fnm,
                                 std::vector<const char *> *desc)
 {
+    // The parser keeps the choice in the first element, which would
+    // otherwise become the default when the options are parsed again
+    randAlgChoice_[0] = nullptr;
     const std::vector<t_pargs> mypa = {
         { "-ndist", FALSE, etINT, {&ndist_},
           "Number of equidistant distances to use for computing interaction energies and forces. Total number of dimers is the product of maxdimer and ndist. If less than two, the range from mindist to maxdist will be divided into bins of 2.5 pm." },
@@ -116,7 +117,7 @@ void DimerGenerator::addOptions(std::vector<t_pargs>      *pa,
           "Maximum com-com distance to generate dimers for." },
         { "-dimerseed", FALSE, etINT, {&dimerseed_},
           "Random number seed to generate monomer orientations, only when using pseudorandom numbers. If dimerseed is 0, a seed will be generated." },
-        { "-randalg", FALSE, etENUM, {randAlgStr},
+        { "-randalg", FALSE, etENUM, {randAlgChoice_.data()},
           "Random number generation algorithm. Default is Sobol since it converges faster" },
         { "-nalpha", FALSE, etINT, {&nalpha_},
           "Number of equally spaced points for the Euler angle alpha of the second molecule, for the Gauss algorithm." },
@@ -149,16 +150,12 @@ void DimerGenerator::addOptions(std::vector<t_pargs>      *pa,
     }
 }
 
-DimerGenerator::~DimerGenerator()
+void DimerGenerator::printStatistics(MsgHandler *msghandler)
 {
-    if (rot_)
+    rot_.printAngleHisto();
+    if (debugGD_)
     {
-        rot_->printAngleHisto();
-        if (debugGD_)
-        {
-            rot_->printAverageMatrix(msghandler_);
-        }
-        delete rot_;
+        rot_.printAverageMatrix(msghandler);
     }
 }
 
@@ -169,12 +166,51 @@ void DimerGenerator::setSeed(int seed)
 
 void DimerGenerator::finishOptions(const std::vector<t_filenm> &fnm)
 {
+    if (randAlgChoice_[0])
+    {
+        randAlg_ = stringToRandAlg(randAlgChoice_[0]);
+    }
+    const char *traj = opt2fn_null("-traj", fnm.size(), fnm.data());
+    trajname_        = traj ? traj : "";
+    const char *ox   = opt2fn_null("-ox",   fnm.size(), fnm.data());
+    outcoords_       = ox ? ox : "";
+    finishSettings();
+}
+
+void DimerGenerator::finishSettings()
+{
+    if (ndist_ < 0)
+    {
+        GMX_THROW(gmx::InvalidInputError(gmx::formatString("The value %d of -ndist should be zero or more", ndist_)));
+    }
+    if (!std::isfinite(mindist_) || mindist_ < 0)
+    {
+        GMX_THROW(gmx::InvalidInputError(gmx::formatString("The value %g of -mindist should be zero or more", mindist_)));
+    }
+    if (!std::isfinite(maxdist_) || maxdist_ <= mindist_)
+    {
+        GMX_THROW(gmx::InvalidInputError(gmx::formatString("The value %g of -maxdist should be more than %g of -mindist",
+                                                           maxdist_, mindist_)));
+    }
+    if (RandAlg::Gauss == randAlg_)
+    {
+        const std::vector<std::pair<std::string, int>> grid = {
+            { "-nalpha", nalpha_ }, { "-nbeta", nbeta_ }, { "-ngamma", ngamma_ }
+        };
+        for (const auto &n : grid)
+        {
+            if (n.second < 1)
+            {
+                GMX_THROW(gmx::InvalidInputError(gmx::formatString("The value %d of %s should be one or more",
+                                                                   n.second, n.first.c_str())));
+            }
+        }
+    }
     if (dimerseed_ > 0)
     {
         gen_.seed(dimerseed_);
     }
-    randAlg_ = stringToRandAlg(randAlgStr[0]);
-    rot_ = new Rotator(debugGD_);
+    rot_ = Rotator(debugGD_);
     if (ndist_ <= 1)
     {
         ndist_ = 1+std::round((maxdist_-mindist_)/binWidth_);
@@ -183,8 +219,6 @@ void DimerGenerator::finishOptions(const std::vector<t_filenm> &fnm)
     {
         binWidth_ = (maxdist_-mindist_)/(ndist_ - 1);
     }
-    trajname_  = opt2fn_null("-traj", fnm.size(), fnm.data());
-    outcoords_ = opt2fn_null("-ox",   fnm.size(), fnm.data());
 }
 
 //! \brief Print coordinates to xyz file
@@ -210,15 +244,15 @@ static void dump_coords(const char                                *outcoords,
 void DimerGenerator::writeCoords(const ACTMol                              *actmol,
                                   const std::vector<std::vector<gmx::RVec>> &coords) const
 {
-    if (outcoords_)
+    if (!outcoords_.empty())
     {
-        dump_coords(outcoords_, actmol, coords);
+        dump_coords(outcoords_.c_str(), actmol, coords);
     }
 }
 
 void DimerGenerator::read(std::vector<std::vector<gmx::RVec>> *coords)
 {
-    if (!trajname_)
+    if (trajname_.empty())
     {
         fprintf(stderr, "No trajectory file name passed\n");
         return;
@@ -229,10 +263,10 @@ void DimerGenerator::read(std::vector<std::vector<gmx::RVec>> *coords)
     rvec             *x;
     matrix            box;
     output_env_init_default(&oenv);
-    int               natoms = read_first_x(oenv, &status, trajname_, &t, &x, box);
+    int               natoms = read_first_x(oenv, &status, trajname_.c_str(), &t, &x, box);
     if (natoms == 0)
     {
-        fprintf(stderr, "Could not read trajectory file %s\n", trajname_);
+        fprintf(stderr, "Could not read trajectory file %s\n", trajname_.c_str());
         return;
     }
     do
@@ -453,7 +487,6 @@ void DimerGenerator::prepare(MsgHandler       *msghandler,
 void DimerGenerator::generateDimers(MsgHandler                *msghandler,
                                     std::vector<dimer_coords> *coords)
 {
-    msghandler_ = msghandler;
 
     if (debugGD_ && msghandler)
     {
@@ -465,7 +498,7 @@ void DimerGenerator::generateDimers(MsgHandler                *msghandler,
     {
         // Random rotation, using the pre-calculated random numbers
         size_t j0 = m*DIM;
-        xrand[m] = rot_->randomRotate(allRandom_[randIndex_][j0],
+        xrand[m] = rot_.randomRotate(allRandom_[randIndex_][j0],
                                       allRandom_[randIndex_][j0+1],
                                       allRandom_[randIndex_][j0+2], xmOrig_[m]);
     }

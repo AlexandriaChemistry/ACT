@@ -501,13 +501,18 @@ written. What came up on the way:
   -maxwarn` (which `generate_mp` of ACT-utilities passed). `gentop` writes
   a topology only with `-p` or `-oi`, also together with `-openmm`;
   before, it wrote `out.top` unless there was an OpenMM file.
-- Still to do: the generator of dimers of `simulate -traj` and `b2`
-  (`DimerGenerator`) keeps file names that point into the command line and
-  its choices in a shared array, and cannot be copied; `SimulateOptions`
-  has it only from the command line. The Python classes still have their
-  own versions of minimize, nma, simulate and write_openmm, which work on a
-  molecule in memory instead of files; they use the same settings classes
-  and checks.
+- The generator of dimers of `simulate -traj` and `b2` (`DimerGenerator`)
+  kept file names that pointed into the command line and its choice of
+  `-randalg` in a shared array, and could not be copied. It owns its
+  settings now, has setters and `finishSettings()`, which checks them, and
+  prints the statistics of the orientations (`-dbgGD`) when asked instead
+  of in its destructor. `ReRunner` can be copied with it, and
+  `SimulateOptions` has one that a program can set up as well.
+- Still to do: `b2` itself is not split yet, since `ReRunner::runB2` takes
+  its output files from the command line. The Python classes still have
+  their own versions of minimize, nma, simulate and write_openmm, which work
+  on a molecule in memory instead of files; they use the same settings
+  classes and checks.
 
 **A9. Documentation and packaging.** A chapter "Using ACT from Python" in the
 manual with the examples above, an API reference generated from the

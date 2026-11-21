@@ -131,6 +131,8 @@ public:
 
     //! \return the dimer generator
     DimerGenerator *gendimers() { return &gendimers_; }
+    //! \return the dimer generator
+    const DimerGenerator &gendimersConst() const { return gendimers_; }
 
     /*! \brief Add command line options
      * \param[inout] pargs  Regular flags

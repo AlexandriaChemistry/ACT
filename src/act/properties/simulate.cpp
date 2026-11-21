@@ -213,12 +213,14 @@ int runSimulate(MsgHandler                *msghandler,
     // The potential energy after minimizing
     double epot = 0;
     /* Generate output file for debugging if requested */
-    if (options.rerun && options.rerun->gendimers()->hasTrajectory())
+    if (options.rerun && options.rerun->gendimersConst().hasTrajectory())
     {
+        // The rerun keeps the force computer and the output environment
+        auto rerun = *options.rerun;
         phase.next("Rerun");
-        options.rerun->setFunctions(&forceComp, output.get());
-        options.rerun->setEInteraction(actmol.fragmentHandler()->topologies().size() > 1);
-        options.rerun->rerun(msghandler, &pd, &actmol, msghandler->verbose());
+        rerun.setFunctions(&forceComp, output.get());
+        rerun.setEInteraction(actmol.fragmentHandler()->topologies().size() > 1);
+        rerun.rerun(msghandler, &pd, &actmol, msghandler->verbose());
     }
     else
     {
@@ -398,7 +400,7 @@ int simulate(int argc, char *argv[])
     };
     options.simulation.add_options(&pa, &fnm);
     options.simulation.add_MD_options(&pa);
-    options.rerun = std::make_shared<ReRunner>(false);
+    options.rerun.emplace(false);
     options.rerun->addOptions(&pa, &fnm, &desc);
     options.compounds.addOptions(&pa, &fnm, &desc);
     MsgHandler msghandler;

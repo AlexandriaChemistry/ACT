@@ -34,9 +34,10 @@
 #ifndef ACT_DIMERGENERATOR_H
 #define ACT_DIMERGENERATOR_H
 
+#include <array>
 #include <cstddef>
-#include <cstring>
 #include <random>
+#include <string>
 #include <vector>
 
 #include "act/basics/msg_handler.h"
@@ -112,16 +113,14 @@ private:
     int                                    nbeta_   = 7;
     //! Number of points for gamma in the Gauss algorithm
     int                                    ngamma_  = 7;
-    //! Random device
-    std::random_device                     rd_;
-    //! Generator
+    //! Generator, seeded from a random device unless a seed is given
     std::mt19937                           gen_;
     //! Distribution
     std::uniform_real_distribution<double> dis_;
     //! Rotator
-    Rotator                               *rot_ = nullptr;
-    //! Trajectory name
-    const char                            *trajname_ = nullptr;
+    Rotator                                rot_ { false };
+    //! Trajectory to read the dimers from, none if empty (-traj)
+    std::string                            trajname_;
     //! The random numbers
     std::vector<std::vector<double>>       allRandom_;
     //! Random number index
@@ -130,16 +129,16 @@ private:
     std::vector<gmx::RVec>                 xmOrig_[2];
     //! Atom info for both monomers
     std::vector<ActAtom>                   atoms_[2];
-    //! MsgHandler pointer for use in destructor (not owned)
-    MsgHandler                            *msghandler_ = nullptr;
-    //! Output coordinate file name (from -ox option)
-    const char                            *outcoords_  = nullptr;
+    //! Output coordinate file name, none if empty (-ox)
+    std::string                            outcoords_;
+    /*! \brief The choice of -randalg as the command line parser keeps it
+     * The first element points to the choice, nullptr before a command
+     * line was parsed. Each generator has its own.
+     */
+    std::array<const char *, 6>            randAlgChoice_ = { nullptr, "Sobol", "SobolOwen", "Pseudo", "Gauss", nullptr };
 public:
     //! Constructor
-    DimerGenerator() : gen_(rd_()), dis_(std::uniform_real_distribution<double>(0.0, 1.0)) {}
-
-    //! Destructor
-    ~DimerGenerator();
+    DimerGenerator() : gen_(std::random_device{}()), dis_(std::uniform_real_distribution<double>(0.0, 1.0)) {}
   
     /*! \brief Add my options
      * \param[inout] pa   The command line options
@@ -151,9 +150,53 @@ public:
                     std::vector<const char *> *desc);
 
     /*! \brief Process the options
+     * Takes the file names and the choice of the algorithm from the
+     * command line, then see finishSettings.
      * \param[in] fnm The file names after processing
+     * \throws gmx::InvalidInputError for settings that make no sense
      */
     void finishOptions(const std::vector<t_filenm> &fnm);
+
+    /*! \brief Check the settings and prepare for generating dimers
+     * Seeds the generator, and divides the range of distances in the number
+     * of distances or in bins of the bin width. finishOptions calls it; a
+     * program without a command line calls it after the setters.
+     * \throws gmx::InvalidInputError that names the option of a setting
+     * that is out of range
+     */
+    void finishSettings();
+
+    /*! \brief The distances of the centers of mass, as -mindist, -maxdist and -ndist
+     * \param[in] mindist The shortest distance in nm
+     * \param[in] maxdist The longest distance in nm
+     * \param[in] ndist   The number of distances, less than two for bins of 2.5 pm
+     */
+    void setDistances(double mindist, double maxdist, int ndist)
+    {
+        mindist_ = mindist;
+        maxdist_ = maxdist;
+        ndist_   = ndist;
+    }
+
+    /*! \brief Set the algorithm for the orientations, as -randalg
+     * \param[in] randAlg The algorithm
+     */
+    void setRandAlg(RandAlg randAlg) { randAlg_ = randAlg; }
+
+    /*! \brief Read the dimers from a trajectory instead of generating them, as -traj
+     * \param[in] trajname The file, none if empty
+     */
+    void setTrajectory(const std::string &trajname) { trajname_ = trajname; }
+
+    /*! \brief Write the generated dimers to a file, as -ox
+     * \param[in] outcoords The file, none if empty
+     */
+    void setOutputCoordinates(const std::string &outcoords) { outcoords_ = outcoords; }
+
+    /*! \brief Print the statistics of the orientations, with -dbgGD only
+     * \param[in] msghandler For the debug output, may be nullptr
+     */
+    void printStatistics(MsgHandler *msghandler);
 
     //! Get the original seed
     int seed() const { return dimerseed_; }
@@ -217,7 +260,7 @@ public:
     double mindist() const { return mindist_; }
 
     //! Return trajectory name
-    const char *trajname() const { return trajname_; }
+    const char *trajname() const { return trajname_.empty() ? nullptr : trajname_.c_str(); }
 
     //! Return max distance
     double maxdist() const { return maxdist_; }
@@ -226,7 +269,7 @@ public:
     double binwidth() const { return binWidth_; }
 
     //! Return output coordinates filename (nullptr if not set)
-    const char *outCoords() const { return outcoords_; }
+    const char *outCoords() const { return outcoords_.empty() ? nullptr : outcoords_.c_str(); }
 
     /*! \brief Write all generated coordinates to file
      * \param[in] actmol  The molecule description (for atom names)
@@ -236,7 +279,7 @@ public:
                      const std::vector<std::vector<gmx::RVec>> &coords) const;
 
     //! Return whether or not there is a trajectory to read
-    bool hasTrajectory() const { return trajname_ && strlen(trajname_) > 0; }
+    bool hasTrajectory() const { return !trajname_.empty(); }
 
     /*! \brief Prepare for generating, this must be called once
      * This will perform monomer minimization if requested.
