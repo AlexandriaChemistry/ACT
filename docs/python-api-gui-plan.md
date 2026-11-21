@@ -523,8 +523,8 @@ written. What came up on the way:
   does the work on the processes it is given. `ReRunner` checks its
   settings (`validate`) and takes its output files from setters instead
   of the command line. The option `-name` had no effect
-  and was removed. B2(T) is written also without `-b2`, to `B2T.xvg`, as
-  before.
+  and was removed. B2(T) is plotted only with an explicit `-b2`; it is in
+  the log file anyway, and in the json file with `-json`.
 - Still to do: the Python classes have their own versions of minimize,
   nma, simulate and write_openmm, which work on a molecule in memory
   instead of files; they use the same settings classes and checks.

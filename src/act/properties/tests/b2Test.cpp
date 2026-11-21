@@ -318,6 +318,36 @@ TEST_F(SecondVirialWithoutCommandLineTest, SameAsTheProgram)
     EXPECT_EQ(textWithoutComments(toolB2), textWithoutComments(fileManager().getTemporaryFilePath("direct-B2T.xvg")));
 }
 
+TEST_F(SecondVirialWithoutCommandLineTest, NoB2FileWithoutTheOption)
+{
+    // Run in an empty directory, where B2T.xvg would be written by default
+    const std::filesystem::path dir(fileManager().getTemporaryFilePath("withoutB2"));
+    std::filesystem::remove_all(dir);
+    std::filesystem::create_directories(dir);
+    const auto here = std::filesystem::current_path();
+    std::filesystem::current_path(dir);
+    gmx::test::CommandLine cmd;
+    cmd.append("b2");
+    cmd.addOption("-ff", fileManager().getInputFilePath("forcefields/SPCE.xml"));
+    cmd.addOption("-f", fileManager().getInputFilePath("molecules/water_dimer.pdb"));
+    cmd.addOption("-mindist", 0.1);
+    cmd.addOption("-maxdist", 1.2);
+    cmd.addOption("-ndist", 11);
+    cmd.addOption("-maxdimer", 8);
+    cmd.addOption("-T1", 400.0);
+    cmd.addOption("-T2", 500.0);
+    cmd.addOption("-dT", 100.0);
+    cmd.addOption("-g", (dir / "b2.log").string());
+    const int status = b2(cmd.argc(), cmd.argv());
+    std::filesystem::current_path(here);
+    ASSERT_EQ(0, status);
+    // The second virial is in the log, and no file was asked for
+    EXPECT_TRUE(std::filesystem::exists(dir / "b2.log"));
+    EXPECT_FALSE(std::filesystem::exists(dir / "B2T.xvg"));
+    EXPECT_FALSE(std::filesystem::exists(dir / "mayer.xvg"));
+    EXPECT_FALSE(std::filesystem::exists(dir / "b2.json"));
+}
+
 TEST_F(SecondVirialWithoutCommandLineTest, WrongOptions)
 {
     std::vector<std::pair<B2Options, std::string>> wrong;
