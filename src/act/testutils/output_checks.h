@@ -91,7 +91,8 @@ void checkJson(gmx::test::TestReferenceChecker *checker,
  * \param[in] fileName The file
  * \param[in] skip     Lines that contain one of these texts are left out,
  *                     for instance those with a time stamp. A negative
- *                     zero, such as -0.000, counts as a zero.
+ *                     zero, such as -0.000, counts as a zero, and a run
+ *                     of spaces as one space.
  * \param[in] id       The name of the contents in the reference data
  */
 void checkTextFile(gmx::test::TestReferenceChecker *checker,

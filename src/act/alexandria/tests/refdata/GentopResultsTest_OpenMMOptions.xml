@@ -2,39 +2,39 @@
 <?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
 <ReferenceData>
   <String Name="-c"><![CDATA[
-TITLE      processed by ACT - The Alexandria Chemistry Toolkit
-REMARK    THIS IS A SIMULATION BOX
-CRYST1   50.000   50.000   50.000  90.00  90.00  90.00 P 1           1
-MODEL        1
-ATOM      1  O1  PR1     1      -0.356  -0.064   1.216  1.00  0.00           O
-ATOM      2  Os1 PR1     1      -0.356  -0.064   1.216  1.00  0.00          EP
-ATOM      3  C2  PR1     1       0.000   0.000   0.184  1.00  0.00           C
-ATOM      4  Cs2 PR1     1       0.000   0.000   0.184  1.00  0.00          EP
-ATOM      5  C3  PR1     1      -1.288   0.000  -0.611  1.00  0.00           C
-ATOM      6  Cs3 PR1     1      -1.288   0.000  -0.611  1.00  0.00          EP
-ATOM      7  C4  PR1     1       1.358  -0.009  -0.635  1.00  0.00           C
-ATOM      8  Cs4 PR1     1       1.358  -0.009  -0.635  1.00  0.00          EP
-ATOM      9  H5  PR1     1      -2.142   0.000   0.060  1.00  0.00           H
-ATOM     10  Hs5 PR1     1      -2.142   0.000   0.060  1.00  0.00          EP
-ATOM     11  H6  PR1     1      -1.330   0.877  -1.262  1.00  0.00           H
-ATOM     12  Hs6 PR1     1      -1.330   0.877  -1.262  1.00  0.00          EP
-ATOM     13  H7  PR1     1      -1.144  -0.856  -1.203  1.00  0.00           H
-ATOM     14  Hs7 PR1     1      -1.144  -0.856  -1.203  1.00  0.00          EP
-ATOM     15  H8  PR1     1       1.802   0.081   0.282  1.00  0.00           H
-ATOM     16  Hs8 PR1     1       1.802   0.081   0.282  1.00  0.00          EP
-ATOM     17  H9  PR1     1       1.079  -0.867  -1.236  1.00  0.00           H
-ATOM     18  Hs9 PR1     1       1.079  -0.867  -1.236  1.00  0.00          EP
-ATOM     19  H10 PR1     1       1.330   0.877  -1.261  1.00  0.00           H
-ATOM     20 Hs10 PR1     1       1.330   0.877  -1.261  1.00  0.00          EP
-CONECT    3    1
-CONECT    5    9
-CONECT    5    3
-CONECT    7   15
-CONECT    7    3
-CONECT   11    5
-CONECT   13    5
-CONECT   17    7
-CONECT   19    7
+TITLE processed by ACT - The Alexandria Chemistry Toolkit
+REMARK THIS IS A SIMULATION BOX
+CRYST1 50.000 50.000 50.000 90.00 90.00 90.00 P 1 1
+MODEL 1
+ATOM 1 O1 PR1 1 -0.356 -0.064 1.216 1.00 0.00 O
+ATOM 2 Os1 PR1 1 -0.356 -0.064 1.216 1.00 0.00 EP
+ATOM 3 C2 PR1 1 0.000 0.000 0.184 1.00 0.00 C
+ATOM 4 Cs2 PR1 1 0.000 0.000 0.184 1.00 0.00 EP
+ATOM 5 C3 PR1 1 -1.288 0.000 -0.611 1.00 0.00 C
+ATOM 6 Cs3 PR1 1 -1.288 0.000 -0.611 1.00 0.00 EP
+ATOM 7 C4 PR1 1 1.358 -0.009 -0.635 1.00 0.00 C
+ATOM 8 Cs4 PR1 1 1.358 -0.009 -0.635 1.00 0.00 EP
+ATOM 9 H5 PR1 1 -2.142 0.000 0.060 1.00 0.00 H
+ATOM 10 Hs5 PR1 1 -2.142 0.000 0.060 1.00 0.00 EP
+ATOM 11 H6 PR1 1 -1.330 0.877 -1.262 1.00 0.00 H
+ATOM 12 Hs6 PR1 1 -1.330 0.877 -1.262 1.00 0.00 EP
+ATOM 13 H7 PR1 1 -1.144 -0.856 -1.203 1.00 0.00 H
+ATOM 14 Hs7 PR1 1 -1.144 -0.856 -1.203 1.00 0.00 EP
+ATOM 15 H8 PR1 1 1.802 0.081 0.282 1.00 0.00 H
+ATOM 16 Hs8 PR1 1 1.802 0.081 0.282 1.00 0.00 EP
+ATOM 17 H9 PR1 1 1.079 -0.867 -1.236 1.00 0.00 H
+ATOM 18 Hs9 PR1 1 1.079 -0.867 -1.236 1.00 0.00 EP
+ATOM 19 H10 PR1 1 1.330 0.877 -1.261 1.00 0.00 H
+ATOM 20 Hs10 PR1 1 1.330 0.877 -1.261 1.00 0.00 EP
+CONECT 3 1
+CONECT 5 9
+CONECT 5 3
+CONECT 7 15
+CONECT 7 3
+CONECT 11 5
+CONECT 13 5
+CONECT 17 7
+CONECT 19 7
 ENDMDL
 TER
 ]]></String>
@@ -42,113 +42,113 @@ TER
 <?xml version="1.0" encoding="ISO-8859-1"?>
 <!DOCTYPE ForceField.dtd PUBLIC "ForceField.dtd" "ForceField.dtd">
 <ForceField>
-  <AtomTypes>
-    <Type name="o2" class="o2_b" element="O" mass="15.5994"/>
-    <Type name="o2_s" class="o2_s" mass="0.4"/>
-    <Type name="c2" class="c2_b" element="C" mass="11.6107"/>
-    <Type name="c2_s" class="c2_s" mass="0.4"/>
-    <Type name="c3" class="c3_b" element="C" mass="11.6107"/>
-    <Type name="c3_s" class="c3_s" mass="0.4"/>
-    <Type name="h" class="h_b" element="H" mass="0.6079"/>
-    <Type name="h_s" class="h_s" mass="0.4"/>
-  </AtomTypes>
-  <Residues>
-    <Residue name="PR1">
-      <Atom name="O1" type="o2" charge="0.8873588041971"/>
-      <Atom name="o2_s_1" type="o2_s" charge="-1.2"/>
-      <Atom name="C2" type="c2" charge="0.8966778292326"/>
-      <Atom name="c2_s_2" type="c2_s" charge="-1.2"/>
-      <Atom name="C3" type="c3" charge="0.8571221301956"/>
-      <Atom name="c3_s_3" type="c3_s" charge="-1.2"/>
-      <Atom name="C4" type="c3" charge="0.8563454700389"/>
-      <Atom name="c3_s_4" type="c3_s" charge="-1.2"/>
-      <Atom name="H5" type="h" charge="1.016930615081"/>
-      <Atom name="h_s_5" type="h_s" charge="-0.8"/>
-      <Atom name="H6" type="h" charge="1.016930615081"/>
-      <Atom name="h_s_6" type="h_s" charge="-0.8"/>
-      <Atom name="H7" type="h" charge="1.016930615081"/>
-      <Atom name="h_s_7" type="h_s" charge="-0.8"/>
-      <Atom name="H8" type="h" charge="1.017234640364"/>
-      <Atom name="h_s_8" type="h_s" charge="-0.8"/>
-      <Atom name="H9" type="h" charge="1.017234640364"/>
-      <Atom name="h_s_9" type="h_s" charge="-0.8"/>
-      <Atom name="H10" type="h" charge="1.017234640364"/>
-      <Atom name="h_s_10" type="h_s" charge="-0.8"/>
-      <Bond atomName1="C2" atomName2="O1"/>
-      <Bond atomName1="C3" atomName2="H5"/>
-      <Bond atomName1="C3" atomName2="C2"/>
-      <Bond atomName1="C4" atomName2="H8"/>
-      <Bond atomName1="C4" atomName2="C2"/>
-      <Bond atomName1="H6" atomName2="C3"/>
-      <Bond atomName1="H7" atomName2="C3"/>
-      <Bond atomName1="H9" atomName2="C4"/>
-      <Bond atomName1="H10" atomName2="C4"/>
-    </Residue>
-  </Residues>
-  <CustomBondForce energy="(De*((1 - exp(-beta*(r-bondlength)))^2-1)+D0)">
-    <GlobalParameter name="pot-MORSE-BONDS" defaultValue="1"/>
-    <PerBondParameter name="beta"/>
-    <PerBondParameter name="De"/>
-    <PerBondParameter name="D0"/>
-    <PerBondParameter name="bondlength"/>
-    <Bond class1="c2_b" class2="o2_b" beta="20" De="400" D0="0" bondlength="0.1207"/>
-    <Bond class1="c3_b" class2="h_b" beta="20" De="400" D0="0" bondlength="0.1091"/>
-    <Bond class1="c2_b" class2="c3_b" beta="20" De="400" D0="0" bondlength="0.1506"/>
-  </CustomBondForce>
-  <HarmonicAngleForce energy="0">
-    <Angle class1="c3_b" class2="c2_b" class3="o2_b" k="300" angle="2.171189589481"/>
-    <Angle class1="c2_b" class2="c3_b" class3="h_b" k="300" angle="1.930334152706"/>
-    <Angle class1="h_b" class2="c3_b" class3="h_b" k="300" angle="1.88146493365"/>
-    <Angle class1="c3_b" class2="c2_b" class3="c3_b" k="300" angle="2.019345944557"/>
-  </HarmonicAngleForce>
-  <CustomAngleForce energy="0"/>
-  <RBTorsionForce energy="0">
-    <Proper class1="h_b" class2="c3_b" class3="c2_b" class4="o2_b" c0="0.5" c1="-1.5" c2="0" c3="2" c4="0" c5="0"/>
-    <Proper class1="c3_b" class2="c2_b" class3="c3_b" class4="h_b" c0="0" c1="0" c2="0" c3="0" c4="0" c5="0"/>
-  </RBTorsionForce>
-  <PeriodicTorsionForce energy="0">
-    <Improper class1="c2_b" class2="c3_b" class3="c3_b" class4="o2_b" kimp="1"/>
-  </PeriodicTorsionForce>
-  <CustomNonbondedForce energy="select(epsilon*sigma,(((2*epsilon)/(1-(3/(gamma+3)))) * (1.0/(1.0+(r/sigma)^6)) * ((3/(gamma+3))*exp(gamma*(1-(r/sigma)))-1)),0)" bondCutoff="0">
-    <GlobalParameter name="pot-WANG_BUCKINGHAM" defaultValue="1"/>
-    <GlobalParameter name="pot-COULOMB_GAUSSIAN" defaultValue="1"/>
-    <GlobalParameter name="cr-epsilon_Geometric" defaultValue="1"/>
-    <GlobalParameter name="cr-gamma_Geometric" defaultValue="1"/>
-    <GlobalParameter name="cr-sigma_Geometric" defaultValue="1"/>
-    <GlobalParameter name="nexcl" defaultValue="0"/>
-    <GlobalParameter name="prefactor-" defaultValue="1"/>
-    <UseAttributeFromResidue name="charge"/>
-    <PerParticleParameter name="sigma"/>
-    <PerParticleParameter name="epsilon"/>
-    <PerParticleParameter name="gamma"/>
-    <PerParticleParameter name="charge"/>
-    <PerParticleParameter name="zeta"/>
-    <Atom type="c2" sigma="0.12" epsilon="0.55" gamma="15" zeta="6"/>
-    <Atom type="c2_s" sigma="0" epsilon="0" gamma="0" zeta="6"/>
-    <Atom type="c3" sigma="0.1" epsilon="0.55" gamma="10" zeta="6"/>
-    <Atom type="c3_s" sigma="0" epsilon="0" gamma="0" zeta="6"/>
-    <Atom type="h" sigma="0.23" epsilon="0.265" gamma="15" zeta="6"/>
-    <Atom type="h_s" sigma="0" epsilon="0" gamma="0" zeta="6"/>
-    <Atom type="o2" sigma="0.12" epsilon="0.75" gamma="15" zeta="6"/>
-    <Atom type="o2_s" sigma="0" epsilon="0" gamma="0" zeta="6"/>
-  </CustomNonbondedForce>
-  <NonbondedForce coulomb14scale="1" lj14scale="1">
-    <UseAttributeFromResidue name="charge"/>
-    <Atom type="c2" sigma="0.1069078461768" epsilon="0.55"/>
-    <Atom type="c2_s" sigma="0" epsilon="0"/>
-    <Atom type="c3" sigma="0.08908987181403" epsilon="0.55"/>
-    <Atom type="c3_s" sigma="0" epsilon="0"/>
-    <Atom type="h" sigma="0.2049067051723" epsilon="0.265"/>
-    <Atom type="h_s" sigma="0" epsilon="0"/>
-    <Atom type="o2" sigma="0.1069078461768" epsilon="0.75"/>
-    <Atom type="o2_s" sigma="0" epsilon="0"/>
-  </NonbondedForce>
-  <DrudeForce>
-    <Particle type1="o2_s" type2="o2" polarizability="0.00145" charge="-1.2" thole="0"/>
-    <Particle type1="c2_s" type2="c2" polarizability="0.00145" charge="-1.2" thole="0"/>
-    <Particle type1="c3_s" type2="c3" polarizability="0.00145" charge="-1.2" thole="0"/>
-    <Particle type1="h_s" type2="h" polarizability="0.00055" charge="-0.8" thole="0"/>
-  </DrudeForce>
+ <AtomTypes>
+ <Type name="o2" class="o2_b" element="O" mass="15.5994"/>
+ <Type name="o2_s" class="o2_s" mass="0.4"/>
+ <Type name="c2" class="c2_b" element="C" mass="11.6107"/>
+ <Type name="c2_s" class="c2_s" mass="0.4"/>
+ <Type name="c3" class="c3_b" element="C" mass="11.6107"/>
+ <Type name="c3_s" class="c3_s" mass="0.4"/>
+ <Type name="h" class="h_b" element="H" mass="0.6079"/>
+ <Type name="h_s" class="h_s" mass="0.4"/>
+ </AtomTypes>
+ <Residues>
+ <Residue name="PR1">
+ <Atom name="O1" type="o2" charge="0.8873588041971"/>
+ <Atom name="o2_s_1" type="o2_s" charge="-1.2"/>
+ <Atom name="C2" type="c2" charge="0.8966778292326"/>
+ <Atom name="c2_s_2" type="c2_s" charge="-1.2"/>
+ <Atom name="C3" type="c3" charge="0.8571221301956"/>
+ <Atom name="c3_s_3" type="c3_s" charge="-1.2"/>
+ <Atom name="C4" type="c3" charge="0.8563454700389"/>
+ <Atom name="c3_s_4" type="c3_s" charge="-1.2"/>
+ <Atom name="H5" type="h" charge="1.016930615081"/>
+ <Atom name="h_s_5" type="h_s" charge="-0.8"/>
+ <Atom name="H6" type="h" charge="1.016930615081"/>
+ <Atom name="h_s_6" type="h_s" charge="-0.8"/>
+ <Atom name="H7" type="h" charge="1.016930615081"/>
+ <Atom name="h_s_7" type="h_s" charge="-0.8"/>
+ <Atom name="H8" type="h" charge="1.017234640364"/>
+ <Atom name="h_s_8" type="h_s" charge="-0.8"/>
+ <Atom name="H9" type="h" charge="1.017234640364"/>
+ <Atom name="h_s_9" type="h_s" charge="-0.8"/>
+ <Atom name="H10" type="h" charge="1.017234640364"/>
+ <Atom name="h_s_10" type="h_s" charge="-0.8"/>
+ <Bond atomName1="C2" atomName2="O1"/>
+ <Bond atomName1="C3" atomName2="H5"/>
+ <Bond atomName1="C3" atomName2="C2"/>
+ <Bond atomName1="C4" atomName2="H8"/>
+ <Bond atomName1="C4" atomName2="C2"/>
+ <Bond atomName1="H6" atomName2="C3"/>
+ <Bond atomName1="H7" atomName2="C3"/>
+ <Bond atomName1="H9" atomName2="C4"/>
+ <Bond atomName1="H10" atomName2="C4"/>
+ </Residue>
+ </Residues>
+ <CustomBondForce energy="(De*((1 - exp(-beta*(r-bondlength)))^2-1)+D0)">
+ <GlobalParameter name="pot-MORSE-BONDS" defaultValue="1"/>
+ <PerBondParameter name="beta"/>
+ <PerBondParameter name="De"/>
+ <PerBondParameter name="D0"/>
+ <PerBondParameter name="bondlength"/>
+ <Bond class1="c2_b" class2="o2_b" beta="20" De="400" D0="0" bondlength="0.1207"/>
+ <Bond class1="c3_b" class2="h_b" beta="20" De="400" D0="0" bondlength="0.1091"/>
+ <Bond class1="c2_b" class2="c3_b" beta="20" De="400" D0="0" bondlength="0.1506"/>
+ </CustomBondForce>
+ <HarmonicAngleForce energy="0">
+ <Angle class1="c3_b" class2="c2_b" class3="o2_b" k="300" angle="2.171189589481"/>
+ <Angle class1="c2_b" class2="c3_b" class3="h_b" k="300" angle="1.930334152706"/>
+ <Angle class1="h_b" class2="c3_b" class3="h_b" k="300" angle="1.88146493365"/>
+ <Angle class1="c3_b" class2="c2_b" class3="c3_b" k="300" angle="2.019345944557"/>
+ </HarmonicAngleForce>
+ <CustomAngleForce energy="0"/>
+ <RBTorsionForce energy="0">
+ <Proper class1="h_b" class2="c3_b" class3="c2_b" class4="o2_b" c0="0.5" c1="-1.5" c2="0" c3="2" c4="0" c5="0"/>
+ <Proper class1="c3_b" class2="c2_b" class3="c3_b" class4="h_b" c0="0" c1="0" c2="0" c3="0" c4="0" c5="0"/>
+ </RBTorsionForce>
+ <PeriodicTorsionForce energy="0">
+ <Improper class1="c2_b" class2="c3_b" class3="c3_b" class4="o2_b" kimp="1"/>
+ </PeriodicTorsionForce>
+ <CustomNonbondedForce energy="select(epsilon*sigma,(((2*epsilon)/(1-(3/(gamma+3)))) * (1.0/(1.0+(r/sigma)^6)) * ((3/(gamma+3))*exp(gamma*(1-(r/sigma)))-1)),0)" bondCutoff="0">
+ <GlobalParameter name="pot-WANG_BUCKINGHAM" defaultValue="1"/>
+ <GlobalParameter name="pot-COULOMB_GAUSSIAN" defaultValue="1"/>
+ <GlobalParameter name="cr-epsilon_Geometric" defaultValue="1"/>
+ <GlobalParameter name="cr-gamma_Geometric" defaultValue="1"/>
+ <GlobalParameter name="cr-sigma_Geometric" defaultValue="1"/>
+ <GlobalParameter name="nexcl" defaultValue="0"/>
+ <GlobalParameter name="prefactor-" defaultValue="1"/>
+ <UseAttributeFromResidue name="charge"/>
+ <PerParticleParameter name="sigma"/>
+ <PerParticleParameter name="epsilon"/>
+ <PerParticleParameter name="gamma"/>
+ <PerParticleParameter name="charge"/>
+ <PerParticleParameter name="zeta"/>
+ <Atom type="c2" sigma="0.12" epsilon="0.55" gamma="15" zeta="6"/>
+ <Atom type="c2_s" sigma="0" epsilon="0" gamma="0" zeta="6"/>
+ <Atom type="c3" sigma="0.1" epsilon="0.55" gamma="10" zeta="6"/>
+ <Atom type="c3_s" sigma="0" epsilon="0" gamma="0" zeta="6"/>
+ <Atom type="h" sigma="0.23" epsilon="0.265" gamma="15" zeta="6"/>
+ <Atom type="h_s" sigma="0" epsilon="0" gamma="0" zeta="6"/>
+ <Atom type="o2" sigma="0.12" epsilon="0.75" gamma="15" zeta="6"/>
+ <Atom type="o2_s" sigma="0" epsilon="0" gamma="0" zeta="6"/>
+ </CustomNonbondedForce>
+ <NonbondedForce coulomb14scale="1" lj14scale="1">
+ <UseAttributeFromResidue name="charge"/>
+ <Atom type="c2" sigma="0.1069078461768" epsilon="0.55"/>
+ <Atom type="c2_s" sigma="0" epsilon="0"/>
+ <Atom type="c3" sigma="0.08908987181403" epsilon="0.55"/>
+ <Atom type="c3_s" sigma="0" epsilon="0"/>
+ <Atom type="h" sigma="0.2049067051723" epsilon="0.265"/>
+ <Atom type="h_s" sigma="0" epsilon="0"/>
+ <Atom type="o2" sigma="0.1069078461768" epsilon="0.75"/>
+ <Atom type="o2_s" sigma="0" epsilon="0"/>
+ </NonbondedForce>
+ <DrudeForce>
+ <Particle type1="o2_s" type2="o2" polarizability="0.00145" charge="-1.2" thole="0"/>
+ <Particle type1="c2_s" type2="c2" polarizability="0.00145" charge="-1.2" thole="0"/>
+ <Particle type1="c3_s" type2="c3" polarizability="0.00145" charge="-1.2" thole="0"/>
+ <Particle type1="h_s" type2="h" polarizability="0.00055" charge="-0.8" thole="0"/>
+ </DrudeForce>
 </ForceField>
 ]]></String>
 </ReferenceData>
