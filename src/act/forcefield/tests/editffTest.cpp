@@ -57,7 +57,9 @@
 #include "act/forcefield/forcefield_xml.h"
 #include "act/forcefield/particletype.h"
 #include "act/forcefield/potential.h"
+#include "act/testutils/output_checks.h"
 #include "testutils/cmdlinetest.h"
+#include "testutils/refdata.h"
 #include "testutils/testfilemanager.h"
 
 namespace alexandria
@@ -161,6 +163,75 @@ protected:
 
 // Test: The mutability of a parameter of an interaction can be changed for
 // several identifiers at once
+/*! \brief Run edit_ff and compare what it changed with the reference data
+ *
+ * These tests fix the results of the tool with the given options, also
+ * that nothing else changes, such that a change in how the options reach
+ * the work shows.
+ */
+class EditFFResultsTest : public EditFFTest
+{
+protected:
+    /*! \brief Edit a force field and check the changes
+     * \param[in] options The options of the edit, an empty value for a flag
+     * \param[in] input   The force field, the one of the other tests if empty
+     */
+    void checkChanges(const Options &options, const std::string &input = "")
+    {
+        const auto ff = input.empty() ? input_ : input;
+        // The force field as edit_ff writes it, such that the numbers of
+        // what did not change are written in the same way
+        const auto before = read(run(ff, { { "-write", "" } }, "before.xml"));
+        const auto after  = read(run(ff, options, "after.xml"));
+        gmx::test::TestReferenceChecker checker(this->rootChecker());
+        checker.setDefaultTolerance(buildTolerance(1e-6, 1e-8, 1e-6));
+        checkJson(&checker, forceFieldChanges(before, after), "changes");
+    }
+};
+
+TEST_F(EditFFResultsTest, ValueAndBounds)
+{
+    checkChanges({ { "-p", "chi" }, { "-a", "h_z f_z" }, { "-min", "3" }, { "-max", "8" }, { "-val", "4.5" } });
+}
+
+TEST_F(EditFFResultsTest, Mutability)
+{
+    checkChanges({ { "-p", "chi" }, { "-a", "h_z f_z" }, { "-mut", "Fixed" } });
+}
+
+TEST_F(EditFFResultsTest, ScaleAll)
+{
+    // A parameter of all types
+    checkChanges({ { "-p", "eta" }, { "-scale", "1.1" } });
+}
+
+TEST_F(EditFFResultsTest, Limits)
+{
+    checkChanges({ { "-p", "chi" }, { "-a", "h_z" }, { "-limits", "2" } });
+}
+
+TEST_F(EditFFResultsTest, ForcedCharge)
+{
+    checkChanges({ { "-p", "charge" }, { "-a", "Be2+" }, { "-val", "1.5" }, { "-force", "" } });
+}
+
+TEST_F(EditFFResultsTest, NonNegative)
+{
+    checkChanges({ { "-p", "eta" }, { "-nonneg", "no" } });
+}
+
+TEST_F(EditFFResultsTest, Remove)
+{
+    checkChanges({ { "-a", "f" }, { "-del", "" } });
+}
+
+TEST_F(EditFFResultsTest, CombinationRule)
+{
+    // A small force field, since all pairs of types change
+    checkChanges({ { "-cr", "VANDERWAALS:sigma:Arithmetic" } },
+                 fileManager().getInputFilePath("forcefields/TIP5P.xml"));
+}
+
 TEST_F(EditFFTest, MutabilityOfSeveralIdentifiers)
 {
     const auto output = fileManager().getTemporaryFilePath("edited.xml");

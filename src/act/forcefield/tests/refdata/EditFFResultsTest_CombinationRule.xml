@@ -1,0 +1,56 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Object Name="changes">
+    <Object Name="interactions">
+      <Object Name="VANDERWAALS">
+        <Object Name="parameters">
+          <Object Name="ho~o3">
+            <Object Name="sigma">
+              <Object Name="after">
+                <Real Name="maximum">0.156</Real>
+                <Real Name="minimum">0.156</Real>
+                <String Name="mutability">Dependent</String>
+                <Bool Name="nonnegative">true</Bool>
+                <Real Name="ntrain">1</Real>
+                <String Name="unit">nm</String>
+                <Real Name="value">0.156</Real>
+              </Object>
+              <Object Name="before">
+                <Real Name="maximum">0</Real>
+                <Real Name="minimum">0</Real>
+                <String Name="mutability">Dependent</String>
+                <Bool Name="nonnegative">true</Bool>
+                <Real Name="ntrain">1</Real>
+                <String Name="unit">nm</String>
+                <Real Name="value">0</Real>
+              </Object>
+            </Object>
+          </Object>
+          <Object Name="o3~v3Ow">
+            <Object Name="sigma">
+              <Object Name="after">
+                <Real Name="maximum">0.156</Real>
+                <Real Name="minimum">0.156</Real>
+                <String Name="mutability">Dependent</String>
+                <Bool Name="nonnegative">true</Bool>
+                <Real Name="ntrain">1</Real>
+                <String Name="unit">nm</String>
+                <Real Name="value">0.156</Real>
+              </Object>
+              <Object Name="before">
+                <Real Name="maximum">0</Real>
+                <Real Name="minimum">0</Real>
+                <String Name="mutability">Dependent</String>
+                <Bool Name="nonnegative">true</Bool>
+                <Real Name="ntrain">1</Real>
+                <String Name="unit">nm</String>
+                <Real Name="value">0</Real>
+              </Object>
+            </Object>
+          </Object>
+        </Object>
+      </Object>
+    </Object>
+  </Object>
+</ReferenceData>

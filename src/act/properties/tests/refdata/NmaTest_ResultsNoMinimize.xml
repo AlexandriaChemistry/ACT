@@ -1,0 +1,60 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Object Name="Frequencies">
+    <Object Name="Alexandria">
+      <Object Name="1">
+        <String Name="unit">cm^-1</String>
+        <Real Name="value">1356.7603534501336</Real>
+      </Object>
+      <Object Name="2">
+        <String Name="unit">cm^-1</String>
+        <Real Name="value">3707.551479079912</Real>
+      </Object>
+      <Object Name="3">
+        <String Name="unit">cm^-1</String>
+        <Real Name="value">3766.2080161967842</Real>
+      </Object>
+    </Object>
+  </Object>
+  <Object Name="Intensities">
+    <Object Name="Alexandria">
+      <Object Name="1">
+        <String Name="unit">nm/mol</String>
+        <Real Name="value">0.012622146046339072</Real>
+      </Object>
+      <Object Name="2">
+        <String Name="unit">nm/mol</String>
+        <Real Name="value">0.0084723225284223155</Real>
+      </Object>
+      <Object Name="3">
+        <String Name="unit">nm/mol</String>
+        <Real Name="value">0.013871529263904706</Real>
+      </Object>
+    </Object>
+  </Object>
+  <Object Name="coordinates">
+    <Sequence Name="minimized">
+      <Int Name="Length">3</Int>
+      <Sequence>
+        <Int Name="Length">3</Int>
+        <Real>0</Real>
+        <Real>0</Real>
+        <Real>0.011700000000000002</Real>
+      </Sequence>
+      <Sequence>
+        <Int Name="Length">3</Int>
+        <Real>0</Real>
+        <Real>0.076399999999999996</Real>
+        <Real>-0.046800000000000008</Real>
+      </Sequence>
+      <Sequence>
+        <Int Name="Length">3</Int>
+        <Real>0</Real>
+        <Real>-0.076399999999999996</Real>
+        <Real>-0.046800000000000008</Real>
+      </Sequence>
+    </Sequence>
+    <String Name="unit">nm</String>
+  </Object>
+</ReferenceData>

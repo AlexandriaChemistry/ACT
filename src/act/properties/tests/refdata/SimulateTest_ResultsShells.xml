@@ -1,0 +1,244 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Sequence Name="Legends">
+    <Int Name="Length">16</Int>
+    <String>BONDS</String>
+    <String>ANGLES</String>
+    <String>PROPER_DIHEDRALS</String>
+    <String>IMPROPER_DIHEDRALS</String>
+    <String>DISPERSION</String>
+    <String>EXCHANGE</String>
+    <String>COULOMB</String>
+    <String>POLARIZATION</String>
+    <String>INDUCTION</String>
+    <String>ALLELEC</String>
+    <String>EXCHIND</String>
+    <String>EXCHDISP</String>
+    <String>EPOT</String>
+    <String>EKIN</String>
+    <String>ETOT</String>
+    <String>TEMPERATURE</String>
+  </Sequence>
+  <Sequence Name="Time">
+    <Int Name="Length">10</Int>
+    <Real>0</Real>
+    <Real>0.002</Real>
+    <Real>0.0040000000000000001</Real>
+    <Real>0.0060000000000000001</Real>
+    <Real>0.0080000000000000002</Real>
+    <Real>0.01</Real>
+    <Real>0.012</Real>
+    <Real>0.014</Real>
+    <Real>0.016</Real>
+    <Real>0.017999999999999999</Real>
+  </Sequence>
+  <Sequence Name="BONDS">
+    <Int Name="Length">10</Int>
+    <Real>-3553.1987600000002</Real>
+    <Real>-3577.0145299999999</Real>
+    <Real>-3560.1865699999998</Real>
+    <Real>-3532.8447999999999</Real>
+    <Real>-3536.0143899999998</Real>
+    <Real>-3551.3905</Real>
+    <Real>-3560.6177200000002</Real>
+    <Real>-3570.6120500000002</Real>
+    <Real>-3553.3139099999999</Real>
+    <Real>-3547.42832</Real>
+  </Sequence>
+  <Sequence Name="ANGLES">
+    <Int Name="Length">10</Int>
+    <Real>118.45957</Real>
+    <Real>99.375320000000002</Real>
+    <Real>67.756910000000005</Real>
+    <Real>42.204830000000001</Real>
+    <Real>31.95016</Real>
+    <Real>39.51943</Real>
+    <Real>54.055349999999997</Real>
+    <Real>51.099179999999997</Real>
+    <Real>38.932740000000003</Real>
+    <Real>35.530189999999997</Real>
+  </Sequence>
+  <Sequence Name="PROPER_DIHEDRALS">
+    <Int Name="Length">10</Int>
+    <Real>0.13894999999999999</Real>
+    <Real>0.098000000000000004</Real>
+    <Real>0.050000000000000003</Real>
+    <Real>0.037699999999999997</Real>
+    <Real>0.063189999999999996</Real>
+    <Real>0.10206999999999999</Real>
+    <Real>0.11446000000000001</Real>
+    <Real>0.082470000000000002</Real>
+    <Real>0.06454</Real>
+    <Real>0.091789999999999997</Real>
+  </Sequence>
+  <Sequence Name="IMPROPER_DIHEDRALS">
+    <Int Name="Length">10</Int>
+    <Real>0.00073999999999999999</Real>
+    <Real>0.00117</Real>
+    <Real>0.0018400000000000001</Real>
+    <Real>0.0029099999999999998</Real>
+    <Real>0.0045700000000000003</Real>
+    <Real>0.0067299999999999999</Real>
+    <Real>0.0086800000000000002</Real>
+    <Real>0.0097699999999999992</Real>
+    <Real>0.01018</Real>
+    <Real>0.01027</Real>
+  </Sequence>
+  <Sequence Name="DISPERSION">
+    <Int Name="Length">10</Int>
+    <Real>-12.32939</Real>
+    <Real>-11.960319999999999</Real>
+    <Real>-11.36678</Real>
+    <Real>-11.152480000000001</Real>
+    <Real>-11.38762</Real>
+    <Real>-11.632669999999999</Real>
+    <Real>-11.46576</Real>
+    <Real>-10.99938</Real>
+    <Real>-10.70881</Real>
+    <Real>-10.84511</Real>
+  </Sequence>
+  <Sequence Name="EXCHANGE">
+    <Int Name="Length">10</Int>
+    <Real>52.281840000000003</Real>
+    <Real>37.877699999999997</Real>
+    <Real>25.062339999999999</Real>
+    <Real>24.95552</Real>
+    <Real>36.485190000000003</Real>
+    <Real>56.654580000000003</Real>
+    <Real>69.437539999999998</Real>
+    <Real>40.716639999999998</Real>
+    <Real>25.82066</Real>
+    <Real>30.885580000000001</Real>
+  </Sequence>
+  <Sequence Name="COULOMB">
+    <Int Name="Length">10</Int>
+    <Real>-197.44435999999999</Real>
+    <Real>-196.19412</Real>
+    <Real>-194.52959999999999</Real>
+    <Real>-193.26231999999999</Real>
+    <Real>-192.65314000000001</Real>
+    <Real>-191.70347000000001</Real>
+    <Real>-189.49153999999999</Real>
+    <Real>-186.84876</Real>
+    <Real>-185.70867999999999</Real>
+    <Real>-186.54092</Real>
+  </Sequence>
+  <Sequence Name="POLARIZATION">
+    <Int Name="Length">10</Int>
+    <Real>0</Real>
+    <Real>0</Real>
+    <Real>0</Real>
+    <Real>0</Real>
+    <Real>0</Real>
+    <Real>0</Real>
+    <Real>0</Real>
+    <Real>0</Real>
+    <Real>0</Real>
+    <Real>0</Real>
+  </Sequence>
+  <Sequence Name="INDUCTION">
+    <Int Name="Length">10</Int>
+    <Real>-7.0755999999999997</Real>
+    <Real>-7.2215699999999998</Real>
+    <Real>-7.3566099999999999</Real>
+    <Real>-7.5076999999999998</Real>
+    <Real>-7.6569200000000004</Real>
+    <Real>-7.9083199999999998</Real>
+    <Real>-8.3128100000000007</Real>
+    <Real>-8.65686</Real>
+    <Real>-8.7388300000000001</Real>
+    <Real>-8.5931099999999994</Real>
+  </Sequence>
+  <Sequence Name="ALLELEC">
+    <Int Name="Length">10</Int>
+    <Real>-204.51996</Real>
+    <Real>-203.41569000000001</Real>
+    <Real>-201.88621000000001</Real>
+    <Real>-200.77002999999999</Real>
+    <Real>-200.31005999999999</Real>
+    <Real>-199.61179000000001</Real>
+    <Real>-197.80435</Real>
+    <Real>-195.50561999999999</Real>
+    <Real>-194.44750999999999</Real>
+    <Real>-195.13403</Real>
+  </Sequence>
+  <Sequence Name="EXCHIND">
+    <Int Name="Length">10</Int>
+    <Real>45.206229999999998</Real>
+    <Real>30.656130000000001</Real>
+    <Real>17.705729999999999</Real>
+    <Real>17.44781</Real>
+    <Real>28.82827</Real>
+    <Real>48.746259999999999</Real>
+    <Real>61.124740000000003</Real>
+    <Real>32.059780000000003</Real>
+    <Real>17.08184</Real>
+    <Real>22.292470000000002</Real>
+  </Sequence>
+  <Sequence Name="EXCHDISP">
+    <Int Name="Length">10</Int>
+    <Real>39.952449999999999</Real>
+    <Real>25.917380000000001</Real>
+    <Real>13.69556</Real>
+    <Real>13.803039999999999</Real>
+    <Real>25.097570000000001</Real>
+    <Real>45.021909999999998</Real>
+    <Real>57.971789999999999</Real>
+    <Real>29.71726</Real>
+    <Real>15.11185</Real>
+    <Real>20.040459999999999</Real>
+  </Sequence>
+  <Sequence Name="EPOT">
+    <Int Name="Length">10</Int>
+    <Real>-3599.1670100000001</Real>
+    <Real>-3655.0383400000001</Real>
+    <Real>-3680.5684700000002</Real>
+    <Real>-3677.5663399999999</Real>
+    <Real>-3679.2089599999999</Real>
+    <Real>-3666.3521500000002</Real>
+    <Real>-3646.2718</Real>
+    <Real>-3685.2089900000001</Real>
+    <Real>-3693.6421099999998</Real>
+    <Real>-3686.8896399999999</Real>
+  </Sequence>
+  <Sequence Name="EKIN">
+    <Int Name="Length">10</Int>
+    <Real>29.93207</Real>
+    <Real>85.700860000000006</Real>
+    <Real>111.25945</Real>
+    <Real>108.27942</Real>
+    <Real>109.89945</Real>
+    <Real>97.032340000000005</Real>
+    <Real>77.031670000000005</Real>
+    <Real>115.86478</Real>
+    <Real>124.34650999999999</Real>
+    <Real>117.58347000000001</Real>
+  </Sequence>
+  <Sequence Name="ETOT">
+    <Int Name="Length">10</Int>
+    <Real>-3569.2349399999998</Real>
+    <Real>-3569.3374899999999</Real>
+    <Real>-3569.3090200000001</Real>
+    <Real>-3569.28692</Real>
+    <Real>-3569.30951</Real>
+    <Real>-3569.31981</Real>
+    <Real>-3569.2401300000001</Real>
+    <Real>-3569.3442100000002</Real>
+    <Real>-3569.2955999999999</Real>
+    <Real>-3569.3061699999998</Real>
+  </Sequence>
+  <Sequence Name="TEMPERATURE">
+    <Int Name="Length">10</Int>
+    <Real>300</Real>
+    <Real>858.95363999999995</Real>
+    <Real>1115.1197099999999</Real>
+    <Real>1085.2517399999999</Real>
+    <Real>1101.4887900000001</Real>
+    <Real>972.52566000000002</Real>
+    <Real>772.06502999999998</Real>
+    <Real>1161.27748</Real>
+    <Real>1246.2873</Real>
+    <Real>1178.50342</Real>
+  </Sequence>
+</ReferenceData>

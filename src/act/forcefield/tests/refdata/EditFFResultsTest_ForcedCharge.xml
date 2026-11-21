@@ -1,0 +1,32 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Object Name="changes">
+    <Object Name="particletypes">
+      <Object Name="Be2+">
+        <Object Name="parameters">
+          <Object Name="charge">
+            <Object Name="after">
+              <Real Name="maximum">3.6000000000000001</Real>
+              <Real Name="minimum">1.5</Real>
+              <String Name="mutability">Fixed</String>
+              <Bool Name="nonnegative">false</Bool>
+              <Real Name="ntrain">0</Real>
+              <String Name="unit">e</String>
+              <Real Name="value">1.5</Real>
+            </Object>
+            <Object Name="before">
+              <Real Name="maximum">3.6000000000000001</Real>
+              <Real Name="minimum">2.3999999999999999</Real>
+              <String Name="mutability">Fixed</String>
+              <Bool Name="nonnegative">false</Bool>
+              <Real Name="ntrain">0</Real>
+              <String Name="unit">e</String>
+              <Real Name="value">3</Real>
+            </Object>
+          </Object>
+        </Object>
+      </Object>
+    </Object>
+  </Object>
+</ReferenceData>

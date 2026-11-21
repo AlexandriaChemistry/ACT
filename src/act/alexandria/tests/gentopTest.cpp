@@ -57,9 +57,11 @@
 #include "act/molprop/experiment.h"
 #include "act/molprop/molprop.h"
 #include "act/molprop/molprop_xml.h"
+#include "act/testutils/output_checks.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/stringutil.h"
 #include "testutils/cmdlinetest.h"
+#include "testutils/refdata.h"
 #include "testutils/testfilemanager.h"
 
 namespace alexandria
@@ -739,6 +741,140 @@ TEST_F(GentopTest, Cubes)
 }
 
 //! Runs gentop with a force field from which parameters are removed
+/*! \brief Run gentop and compare what it writes with the reference data
+ *
+ * These tests fix the results of the tool with the given options, such
+ * that a change in how the options reach the work shows.
+ */
+class GentopResultsTest : public GentopTest
+{
+protected:
+    /*! \brief Run gentop and check the files it writes
+     * \param[in] ffName Force field file, relative to the test data
+     * \param[in] input  Options that are passed as they are
+     * \param[in] files  Output files by option, among -json, -p, -oi, -c and
+     *                   -openmm; the names are made temporary
+     */
+    void check(const std::string                                      &ffName,
+               const std::vector<std::pair<std::string, std::string>> &input,
+               std::map<std::string, std::string>                      files)
+    {
+        run(ffName, input, &files);
+        gmx::test::TestReferenceChecker checker(this->rootChecker());
+        if (files.count("-json") > 0)
+        {
+            const auto tree = readJsonOutput(files["-json"]);
+            ASSERT_TRUE(tree.is_object() && tree.contains("gentop")) << files["-json"];
+            // The charges are generated, in single precision they differ in
+            // the sixth decimal
+            checker.setDefaultTolerance(buildTolerance(2e-5, 1e-8, 1e-5));
+            checkJson(&checker, tree["gentop"], "gentop");
+        }
+        // Topologies with charges in five decimals, structures in Angstrom
+        // with three, and OpenMM files with all digits
+        const std::map<std::string, gmx::test::FloatingPointTolerance> tolerances = {
+            { "-p", buildTolerance(3e-5, 2e-5, 1e-5) },
+            { "-oi", buildTolerance(3e-5, 2e-5, 1e-5) },
+            { "-c", buildTolerance(2e-3, 2e-3, 0) },
+            { "-openmm", buildTolerance(1e-5, 1e-8, 1e-5) }
+        };
+        for (const auto &t : tolerances)
+        {
+            if (files.count(t.first) > 0)
+            {
+                checker.setDefaultTolerance(t.second);
+                checkTextFile(&checker, files[t.first], {}, t.first.c_str());
+            }
+        }
+    }
+};
+
+// The results of the tool for several sets of options, as reference data
+
+TEST_F(GentopResultsTest, Defaults)
+{
+    check("forcefields/ACS-g1.xml",
+          { { "-f", fileManager().getInputFilePath("molecules/acetone.sdf") } },
+          { { "-json", "defaults.json" }, { "-p", "defaults.top" }, { "-c", "defaults.pdb" } });
+}
+
+TEST_F(GentopResultsTest, Polarizable)
+{
+    check("forcefields/ACS-pg1.xml",
+          { { "-f", fileManager().getInputFilePath("molecules/acetone.sdf") } },
+          { { "-json", "pol.json" }, { "-p", "pol.top" } });
+}
+
+TEST_F(GentopResultsTest, OpenMM)
+{
+    // With -openmm no GROMACS topology is written
+    check("forcefields/ACS-pg1.xml",
+          { { "-f", fileManager().getInputFilePath("molecules/acetone.sdf") } },
+          { { "-openmm", "openmm.xml" }, { "-c", "openmm.pdb" } });
+}
+
+TEST_F(GentopResultsTest, OpenMMOptions)
+{
+    // The structure with the shells, a heavier shell, all parameters also
+    // those that were not trained, and the types of the force field
+    check("forcefields/ACS-pg1.xml",
+          { { "-f", fileManager().getInputFilePath("molecules/acetone.sdf") },
+            { "-mDrude", "0.4" }, { "-ntrain", "0" }, { "-numberAtypes", "no" }, { "-ws", "yes" } },
+          { { "-openmm", "options-openmm.xml" }, { "-c", "options.pdb" } });
+}
+
+TEST_F(GentopResultsTest, Dimer)
+{
+    check("forcefields/ACS-g1.xml",
+          { { "-f", fileManager().getInputFilePath("molecules/methanol#water.pdb") } },
+          { { "-json", "dimer.json" }, { "-p", "dimer.top" }, { "-c", "dimer.pdb" } });
+}
+
+TEST_F(GentopResultsTest, DimerOpenMM)
+{
+    // A residue for each compound, in both files
+    check("forcefields/ACS-g1.xml",
+          { { "-f", fileManager().getInputFilePath("molecules/methanol#water.pdb") } },
+          { { "-openmm", "dimer-openmm.xml" }, { "-c", "dimer-openmm.pdb" } });
+}
+
+TEST_F(GentopResultsTest, IncludeTopology)
+{
+    check("forcefields/ACS-g1.xml",
+          { { "-f", fileManager().getInputFilePath("molecules/acetone.sdf") } },
+          { { "-oi", "include.itp" } });
+}
+
+TEST_F(GentopResultsTest, ChargesOfTypes)
+{
+    check("forcefields/ACS-g1.xml",
+          { { "-f", fileManager().getInputFilePath("molecules/acetone.sdf") }, { "-qalg", "None" } },
+          { { "-json", "qnone.json" } });
+}
+
+TEST_F(GentopResultsTest, ChargesRead)
+{
+    check("forcefields/ACS-g1.xml",
+          { { "-charges", fileManager().getInputFilePath("molprop/molprop.xml") }, { "-db", "water" },
+            { "-qqm", "qMulliken" } },
+          { { "-json", "qread.json" } });
+}
+
+TEST_F(GentopResultsTest, ChargesCustom)
+{
+    check("forcefields/ACS-g1.xml",
+          // A leading space, such that the value is not taken for an option
+          { { "-f", fileManager().getInputFilePath("molecules/water.pdb") }, { "-qcustom", " -0.8 0.4 0.4" } },
+          { { "-json", "qcustom.json" } });
+}
+
+TEST_F(GentopResultsTest, TotalCharge)
+{
+    check("forcefields/ACS-g1.xml",
+          { { "-f", fileManager().getInputFilePath("molecules/sodium#water.pdb") }, { "-qtot", "1" } },
+          { { "-json", "qtot.json" } });
+}
+
 class GentopMissingTest : public GentopTest
 {
 protected:

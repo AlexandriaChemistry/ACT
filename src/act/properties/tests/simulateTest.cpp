@@ -293,8 +293,13 @@ protected:
         return simulate(cmd->argc(), cmd->argv());
     }
 
-    //! Compare all energy columns with reference data
-    void checkEnergies(const XvgData &xvg)
+    /*! \brief Compare all energy columns with reference data
+     * \param[in] xvg       The energies
+     * \param[in] shellSlack Difference allowed in addition in single
+     *                       precision, for the energies of shells that are
+     *                       relaxed to within a tolerance only
+     */
+    void checkEnergies(const XvgData &xvg, double shellSlack = 0)
     {
         gmx::test::TestReferenceChecker checker(this->rootChecker());
         // The energies are written with five decimals, a tighter
@@ -316,7 +321,7 @@ protected:
                 {
                     vmax = std::max(vmax, std::abs(v));
                 }
-                double absolute = 2e-5 + 1e-5*vmax;
+                double absolute = 2e-5 + 1e-5*vmax + shellSlack;
                 checker.setDefaultTolerance(gmx::test::FloatingPointTolerance(absolute, absolute, 1e-6, 1e-6,
                                                                               UINT64_MAX, UINT64_MAX, false));
             }
@@ -397,6 +402,71 @@ TEST_F(SimulateTest, MDWaterDimer)
 }
 
 // Test: The total energy is conserved
+// The energies of simulations with options other than the defaults, as
+// reference data, such that a change in how the options reach the work shows
+
+TEST_F(SimulateTest, ResultsOptions)
+{
+    // Minimized first, with bond constraints and without removing the
+    // rotation
+    SimulateFiles files;
+    auto cmd = baseCommand("acetone.sdf", "results-options", &files);
+    addMD(&cmd, 300, 1993);
+    cmd.addOption("-minimize");
+    cmd.addOption("-minalg", "Newton");
+    cmd.addOption("-constrain", "bonds");
+    cmd.addOption("-comm", "linear");
+    cmd.addOption("-nstcomm", 10);
+    ASSERT_EQ(0, run(&cmd));
+    const auto xvg = readXvg(files.energy);
+    ASSERT_EQ(10u, xvg.rows.size());
+    checkEnergies(xvg);
+}
+
+TEST_F(SimulateTest, ResultsIntervals)
+{
+    // Another time step, temperature, seed and output intervals
+    SimulateFiles files;
+    auto cmd = baseCommand("acetone.sdf", "results-intervals", &files);
+    cmd.addOption("-nsteps", 60);
+    cmd.addOption("-deltat", 0.0005);
+    cmd.addOption("-temp", 200);
+    cmd.addOption("-seed", 7);
+    cmd.addOption("-nstener", 15);
+    cmd.addOption("-nstxout", 30);
+    ASSERT_EQ(0, run(&cmd));
+    const auto xvg = readXvg(files.energy);
+    ASSERT_EQ(4u, xvg.rows.size());
+    checkEnergies(xvg);
+}
+
+TEST_F(SimulateTest, ResultsShells)
+{
+    SimulateFiles files;
+    auto cmd = baseCommand("acetone.sdf", "results-shells", &files,
+                           alexandriaFile("forcefields/ACS-pg1.xml"));
+    addMD(&cmd, 300, 1993);
+    ASSERT_EQ(0, run(&cmd));
+    const auto xvg = readXvg(files.energy);
+    ASSERT_EQ(10u, xvg.rows.size());
+    // In single precision the induction energies differ by about 1e-3 kJ/mol
+    checkEnergies(xvg, 5e-3);
+}
+
+TEST_F(SimulateTest, ResultsRestrained)
+{
+    // Flat-bottom position restraints on a dimer
+    SimulateFiles files;
+    auto cmd = baseCommand("water_dimer.pdb", "results-restrained", &files);
+    addMD(&cmd, 300, 1993);
+    cmd.addOption("-kfbpr", 500);
+    cmd.addOption("-r0fbpr", 0.05);
+    ASSERT_EQ(0, run(&cmd));
+    const auto xvg = readXvg(files.energy);
+    ASSERT_EQ(10u, xvg.rows.size());
+    checkEnergies(xvg);
+}
+
 TEST_F(SimulateTest, EnergyConservation)
 {
     for(const auto &molFile : { "hydrogen-chloride.sdf", "carbon-dioxide.sdf",
