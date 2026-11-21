@@ -50,7 +50,7 @@ The force field workspace
 This workspace has one force field at a time, which is made there or opened from a file. Each step writes a new file that can be saved and that the other workspaces can use.
 
 * *Generate* makes a new force field with *alexandria gen_ff* from a few choices: the charge model, the potentials with their combination rules, the atom types and which of them get a shell, and virtual sites.
-* *Virtual sites* defines sites by picking two, three or four atoms of a molecule in the viewer and choosing the kind of site; the site is shown where it would be.
+* *Virtual sites* defines sites by picking two, three or four atoms of a molecule in the viewer and choosing the kind of site; the site is shown where it would be. The sites can be saved in the file format of *gen_ff -vs*, and such a file can be opened.
 * *Geometry* takes bond lengths, angles and dihedral angles from the compounds of a molprop file (*geometry_ff*): a file of its own, or the file of the molprop workspace with the compounds that are ticked there.
 * *Edit and validate* lists the parameters with their value, bounds and whether they are trained (:numref:`fig-gui-forcefield`), changes them with *edit_ff*, and shows the problems that *edit_ff -validate* finds. Of a particle type the charge and the width of its distribution can be changed, not the mass.
 * *Compare* lists what differs between the force field of the workspace and another one: parameters with another value, with other bounds or another way of training, and those that only one of the two has.
