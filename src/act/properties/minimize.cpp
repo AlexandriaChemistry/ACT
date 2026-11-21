@@ -201,6 +201,11 @@ eMinimizeStatus minimizeMolecule(MsgHandler                    *msghandler,
                                                       interactionTypeToString(ei.first).c_str(), ei.second));
                 }
             }
+            // For programs that read the output, such as a scan of the distance
+            if (!einter.empty())
+            {
+                addEnergies(jtree, "Interaction energies", einter[0]);
+            }
         }
         // Multipoles
         msghandler->write("Multipole after minimization");
