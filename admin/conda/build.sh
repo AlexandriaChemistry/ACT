@@ -37,7 +37,7 @@ cmake ${CMAKE_ARGS} --compile-no-warning-as-error -S . -B build \
     -DACT_SIMD=${SIMD} \
     "${GPU[@]}" \
     -DACT_OPENMP=OFF \
-    -DACT_DOUBLE=OFF \
+    -DACT_DOUBLE=$([[ "${ACT_PRECISION:-single}" == double ]] && echo ON || echo OFF) \
     -DACT_INSTALL_PYTHON_PACKAGE=OFF \
     -DACT_BUILD_TARBALL=ON
 

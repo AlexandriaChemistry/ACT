@@ -16,7 +16,15 @@ gpu:
   - if: osx
     then: [none]
   - if: linux
-    then: [sycl_cuda]   # also runs without a GPU, on the processor
+    then: [sycl_cuda, none]   # sycl_cuda also runs without a GPU, on the processor
+
+# Single precision, with the GPU on Linux, and double precision for the
+# processor only. The recipe skips the other combinations, and gives the
+# double precision variant a lower priority, so that conda takes single
+# unless asked for double, for instance with alexandria=*=*double*.
+precision:
+  - single
+  - double
 
 c_compiler:
   - if: osx
