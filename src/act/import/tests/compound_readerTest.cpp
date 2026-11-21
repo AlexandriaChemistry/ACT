@@ -384,6 +384,31 @@ TEST(CompoundReaderOptionsTest, ConflictingOptions)
     }
 }
 
+TEST(CompoundReaderOptionsTest, CopyOutlivesTheCommandLine)
+{
+    // The settings of a reader belong to it, not to the command line or to
+    // the reader it was copied from
+    CompoundReader copy;
+    {
+        CompoundReader         compR;
+        MsgHandler             msghandler;
+        gmx::test::CommandLine cmd;
+        parseCompoundOptions(&compR, { "-f", "acetone.sdf", "-qqm", "qMulliken" }, &msghandler, &cmd);
+        copy = compR;
+    }
+    EXPECT_STREQ("acetone.sdf", copy.fileName());
+    EXPECT_STREQ("qMulliken", copy.qread());
+    CompoundReader second;
+    {
+        CompoundReader set;
+        set.setSmiles("CC(=O)C");
+        second = set;
+        set.setFileName("other.sdf");
+    }
+    EXPECT_STREQ("CC(=O)C", second.smiles());
+    EXPECT_STREQ("", second.fileName());
+}
+
 TEST(CompoundReaderOptionsTest, UnknownChargeAlgorithm)
 {
     CompoundReader         compR;
