@@ -215,7 +215,7 @@ int runGentop(MsgHandler *msghandler, const GentopOptions &options, gmx_output_e
         {
             index = gmx::formatString("%d_", mp_index);
         }
-        if (options.openmmFile.empty() && !options.topologyFile.empty())
+        if (!options.topologyFile.empty())
         {
             const std::string tfn = index + options.topologyFile;
             actmol->PrintTopology(msghandler, tfn.c_str(), &pd, forceComp,
@@ -263,8 +263,8 @@ int gentop(int argc, char *argv[])
         "a gaussian log file.",
         "The program assumes all hydrogens are present when defining",
         "the hybridization from the atom name and the number of bonds.[PAR]",
-        "If the [TT]-oi[tt] option is set an [TT]itp[tt] file will be generated",
-        "instead of a [TT]top[tt] file.",
+        "A GROMACS topology is written with [TT]-p[tt], or an include topology",
+        "([TT]itp[tt]) with [TT]-oi[tt], also together with [TT]-openmm[tt].",
         "A force field file should be specified using the [TT]-ff[tt] flag.",
         "Depending on the selected force field file, the force field",
         "uses polarizable or non-polarizable charges or virtual sites.[PAR]",
@@ -290,8 +290,6 @@ int gentop(int argc, char *argv[])
         { efXML, "-openmm",     "out",       ffOPTWR },
         { efITP, "-oi",         "out",       ffOPTWR },
         { efPDB, "-c",          "out",       ffWRITE },
-        { efNDX, "-n",          "renum",     ffOPTWR },
-        { efDAT, "-q",          "qout",      ffOPTWR },
         { efCUB, "-pot",        "potential", ffOPTWR },
         { efCUB, "-ref",        "refpot",    ffOPTRD },
         { efCUB, "-diff",       "diffpot",   ffOPTWR },
@@ -304,49 +302,32 @@ int gentop(int argc, char *argv[])
     };
 
     GentopOptions                    options;
-    // -nsymm, -symm, -conf, -jobtype and -allowmissing are accepted, but
-    // have no effect
-    int                              nsymm          = 0;
     int                              ntrain         = options.minTraining;
     real                             spacing        = options.spacing;
     real                             border         = options.border;
     real                             mDrude         = options.drudeMass;
-    char                            *symm_string    = (char *)"";
-    char                            *conf           = (char *)"minimum";
-    char                            *jobtype        = (char *)"Opt";
     char                            *resnames       = (char *)"";
     //! Write shells to trajectory and coordinates
     bool                             writeShells    = options.writeShells;
-    gmx_bool                         bAllowMissing  = false;
     gmx_bool                         addNumbersToAtoms = options.numberTypes;
     rvec                             mybox           = { 0, 0, 0 };
 
     std::vector<t_pargs> pa =
     {
-        { "-conf",  FALSE, etSTR, {&conf},
-          "Conformation of the molecule" },
         { "-ws",     FALSE, etBOOL, {&writeShells},
           "Write coordinates of shell particles to trajectory and final coordinates as well." },
         { "-box",    FALSE, etRVEC, {mybox},
           "If set will replace the simulation box in the output coordinate file." },
         { "-mDrude", FALSE, etREAL, {&mDrude},
           "Mass to use for the drude/shell particles in OpenMM output, if there are any. If set to zero, the masses from the input force field will be retained." },
-        { "-allowmissing", FALSE, etBOOL, {&bAllowMissing},
-          "Make a topology even if there are no force field parameters for all interactions" },
-        { "-nsymm", FALSE, etINT, {&nsymm},
-          "Symmetry number of the molecule can be supplied here if you know there is an error in the input file" },
         { "-spacing", FALSE, etREAL, {&spacing},
           "Spacing of grid points (nm) for computing the potential (not used when a reference file is read)." },
         { "-border", FALSE, etREAL, {&border},
           "Spacing around the compound (nm) for computing the potential (not used when a reference file is read)." },
         { "-ntrain", FALSE, etINT, {&ntrain},
           "Minimum number of training data to store a parameter to OpenMM. Parameters that have Mutability::Fixed are counted as having at least one training data point. This is rather fragile, so beware of this when increasing the number. Zero means taht even untrained parameters will be exported to OpenMM, use with care!" },
-        { "-symm",   FALSE, etSTR, {&symm_string},
-          "Use the order given here for symmetrizing, e.g. when specifying [TT]-symm '0 1 0'[tt] for a water molecule (H-O-H) the hydrogens will have obtain the same charge. For simple groups, like methyl (or water) this is done automatically, but higher symmetry is not detected by the program. The numbers should correspond to atom numbers minus 1, and point to either the atom itself or to a previous atom." },
         { "-numberAtypes", FALSE, etBOOL, {&addNumbersToAtoms},
           "Add a number index to OpenMM atomtypes when generating output for that software." },
-         { "-jobtype",  FALSE, etSTR, {&jobtype},
-          "The job type used in the Gaussian calculation: Opt, Polar, SP, and etc." },
         { "-resnames", FALSE, etSTR, {&resnames},
           "Residue names for the compounds, at most four letters or digits each, separated by spaces or commas. An entry [TT]methanol=MOH[tt] names the compound methanol, which can be given as its name or its InChi, an entry [TT]MOH[tt] names the next compound without a name, in the order of the input. Residues known to OpenMM, such as HOH, cannot be used. Compounds without a name get one made from their IUPAC name." }
     };
@@ -375,15 +356,14 @@ int gentop(int argc, char *argv[])
             return 1;
         }
         options.forceFieldFile  = forceField;
-        options.includeTopology = opt2bSet("-oi", fnm.size(), fnm.data());
-        // A topology is written also without -p, unless there is an OpenMM file
-        options.topologyFile    = options.includeTopology ? ftp2fn(efITP, fnm.size(), fnm.data())
-                                                          : ftp2fn(efTOP, fnm.size(), fnm.data());
         const auto setFile      = [&fnm](const char *option)
         {
             return opt2bSet(option, fnm.size(), fnm.data()) ? std::string(opt2fn(option, fnm.size(), fnm.data()))
                                                             : std::string();
         };
+        // A topology only if it is asked for
+        options.includeTopology = opt2bSet("-oi", fnm.size(), fnm.data());
+        options.topologyFile    = setFile(options.includeTopology ? "-oi" : "-p");
         options.openmmFile    = setFile("-openmm");
         options.structureFile = setFile("-c");
         const auto optional   = [&fnm](const char *option)
