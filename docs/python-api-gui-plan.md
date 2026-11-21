@@ -500,7 +500,9 @@ that are not used, and the server checks the names against the file. The
 same choices are saved as a selection file (`POST /api/selection`):
 compounds are ticked one by one, by property, or by the monomers that the
 dimers consist of (with A#B, A#C and B#C, ticking A gives A#B and A#C), and
-a part of them is drawn at random for testing. For
+a part of them is drawn at random for testing. A selection file that
+exists is read into the table (`POST /api/selection/read`), as alexandria
+reads it, and jobs on the desktop and on the cluster then use it. For
 a compound with several structures a histogram shows the energies of the
 reference and of the force field for each term; the server reads them
 from the file with the whole result when a compound is asked for. Found
