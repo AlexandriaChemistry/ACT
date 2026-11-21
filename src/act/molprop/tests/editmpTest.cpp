@@ -312,6 +312,20 @@ TEST_F(EditMPTest, CheckWithForceField)
     EXPECT_NE(std::string::npos, text.str().find("Force field file")) << text.str();
 }
 
+// Test: A monomer and its dimer, which has no dipole or electrostatic potential of an
+// optimized structure, are checked with a force field without bond charge corrections
+TEST_F(EditMPTest, CheckDimersWithForceField)
+{
+    const auto input = fileManager().getInputFilePath("molprop/hf-hf.xml");
+    const auto mps   = run({ input }, { { "-ff", fileManager().getInputFilePath("forcefields/HF-LJ14-7.xml") } });
+    EXPECT_EQ(read(input).size(), mps.size());
+    EXPECT_EQ(experiments(read(input)), experiments(mps));
+    const std::ifstream in(log_);
+    std::stringstream text;
+    text << in.rdbuf();
+    EXPECT_NE(std::string::npos, text.str().find("Succeed making 2 topologies, failed for 0 compounds")) << text.str();
+}
+
 //! \return the text of a file
 static std::string fileText(const std::string &fileName)
 {
