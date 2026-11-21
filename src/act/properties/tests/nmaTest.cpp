@@ -48,6 +48,7 @@
 #include "act/molprop/molprop_xml.h"
 #include "act/properties/thermochemistry.h"
 #include "act/testutils/forcefield_utils.h"
+#include "act/testutils/output_checks.h"
 #include "act/topology/actmol.h"
 #include "act/topology/actmol_low.h"
 #include "act/utility/units.h"
@@ -434,10 +435,10 @@ eturn The exit status of the tool
     }
 
     //! Run the nma and check everything for one molecule
-    void testNma(const NmaMolecule &mol)
+    void testNma(const NmaMolecule &mol, const std::vector<std::string> &extra = {})
     {
         NmaOutput out;
-        ASSERT_EQ(0, runNma(mol.file, "nma", {}, &out));
+        ASSERT_EQ(0, runNma(mol.file, "nma", extra, &out));
         ASSERT_FALSE(out.json.empty());
         const auto  sim  = out.json.at("nma");
         auto        freq = jsonSeries(sim.at("Frequencies").at("Alexandria"));
@@ -715,6 +716,49 @@ TEST_F(NmaTest, ConfOut)
 }
 
 // Test: The normal mode analysis can be run without minimization
+// The results of the tool with options other than the defaults, as
+// reference data, such that a change in how the options reach the work shows
+
+TEST_F(NmaTest, ResultsPolarizable)
+{
+    ffFile_ = "ACS-pg1.xml";
+    testNma({ "acetone.sdf", 24, false, 2 });
+}
+
+TEST_F(NmaTest, ResultsChargesOfTypes)
+{
+    testNma({ "acetone.sdf", 24, false, 2 }, { "-qalg", "None" });
+}
+
+TEST_F(NmaTest, ResultsSpectrum)
+{
+    // A diatomic molecule: the normalized spectrum depends only on the
+    // frequency and the line width
+    NmaOutput out;
+    ASSERT_EQ(0, runNma("hydrogen-chloride.sdf", "spectrum", { "-linewidth", "6" }, &out));
+    gmx::test::TestReferenceChecker checker(this->rootChecker());
+    checker.setDefaultTolerance(buildTolerance(1e-7, 1e-9, 5e-3));
+    checkTextFile(&checker, out.spectrum, { "#" }, "spectrum");
+}
+
+TEST_F(NmaTest, ResultsNoMinimize)
+{
+    // The structure of a quantum chemistry program, which is not a minimum
+    // of the force field, with stiff modes only
+    NmaOutput out;
+    ASSERT_EQ(0, runNma("water-3-oep.log.pdb", "resultsnomin", { "-nominimize" }, &out));
+    ASSERT_FALSE(out.json.empty());
+    const auto &js = out.json.at("nma");
+    gmx::test::TestReferenceChecker checker(this->rootChecker());
+    checker.setDefaultTolerance(buildTolerance(0.05, 1e-3, 1e-5));
+    checkJson(&checker, js.at("Frequencies"), "Frequencies");
+    checker.setDefaultTolerance(buildTolerance(1e-7, 1e-10, 2e-3));
+    checkJson(&checker, js.at("Intensities"), "Intensities");
+    // The structure is that of the file
+    checker.setDefaultTolerance(buildTolerance(1e-6, 1e-8, 1e-6));
+    checkJson(&checker, js.at("coordinates"), "coordinates");
+}
+
 TEST_F(NmaTest, NoMinimize)
 {
     NmaOutput out;

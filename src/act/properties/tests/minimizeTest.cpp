@@ -34,6 +34,7 @@
  */
 #include "actpre.h"
 
+#include <algorithm>
 #include <cmath>
 #include <filesystem>
 #include <fstream>
@@ -45,7 +46,9 @@
 #include <vector>
 
 #include "act/alexandria/alex_modules.h"
+#include "act/testutils/output_checks.h"
 #include "testutils/cmdlinetest.h"
+#include "testutils/refdata.h"
 #include "testutils/testfilemanager.h"
 
 namespace alexandria
@@ -141,6 +144,58 @@ protected:
         ASSERT_TRUE(tree.is_object()) << jsonFile << " is not valid JSON";
         ASSERT_TRUE(tree.contains("minimize"));
         *json = tree["minimize"];
+    }
+
+    /*! \brief Run the minimize tool and compare what it finds and writes with the reference data
+     *
+     * These tests fix the results of the tool with the given options, such
+     * that a change in how the options reach the minimization shows.
+     * \param[in] molFile Molecule file in src/act/testdata/molecules
+     * \param[in] ffFile  Force field file in src/act/testdata/forcefields
+     * \param[in] label   Unique label for the output files
+     * \param[in] extra   Extra command line options
+     * \param[in] exitStatus What the tool returns, 1 if the minimization does not converge
+     */
+    void checkMinimization(const std::string              &molFile,
+                           const std::string              &ffFile,
+                           const std::string              &label,
+                           const std::vector<std::string> &extra,
+                           int                             exitStatus = 0)
+    {
+        const auto jsonFile = fileManager().getTemporaryFilePath(label + ".json");
+        ASSERT_EQ(exitStatus, runMinimize(molFile, ffFile, label, extra, jsonFile));
+        const auto tree = readJsonOutput(jsonFile);
+        ASSERT_TRUE(tree.is_object() && tree.contains("minimize")) << jsonFile;
+        const auto &min = tree["minimize"];
+        gmx::test::TestReferenceChecker checker(this->rootChecker());
+        checkJson(&checker, min["status"], "status");
+        checkJson(&checker, min["converged"], "converged");
+        // The structures in single precision differ by about 1e-5 nm
+        checker.setDefaultTolerance(buildTolerance(2e-4, 2e-6, 1e-4));
+        checkJson(&checker, min["rmsd"], "rmsd");
+        // The energies are written with four decimals. In single precision
+        // they differ by the precision of the largest term.
+        double largest = 0;
+        for (const auto &when : { "Energies before", "Energies after" })
+        {
+            for (const auto &term : min[when].items())
+            {
+                largest = std::max(largest, std::abs(term.value()["value"].get<double>()));
+            }
+        }
+        checker.setDefaultTolerance(buildTolerance(1e-3 + 2e-6*largest, 2e-4 + 1e-8*largest, 1e-5));
+        checkJson(&checker, min["Energies before"], "Energies before");
+        checkJson(&checker, min["Energies after"], "Energies after");
+        // The charges depend on the structure
+        checker.setDefaultTolerance(buildTolerance(2e-4, 2e-6, 1e-5));
+        checkJson(&checker, min["molecule"], "molecule");
+        checker.setDefaultTolerance(buildTolerance(2e-4, 1e-5, 1e-5));
+        checkJson(&checker, min["coordinates"], "coordinates");
+        // The structure file, in Angstrom with three decimals, without
+        // the superposition of the coordinates in the JSON output, so with
+        // the small motion of the whole molecule in single precision
+        checker.setDefaultTolerance(buildTolerance(2e-2, 2e-3, 0));
+        checkTextFile(&checker, fileManager().getTemporaryFilePath(label + "-confout.pdb"), {}, "confout");
     }
 };
 
@@ -356,6 +411,46 @@ TEST_F(MinimizeTest, MoleculeFromSmiles)
     ASSERT_TRUE(fromFile.is_object());
     EXPECT_NEAR(fromFile["Energies after"]["EPOT"]["value"].get<double>(),
                 min["Energies after"]["EPOT"]["value"].get<double>(), 5.0);
+}
+
+// The results of the tool for several sets of options, as reference data
+
+TEST_F(MinimizeTest, ResultsDefaults)
+{
+    checkMinimization("acetone.sdf", "ACS-g1.xml", "results-defaults", {});
+}
+
+TEST_F(MinimizeTest, ResultsPolarizable)
+{
+    checkMinimization("acetone.sdf", "ACS-pg1.xml", "results-polarizable", {});
+}
+
+TEST_F(MinimizeTest, ResultsNewton)
+{
+    checkMinimization("acetone.sdf", "ACS-g1.xml", "results-newton",
+                      { "-minalg", "Newton", "-toler", "1e-4" });
+}
+
+TEST_F(MinimizeTest, ResultsSteepestDescentLimited)
+{
+    // Does not converge in 5 steps, which the tool tells with its exit
+    // status, and writes the structure with the lowest energy. After more
+    // steps the path in single precision differs too much from that in
+    // double precision.
+    checkMinimization("acetone.sdf", "ACS-g1.xml", "results-steep",
+                      { "-minalg", "Steep", "-maxiter", "5" }, 1);
+}
+
+TEST_F(MinimizeTest, ResultsConstrained)
+{
+    checkMinimization("acetone.sdf", "ACS-g1.xml", "results-constrained",
+                      { "-constrain", "bonds" });
+}
+
+TEST_F(MinimizeTest, ResultsChargesOfTypes)
+{
+    checkMinimization("acetone.sdf", "ACS-g1.xml", "results-qnone",
+                      { "-qalg", "None" });
 }
 
 TEST_F(MinimizeTest, WrongSmilesFails)

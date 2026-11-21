@@ -34,6 +34,7 @@ if (TARGET testutils)
     target_sources(testutils PRIVATE
                    actmol_util.cpp
                    forcefield_utils.cpp
-                   ga_test_helper.cpp)
+                   ga_test_helper.cpp
+                   output_checks.cpp)
     target_link_libraries(testutils actLib)
 endif()

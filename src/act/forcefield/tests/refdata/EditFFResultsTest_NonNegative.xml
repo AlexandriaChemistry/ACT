@@ -1,0 +1,474 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Object Name="changes">
+    <Object Name="interactions">
+      <Object Name="ELECTRONEGATIVITYEQUALIZATION">
+        <Object Name="parameters">
+          <Object Name="br_z">
+            <Object Name="eta">
+              <Object Name="after">
+                <Real Name="maximum">17.5</Real>
+                <Real Name="minimum">11.199999999999999</Real>
+                <String Name="mutability">Bounded</String>
+                <Bool Name="nonnegative">false</Bool>
+                <Real Name="ntrain">1</Real>
+                <String Name="unit">eV/e</String>
+                <Real Name="value">14</Real>
+              </Object>
+              <Object Name="before">
+                <Real Name="maximum">17.5</Real>
+                <Real Name="minimum">11.199999999999999</Real>
+                <String Name="mutability">Bounded</String>
+                <Bool Name="nonnegative">true</Bool>
+                <Real Name="ntrain">1</Real>
+                <String Name="unit">eV/e</String>
+                <Real Name="value">14</Real>
+              </Object>
+            </Object>
+          </Object>
+          <Object Name="c1_z">
+            <Object Name="eta">
+              <Object Name="after">
+                <Real Name="maximum">12.5</Real>
+                <Real Name="minimum">8</Real>
+                <String Name="mutability">Bounded</String>
+                <Bool Name="nonnegative">false</Bool>
+                <Real Name="ntrain">1</Real>
+                <String Name="unit">eV/e</String>
+                <Real Name="value">10</Real>
+              </Object>
+              <Object Name="before">
+                <Real Name="maximum">12.5</Real>
+                <Real Name="minimum">8</Real>
+                <String Name="mutability">Bounded</String>
+                <Bool Name="nonnegative">true</Bool>
+                <Real Name="ntrain">1</Real>
+                <String Name="unit">eV/e</String>
+                <Real Name="value">10</Real>
+              </Object>
+            </Object>
+          </Object>
+          <Object Name="c2_z">
+            <Object Name="eta">
+              <Object Name="after">
+                <Real Name="maximum">11.25</Real>
+                <Real Name="minimum">7.2000000000000002</Real>
+                <String Name="mutability">Bounded</String>
+                <Bool Name="nonnegative">false</Bool>
+                <Real Name="ntrain">1</Real>
+                <String Name="unit">eV/e</String>
+                <Real Name="value">9</Real>
+              </Object>
+              <Object Name="before">
+                <Real Name="maximum">11.25</Real>
+                <Real Name="minimum">7.2000000000000002</Real>
+                <String Name="mutability">Bounded</String>
+                <Bool Name="nonnegative">true</Bool>
+                <Real Name="ntrain">1</Real>
+                <String Name="unit">eV/e</String>
+                <Real Name="value">9</Real>
+              </Object>
+            </Object>
+          </Object>
+          <Object Name="c3_z">
+            <Object Name="eta">
+              <Object Name="after">
+                <Real Name="maximum">11.25</Real>
+                <Real Name="minimum">7.2000000000000002</Real>
+                <String Name="mutability">Bounded</String>
+                <Bool Name="nonnegative">false</Bool>
+                <Real Name="ntrain">1</Real>
+                <String Name="unit">eV/e</String>
+                <Real Name="value">9</Real>
+              </Object>
+              <Object Name="before">
+                <Real Name="maximum">11.25</Real>
+                <Real Name="minimum">7.2000000000000002</Real>
+                <String Name="mutability">Bounded</String>
+                <Bool Name="nonnegative">true</Bool>
+                <Real Name="ntrain">1</Real>
+                <String Name="unit">eV/e</String>
+                <Real Name="value">9</Real>
+              </Object>
+            </Object>
+          </Object>
+          <Object Name="cl_z">
+            <Object Name="eta">
+              <Object Name="after">
+                <Real Name="maximum">17.5</Real>
+                <Real Name="minimum">11.199999999999999</Real>
+                <String Name="mutability">Bounded</String>
+                <Bool Name="nonnegative">false</Bool>
+                <Real Name="ntrain">1</Real>
+                <String Name="unit">eV/e</String>
+                <Real Name="value">14</Real>
+              </Object>
+              <Object Name="before">
+                <Real Name="maximum">17.5</Real>
+                <Real Name="minimum">11.199999999999999</Real>
+                <String Name="mutability">Bounded</String>
+                <Bool Name="nonnegative">true</Bool>
+                <Real Name="ntrain">1</Real>
+                <String Name="unit">eV/e</String>
+                <Real Name="value">14</Real>
+              </Object>
+            </Object>
+          </Object>
+          <Object Name="f_z">
+            <Object Name="eta">
+              <Object Name="after">
+                <Real Name="maximum">17.5</Real>
+                <Real Name="minimum">11.199999999999999</Real>
+                <String Name="mutability">Bounded</String>
+                <Bool Name="nonnegative">false</Bool>
+                <Real Name="ntrain">1</Real>
+                <String Name="unit">eV/e</String>
+                <Real Name="value">14</Real>
+              </Object>
+              <Object Name="before">
+                <Real Name="maximum">17.5</Real>
+                <Real Name="minimum">11.199999999999999</Real>
+                <String Name="mutability">Bounded</String>
+                <Bool Name="nonnegative">true</Bool>
+                <Real Name="ntrain">1</Real>
+                <String Name="unit">eV/e</String>
+                <Real Name="value">14</Real>
+              </Object>
+            </Object>
+          </Object>
+          <Object Name="h_z">
+            <Object Name="eta">
+              <Object Name="after">
+                <Real Name="maximum">17.5</Real>
+                <Real Name="minimum">11.199999999999999</Real>
+                <String Name="mutability">Bounded</String>
+                <Bool Name="nonnegative">false</Bool>
+                <Real Name="ntrain">1</Real>
+                <String Name="unit">eV/e</String>
+                <Real Name="value">14</Real>
+              </Object>
+              <Object Name="before">
+                <Real Name="maximum">17.5</Real>
+                <Real Name="minimum">11.199999999999999</Real>
+                <String Name="mutability">Bounded</String>
+                <Bool Name="nonnegative">true</Bool>
+                <Real Name="ntrain">1</Real>
+                <String Name="unit">eV/e</String>
+                <Real Name="value">14</Real>
+              </Object>
+            </Object>
+          </Object>
+          <Object Name="i_z">
+            <Object Name="eta">
+              <Object Name="after">
+                <Real Name="maximum">12.5</Real>
+                <Real Name="minimum">8</Real>
+                <String Name="mutability">Bounded</String>
+                <Bool Name="nonnegative">false</Bool>
+                <Real Name="ntrain">1</Real>
+                <String Name="unit">eV/e</String>
+                <Real Name="value">10</Real>
+              </Object>
+              <Object Name="before">
+                <Real Name="maximum">12.5</Real>
+                <Real Name="minimum">8</Real>
+                <String Name="mutability">Bounded</String>
+                <Bool Name="nonnegative">true</Bool>
+                <Real Name="ntrain">1</Real>
+                <String Name="unit">eV/e</String>
+                <Real Name="value">10</Real>
+              </Object>
+            </Object>
+          </Object>
+          <Object Name="n1_z">
+            <Object Name="eta">
+              <Object Name="after">
+                <Real Name="maximum">13.75</Real>
+                <Real Name="minimum">8.8000000000000007</Real>
+                <String Name="mutability">Bounded</String>
+                <Bool Name="nonnegative">false</Bool>
+                <Real Name="ntrain">1</Real>
+                <String Name="unit">eV/e</String>
+                <Real Name="value">11</Real>
+              </Object>
+              <Object Name="before">
+                <Real Name="maximum">13.75</Real>
+                <Real Name="minimum">8.8000000000000007</Real>
+                <String Name="mutability">Bounded</String>
+                <Bool Name="nonnegative">true</Bool>
+                <Real Name="ntrain">1</Real>
+                <String Name="unit">eV/e</String>
+                <Real Name="value">11</Real>
+              </Object>
+            </Object>
+          </Object>
+          <Object Name="n2_z">
+            <Object Name="eta">
+              <Object Name="after">
+                <Real Name="maximum">13.75</Real>
+                <Real Name="minimum">8.8000000000000007</Real>
+                <String Name="mutability">Bounded</String>
+                <Bool Name="nonnegative">false</Bool>
+                <Real Name="ntrain">1</Real>
+                <String Name="unit">eV/e</String>
+                <Real Name="value">11</Real>
+              </Object>
+              <Object Name="before">
+                <Real Name="maximum">13.75</Real>
+                <Real Name="minimum">8.8000000000000007</Real>
+                <String Name="mutability">Bounded</String>
+                <Bool Name="nonnegative">true</Bool>
+                <Real Name="ntrain">1</Real>
+                <String Name="unit">eV/e</String>
+                <Real Name="value">11</Real>
+              </Object>
+            </Object>
+          </Object>
+          <Object Name="n3_z">
+            <Object Name="eta">
+              <Object Name="after">
+                <Real Name="maximum">13.75</Real>
+                <Real Name="minimum">8.8000000000000007</Real>
+                <String Name="mutability">Bounded</String>
+                <Bool Name="nonnegative">false</Bool>
+                <Real Name="ntrain">1</Real>
+                <String Name="unit">eV/e</String>
+                <Real Name="value">11</Real>
+              </Object>
+              <Object Name="before">
+                <Real Name="maximum">13.75</Real>
+                <Real Name="minimum">8.8000000000000007</Real>
+                <String Name="mutability">Bounded</String>
+                <Bool Name="nonnegative">true</Bool>
+                <Real Name="ntrain">1</Real>
+                <String Name="unit">eV/e</String>
+                <Real Name="value">11</Real>
+              </Object>
+            </Object>
+          </Object>
+          <Object Name="n4_z">
+            <Object Name="eta">
+              <Object Name="after">
+                <Real Name="maximum">13.75</Real>
+                <Real Name="minimum">8.8000000000000007</Real>
+                <String Name="mutability">Bounded</String>
+                <Bool Name="nonnegative">false</Bool>
+                <Real Name="ntrain">1</Real>
+                <String Name="unit">eV/e</String>
+                <Real Name="value">11</Real>
+              </Object>
+              <Object Name="before">
+                <Real Name="maximum">13.75</Real>
+                <Real Name="minimum">8.8000000000000007</Real>
+                <String Name="mutability">Bounded</String>
+                <Bool Name="nonnegative">true</Bool>
+                <Real Name="ntrain">1</Real>
+                <String Name="unit">eV/e</String>
+                <Real Name="value">11</Real>
+              </Object>
+            </Object>
+          </Object>
+          <Object Name="o1_z">
+            <Object Name="eta">
+              <Object Name="after">
+                <Real Name="maximum">12.5</Real>
+                <Real Name="minimum">8</Real>
+                <String Name="mutability">Bounded</String>
+                <Bool Name="nonnegative">false</Bool>
+                <Real Name="ntrain">1</Real>
+                <String Name="unit">eV/e</String>
+                <Real Name="value">10</Real>
+              </Object>
+              <Object Name="before">
+                <Real Name="maximum">12.5</Real>
+                <Real Name="minimum">8</Real>
+                <String Name="mutability">Bounded</String>
+                <Bool Name="nonnegative">true</Bool>
+                <Real Name="ntrain">1</Real>
+                <String Name="unit">eV/e</String>
+                <Real Name="value">10</Real>
+              </Object>
+            </Object>
+          </Object>
+          <Object Name="o2_z">
+            <Object Name="eta">
+              <Object Name="after">
+                <Real Name="maximum">12.5</Real>
+                <Real Name="minimum">8</Real>
+                <String Name="mutability">Bounded</String>
+                <Bool Name="nonnegative">false</Bool>
+                <Real Name="ntrain">1</Real>
+                <String Name="unit">eV/e</String>
+                <Real Name="value">10</Real>
+              </Object>
+              <Object Name="before">
+                <Real Name="maximum">12.5</Real>
+                <Real Name="minimum">8</Real>
+                <String Name="mutability">Bounded</String>
+                <Bool Name="nonnegative">true</Bool>
+                <Real Name="ntrain">1</Real>
+                <String Name="unit">eV/e</String>
+                <Real Name="value">10</Real>
+              </Object>
+            </Object>
+          </Object>
+          <Object Name="o3_z">
+            <Object Name="eta">
+              <Object Name="after">
+                <Real Name="maximum">12.5</Real>
+                <Real Name="minimum">8</Real>
+                <String Name="mutability">Bounded</String>
+                <Bool Name="nonnegative">false</Bool>
+                <Real Name="ntrain">1</Real>
+                <String Name="unit">eV/e</String>
+                <Real Name="value">10</Real>
+              </Object>
+              <Object Name="before">
+                <Real Name="maximum">12.5</Real>
+                <Real Name="minimum">8</Real>
+                <String Name="mutability">Bounded</String>
+                <Bool Name="nonnegative">true</Bool>
+                <Real Name="ntrain">1</Real>
+                <String Name="unit">eV/e</String>
+                <Real Name="value">10</Real>
+              </Object>
+            </Object>
+          </Object>
+          <Object Name="p1_z">
+            <Object Name="eta">
+              <Object Name="after">
+                <Real Name="maximum">17.5</Real>
+                <Real Name="minimum">11.199999999999999</Real>
+                <String Name="mutability">Bounded</String>
+                <Bool Name="nonnegative">false</Bool>
+                <Real Name="ntrain">1</Real>
+                <String Name="unit">eV/e</String>
+                <Real Name="value">14</Real>
+              </Object>
+              <Object Name="before">
+                <Real Name="maximum">17.5</Real>
+                <Real Name="minimum">11.199999999999999</Real>
+                <String Name="mutability">Bounded</String>
+                <Bool Name="nonnegative">true</Bool>
+                <Real Name="ntrain">1</Real>
+                <String Name="unit">eV/e</String>
+                <Real Name="value">14</Real>
+              </Object>
+            </Object>
+          </Object>
+          <Object Name="p2_z">
+            <Object Name="eta">
+              <Object Name="after">
+                <Real Name="maximum">17.5</Real>
+                <Real Name="minimum">11.199999999999999</Real>
+                <String Name="mutability">Bounded</String>
+                <Bool Name="nonnegative">false</Bool>
+                <Real Name="ntrain">1</Real>
+                <String Name="unit">eV/e</String>
+                <Real Name="value">14</Real>
+              </Object>
+              <Object Name="before">
+                <Real Name="maximum">17.5</Real>
+                <Real Name="minimum">11.199999999999999</Real>
+                <String Name="mutability">Bounded</String>
+                <Bool Name="nonnegative">true</Bool>
+                <Real Name="ntrain">1</Real>
+                <String Name="unit">eV/e</String>
+                <Real Name="value">14</Real>
+              </Object>
+            </Object>
+          </Object>
+          <Object Name="p3_z">
+            <Object Name="eta">
+              <Object Name="after">
+                <Real Name="maximum">17.5</Real>
+                <Real Name="minimum">11.199999999999999</Real>
+                <String Name="mutability">Bounded</String>
+                <Bool Name="nonnegative">false</Bool>
+                <Real Name="ntrain">1</Real>
+                <String Name="unit">eV/e</String>
+                <Real Name="value">14</Real>
+              </Object>
+              <Object Name="before">
+                <Real Name="maximum">17.5</Real>
+                <Real Name="minimum">11.199999999999999</Real>
+                <String Name="mutability">Bounded</String>
+                <Bool Name="nonnegative">true</Bool>
+                <Real Name="ntrain">1</Real>
+                <String Name="unit">eV/e</String>
+                <Real Name="value">14</Real>
+              </Object>
+            </Object>
+          </Object>
+          <Object Name="s1_z">
+            <Object Name="eta">
+              <Object Name="after">
+                <Real Name="maximum">17.5</Real>
+                <Real Name="minimum">11.199999999999999</Real>
+                <String Name="mutability">Bounded</String>
+                <Bool Name="nonnegative">false</Bool>
+                <Real Name="ntrain">1</Real>
+                <String Name="unit">eV/e</String>
+                <Real Name="value">14</Real>
+              </Object>
+              <Object Name="before">
+                <Real Name="maximum">17.5</Real>
+                <Real Name="minimum">11.199999999999999</Real>
+                <String Name="mutability">Bounded</String>
+                <Bool Name="nonnegative">true</Bool>
+                <Real Name="ntrain">1</Real>
+                <String Name="unit">eV/e</String>
+                <Real Name="value">14</Real>
+              </Object>
+            </Object>
+          </Object>
+          <Object Name="s2_z">
+            <Object Name="eta">
+              <Object Name="after">
+                <Real Name="maximum">17.5</Real>
+                <Real Name="minimum">11.199999999999999</Real>
+                <String Name="mutability">Bounded</String>
+                <Bool Name="nonnegative">false</Bool>
+                <Real Name="ntrain">1</Real>
+                <String Name="unit">eV/e</String>
+                <Real Name="value">14</Real>
+              </Object>
+              <Object Name="before">
+                <Real Name="maximum">17.5</Real>
+                <Real Name="minimum">11.199999999999999</Real>
+                <String Name="mutability">Bounded</String>
+                <Bool Name="nonnegative">true</Bool>
+                <Real Name="ntrain">1</Real>
+                <String Name="unit">eV/e</String>
+                <Real Name="value">14</Real>
+              </Object>
+            </Object>
+          </Object>
+          <Object Name="s3_z">
+            <Object Name="eta">
+              <Object Name="after">
+                <Real Name="maximum">17.5</Real>
+                <Real Name="minimum">11.199999999999999</Real>
+                <String Name="mutability">Bounded</String>
+                <Bool Name="nonnegative">false</Bool>
+                <Real Name="ntrain">1</Real>
+                <String Name="unit">eV/e</String>
+                <Real Name="value">14</Real>
+              </Object>
+              <Object Name="before">
+                <Real Name="maximum">17.5</Real>
+                <Real Name="minimum">11.199999999999999</Real>
+                <String Name="mutability">Bounded</String>
+                <Bool Name="nonnegative">true</Bool>
+                <Real Name="ntrain">1</Real>
+                <String Name="unit">eV/e</String>
+                <Real Name="value">14</Real>
+              </Object>
+            </Object>
+          </Object>
+        </Object>
+      </Object>
+    </Object>
+  </Object>
+</ReferenceData>

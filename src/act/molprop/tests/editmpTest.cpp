@@ -51,7 +51,9 @@
 #include "act/molprop/molprop.h"
 #include "act/molprop/molprop_xml.h"
 #include "act/molprop/molpropobservable.h"
+#include "act/testutils/output_checks.h"
 #include "testutils/cmdlinetest.h"
+#include "testutils/refdata.h"
 #include "testutils/testfilemanager.h"
 
 namespace alexandria
@@ -128,6 +130,44 @@ protected:
         return n;
     }
 };
+
+// The results of the tool for several sets of options, as reference data,
+// such that a change in how the options reach the work shows
+
+TEST_F(EditMPTest, ResultsRewrite)
+{
+    // The tool adds what the file of the test data lacks
+    run({ fileManager().getInputFilePath("molprop/hf-hf.xml") });
+    gmx::test::TestReferenceChecker checker(this->rootChecker());
+    checker.setDefaultTolerance(buildTolerance(1e-6, 1e-8, 1e-6));
+    checkTextFile(&checker, fileManager().getTemporaryFilePath("out.xml"), {}, "molprop");
+}
+
+TEST_F(EditMPTest, ResultsMerge)
+{
+    const auto json = fileManager().getTemporaryFilePath("merge.json");
+    run({ fileManager().getInputFilePath("molprop/booze-mono.xml"),
+          fileManager().getInputFilePath("molprop/water-butanol.xml") },
+        { { "-json", json } });
+    const auto tree = readJsonOutput(json);
+    ASSERT_TRUE(tree.is_object() && tree.contains("edit_mp")) << json;
+    gmx::test::TestReferenceChecker checker(this->rootChecker());
+    checker.setDefaultTolerance(buildTolerance(1e-6, 1e-8, 1e-6));
+    checkJson(&checker, tree["edit_mp"], "edit_mp");
+}
+
+TEST_F(EditMPTest, ResultsHistogram)
+{
+    // Other limits for the warnings and another temperature
+    run({ fileManager().getInputFilePath("molprop/hf-hf.xml") },
+        { { "-ehisto", "" }, { "-ewarnLow", "-15" }, { "-ewarnHi", "5" }, { "-temperature", "300" } });
+    const auto histo = std::filesystem::path(fileManager().getTemporaryFilePath("out.xml")).parent_path() /
+        "hydrogen-fluoride#hydrogen-fluoride-InteractionEnergy.xvg";
+    gmx::test::TestReferenceChecker checker(this->rootChecker());
+    checker.setDefaultTolerance(buildTolerance(1e-6, 1e-8, 1e-6));
+    checkTextFile(&checker, histo.string(), { "#" }, "histogram");
+    checkTextFile(&checker, fileManager().getTemporaryFilePath("out.xml"), {}, "molprop");
+}
 
 // Test: Writing the molecules of a file gives the same molecules
 TEST_F(EditMPTest, RoundTrip)

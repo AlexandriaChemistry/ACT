@@ -1,0 +1,444 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <String Name="status">OK</String>
+  <Bool Name="converged">true</Bool>
+  <Object Name="rmsd">
+    <String Name="unit">nm</String>
+    <Real Name="value">0.024429024351798254</Real>
+  </Object>
+  <Object Name="Energies before">
+    <Object Name="ALLELEC">
+      <String Name="unit">kJ/mol</String>
+      <Real Name="value">-35.981299999999997</Real>
+    </Object>
+    <Object Name="ANGLES">
+      <String Name="unit">kJ/mol</String>
+      <Real Name="value">117.9765</Real>
+    </Object>
+    <Object Name="BONDS">
+      <String Name="unit">kJ/mol</String>
+      <Real Name="value">35.209200000000003</Real>
+    </Object>
+    <Object Name="COULOMB">
+      <String Name="unit">kJ/mol</String>
+      <Real Name="value">-35.981299999999997</Real>
+    </Object>
+    <Object Name="DISPERSION">
+      <String Name="unit">kJ/mol</String>
+      <Real Name="value">-0</Real>
+    </Object>
+    <Object Name="EPOT">
+      <String Name="unit">kJ/mol</String>
+      <Real Name="value">131.798</Real>
+    </Object>
+    <Object Name="EXCHANGE">
+      <String Name="unit">kJ/mol</String>
+      <Real Name="value">0</Real>
+    </Object>
+    <Object Name="EXCHDISP">
+      <String Name="unit">kJ/mol</String>
+      <Real Name="value">-0</Real>
+    </Object>
+    <Object Name="EXCHIND">
+      <String Name="unit">kJ/mol</String>
+      <Real Name="value">0</Real>
+    </Object>
+    <Object Name="IMPROPER_DIHEDRALS">
+      <String Name="unit">kJ/mol</String>
+      <Real Name="value">0.00069999999999999999</Real>
+    </Object>
+    <Object Name="INDUCTION">
+      <String Name="unit">kJ/mol</String>
+      <Real Name="value">0</Real>
+    </Object>
+    <Object Name="PROPER_DIHEDRALS">
+      <String Name="unit">kJ/mol</String>
+      <Real Name="value">14.5929</Real>
+    </Object>
+  </Object>
+  <Object Name="Energies after">
+    <Object Name="ALLELEC">
+      <String Name="unit">kJ/mol</String>
+      <Real Name="value">-35.476500000000001</Real>
+    </Object>
+    <Object Name="ANGLES">
+      <String Name="unit">kJ/mol</String>
+      <Real Name="value">0.37569999999999998</Real>
+    </Object>
+    <Object Name="BONDS">
+      <String Name="unit">kJ/mol</String>
+      <Real Name="value">0</Real>
+    </Object>
+    <Object Name="COULOMB">
+      <String Name="unit">kJ/mol</String>
+      <Real Name="value">-35.476500000000001</Real>
+    </Object>
+    <Object Name="DISPERSION">
+      <String Name="unit">kJ/mol</String>
+      <Real Name="value">-0</Real>
+    </Object>
+    <Object Name="EPOT">
+      <String Name="unit">kJ/mol</String>
+      <Real Name="value">-27.061599999999999</Real>
+    </Object>
+    <Object Name="EXCHANGE">
+      <String Name="unit">kJ/mol</String>
+      <Real Name="value">0</Real>
+    </Object>
+    <Object Name="EXCHDISP">
+      <String Name="unit">kJ/mol</String>
+      <Real Name="value">-0</Real>
+    </Object>
+    <Object Name="EXCHIND">
+      <String Name="unit">kJ/mol</String>
+      <Real Name="value">0</Real>
+    </Object>
+    <Object Name="IMPROPER_DIHEDRALS">
+      <String Name="unit">kJ/mol</String>
+      <Real Name="value">0</Real>
+    </Object>
+    <Object Name="INDUCTION">
+      <String Name="unit">kJ/mol</String>
+      <Real Name="value">0</Real>
+    </Object>
+    <Object Name="PROPER_DIHEDRALS">
+      <String Name="unit">kJ/mol</String>
+      <Real Name="value">8.0391999999999992</Real>
+    </Object>
+  </Object>
+  <Object Name="molecule">
+    <Sequence Name="bonds">
+      <Int Name="Length">9</Int>
+      <Object>
+        <Sequence Name="atoms">
+          <Int Name="Length">2</Int>
+          <Real>1</Real>
+          <Real>0</Real>
+        </Sequence>
+        <Real Name="order">2</Real>
+      </Object>
+      <Object>
+        <Sequence Name="atoms">
+          <Int Name="Length">2</Int>
+          <Real>2</Real>
+          <Real>4</Real>
+        </Sequence>
+        <Real Name="order">1</Real>
+      </Object>
+      <Object>
+        <Sequence Name="atoms">
+          <Int Name="Length">2</Int>
+          <Real>2</Real>
+          <Real>1</Real>
+        </Sequence>
+        <Real Name="order">1</Real>
+      </Object>
+      <Object>
+        <Sequence Name="atoms">
+          <Int Name="Length">2</Int>
+          <Real>3</Real>
+          <Real>7</Real>
+        </Sequence>
+        <Real Name="order">1</Real>
+      </Object>
+      <Object>
+        <Sequence Name="atoms">
+          <Int Name="Length">2</Int>
+          <Real>3</Real>
+          <Real>1</Real>
+        </Sequence>
+        <Real Name="order">1</Real>
+      </Object>
+      <Object>
+        <Sequence Name="atoms">
+          <Int Name="Length">2</Int>
+          <Real>5</Real>
+          <Real>2</Real>
+        </Sequence>
+        <Real Name="order">1</Real>
+      </Object>
+      <Object>
+        <Sequence Name="atoms">
+          <Int Name="Length">2</Int>
+          <Real>6</Real>
+          <Real>2</Real>
+        </Sequence>
+        <Real Name="order">1</Real>
+      </Object>
+      <Object>
+        <Sequence Name="atoms">
+          <Int Name="Length">2</Int>
+          <Real>8</Real>
+          <Real>3</Real>
+        </Sequence>
+        <Real Name="order">1</Real>
+      </Object>
+      <Object>
+        <Sequence Name="atoms">
+          <Int Name="Length">2</Int>
+          <Real>9</Real>
+          <Real>3</Real>
+        </Sequence>
+        <Real Name="order">1</Real>
+      </Object>
+    </Sequence>
+    <Real Name="charge">0</Real>
+    <String Name="formula">C3H6O</String>
+    <Object Name="mass">
+      <String Name="unit">g/mol</String>
+      <Real Name="value">58.078899999999997</Real>
+    </Object>
+    <String Name="name"></String>
+    <Sequence Name="particles">
+      <Int Name="Length">10</Int>
+      <Object>
+        <Real Name="atomicnumber">8</Real>
+        <Real Name="charge">-0.063601535344461196</Real>
+        <String Name="element">O</String>
+        <Real Name="mass">15.9994</Real>
+        <String Name="name">O</String>
+        <String Name="particletype">Atom</String>
+        <String Name="type">o2</String>
+      </Object>
+      <Object>
+        <Real Name="atomicnumber">6</Real>
+        <Real Name="charge">-0.091652681731254584</Real>
+        <String Name="element">C</String>
+        <Real Name="mass">12.0107</Real>
+        <String Name="name">C</String>
+        <String Name="particletype">Atom</String>
+        <String Name="type">c2</String>
+      </Object>
+      <Object>
+        <Real Name="atomicnumber">6</Real>
+        <Real Name="charge">-0.19320526298190932</Real>
+        <String Name="element">C</String>
+        <Real Name="mass">12.0107</Real>
+        <String Name="name">C</String>
+        <String Name="particletype">Atom</String>
+        <String Name="type">c3</String>
+      </Object>
+      <Object>
+        <Real Name="atomicnumber">6</Real>
+        <Real Name="charge">-0.19818479977739603</Real>
+        <String Name="element">C</String>
+        <Real Name="mass">12.0107</Real>
+        <String Name="name">C</String>
+        <String Name="particletype">Atom</String>
+        <String Name="type">c3</String>
+      </Object>
+      <Object>
+        <Real Name="atomicnumber">1</Real>
+        <Real Name="charge">0.08991516309954993</Real>
+        <String Name="element">H</String>
+        <Real Name="mass">1.0079</Real>
+        <String Name="name">H</String>
+        <String Name="particletype">Atom</String>
+        <String Name="type">h</String>
+      </Object>
+      <Object>
+        <Real Name="atomicnumber">1</Real>
+        <Real Name="charge">0.08991516309954993</Real>
+        <String Name="element">H</String>
+        <Real Name="mass">1.0079</Real>
+        <String Name="name">H</String>
+        <String Name="particletype">Atom</String>
+        <String Name="type">h</String>
+      </Object>
+      <Object>
+        <Real Name="atomicnumber">1</Real>
+        <Real Name="charge">0.08991516309954993</Real>
+        <String Name="element">H</String>
+        <Real Name="mass">1.0079</Real>
+        <String Name="name">H</String>
+        <String Name="particletype">Atom</String>
+        <String Name="type">h</String>
+      </Object>
+      <Object>
+        <Real Name="atomicnumber">1</Real>
+        <Real Name="charge">0.092299596845457119</Real>
+        <String Name="element">H</String>
+        <Real Name="mass">1.0079</Real>
+        <String Name="name">H</String>
+        <String Name="particletype">Atom</String>
+        <String Name="type">h</String>
+      </Object>
+      <Object>
+        <Real Name="atomicnumber">1</Real>
+        <Real Name="charge">0.092299596845457119</Real>
+        <String Name="element">H</String>
+        <Real Name="mass">1.0079</Real>
+        <String Name="name">H</String>
+        <String Name="particletype">Atom</String>
+        <String Name="type">h</String>
+      </Object>
+      <Object>
+        <Real Name="atomicnumber">1</Real>
+        <Real Name="charge">0.092299596845457119</Real>
+        <String Name="element">H</String>
+        <Real Name="mass">1.0079</Real>
+        <String Name="name">H</String>
+        <String Name="particletype">Atom</String>
+        <String Name="type">h</String>
+      </Object>
+    </Sequence>
+  </Object>
+  <Object Name="coordinates">
+    <Sequence Name="after">
+      <Int Name="Length">10</Int>
+      <Sequence>
+        <Int Name="Length">3</Int>
+        <Real>-0.010952607414186227</Real>
+        <Real>-0.0037518299747118151</Real>
+        <Real>0.1318674661034534</Real>
+      </Sequence>
+      <Sequence>
+        <Int Name="Length">3</Int>
+        <Real>-0.0009862244212041453</Real>
+        <Real>-0.00033735019857446784</Real>
+        <Real>0.011828878399767158</Real>
+      </Sequence>
+      <Sequence>
+        <Int Name="Length">3</Int>
+        <Real>-0.11983312199154078</Real>
+        <Real>0.0035650067262050565</Real>
+        <Real>-0.081074278426777613</Real>
+      </Sequence>
+      <Sequence>
+        <Int Name="Length">3</Int>
+        <Real>0.13157532522092447</Real>
+        <Real>0.00045685372002073266</Real>
+        <Real>-0.060265606802730708</Real>
+      </Sequence>
+      <Sequence>
+        <Int Name="Length">3</Int>
+        <Real>-0.21218422654809141</Real>
+        <Real>-0.014860575849750928</Real>
+        <Real>-0.025987243709689259</Real>
+      </Sequence>
+      <Sequence>
+        <Int Name="Length">3</Int>
+        <Real>-0.12808996367547601</Real>
+        <Real>0.10101464325076186</Real>
+        <Real>-0.12942924618230633</Real>
+      </Sequence>
+      <Sequence>
+        <Int Name="Length">3</Int>
+        <Real>-0.11093080986331409</Real>
+        <Real>-0.072481624525291236</Real>
+        <Real>-0.15879473078052164</Real>
+      </Sequence>
+      <Sequence>
+        <Int Name="Length">3</Int>
+        <Real>0.213480260480189</Real>
+        <Real>0.015309356679380522</Real>
+        <Real>0.010259528688226723</Real>
+      </Sequence>
+      <Sequence>
+        <Int Name="Length">3</Int>
+        <Real>0.14815386261085622</Real>
+        <Real>-0.094145567823849613</Real>
+        <Real>-0.11201832592015019</Real>
+      </Sequence>
+      <Sequence>
+        <Int Name="Length">3</Int>
+        <Real>0.13525825906859079</Real>
+        <Real>0.080813615739667666</Real>
+        <Real>-0.1339679595195305</Real>
+      </Sequence>
+    </Sequence>
+    <Sequence Name="before">
+      <Int Name="Length">10</Int>
+      <Sequence>
+        <Int Name="Length">3</Int>
+        <Real>-0.026527079817283035</Real>
+        <Real>-0.0046603622830322204</Real>
+        <Real>0.1180430259526265</Real>
+      </Sequence>
+      <Sequence>
+        <Int Name="Length">3</Int>
+        <Real>0.0090529201827169638</Real>
+        <Real>0.0017496377169677797</Real>
+        <Real>0.014923025952626507</Real>
+      </Sequence>
+      <Sequence>
+        <Int Name="Length">3</Int>
+        <Real>-0.11972707981728305</Real>
+        <Real>0.0017496377169677797</Real>
+        <Real>-0.06463697404737348</Real>
+      </Sequence>
+      <Sequence>
+        <Int Name="Length">3</Int>
+        <Real>0.14485292018271698</Real>
+        <Real>0.00088963771696777972</Real>
+        <Real>-0.066996974047373481</Real>
+      </Sequence>
+      <Sequence>
+        <Int Name="Length">3</Int>
+        <Real>-0.20517707981728303</Real>
+        <Real>0.0017496377169677797</Real>
+        <Real>0.0024730259526265074</Real>
+      </Sequence>
+      <Sequence>
+        <Int Name="Length">3</Int>
+        <Real>-0.12392707981728303</Real>
+        <Real>0.089419637716967773</Real>
+        <Real>-0.12974697404737348</Real>
+      </Sequence>
+      <Sequence>
+        <Int Name="Length">3</Int>
+        <Real>-0.10532707981728302</Real>
+        <Real>-0.083820362283032218</Real>
+        <Real>-0.12376697404737347</Real>
+      </Sequence>
+      <Sequence>
+        <Int Name="Length">3</Int>
+        <Real>0.18922292018271697</Real>
+        <Real>0.0098596377169677795</Real>
+        <Real>0.024733025952626504</Real>
+      </Sequence>
+      <Sequence>
+        <Int Name="Length">3</Int>
+        <Real>0.11697292018271695</Real>
+        <Real>-0.08495036228303221</Real>
+        <Real>-0.12706697404737349</Real>
+      </Sequence>
+      <Sequence>
+        <Int Name="Length">3</Int>
+        <Real>0.14203292018271696</Real>
+        <Real>0.089419637716967773</Real>
+        <Real>-0.12964697404737349</Real>
+      </Sequence>
+    </Sequence>
+    <String Name="frame">center of mass in the origin, after is superimposed on before</String>
+    <String Name="unit">nm</String>
+  </Object>
+  <String Name="confout"><![CDATA[
+TITLE      processed by ACT - The Alexandria Chemistry Toolkit
+REMARK    THIS IS A SIMULATION BOX
+CRYST1   20.000   20.000   20.000  90.00  90.00  90.00 P 1           1
+MODEL        1
+ATOM      1  O1          1      -0.209  -0.035   1.426  1.00  0.00           O
+ATOM      2  C2          1      -0.110  -0.001   0.225  1.00  0.00           C
+ATOM      3  C3          1      -1.298   0.038  -0.704  1.00  0.00           C
+ATOM      4  C4          1       1.216   0.007  -0.496  1.00  0.00           C
+ATOM      5  H5          1      -2.222  -0.146  -0.153  1.00  0.00           H
+ATOM      6  H6          1      -1.381   1.013  -1.187  1.00  0.00           H
+ATOM      7  H7          1      -1.209  -0.722  -1.481  1.00  0.00           H
+ATOM      8  H8          1       2.035   0.156   0.210  1.00  0.00           H
+ATOM      9  H9          1       1.382  -0.939  -1.013  1.00  0.00           H
+ATOM     10  H10         1       1.253   0.811  -1.233  1.00  0.00           H
+CONECT    2    1
+CONECT    3    5
+CONECT    3    2
+CONECT    4    8
+CONECT    4    2
+CONECT    6    3
+CONECT    7    3
+CONECT    9    4
+CONECT   10    4
+ENDMDL
+TER
+]]></String>
+</ReferenceData>

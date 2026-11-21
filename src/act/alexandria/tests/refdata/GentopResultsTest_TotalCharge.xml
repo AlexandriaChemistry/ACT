@@ -1,0 +1,108 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Object Name="gentop">
+    <Sequence Name="molecules">
+      <Int Name="Length">1</Int>
+      <Object>
+        <Object Name="coordinates">
+          <Sequence Name="positions">
+            <Int Name="Length">4</Int>
+            <Sequence>
+              <Int Name="Length">3</Int>
+              <Real>0</Real>
+              <Real>0</Real>
+              <Real>0</Real>
+            </Sequence>
+            <Sequence>
+              <Int Name="Length">3</Int>
+              <Real>-0.22999999999999995</Real>
+              <Real>0</Real>
+              <Real>0</Real>
+            </Sequence>
+            <Sequence>
+              <Int Name="Length">3</Int>
+              <Real>-0.28999999999999998</Real>
+              <Real>0.075999999999999998</Real>
+              <Real>0</Real>
+            </Sequence>
+            <Sequence>
+              <Int Name="Length">3</Int>
+              <Real>-0.28999999999999998</Real>
+              <Real>-0.075999999999999998</Real>
+              <Real>0</Real>
+            </Sequence>
+          </Sequence>
+          <String Name="unit">nm</String>
+        </Object>
+        <Object Name="molecule">
+          <Sequence Name="bonds">
+            <Int Name="Length">2</Int>
+            <Object>
+              <Sequence Name="atoms">
+                <Int Name="Length">2</Int>
+                <Real>1</Real>
+                <Real>2</Real>
+              </Sequence>
+              <Real Name="order">1</Real>
+            </Object>
+            <Object>
+              <Sequence Name="atoms">
+                <Int Name="Length">2</Int>
+                <Real>1</Real>
+                <Real>3</Real>
+              </Sequence>
+              <Real Name="order">1</Real>
+            </Object>
+          </Sequence>
+          <Real Name="charge">1</Real>
+          <String Name="formula">Na+.H2O</String>
+          <Object Name="mass">
+            <String Name="unit">g/mol</String>
+            <Real Name="value">41.005200000000002</Real>
+          </Object>
+          <String Name="name"></String>
+          <Sequence Name="particles">
+            <Int Name="Length">4</Int>
+            <Object>
+              <Real Name="atomicnumber">11</Real>
+              <Real Name="charge">1</Real>
+              <String Name="element">Na</String>
+              <Real Name="mass">22.989699999999999</Real>
+              <String Name="name">Na</String>
+              <String Name="particletype">Atom</String>
+              <String Name="type">Na+</String>
+            </Object>
+            <Object>
+              <Real Name="atomicnumber">8</Real>
+              <Real Name="charge">-0.19382345450912214</Real>
+              <String Name="element">O</String>
+              <Real Name="mass">15.9994</Real>
+              <String Name="name">O</String>
+              <String Name="particletype">Atom</String>
+              <String Name="type">o3</String>
+            </Object>
+            <Object>
+              <Real Name="atomicnumber">1</Real>
+              <Real Name="charge">0.09691172725456107</Real>
+              <String Name="element">H</String>
+              <Real Name="mass">1.0079</Real>
+              <String Name="name">H</String>
+              <String Name="particletype">Atom</String>
+              <String Name="type">h</String>
+            </Object>
+            <Object>
+              <Real Name="atomicnumber">1</Real>
+              <Real Name="charge">0.09691172725456107</Real>
+              <String Name="element">H</String>
+              <Real Name="mass">1.0079</Real>
+              <String Name="name">H</String>
+              <String Name="particletype">Atom</String>
+              <String Name="type">h</String>
+            </Object>
+          </Sequence>
+        </Object>
+      </Object>
+    </Sequence>
+  </Object>
+</ReferenceData>

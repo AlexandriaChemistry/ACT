@@ -1,0 +1,84 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Object Name="changes">
+    <Object Name="interactions">
+      <Object Name="VANDERWAALS">
+        <Object Name="parameters">
+          <String Name="Be2+_s~f">removed</String>
+          <String Name="Be2+~f">removed</String>
+          <String Name="Br-_s~f">removed</String>
+          <String Name="Br-~f">removed</String>
+          <String Name="Ca2+_s~f">removed</String>
+          <String Name="Ca2+~f">removed</String>
+          <String Name="Cl-_s~f">removed</String>
+          <String Name="Cl-~f">removed</String>
+          <String Name="Cs+_s~f">removed</String>
+          <String Name="Cs+~f">removed</String>
+          <String Name="F+_s~f">removed</String>
+          <String Name="F-~f">removed</String>
+          <String Name="I-_s~f">removed</String>
+          <String Name="I-~f">removed</String>
+          <String Name="K+_s~f">removed</String>
+          <String Name="K+~f">removed</String>
+          <String Name="Li+_s~f">removed</String>
+          <String Name="Li+~f">removed</String>
+          <String Name="Mg2+_s~f">removed</String>
+          <String Name="Mg2+~f">removed</String>
+          <String Name="Na+_s~f">removed</String>
+          <String Name="Na+~f">removed</String>
+          <String Name="Rb+_s~f">removed</String>
+          <String Name="Rb+~f">removed</String>
+          <String Name="br_s~f">removed</String>
+          <String Name="br~f">removed</String>
+          <String Name="c1_s~f">removed</String>
+          <String Name="c1~f">removed</String>
+          <String Name="c2_s~f">removed</String>
+          <String Name="c2~f">removed</String>
+          <String Name="c3_s~f">removed</String>
+          <String Name="c3~f">removed</String>
+          <String Name="cl_s~f">removed</String>
+          <String Name="cl~f">removed</String>
+          <String Name="f">removed</String>
+          <String Name="f_s~f">removed</String>
+          <String Name="f~f">removed</String>
+          <String Name="f~h">removed</String>
+          <String Name="f~h_s">removed</String>
+          <String Name="f~i">removed</String>
+          <String Name="f~i_s">removed</String>
+          <String Name="f~n1">removed</String>
+          <String Name="f~n1_s">removed</String>
+          <String Name="f~n2">removed</String>
+          <String Name="f~n2_s">removed</String>
+          <String Name="f~n3">removed</String>
+          <String Name="f~n3_s">removed</String>
+          <String Name="f~n4">removed</String>
+          <String Name="f~n4_s">removed</String>
+          <String Name="f~o1">removed</String>
+          <String Name="f~o1_s">removed</String>
+          <String Name="f~o2">removed</String>
+          <String Name="f~o2_s">removed</String>
+          <String Name="f~o3">removed</String>
+          <String Name="f~o3_s">removed</String>
+          <String Name="f~p1">removed</String>
+          <String Name="f~p1_s">removed</String>
+          <String Name="f~p2">removed</String>
+          <String Name="f~p2_s">removed</String>
+          <String Name="f~p3">removed</String>
+          <String Name="f~p3_s">removed</String>
+          <String Name="f~s1">removed</String>
+          <String Name="f~s1_s">removed</String>
+          <String Name="f~s2">removed</String>
+          <String Name="f~s2_s">removed</String>
+          <String Name="f~s3">removed</String>
+          <String Name="f~s3_s">removed</String>
+          <String Name="f~v2">removed</String>
+          <String Name="f~v2_s">removed</String>
+        </Object>
+      </Object>
+    </Object>
+    <Object Name="particletypes">
+      <String Name="f">removed</String>
+    </Object>
+  </Object>
+</ReferenceData>

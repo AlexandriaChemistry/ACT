@@ -1,0 +1,154 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Object Name="edit_mp">
+    <Sequence Name="molecules">
+      <Int Name="Length">3</Int>
+      <Object>
+        <Real Name="charge">0</Real>
+        <Real Name="experiments">8</Real>
+        <String Name="formula">C2H6O</String>
+        <Sequence Name="fragments">
+          <Int Name="Length">1</Int>
+          <Object>
+            <Real Name="charge">0</Real>
+            <String Name="formula">C2H6O</String>
+            <String Name="inchi">InChI=1S/C2H6O/c1-2-3/h3H,2H2,1H3</String>
+            <String Name="iupac"></String>
+            <Real Name="multiplicity">1</Real>
+            <Real Name="natom">9</Real>
+          </Object>
+        </Sequence>
+        <String Name="iupac">ethanol</String>
+        <Object Name="jobtypes">
+          <Real Name="Opt">1</Real>
+          <Real Name="SP">7</Real>
+        </Object>
+        <Sequence Name="methods">
+          <Int Name="Length">1</Int>
+          <String>MP2/aug-cc-pvtz</String>
+        </Sequence>
+        <String Name="name">ethanol</String>
+        <Real Name="natom">9</Real>
+        <Object Name="properties">
+          <Real Name="DeltaE0">8</Real>
+        </Object>
+      </Object>
+      <Object>
+        <Real Name="charge">0</Real>
+        <Real Name="experiments">8</Real>
+        <String Name="formula">CH4O</String>
+        <Sequence Name="fragments">
+          <Int Name="Length">1</Int>
+          <Object>
+            <Real Name="charge">0</Real>
+            <String Name="formula">CH4O</String>
+            <String Name="inchi">InChI=1S/CH4O/c1-2/h2H,1H3</String>
+            <String Name="iupac"></String>
+            <Real Name="multiplicity">1</Real>
+            <Real Name="natom">6</Real>
+          </Object>
+        </Sequence>
+        <String Name="iupac">methanol</String>
+        <Object Name="jobtypes">
+          <Real Name="Opt">1</Real>
+          <Real Name="SP">7</Real>
+        </Object>
+        <Sequence Name="methods">
+          <Int Name="Length">1</Int>
+          <String>MP2/aug-cc-pvtz</String>
+        </Sequence>
+        <String Name="name">methanol</String>
+        <Real Name="natom">6</Real>
+        <Object Name="properties">
+          <Real Name="Cv">1</Real>
+          <Real Name="Cvelec">1</Real>
+          <Real Name="Cvrot">1</Real>
+          <Real Name="Cvtrans">1</Real>
+          <Real Name="Cvvib">1</Real>
+          <Real Name="DeltaE0">8</Real>
+          <Real Name="S0">1</Real>
+          <Real Name="Selec">1</Real>
+          <Real Name="Srot">1</Real>
+          <Real Name="Strans">1</Real>
+          <Real Name="Svib">1</Real>
+          <Real Name="ZPE">1</Real>
+          <Real Name="frequency">1</Real>
+          <Real Name="intensity">1</Real>
+        </Object>
+      </Object>
+      <Object>
+        <Real Name="charge">0</Real>
+        <Real Name="experiments">4</Real>
+        <String Name="formula">H2O.C4H10O</String>
+        <Sequence Name="fragments">
+          <Int Name="Length">2</Int>
+          <Object>
+            <Real Name="charge">0</Real>
+            <String Name="formula">H2O</String>
+            <String Name="inchi">InChI=1S/H2O/h1H2</String>
+            <String Name="iupac"></String>
+            <Real Name="multiplicity">1</Real>
+            <Real Name="natom">3</Real>
+          </Object>
+          <Object>
+            <Real Name="charge">0</Real>
+            <String Name="formula">C4H10O</String>
+            <String Name="inchi">InChI=1S/C4H10O/c1-2-3-4-5/h5H,2-4H2,1H3</String>
+            <String Name="iupac"></String>
+            <Real Name="multiplicity">1</Real>
+            <Real Name="natom">15</Real>
+          </Object>
+        </Sequence>
+        <String Name="iupac">water#1-butanol</String>
+        <Object Name="jobtypes">
+          <Real Name="SP">4</Real>
+        </Object>
+        <Sequence Name="methods">
+          <Int Name="Length">1</Int>
+          <String>sapt2+(ccd)dmp2/aug-cc-pvtz</String>
+        </Sequence>
+        <String Name="name">water#1-butanol</String>
+        <Real Name="natom">18</Real>
+        <Object Name="properties">
+          <Real Name="Dispersion">4</Real>
+          <Real Name="Electrostatics">4</Real>
+          <Real Name="Exchange">4</Real>
+          <Real Name="Induction">4</Real>
+          <Real Name="InteractionEnergy">4</Real>
+        </Object>
+      </Object>
+    </Sequence>
+    <Object Name="summary">
+      <Real Name="dimers">1</Real>
+      <Real Name="experiments">20</Real>
+      <Real Name="larger">0</Real>
+      <Real Name="molecules">3</Real>
+      <Real Name="monomers">2</Real>
+      <Object Name="properties">
+        <Real Name="Cv">1</Real>
+        <Real Name="Cvelec">1</Real>
+        <Real Name="Cvrot">1</Real>
+        <Real Name="Cvtrans">1</Real>
+        <Real Name="Cvvib">1</Real>
+        <Real Name="DeltaE0">16</Real>
+        <Real Name="Dispersion">4</Real>
+        <Real Name="Electrostatics">4</Real>
+        <Real Name="Exchange">4</Real>
+        <Real Name="Induction">4</Real>
+        <Real Name="InteractionEnergy">4</Real>
+        <Real Name="S0">1</Real>
+        <Real Name="Selec">1</Real>
+        <Real Name="Srot">1</Real>
+        <Real Name="Strans">1</Real>
+        <Real Name="Svib">1</Real>
+        <Real Name="ZPE">1</Real>
+        <Real Name="frequency">1</Real>
+        <Real Name="intensity">1</Real>
+      </Object>
+    </Object>
+    <Object Name="validation">
+      <Bool Name="checked">false</Bool>
+    </Object>
+  </Object>
+</ReferenceData>

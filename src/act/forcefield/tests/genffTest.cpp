@@ -53,8 +53,10 @@
 #include "act/forcefield/forcefield_validation.h"
 #include "act/forcefield/forcefield_xml.h"
 #include "act/forcefield/potential.h"
+#include "act/testutils/output_checks.h"
 #include "gromacs/utility/exceptions.h"
 #include "testutils/cmdlinetest.h"
+#include "testutils/refdata.h"
 #include "testutils/testfilemanager.h"
 
 namespace alexandria
@@ -192,6 +194,52 @@ TEST_F(GenFFTest, Options)
     {
         EXPECT_EQ(0, pt.second.zeta()) << pt.first.id();
     }
+}
+
+// The force fields of the tool for several sets of options, as reference
+// data, such that a change in how the options reach the work shows
+
+class GenFFResultsTest : public GenFFTest
+{
+protected:
+    /*! \brief Run gen_ff on the atom types with shells and compare the force field with the reference data
+     * \param[in] options Command line options, an empty value for a flag
+     */
+    void checkGenerated(const std::vector<std::pair<std::string, std::string>> &options)
+    {
+        const auto output = fileManager().getTemporaryFilePath("generated.xml");
+        auto       cmd    = commandLine(options, "", "forcefields/genff-atomtypes-shells.csv");
+        cmd.addOption("-o", output);
+        ASSERT_EQ(0, gen_ff(cmd.argc(), cmd.argv()));
+        gmx::test::TestReferenceChecker checker(this->rootChecker());
+        checker.setDefaultTolerance(buildTolerance(1e-6, 1e-8, 1e-6));
+        // The version has the time when the file was written
+        checkTextFile(&checker, output, { "<version" }, "forcefield");
+    }
+};
+
+TEST_F(GenFFResultsTest, Defaults)
+{
+    checkGenerated({});
+}
+
+TEST_F(GenFFResultsTest, Options)
+{
+    checkGenerated({ { "-nexcl", "3" }, { "-epsilonr", "1.7" }, { "-shellmaxdistance", "0.03" },
+                     { "-noqsymm", "" }, { "-qdist", "SLATER" }, { "-bondfn", "MORSE_BONDS" },
+                     { "-anglefn", "UREY_BRADLEY_ANGLES" }, { "-dihfn", "PROPER_DIHEDRALS" },
+                     { "-vdwfn", "WANG_BUCKINGHAM" }, { "-vdwcorr", "" }, { "-icfn", "MORSE_BONDS" },
+                     { "-cr", "VANDERWAALS:sigma:Arithmetic" } });
+}
+
+TEST_F(GenFFResultsTest, VirtualSites)
+{
+    // What the virtual sites add to a force field
+    const auto plain = generate({}, "");
+    const auto sites = generate({}, "forcefields/genff-vsites.json");
+    gmx::test::TestReferenceChecker checker(this->rootChecker());
+    checker.setDefaultTolerance(buildTolerance(1e-6, 1e-8, 1e-6));
+    checkJson(&checker, forceFieldChanges(plain, sites), "changes");
 }
 
 // Test: The obsolete options for the exclusions are accepted if they are

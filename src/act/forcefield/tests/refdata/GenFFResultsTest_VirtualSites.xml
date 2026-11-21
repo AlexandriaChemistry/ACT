@@ -1,0 +1,128 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Object Name="changes">
+    <Object Name="interactions">
+      <Object Name="VSITE2">
+        <Object Name="added">
+          <Object Name="options"></Object>
+          <Object Name="parameters">
+            <Object Name="br_b~c3_b!v2br1">
+              <Object Name="vs2a">
+                <Object Name="after">
+                  <Real Name="maximum">0.5</Real>
+                  <Real Name="minimum">-1</Real>
+                  <String Name="mutability">Bounded</String>
+                  <Bool Name="nonnegative">false</Bool>
+                  <Real Name="ntrain">0</Real>
+                  <String Name="unit"></String>
+                  <Real Name="value">-0.25</Real>
+                </Object>
+                <String Name="before">null</String>
+              </Object>
+            </Object>
+            <Object Name="br_b~hbr_b!v2br1">
+              <Object Name="vs2a">
+                <Object Name="after">
+                  <Real Name="maximum">0.5</Real>
+                  <Real Name="minimum">-1</Real>
+                  <String Name="mutability">Bounded</String>
+                  <Bool Name="nonnegative">false</Bool>
+                  <Real Name="ntrain">0</Real>
+                  <String Name="unit"></String>
+                  <Real Name="value">-0.25</Real>
+                </Object>
+                <String Name="before">null</String>
+              </Object>
+            </Object>
+            <Object Name="cl_b~c3_b!v2cl1">
+              <Object Name="vs2a">
+                <Object Name="after">
+                  <Real Name="maximum">0.5</Real>
+                  <Real Name="minimum">-1</Real>
+                  <String Name="mutability">Bounded</String>
+                  <Bool Name="nonnegative">false</Bool>
+                  <Real Name="ntrain">0</Real>
+                  <String Name="unit"></String>
+                  <Real Name="value">-0.25</Real>
+                </Object>
+                <String Name="before">null</String>
+              </Object>
+            </Object>
+            <Object Name="cl_b~hcl_b!v2cl1">
+              <Object Name="vs2a">
+                <Object Name="after">
+                  <Real Name="maximum">0.5</Real>
+                  <Real Name="minimum">-1</Real>
+                  <String Name="mutability">Bounded</String>
+                  <Bool Name="nonnegative">false</Bool>
+                  <Real Name="ntrain">0</Real>
+                  <String Name="unit"></String>
+                  <Real Name="value">-0.25</Real>
+                </Object>
+                <String Name="before">null</String>
+              </Object>
+            </Object>
+            <Object Name="f_b~c3_b!v2f1">
+              <Object Name="vs2a">
+                <Object Name="after">
+                  <Real Name="maximum">0.5</Real>
+                  <Real Name="minimum">-1</Real>
+                  <String Name="mutability">Bounded</String>
+                  <Bool Name="nonnegative">false</Bool>
+                  <Real Name="ntrain">0</Real>
+                  <String Name="unit"></String>
+                  <Real Name="value">-0.25</Real>
+                </Object>
+                <String Name="before">null</String>
+              </Object>
+            </Object>
+            <Object Name="f_b~hf_b!v2f1">
+              <Object Name="vs2a">
+                <Object Name="after">
+                  <Real Name="maximum">0.5</Real>
+                  <Real Name="minimum">-1</Real>
+                  <String Name="mutability">Bounded</String>
+                  <Bool Name="nonnegative">false</Bool>
+                  <Real Name="ntrain">0</Real>
+                  <String Name="unit"></String>
+                  <Real Name="value">-0.25</Real>
+                </Object>
+                <String Name="before">null</String>
+              </Object>
+            </Object>
+            <Object Name="i_b~c3_b!v2i1">
+              <Object Name="vs2a">
+                <Object Name="after">
+                  <Real Name="maximum">0.5</Real>
+                  <Real Name="minimum">-1</Real>
+                  <String Name="mutability">Bounded</String>
+                  <Bool Name="nonnegative">false</Bool>
+                  <Real Name="ntrain">0</Real>
+                  <String Name="unit"></String>
+                  <Real Name="value">-0.25</Real>
+                </Object>
+                <String Name="before">null</String>
+              </Object>
+            </Object>
+            <Object Name="i_b~hi_b!v2i1">
+              <Object Name="vs2a">
+                <Object Name="after">
+                  <Real Name="maximum">0.5</Real>
+                  <Real Name="minimum">-1</Real>
+                  <String Name="mutability">Bounded</String>
+                  <Bool Name="nonnegative">false</Bool>
+                  <Real Name="ntrain">0</Real>
+                  <String Name="unit"></String>
+                  <Real Name="value">-0.25</Real>
+                </Object>
+                <String Name="before">null</String>
+              </Object>
+            </Object>
+          </Object>
+          <String Name="potential">VSITE2</String>
+        </Object>
+      </Object>
+    </Object>
+  </Object>
+</ReferenceData>
