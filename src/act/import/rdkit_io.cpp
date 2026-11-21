@@ -34,6 +34,7 @@
 
 #include <algorithm>
 #include <cctype>
+#include <csignal>
 #include <cstddef>
 #include <limits>
 #include <string>
@@ -655,12 +656,43 @@ void importFile(MsgHandler             *msg_handler,
                atomBondtypeDB(msg_handler));
 }
 
+/*! \brief Keeps the handler of the program for the interrupt signal (Ctrl-C)
+ *
+ * RDKit installs a handler of its own while it makes or optimizes a
+ * structure, to be able to stop, and puts back what it found. It keeps
+ * what it found in one place for all its handlers, so when one of its
+ * functions calls another, its own handler stays behind. The interrupt
+ * then no longer reaches the program, or Python when ACT is used from
+ * there. An object of this class puts back what was there when it was made.
+ */
+class InterruptHandlerKeeper
+{
+public:
+    InterruptHandlerKeeper() { valid_ = (sigaction(SIGINT, nullptr, &before_) == 0); }
+    ~InterruptHandlerKeeper()
+    {
+        if (valid_)
+        {
+            sigaction(SIGINT, &before_, nullptr);
+        }
+    }
+    InterruptHandlerKeeper(const InterruptHandlerKeeper &)            = delete;
+    InterruptHandlerKeeper &operator=(const InterruptHandlerKeeper &) = delete;
+
+private:
+    //! What was done with the signal when this object was made
+    struct sigaction before_;
+    //! Whether that could be found out
+    bool             valid_ = false;
+};
+
 void importSmiles(MsgHandler           *msg_handler,
                   const ForceField     *pd,
                   const std::string    &smiles,
                   std::vector<MolProp> *mps,
                   bool                  oneH)
 {
+    const InterruptHandlerKeeper keeper;
     // Without the spaces around it
     const auto first = smiles.find_first_not_of(" \t\n\r");
     if (first == std::string::npos)
