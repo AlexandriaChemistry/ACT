@@ -43,10 +43,14 @@
 #include <nlohmann/json.hpp>
 #include <set>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "act/alexandria/alex_modules.h"
+#include "act/basics/msg_handler.h"
+#include "act/properties/minimize.h"
 #include "act/testutils/output_checks.h"
+#include "gromacs/utility/exceptions.h"
 #include "testutils/cmdlinetest.h"
 #include "testutils/refdata.h"
 #include "testutils/testfilemanager.h"
@@ -454,6 +458,111 @@ TEST_F(MinimizeTest, ResultsChargesOfTypes)
 {
     checkMinimization("acetone.sdf", "ACS-g1.xml", "results-qnone",
                       { "-qalg", "None" });
+}
+
+// The minimization without a command line, as a program that uses ACT does it
+
+TEST_F(MinimizeTest, WithoutCommandLineSameAsTheProgram)
+{
+    // The same options in both ways, the defaults and others
+    const std::vector<std::pair<std::vector<std::string>, eMinimizeAlgorithm>> cases = {
+        { {}, eMinimizeAlgorithm::LBFGS },
+        { { "-minalg", "Newton", "-toler", "0.0001" }, eMinimizeAlgorithm::Newton },
+        { { "-minalg", "Steep", "-maxiter", "5" }, eMinimizeAlgorithm::Steep }
+    };
+    int n = 0;
+    for (const auto &c : cases)
+    {
+        const auto label    = "direct" + std::to_string(n++);
+        const auto toolJson = fileManager().getTemporaryFilePath(label + "-tool.json");
+        const int  status   = runMinimize("acetone.sdf", "ACS-g1.xml", label, c.first, toolJson);
+
+        MinimizeOptions options;
+        options.forceFieldFile = alexandriaFile("forcefields/ACS-g1.xml");
+        options.compounds.setFileName(alexandriaFile("molecules/acetone.sdf"));
+        options.jsonFile = fileManager().getTemporaryFilePath(label + "-direct.json");
+        options.confout  = fileManager().getTemporaryFilePath(label + "-direct.pdb");
+        options.simulation.setMinimizeAlgorithm(c.second);
+        if (eMinimizeAlgorithm::Newton == c.second)
+        {
+            options.simulation.setForceTolerance(1e-4);
+        }
+        if (eMinimizeAlgorithm::Steep == c.second)
+        {
+            options.simulation.setMaxIter(5);
+        }
+        MsgHandler msghandler;
+        msghandler.setPrintLevel(ACTStatus::Fatal);
+        EXPECT_EQ(status, alexandria::runMinimize(&msghandler, options)) << label;
+        auto tool   = readJsonOutput(toolJson);
+        auto direct = readJsonOutput(options.jsonFile);
+        ASSERT_TRUE(tool.is_object() && direct.is_object()) << label;
+        // The same results, from the same files. The summary of the force
+        // field depends on how much the messages tell.
+        for (const auto &key : { "status", "converged", "rmsd", "Energies before", "Energies after",
+                                 "molecule", "coordinates" })
+        {
+            // As text: gtest cannot print a JSON value
+            EXPECT_EQ(tool["minimize"].value(key, nlohmann::json()).dump(),
+                      direct["minimize"].value(key, nlohmann::json()).dump()) << label << " " << key;
+        }
+    }
+}
+
+TEST_F(MinimizeTest, WithoutCommandLineWrongOptions)
+{
+    // Each is refused before anything is read, with a message that says what is wrong
+    const auto valid = [this]()
+    {
+        MinimizeOptions options;
+        options.forceFieldFile = alexandriaFile("forcefields/ACS-g1.xml");
+        options.compounds.setFileName(alexandriaFile("molecules/acetone.sdf"));
+        return options;
+    };
+    std::vector<std::pair<MinimizeOptions, std::string>> wrong;
+    {
+        auto o = valid();
+        o.forceFieldFile.clear();
+        wrong.emplace_back(o, "-ff");
+    }
+    {
+        MinimizeOptions o;
+        o.forceFieldFile = alexandriaFile("forcefields/ACS-g1.xml");
+        wrong.emplace_back(o, "-f");
+    }
+    {
+        auto o = valid();
+        o.shellTolerance = 0;
+        wrong.emplace_back(o, "-shelltoler");
+    }
+    {
+        auto o = valid();
+        o.simulation.setForceTolerance(0);
+        wrong.emplace_back(o, "-toler");
+    }
+    {
+        auto o = valid();
+        o.simulation.setMaxIter(-1);
+        wrong.emplace_back(o, "-maxiter");
+    }
+    for (const auto &w : wrong)
+    {
+        MsgHandler msghandler;
+        msghandler.setPrintLevel(ACTStatus::Fatal);
+        try
+        {
+            alexandria::runMinimize(&msghandler, w.first);
+            ADD_FAILURE() << "Accepted options with a wrong " << w.second;
+        }
+        catch (const gmx::InvalidInputError &ex)
+        {
+            EXPECT_NE(std::string::npos, std::string(ex.what()).find(w.second)) << ex.what();
+        }
+    }
+    // The program says the same and stops
+    const auto jsonFile = fileManager().getTemporaryFilePath("wrongtoler.json");
+    EXPECT_EQ(1, runMinimize("acetone.sdf", "ACS-g1.xml", "wrongtoler", { "-toler", "0" }, jsonFile));
+    EXPECT_FALSE(std::filesystem::exists(jsonFile));
 }
 
 TEST_F(MinimizeTest, WrongSmilesFails)

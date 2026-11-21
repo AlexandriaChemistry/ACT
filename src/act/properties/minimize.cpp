@@ -30,6 +30,7 @@
  * Implements part of the alexandria program.
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
+#include <cmath>
 #include <cstdio>
 #include <exception>
 #include <map>
@@ -214,6 +215,151 @@ eMinimizeStatus minimizeMolecule(MsgHandler                    *msghandler,
     return eMin;
 }
 
+void MinimizeOptions::check() const
+{
+    if (forceFieldFile.empty())
+    {
+        GMX_THROW(gmx::InvalidInputError("There is no force field file (-ff)"));
+    }
+    if (std::string(compounds.fileName()).empty() && std::string(compounds.smiles()).empty() &&
+        std::string(compounds.dbName()).empty())
+    {
+        GMX_THROW(gmx::InvalidInputError("There is no molecule: give a structure file (-f), a SMILES string (-smiles) or a compound of the charge file (-db)"));
+    }
+    if (!std::isfinite(shellTolerance) || shellTolerance <= 0)
+    {
+        GMX_THROW(gmx::InvalidInputError(gmx::formatString("The value %g of -shelltoler should be more than zero",
+                                                           shellTolerance)));
+    }
+    simulation.validate();
+}
+
+int runMinimize(MsgHandler *msghandler, const MinimizeOptions &options)
+{
+    options.check();
+    // The minimization is what this does, whatever the settings say
+    auto sch = options.simulation;
+    sch.setMinimize(true);
+    const double shellToler = sch.shellTolerance(options.shellTolerance, msghandler);
+    ForceField   pd;
+    readForceField(options.forceFieldFile, &pd, msghandler);
+    (void) pd.verifyCheckSum(msghandler);
+    for(const auto &ss : pd.info())
+    {
+        msghandler->write(ss);
+    }
+
+    ForceComputer forceComp;
+    forceComp.init(shellToler, sch.shellMaxIter(), pd.epsilonr());
+
+    std::vector<ACTMol> actmols;
+    // Reading changes the reader
+    auto                compR = options.compounds;
+    try
+    {
+        compR.read(msghandler, pd, &forceComp, &actmols);
+    }
+    catch (const std::exception &ex)
+    {
+        // E.g. a file that does not exist
+        msghandler->msg(ACTStatus::Error,
+                        gmx::formatString("Could not read molecules: %s", ex.what()));
+        actmols.clear();
+    }
+    if (actmols.empty())
+    {
+        fprintf(stderr, "Could not read or process molecules. Please check the log file for more information.\n");
+        return 1;
+    }
+    auto &actmol = actmols[0];
+    // Check whether we need to add position restraints
+    if (sch.kFBPR() > 0)
+    {
+        actmol.topologyPtr()->addFBPR(msghandler, sch.kFBPR(), sch.r0FBPR(), actmol.xOriginal());
+    }
+    JsonTree jtree("minimize");
+    if (msghandler->info())
+    {
+        forceFieldSummary(&jtree, &pd);
+    }
+    if (msghandler->debug())
+    {
+        actmol.topology()->dump(msghandler->twDebug());
+    }
+    msghandler->msg(ACTStatus::Info,
+                    gmx::formatString("There are %lu fragments.",
+                                      actmol.fragmentHandler()->topologies().size()));
+    auto xmin = actmol.xOriginal();
+    // The description of the molecule has to be made before the molprop
+    // is moved out of it below.
+    const JsonTree jmolecule = moleculeToJson(&actmol);
+    // Both structures are given with the center of mass in the origin, and
+    // the final structure is superimposed on the initial one when the root
+    // mean square deviation is computed, such that they can be shown together.
+    JsonTree       jcoords("coordinates");
+    jcoords.addObject("unit", "nm");
+    jcoords.addObject("frame", "center of mass in the origin, after is superimposed on before");
+    jcoords.addObject(coordinatesToJson("before", centeredCoordinates(actmol.atomsConst(), xmin)));
+    double epot = 0;
+    auto   eMin = minimizeMolecule(msghandler, &pd, &forceComp, sch,
+                                   options.freezeFile.empty() ? nullptr : options.freezeFile.c_str(),
+                                   &actmol, &xmin, &jtree, &epot);
+    int status = 0;
+    // Also without convergence the structure with the lowest energy is written
+    if (eMinimizeStatus::OK == eMin || minimizationDidNotConverge(eMin))
+    {
+        if (!options.confout.empty())
+        {
+            matrix box = { { 2, 0, 0 }, { 0, 2, 0 }, { 0, 0, 2 } };
+            actmol.PrintConformation(options.confout.c_str(), xmin, sch.writeShells(), box);
+        }
+        if (!options.molpropFile.empty())
+        {
+            std::vector<MolProp> mpt;
+            // We cannot use the actmol after this move command.
+            mpt.push_back(std::move(*actmol.molProp()));
+            MolPropWrite(options.molpropFile.c_str(), mpt, false);
+        }
+    }
+    if (minimizationDidNotConverge(eMin))
+    {
+        // Without a lower minimum the structure is usable, see minimumUsable
+        fprintf(stderr, "Minimization did not converge: %s, the structure with the lowest energy is written, check log file %s\n",
+                minimizeStatusMessage(eMin, epot).c_str(),
+                msghandler->filename().c_str());
+        status = minimumUsable(eMin) ? 0 : 1;
+    }
+    else if (eMinimizeStatus::OK != eMin)
+    {
+        fprintf(stderr, "Minimization failed: %s, check log file %s\n",
+                eMinimizeStatusToString(eMin).c_str(),
+                msghandler->filename().c_str());
+        status = 1;
+    }
+    const bool json = !options.jsonFile.empty();
+    if (json)
+    {
+        jtree.addObject(jmolecule);
+        if (eMinimizeStatus::OK == eMin || minimizationDidNotConverge(eMin))
+        {
+            jcoords.addObject(coordinatesToJson("after", centeredCoordinates(actmol.atomsConst(), xmin)));
+        }
+        jtree.addObject(jcoords);
+        jtree.write(options.jsonFile, json);
+    }
+    else
+    {
+        int indent = 0;
+        msghandler->write(jtree.writeString(json, &indent));
+    }
+    if (!msghandler->ok())
+    {
+        printf("Minimize failed with an error:\n");
+        status = 1;
+    }
+    return status;
+}
+
 /*! \brief Tool to minimize the energy of a molecule
  * \param[in] argc Number of arguments on the cmd line
  * \param[in] argv The actual arguments
@@ -251,15 +397,14 @@ int minimize(int argc, char *argv[])
         { efJSON, "-json",   "minimize",   ffOPTWR }
     };
     gmx_output_env_t         *oenv;
-    real                      shellToler = 1e-6;
+    MinimizeOptions           options;
+    real                      shellToler = options.shellTolerance;
     std::vector<t_pargs>      pa = {
         { "-shelltoler", FALSE, etREAL, {&shellToler},
           "Tolerance for shell force optimization (mean square force)" }
     };
-    SimulationConfigHandler  sch;
-    sch.add_minimize_options(&pa, true);
-    CompoundReader compR;
-    compR.addOptions(&pa, &fnm, &desc);
+    options.simulation.add_minimize_options(&pa, true);
+    options.compounds.addOptions(&pa, &fnm, &desc);
     MsgHandler msghandler;
     msghandler.addOptions(&pa, &fnm, "minimize");
     if (!parse_common_args(&argc, argv, 0,
@@ -271,139 +416,34 @@ int minimize(int argc, char *argv[])
     CommunicationRecord cr;
     cr.init(cr.size());
     msghandler.optionsFinished(fnm, &cr);
-    // The results in json format, in the file of -json if it is given
-    const char *jsonFile = opt2fn_null("-json", fnm.size(), fnm.data());
-    const bool  json     = jsonFile != nullptr;
-
-    sch.check_pargs(&msghandler);
-    sch.setMinimize(true);
-    compR.optionsFinished(&msghandler, fnm);
-    if (!msghandler.ok())
-    {
-        return 1;
-    }
-    print_header(msghandler.tw(), pa, fnm);
-
-    shellToler = sch.shellTolerance(shellToler, &msghandler);
-    ForceField        pd;
     try
     {
-        readForceField(opt2fn("-ff", fnm.size(), fnm.data()), &pd, &msghandler);
+        // What the command line asks for
+        options.simulation.check_pargs(&msghandler);
+        options.compounds.optionsFinished(&msghandler, fnm);
+        if (!msghandler.ok())
+        {
+            return 1;
+        }
+        print_header(msghandler.tw(), pa, fnm);
+        options.shellTolerance = shellToler;
+        options.forceFieldFile = opt2fn("-ff", fnm.size(), fnm.data());
+        options.confout        = opt2fn("-c", fnm.size(), fnm.data());
+        const auto optional    = [&fnm](const char *option)
+        {
+            const char *name = opt2fn_null(option, fnm.size(), fnm.data());
+            return std::string(name ? name : "");
+        };
+        options.freezeFile  = optional("-freeze");
+        options.molpropFile = optional("-omp");
+        options.jsonFile    = optional("-json");
+        return runMinimize(&msghandler, options);
     }
-    GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
-    (void) pd.verifyCheckSum(&msghandler);
-    for(const auto &ss : pd.info())
+    catch (const gmx::InvalidInputError &ex)
     {
-        msghandler.write(ss);
-    }
-
-    ForceComputer forceComp;
-    double epsilonr;
-    epsilonr = pd.epsilonr();
-    forceComp.init(shellToler, sch.shellMaxIter(), epsilonr);
-
-    std::vector<ACTMol> actmols;
-    try
-    {
-        compR.read(&msghandler, pd, &forceComp, &actmols);
-    }
-    catch (const std::exception &ex)
-    {
-        // E.g. a file that does not exist
-        msghandler.msg(ACTStatus::Error,
-                       gmx::formatString("Could not read molecules: %s", ex.what()));
-        actmols.clear();
-    }
-    if (actmols.empty())
-    {
-        fprintf(stderr, "Could not read or process molecules. Please check the log file for more information.\n");
+        fprintf(stderr, "%s\n", ex.what());
         return 1;
     }
-    auto &actmol = actmols[0];
-    // Check whether we need to add position restraints
-    if (sch.kFBPR() > 0)
-    {
-        actmol.topologyPtr()->addFBPR(&msghandler, sch.kFBPR(), sch.r0FBPR(), actmol.xOriginal());
-    }
-    JsonTree jtree("minimize");
-    if (msghandler.info())
-    {
-        forceFieldSummary(&jtree, &pd);
-    }
-    if (msghandler.debug())
-    {
-        actmol.topology()->dump(msghandler.twDebug());
-    }
-    msghandler.msg(ACTStatus::Info,
-                   gmx::formatString("There are %lu fragments.",
-                                     actmol.fragmentHandler()->topologies().size()));
-    auto xmin = actmol.xOriginal();
-    // The description of the molecule has to be made before the molprop
-    // is moved out of it below.
-    const JsonTree jmolecule = moleculeToJson(&actmol);
-    // Both structures are given with the center of mass in the origin, and
-    // the final structure is superimposed on the initial one when the root
-    // mean square deviation is computed, such that they can be shown together.
-    JsonTree       jcoords("coordinates");
-    jcoords.addObject("unit", "nm");
-    jcoords.addObject("frame", "center of mass in the origin, after is superimposed on before");
-    jcoords.addObject(coordinatesToJson("before", centeredCoordinates(actmol.atomsConst(), xmin)));
-    double epot = 0;
-    auto   eMin = minimizeMolecule(&msghandler, &pd, &forceComp, sch,
-                                   opt2fn_null("-freeze", fnm.size(), fnm.data()),
-                                   &actmol, &xmin, &jtree, &epot);
-    int status = 0;
-    // Also without convergence the structure with the lowest energy is written
-    if (eMinimizeStatus::OK == eMin || minimizationDidNotConverge(eMin))
-    {
-        matrix box = { { 2, 0, 0 }, { 0, 2, 0 }, { 0, 0, 2 } };
-        actmol.PrintConformation(opt2fn("-c", fnm.size(), fnm.data()), xmin,
-                                 sch.writeShells(), box);
-        auto omp = opt2fn_null("-omp", fnm.size(),fnm.data());
-        if (omp)
-        {
-            std::vector<MolProp> mpt;
-            // We cannot use the actmol after this move command.
-            mpt.push_back(std::move(*actmol.molProp()));
-            MolPropWrite(omp, mpt, false);
-        }
-    }
-    if (minimizationDidNotConverge(eMin))
-    {
-        // Without a lower minimum the structure is usable, see minimumUsable
-        fprintf(stderr, "Minimization did not converge: %s, the structure with the lowest energy is written, check log file %s\n",
-                minimizeStatusMessage(eMin, epot).c_str(),
-                msghandler.filename().c_str());
-        status = minimumUsable(eMin) ? 0 : 1;
-    }
-    else if (eMinimizeStatus::OK != eMin)
-    {
-        fprintf(stderr, "Minimization failed: %s, check log file %s\n",
-                eMinimizeStatusToString(eMin).c_str(),
-                msghandler.filename().c_str());
-        status = 1;
-    }
-    if (json)
-    {
-        jtree.addObject(jmolecule);
-        if (eMinimizeStatus::OK == eMin || minimizationDidNotConverge(eMin))
-        {
-            jcoords.addObject(coordinatesToJson("after", centeredCoordinates(actmol.atomsConst(), xmin)));
-        }
-        jtree.addObject(jcoords);
-        jtree.write(jsonFile, json);
-    }
-    else
-    {
-        int indent = 0;
-        msghandler.write(jtree.writeString(json, &indent));
-    }
-    if (!msghandler.ok())
-    {
-        printf("Minimize failed with an error:\n");
-        status = 1;
-    }
-    return status;
 }
 
 } // namespace alexandria
