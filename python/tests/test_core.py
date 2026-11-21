@@ -930,6 +930,11 @@ class MoleculeTest(unittest.TestCase):
         mol.generate_charges("SQE")
         for before, after in zip(first, mol.charges):
             self.assertAlmostEqual(before, after, places=8)
+        # The charges of the particle types, by the name the programs use
+        fixed = act.Molecule.from_smiles("CC(=O)C", self.ff)
+        fixed.generate_charges("None")
+        self.assertEqual(len(first), len(fixed.charges))
+        self.assertTrue(any(abs(a - b) > 1e-6 for a, b in zip(first, fixed.charges)))
         # In another structure the charges are other ones, with the same sum
         energy = mol.energy()["EPOT"]
         mol.minimize()

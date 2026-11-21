@@ -1403,7 +1403,7 @@ void writeOpenMMFiles(Molecule &molecule, const std::filesystem::path &fileName,
 /*! \brief Make the charges of a molecule again, for the structure it has now
  * \param[in] molecule  The molecule
  * \param[in] algorithm EEM or SQE to make them with the charge model of the force field,
- *                      NONE for the charges of the particle types as they are; as when
+ *                      None for the charges of the particle types as they are; as when
  *                      the molecule was made if not given
  * \throws gmx::InvalidInputError for an algorithm that is not known or needs data
  * that a molecule in Python does not have
@@ -1420,7 +1420,7 @@ void generateCharges(Molecule &molecule, const std::optional<std::string> &algor
             alg != ChargeGenerationAlgorithm::NONE)
         {
             GMX_THROW(gmx::InvalidInputError("Charges from " + *algorithm + " need data that a molecule in Python does not have: "
-                                             "use EEM, SQE or NONE, or set the charges with set_charges"));
+                                             "use EEM, SQE or None, or set the charges with set_charges"));
         }
     }
     QuietMessages          messages;
@@ -1585,7 +1585,7 @@ void defineMolecule(py::module_ &module)
              "does not converge. Returns a NormalModes.")
         .def("generate_charges", &generateCharges, py::arg("algorithm") = py::none(),
              "Make the charges again, for the structure the molecule has now.\n\n"
-             "algorithm is EEM or SQE for the charge model of the force field, or NONE for the\n"
+             "algorithm is EEM or SQE for the charge model of the force field, or None for the\n"
              "charges of the particle types as they are; as when the molecule was made if not\n"
              "given. The charges of ACT depend on the structure, so after a minimization\n"
              "they are other ones than before.")
