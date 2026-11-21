@@ -37,6 +37,7 @@
 #include <libxml/tree.h>
 #include <libxml/xmlerror.h>
 #include <libxml/xmlstring.h>
+#include <libxml/xmlversion.h>
 #include <string>
 #include <vector>
 
@@ -156,7 +157,13 @@ xmlDocPtr readXmlFile(const std::string &fileName, std::string *error)
     error->clear();
     xmlResetLastError();
     // As xmlParseFile, but silent
-    xmlDocPtr doc = xmlReadFile(fileName.c_str(), nullptr, XML_PARSE_NOERROR | XML_PARSE_NOWARNING);
+    int options = XML_PARSE_NOERROR | XML_PARSE_NOWARNING;
+#if LIBXML_VERSION >= 21400
+    // Since libxml2 2.14 a compressed file is only unpacked on request.
+    // The files of ACT may be compressed, see writeForceField and MolPropWrite.
+    options |= XML_PARSE_UNZIP;
+#endif
+    xmlDocPtr doc = xmlReadFile(fileName.c_str(), nullptr, options);
     if (doc == nullptr)
     {
         const auto *last = xmlGetLastError();
