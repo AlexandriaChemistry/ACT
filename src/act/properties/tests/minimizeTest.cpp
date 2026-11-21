@@ -379,6 +379,27 @@ TEST_F(MinimizeTest, JsonOfPolarizableModelHasShells)
     EXPECT_EQ(particles.size(), js["coordinates"]["after"].size());
 }
 
+// Test: Of a dimer the JSON has the interaction energy after the minimization,
+// the potential energy of the dimer less those of its two compounds, by term
+TEST_F(MinimizeTest, JsonOfDimerHasInteractionEnergies)
+{
+    nlohmann::json json;
+    minimizeToJson("water_dimer.pdb", "ACS-g1.xml", "dimer", &json);
+    ASSERT_TRUE(json.contains("Interaction energies")) << json.dump();
+    const auto &inter = json.at("Interaction energies");
+    for (const auto *term : { "EPOT", "COULOMB", "DISPERSION", "EXCHANGE" })
+    {
+        ASSERT_TRUE(inter.contains(term)) << term;
+        EXPECT_EQ("kJ/mol", inter.at(term).at("unit").get<std::string>());
+    }
+    // Bound, with this force field
+    EXPECT_LT(inter.at("EPOT").at("value").get<double>(), 0);
+    // Of a single compound there is none
+    nlohmann::json single;
+    minimizeToJson("dichloromethane.sdf", "ACS-g1.xml", "single", &single);
+    EXPECT_FALSE(single.contains("Interaction energies"));
+}
+
 TEST_F(MinimizeTest, JsonIsNotWrittenWithoutTheOption)
 {
     {
