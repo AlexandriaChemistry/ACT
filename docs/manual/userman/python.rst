@@ -134,7 +134,7 @@ The options of the program as data
 ========================
 The classes of ACT
 ========================
-When ACT is built with *-DACT_PYTHON=ON*, which needs `pybind11`_, the package also has classes that use the code of ACT directly, without a program in between. *act.classes_available()* tells whether an installation has them. So far there are the force field and the molecule with its energy; minimization, normal modes and simulation are next.
+When ACT is built with *-DACT_PYTHON=ON*, which needs `pybind11`_, the package also has classes that use the code of ACT directly, without a program in between. *act.classes_available()* tells whether an installation has them. So far there are the force field and the molecule with its energy, its minimum and its vibrations; simulation is next.
 
 .. code-block:: python
 
@@ -169,7 +169,24 @@ A molecule is made for a force field, from a SMILES string or a structure file, 
    print(energy["EPOT"], energy["COULOMB"])
    forces = mol.forces()          # on each particle, in kJ/mol nm
 
-The particles are the atoms, shells and virtual sites of the molecule, in the order of the coordinates. The numbers are those that *alexandria gentop* and *alexandria minimize* report for the same molecule and force field. A molecule keeps the force field it was made for, with the parameters that the force field had at that moment.
+The energy is minimized and the vibrations are computed as *alexandria minimize* and *alexandria nma* do it:
+
+.. code-block:: python
+
+   res = mol.minimize()           # the molecule gets the structure of the minimum
+   print(res.converged, res.status, res.rmsd, res.energy_after["EPOT"])
+   res = mol.minimize(algorithm="Newton", max_iter=500, tolerance=1e-8, freeze=[0, 2])
+
+   modes = mol.normal_modes()     # minimizes first, unless minimize=False
+   print(modes.frequencies)       # in 1/cm
+   print(modes.intensities, modes.intensity_unit)
+   print(modes.modes[0]["reduced_mass"], modes.modes[0]["displacements"][0])
+   print(modes.thermochemistry["T=298.15"]["Standard entropy"]["Total"])
+   x, y = modes.spectrum(linewidth=24)
+
+A minimization that does not converge is told in the result, with the structure of the lowest energy that was found; *update=False* leaves the structure of the molecule as it is. Normal modes of a structure that is no minimum make no sense, so there a minimization that does not converge raises an error.
+
+The particles are the atoms, shells and virtual sites of the molecule, in the order of the coordinates. The numbers are those that *alexandria gentop*, *minimize* and *nma* report for the same molecule and force field. *act.data_directory()* tells where the classes look for the data files of ACT, after the directory in the environment variable *ACTDATA*. A molecule keeps the force field it was made for, with the parameters that the force field had at that moment.
 
 Errors are exceptions, and Python lives on: *act.ActFileError* (also an *OSError*) for a file that is missing, is not what it should be or cannot be written, *act.ActInputError* (also a *ValueError*) for input that is not accepted, such as a parameter that does not exist, a SMILES string that is no molecule or a molecule that the force field has no types for, and *act.ActInternalError* for what should not happen inside ACT. All are subclasses of *act.ActError*.
 

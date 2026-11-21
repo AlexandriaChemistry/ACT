@@ -61,6 +61,11 @@ if(ACT_PYTHON)
                           OUTPUT_NAME _core
                           LIBRARY_OUTPUT_DIRECTORY ${ACT_PYTHON_BUILD_PACKAGE})
     target_link_libraries(act_python_core PRIVATE actLib)
+    # From the package where the module is installed to the installation
+    # prefix, where the data files of ACT are
+    file(RELATIVE_PATH ACT_PYTHON_TO_PREFIX
+         ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_PYTHON_LIBDIR}/act ${CMAKE_INSTALL_PREFIX})
+    target_compile_definitions(act_python_core PRIVATE ACT_PYTHON_TO_PREFIX="${ACT_PYTHON_TO_PREFIX}")
     # With shared libraries the module has to find those of ACT from where
     # it is: python/act in the build tree, the package directory when
     # installed. The programs find them from bin, see CMAKE_INSTALL_RPATH.
