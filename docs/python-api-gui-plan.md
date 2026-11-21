@@ -419,8 +419,17 @@ particles (which `MolHandler::nma` already gives), the thermochemistry and
 The module sets the program context of the library (`ModuleContext`), with
 the installation prefix found from where the module itself is, so that the
 data files are found as by a program; `act.data_directory()` tells where.
-Next: `simulate()`, `write_openmm()`, `generate_charges(algorithm)`, and
-`act.MolProp`.
+`mol.simulate()` returns an `act.Trajectory` with the energies and the
+structures. For it `MolHandler::simulate` got an observer
+(`SimulationObserver`) that receives the energies and the coordinates when
+they are due and can end the simulation, and runs without output files;
+`SimulationConfigHandler::setSimulation` sets what the command line gave.
+The Python lock is released while the simulation runs, and Ctrl-C or an
+error in the function of the user ends it at the next energies. Making a
+molecule from a SMILES string took the interrupt signal away from the
+program for good, because of how RDKit keeps the handler it replaces; that
+is repaired in `importSmiles`. Next: `write_openmm()`,
+`generate_charges(algorithm)`, and `act.MolProp`.
 
 This is the API of issue 59, with other names:
 

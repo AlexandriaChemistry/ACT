@@ -608,6 +608,24 @@ public:
 
     //! \return number of MD steps
     int nsteps() const { return nsteps_; }
+
+    /*! \brief Set what a simulation needs, for a program without a command line
+     * \param[in] nsteps      The number of steps
+     * \param[in] deltat      The time step in ps
+     * \param[in] temperature The temperature in K for the initial velocities, zero for none
+     * \param[in] seed        The seed for the velocities, zero to make one
+     * \param[in] nstener     The number of steps between energies, zero for none
+     * \param[in] nstxout     The number of steps between coordinates, zero for none
+     */
+    void setSimulation(int nsteps, double deltat, double temperature, int seed, int nstener, int nstxout)
+    {
+        nsteps_      = nsteps;
+        deltat_      = deltat;
+        temperature_ = temperature;
+        seed_        = seed;
+        nstener_     = nstener;
+        nstxout_     = nstxout;
+    }
     
     //! \return MD integration time step (ps)
     double deltat() const { return deltat_; }

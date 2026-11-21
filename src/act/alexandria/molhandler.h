@@ -36,6 +36,7 @@
 #ifndef ACT_MOLHANDLER_H
 #define ACT_MOLHANDLER_H
 
+#include <functional>
 #include <map>
 #include <string>
 #include <vector>
@@ -111,6 +112,26 @@ inline bool minimumUsable(eMinimizeStatus e)
  * \return the status, with the energy if no lower minimum was found
  */
 std::string minimizeStatusMessage(eMinimizeStatus e, double energy);
+
+/*! \brief What a program gets from a simulation while it runs, see MolHandler::simulate
+ *
+ * For a program that uses the simulation as a library and wants the
+ * energies and the coordinates themselves instead of files. Each function
+ * may be empty. A function that returns false ends the simulation after
+ * the step it was called for.
+ */
+struct SimulationObserver
+{
+    /*! \brief Called each time the energies are due, see SimulationConfigHandler::nstener
+     * With the step, the time in ps, the temperature in K, the kinetic
+     * energy in kJ/mol and the potential energy by term in kJ/mol.
+     */
+    std::function<bool(int, double, double, double, const std::map<InteractionType, double> &)> energies;
+    /*! \brief Called each time the coordinates are due, see SimulationConfigHandler::nstxout
+     * With the step, the time in ps and the positions of all particles in nm.
+     */
+    std::function<bool(int, double, const std::vector<gmx::RVec> &)>                           coordinates;
+};
 
 /*! \brief Handles molecules by performing algorithms on them
  * For example, energy minimization and hessian computation.
@@ -245,13 +266,15 @@ public:
      * \param[in] xmol           The starting coordinates
      * \param[in] forceComp      Force Computer utility
      * \param[in] simConfig      Simulation configuration handler
-     * \param[in] trajectoryFile Filename for writing coordinates
-     * \param[in] energyFile     Filename for writing energies
-     * \param[in] oenv           GROMACS output environment
+     * \param[in] trajectoryFile Filename for writing coordinates, nullptr for no file
+     * \param[in] energyFile     Filename for writing energies, nullptr for no file
+     * \param[in] oenv           GROMACS output environment, not used without energy file
      * \param[in] progressFile   Filename for writing the progress, may be nullptr (default).
      *                           Each time the energies are written, a line with a JSON
      *                           object is added that has the step, the time, the
      *                           temperature and the energies.
+     * \param[in] observer       Gets the energies and the coordinates when they are due,
+     *                           and can end the simulation, may be nullptr (default)
      *
      * The output files are flushed a few times per second, such that
      * another program can follow the simulation while it runs.
@@ -265,7 +288,8 @@ public:
                   const char                    *trajectoryFile,
                   const char                    *energyFile,
                   const gmx_output_env_t        *oenv,
-                  const char                    *progressFile = nullptr) const;
+                  const char                    *progressFile = nullptr,
+                  const SimulationObserver      *observer = nullptr) const;
 
     /*! \brief
      * The routine will compute the RMSD between two sets of coordinates
