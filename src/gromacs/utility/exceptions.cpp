@@ -260,6 +260,11 @@ int InternalError::errorCode() const
     return eeInternalError;
 }
 
+int FatalError::errorCode() const
+{
+    return eeUnknownError;
+}
+
 int APIError::errorCode() const
 {
     return eeAPIError;
@@ -606,6 +611,12 @@ int processExceptionAtExit(const std::exception & /*ex*/)
 
 void processExceptionAsFatalError(const std::exception &ex)
 {
+    if (gmx_fatal_error_throws())
+    {
+        // Used as a library: the caller decides what to do with the
+        // exception that is being handled, see gmx_set_fatal_error_throws()
+        throw;
+    }
     printFatalErrorMessage(stderr, ex);
     gmx_exit_on_fatal_error(ExitType_Abort, 1);
 }

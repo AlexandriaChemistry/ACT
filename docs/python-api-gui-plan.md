@@ -344,6 +344,20 @@ else in layer 2.
 and an unknown atom type raise the expected exception and leave the process
 alive.
 
+*Status.* Item 1 is done: `gmx_set_fatal_error_throws()`, and the class
+`gmx::ThrowOnFatalError` that turns it on for a scope. With it `gmx_fatal`
+throws `gmx::FatalError`, the routines for errors of a kind throw the
+exception of that kind, a failed assertion throws `gmx::InternalError`,
+`GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR` passes its exception on, and
+`MsgHandler::fatal` throws with its message instead of "See message above".
+Of item 2 the reading and writing of force field and molprop files is
+done: a file that is missing, is no XML or cannot be written gives
+`gmx::FileIOError` with the name of the file, in the program as well. A
+force field or molprop file that could not be written was not noticed
+before, since the check was for another value than libxml2 returns. Still
+to do of item 2: import of molecules, topology and charge generation; and
+item 3.
+
 **A6. Build and start-up.** CMake option `ACT_PYTHON` (default OFF), finds
 pybind11, builds the module `act._core` against `libactLib`, and sets
 position-independent code for static builds. At import the module sets the

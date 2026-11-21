@@ -46,7 +46,9 @@
 #include <cstdio>
 #include <cstdlib>
 
+#include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/stringutil.h"
 
 #include "errorformat.h"
 
@@ -60,6 +62,12 @@ namespace internal
 void assertHandler(const char *condition, const char *msg,
                    const char *func, const char *file, int line)
 {
+    if (gmx_fatal_error_throws())
+    {
+        // Used as a library, see gmx_set_fatal_error_throws()
+        throw InternalError(formatString("Assertion failed: %s. Condition: %s", msg, condition))
+              << ExceptionInfoLocation(ThrowLocation(func, file, line));
+    }
     printFatalErrorHeader(stderr, "Assertion failed", func, file, line);
     std::fprintf(stderr, "Condition: %s\n", condition);
     printFatalErrorMessageLine(stderr, msg, 0);

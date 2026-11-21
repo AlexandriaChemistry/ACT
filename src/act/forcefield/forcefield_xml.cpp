@@ -602,7 +602,8 @@ void readForceField(const std::string &fileName,
     }
     if (fn2.empty())
     {
-        gmx_fatal(FARGS, "Could not find %s\n", fn.c_str());
+        GMX_THROW(gmx::FileIOError(gmx::formatString("Could not find the force field file %s, also not in the library directories of ACT",
+                                                     fileName.c_str())));
     }
     if (msgHandler)
     {
@@ -809,17 +810,19 @@ void writeForceField(const std::string &fileName,
 
     if ((doc = xmlNewDoc((xmlChar *)"1.0")) == nullptr)
     {
-        gmx_fatal(FARGS, "Creating XML document %s", fileName.c_str());
+        GMX_THROW(gmx::InternalError(gmx::formatString("Cannot create an XML document for %s", fileName.c_str())));
     }
 
     if ((dtd = xmlCreateIntSubset(doc, dtdname, libdtdname, dtdname)) == nullptr)
     {
-        gmx_fatal(FARGS, "Creating XML DTD in %s", fileName.c_str());
+        xmlFreeDoc(doc);
+        GMX_THROW(gmx::InternalError(gmx::formatString("Cannot create the XML DTD for %s", fileName.c_str())));
     }
 
     if ((myroot = xmlNewDocNode(doc, nullptr, gmx, nullptr)) == nullptr)
     {
-        gmx_fatal(FARGS, "Creating root element for %s", fileName.c_str());
+        xmlFreeDoc(doc);
+        GMX_THROW(gmx::InternalError(gmx::formatString("Cannot create the root element for %s", fileName.c_str())));
     }
     dtd->next    = myroot;
     myroot->prev = (xmlNodePtr) dtd;
@@ -828,11 +831,13 @@ void writeForceField(const std::string &fileName,
     addXmlForceField(myroot, pd);
 
     xmlSetDocCompressMode(doc, compress ? 1 : 0);
-    if (xmlSaveFormatFileEnc(fileName.c_str(), doc, "ISO-8859-1", 2) == 0)
-    {
-        gmx_fatal(FARGS, "Saving file %s", fileName.c_str());
-    }
+    // The number of bytes written, -1 if the file cannot be written
+    const int written = xmlSaveFormatFileEnc(fileName.c_str(), doc, "ISO-8859-1", 2);
     xmlFreeDoc(doc);
+    if (written <= 0)
+    {
+        GMX_THROW(gmx::FileIOError(gmx::formatString("Cannot write the force field file %s", fileName.c_str())));
+    }
 }
 
 }

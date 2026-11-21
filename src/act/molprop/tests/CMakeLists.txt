@@ -41,6 +41,7 @@ gmx_add_unit_test(
     ${exename}
     # files with code for tests
     editmpTest.cpp
+    fileErrorsTest.cpp
     molpropTest.cpp
     molpropComponentsTest.cpp
     sqliteTest.cpp

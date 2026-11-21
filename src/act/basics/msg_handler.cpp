@@ -49,6 +49,7 @@
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/binaryinformation.h"
 #include "gromacs/utility/exceptions.h"
+#include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/programcontext.h"
 #include "gromacs/utility/stringutil.h"
@@ -316,6 +317,11 @@ void MsgHandler::fatal(ACTMessage         actm,
         twdebug_->close();
         delete twdebug_;
         twdebug_ = nullptr;
+    }
+    if (gmx_fatal_error_throws())
+    {
+        // Used as a library: the caller may not see what was printed
+        GMX_THROW(gmx::InvalidInputError(msg));
     }
     GMX_THROW(gmx::InvalidInputError("See message above"));
 }

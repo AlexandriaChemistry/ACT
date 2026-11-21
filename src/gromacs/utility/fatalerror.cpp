@@ -51,6 +51,7 @@
 #include "gromacs/utility/baseversion.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/errorcodes.h"
+#include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/futil.h"
 //#include "gromacs/utility/mutex.h"
 #include "gromacs/utility/programcontext.h"
@@ -123,6 +124,57 @@ static void default_error_handler(const char *title, const std::string &msg,
 
 static gmx_error_handler_t gmx_error_handler = default_error_handler;
 
+static const char *gmx_strerror(const char *key);
+
+//! Whether fatal errors throw an exception instead of ending the process
+static bool fatalErrorThrows = false;
+
+void gmx_set_fatal_error_throws(bool throws)
+{
+    fatalErrorThrows = throws;
+}
+
+bool gmx_fatal_error_throws()
+{
+    return fatalErrorThrows;
+}
+
+/*! \brief Throw the exception for a fatal error of a kind, see gmx_set_fatal_error_throws()
+ * \param[in] key  The kind of error, as _gmx_error() takes it, "fatal" for gmx_fatal()
+ * \param[in] msg  The message
+ * \param[in] file The source file in which the error was found
+ * \param[in] line The line in that file
+ */
+[[noreturn]] static void throwFatalError(const char *key, const std::string &msg,
+                                         const char *file, int line)
+{
+    const std::string            kind(key ? key : "");
+    const std::string            text(msg.empty() ? gmx_strerror(key) : msg);
+    const gmx::ExceptionInfoLocation where(gmx::ThrowLocation("", file ? file : "", line));
+    if (kind == "file" || kind == "open")
+    {
+        throw gmx::FileIOError(text) << where;
+    }
+    if (kind == "input")
+    {
+        throw gmx::InvalidInputError(text) << where;
+    }
+    if (kind == "range")
+    {
+        throw gmx::RangeError(text) << where;
+    }
+    if (kind == "impl")
+    {
+        throw gmx::NotImplementedError(text) << where;
+    }
+    if (kind == "fatal")
+    {
+        throw gmx::FatalError(text) << where;
+    }
+    // A call that should not be made, an inconsistency, memory or communication
+    throw gmx::InternalError(text) << where;
+}
+
 void gmx_set_error_handler(gmx_error_handler_t func)
 {
     //    Lock lock(error_mutex);
@@ -172,6 +224,11 @@ static void call_error_handler(const char *key, const char *file, int line, cons
 
 void gmx_exit_on_fatal_error(ExitType exitType, int returnValue)
 {
+    if (fatalErrorThrows)
+    {
+        // Whoever asks for the end of the process without a message of its own
+        throwFatalError("fatal", "Fatal error", nullptr, 0);
+    }
     if (log_file)
     {
         std::fflush(log_file);
@@ -219,6 +276,10 @@ void gmx_fatal_mpi_va(int /*f_errno*/, const char *file, int line,
                       gmx_bool bMaster, gmx_bool bFinalize,
                       const char *fmt, va_list ap)
 {
+    if (fatalErrorThrows)
+    {
+        throwFatalError("fatal", gmx::formatStringV(fmt, ap), file, line);
+    }
     if (bMaster)
     {
         std::string msg = gmx::formatStringV(fmt, ap);
@@ -243,6 +304,10 @@ void gmx_fatal(int f_errno, const char *file, int line, gmx_fmtstr const char *f
 
 void _gmx_error(const char *key, const std::string &msg, const char *file, int line)
 {
+    if (fatalErrorThrows)
+    {
+        throwFatalError(key, msg, file, line);
+    }
     call_error_handler(key, file, line, msg);
     gmx_exit_on_fatal_error(ExitType_Abort, 1);
 }
