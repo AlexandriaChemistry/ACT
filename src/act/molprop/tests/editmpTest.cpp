@@ -32,6 +32,7 @@
 
 #include "actpre.h"
 
+#include <cmath>
 #include <cstddef>
 #include <filesystem>
 #include <fstream>
@@ -45,13 +46,16 @@
 #include <vector>
 
 #include "act/alexandria/alex_modules.h"
+#include "act/basics/msg_handler.h"
 #include "act/molprop/composition.h"
+#include "act/molprop/edit_mp.h"
 #include "act/molprop/experiment.h"
 #include "act/molprop/fragment.h"
 #include "act/molprop/molprop.h"
 #include "act/molprop/molprop_xml.h"
 #include "act/molprop/molpropobservable.h"
 #include "act/testutils/output_checks.h"
+#include "gromacs/utility/exceptions.h"
 #include "testutils/cmdlinetest.h"
 #include "testutils/refdata.h"
 #include "testutils/testfilemanager.h"
@@ -167,6 +171,84 @@ TEST_F(EditMPTest, ResultsHistogram)
     checker.setDefaultTolerance(buildTolerance(1e-6, 1e-8, 1e-6));
     checkTextFile(&checker, histo.string(), { "#" }, "histogram");
     checkTextFile(&checker, fileManager().getTemporaryFilePath("out.xml"), {}, "molprop");
+}
+
+//! \return the contents of a file
+static std::string fileContents(const std::string &fileName)
+{
+    const std::ifstream in(fileName);
+    std::stringstream text;
+    text << in.rdbuf();
+    return text.str();
+}
+
+// The molprop files without a command line, as a program that uses ACT edits them
+
+TEST_F(EditMPTest, WithoutCommandLineSameAsTheProgram)
+{
+    // A merge with validation and the description in JSON
+    const auto json = fileManager().getTemporaryFilePath("tool.json");
+    const std::vector<std::string> inputs = { fileManager().getInputFilePath("molprop/booze-mono.xml"),
+                                              fileManager().getInputFilePath("molprop/water-butanol.xml") };
+    run(inputs, { { "-json", json }, { "-validate", "" }, { "-nomolinfo", "" } });
+    EditMPOptions options;
+    options.inputFiles = inputs;
+    options.outputFile = fileManager().getTemporaryFilePath("direct.xml");
+    options.jsonFile   = fileManager().getTemporaryFilePath("direct.json");
+    options.validate   = true;
+    options.molinfo    = false;
+    MsgHandler msghandler;
+    msghandler.setPrintLevel(ACTStatus::Fatal);
+    runEditMP(&msghandler, options);
+    EXPECT_EQ(fileContents(fileManager().getTemporaryFilePath("out.xml")), fileContents(options.outputFile));
+    EXPECT_EQ(fileContents(json), fileContents(options.jsonFile));
+}
+
+TEST_F(EditMPTest, WithoutCommandLineWrongOptions)
+{
+    const auto valid = [this]()
+    {
+        EditMPOptions options;
+        options.inputFiles = { fileManager().getInputFilePath("molprop/hf-hf.xml") };
+        options.outputFile = fileManager().getTemporaryFilePath("wrong.xml");
+        return options;
+    };
+    std::vector<std::pair<EditMPOptions, std::string>> wrong;
+    {
+        auto o = valid();
+        o.inputFiles.clear();
+        wrong.emplace_back(o, "-mp");
+    }
+    {
+        auto o = valid();
+        o.outputFile.clear();
+        wrong.emplace_back(o, "-o");
+    }
+    {
+        auto o = valid();
+        o.temperature = 0;
+        wrong.emplace_back(o, "-temperature");
+    }
+    {
+        auto o = valid();
+        o.energyWarnHigh = std::nan("");
+        wrong.emplace_back(o, "-ewarnHi");
+    }
+    for (const auto &w : wrong)
+    {
+        MsgHandler msghandler;
+        msghandler.setPrintLevel(ACTStatus::Fatal);
+        try
+        {
+            runEditMP(&msghandler, w.first);
+            ADD_FAILURE() << "Accepted options with a wrong " << w.second;
+        }
+        catch (const gmx::InvalidInputError &ex)
+        {
+            EXPECT_NE(std::string::npos, std::string(ex.what()).find(w.second)) << ex.what();
+        }
+        EXPECT_FALSE(!w.first.outputFile.empty() && std::filesystem::exists(w.first.outputFile)) << w.second;
+    }
 }
 
 // Test: Writing the molecules of a file gives the same molecules

@@ -64,7 +64,9 @@
 #include "act/topology/actmol.h"
 #include "act/topology/actmol_low.h"
 #include "act/utility/jsontree.h"
+#include "act/utility/output_environment.h"
 #include "act/utility/units.h"
+#include "edit_mp.h"
 #include "gromacs/commandline/filenm.h"
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/fileio/filetypes.h"
@@ -476,6 +478,114 @@ static void updateMolInfo(MsgHandler           *msghandler,
  * \param[in] argv The command line arguments
  * \return 0 if ok, another value otherwise.
  */
+void EditMPOptions::check() const
+{
+    if (inputFiles.empty())
+    {
+        GMX_THROW(gmx::InvalidInputError("There is no molprop file to read (-mp)"));
+    }
+    if (outputFile.empty())
+    {
+        GMX_THROW(gmx::InvalidInputError("There is no molprop file to write (-o)"));
+    }
+    if (!std::isfinite(temperature) || temperature <= 0)
+    {
+        GMX_THROW(gmx::InvalidInputError(gmx::formatString("The value %g of -temperature should be more than zero",
+                                                           temperature)));
+    }
+    if (!std::isfinite(energyWarnLow))
+    {
+        GMX_THROW(gmx::InvalidInputError("The value of -ewarnLow is not a number"));
+    }
+    if (!std::isfinite(energyWarnHigh))
+    {
+        GMX_THROW(gmx::InvalidInputError("The value of -ewarnHi is not a number"));
+    }
+}
+
+void runEditMP(MsgHandler *msghandler, const EditMPOptions &options, gmx_output_env_t *oenv)
+{
+    options.check();
+    std::vector<MolProp> mpt;
+    const auto          &fns = options.inputFiles;
+    merge_xml(msghandler, fns, &mpt);
+    int mptsize = mpt.size();
+    if (msghandler->ok())
+    {
+        ReadSqlite3(msghandler, options.databaseFile.empty() ? nullptr : options.databaseFile.c_str(),
+                    &mpt, options.temperature);
+
+        printf("Read %d molecules\n", mptsize);
+    }
+    else
+    {
+        fprintf(stderr, "Too many warnings, not generating output\n");
+        mpt.clear();
+    }
+    const char *ffname = options.forceFieldFile.empty() ? nullptr : options.forceFieldFile.c_str();
+
+    auto tw = msghandler->tw();
+    if (options.molinfo)
+    {
+        updateMolInfo(msghandler, &mpt);
+    }
+    const char *molpropout = options.outputFile.c_str();
+    if (ffname)
+    {
+        printf("Since you provided a force field file and a log file name, I will now check the compounds.\n");
+        // The check takes the experiments from the compounds, so it uses a
+        // copy, the compounds for which it fails are not written.
+        std::vector<MolProp> checked;
+        merge_xml(msghandler, fns, &checked);
+        auto failed = check_mp(msghandler, ffname, &checked);
+        mpt.erase(std::remove_if(mpt.begin(), mpt.end(),
+                                 [&failed](const MolProp &mp) { return failed.count(mp.getMolname()) > 0; }),
+                  mpt.end());
+    }
+    // The result of the validation for the JSON output
+    JsonTree jvalidation("validation");
+    jvalidation.addBool("checked", false);
+    if (options.validate)
+    {
+        // The problems are errors of the message handler, but the molecules
+        // are written anyway, without the experiments that were removed
+        std::vector<ACTRecordedMessage> messages;
+        msghandler->record(&messages, ACTStatus::Warning);
+        const auto validation = validateMolProps(msghandler, &mpt);
+        msghandler->record(nullptr);
+        jvalidation   = molPropValidationToJson(validation, messages);
+        auto nproblem = validation.nproblem;
+        printf("Validation of %zu molecules: %zu problem(s)%s\n", mpt.size(), nproblem,
+               nproblem > 0 ? gmx::formatString(", see %s", msghandler->filename().c_str()).c_str() : "");
+    }
+    if (options.energyHistogram)
+    {
+        // A program without a command line has no output environment for the histograms
+        const OutputEnvironment output(oenv);
+        gen_ehist(msghandler, &mpt, output.get(), options.energyWarnLow, options.energyWarnHigh);
+    }
+    if (tw)
+    {
+        printf("Please check %s for analyses.\n", msghandler->filename().c_str());
+    }
+    printf("Will store %zu molprops in output file %s\n", mpt.size(), molpropout);
+    MolPropWrite(molpropout, mpt, options.compress);
+    if (!options.jsonFile.empty())
+    {
+        // What was written, for programs that show it
+        JsonTree jtree("edit_mp");
+        jtree.addObject(molPropSummaryToJson(mpt));
+        JsonTree jmols = JsonTree::array("molecules");
+        for (const auto &mp : mpt)
+        {
+            jmols.addObject(molPropToJson(mp));
+        }
+        jtree.addObject(jmols);
+        jtree.addObject(jvalidation);
+        jtree.write(options.jsonFile, true);
+    }
+}
+
 int edit_mp(int argc, char *argv[])
 {
     static const char               *desc[] =
@@ -537,8 +647,6 @@ int edit_mp(int argc, char *argv[])
         { "-validate", FALSE, etBOOL, {&validate},
           "Check the order of the molecules and atoms in all experiments and compounds, see above." }
     };
-    std::vector<MolProp>  mpt;
-    const ForceField      pd;
     MsgHandler msghandler;
     gmx_output_env_t     *oenv;
     msghandler.addOptions(&pa, &fnm, "edit_mp.log");
@@ -558,81 +666,33 @@ int edit_mp(int argc, char *argv[])
     {
         return 0;
     }
-    const auto fns = opt2fns("-mp", fnm.size(), fnm.data());
-    merge_xml(&msghandler, fns, &mpt);
-    int mptsize = mpt.size();
-    if (msghandler.ok())
+    try
     {
-        ReadSqlite3(&msghandler, opt2fn_null("-db", fnm.size(), fnm.data()),
-                    &mpt, temperature);
-
-        printf("Read %d molecules\n", mptsize);
-    }
-    else
-    {
-        fprintf(stderr, "Too many warnings, not generating output\n");
-        mpt.clear();
-    }
-    auto ffname  = opt2fn_null("-ff", fnm.size(), fnm.data());
-
-    auto tw = msghandler.tw();
-    if (molinfo)
-    {
-        updateMolInfo(&msghandler, &mpt);
-    }
-    auto molpropout = opt2fn("-o", fnm.size(), fnm.data());
-    if (ffname)
-    {
-        printf("Since you provided a force field file and a log file name, I will now check the compounds.\n");
-        // The check takes the experiments from the compounds, so it uses a
-        // copy, the compounds for which it fails are not written.
-        std::vector<MolProp> checked;
-        merge_xml(&msghandler, fns, &checked);
-        auto failed = check_mp(&msghandler, ffname, &checked);
-        mpt.erase(std::remove_if(mpt.begin(), mpt.end(),
-                                 [&failed](const MolProp &mp) { return failed.count(mp.getMolname()) > 0; }),
-                  mpt.end());
-    }
-    // The result of the validation for the JSON output
-    JsonTree jvalidation("validation");
-    jvalidation.addBool("checked", false);
-    if (validate)
-    {
-        // The problems are errors of the message handler, but the molecules
-        // are written anyway, without the experiments that were removed
-        std::vector<ACTRecordedMessage> messages;
-        msghandler.record(&messages, ACTStatus::Warning);
-        const auto validation = validateMolProps(&msghandler, &mpt);
-        msghandler.record(nullptr);
-        jvalidation   = molPropValidationToJson(validation, messages);
-        auto nproblem = validation.nproblem;
-        printf("Validation of %zu molecules: %zu problem(s)%s\n", mpt.size(), nproblem,
-               nproblem > 0 ? gmx::formatString(", see %s", msghandler.filename().c_str()).c_str() : "");
-    }
-    if (energyHisto)
-    {
-        gen_ehist(&msghandler, &mpt, oenv, ewarnLow, ewarnHi);
-    }
-    if (tw)
-    {
-        printf("Please check %s for analyses.\n", msghandler.filename().c_str());
-    }
-    printf("Will store %zu molprops in output file %s\n", mpt.size(), molpropout);
-    MolPropWrite(molpropout, mpt, compress);
-    const char *jsonFile = opt2fn_null("-json", fnm.size(), fnm.data());
-    if (jsonFile)
-    {
-        // What was written, for programs that show it
-        JsonTree jtree("edit_mp");
-        jtree.addObject(molPropSummaryToJson(mpt));
-        JsonTree jmols = JsonTree::array("molecules");
-        for (const auto &mp : mpt)
+        EditMPOptions options;
+        const auto    fns = opt2fns("-mp", fnm.size(), fnm.data());
+        options.inputFiles.assign(fns.begin(), fns.end());
+        options.outputFile  = opt2fn("-o", fnm.size(), fnm.data());
+        const auto optional = [&fnm](const char *option)
         {
-            jmols.addObject(molPropToJson(mp));
-        }
-        jtree.addObject(jmols);
-        jtree.addObject(jvalidation);
-        jtree.write(jsonFile, true);
+            const char *name = opt2fn_null(option, fnm.size(), fnm.data());
+            return std::string(name ? name : "");
+        };
+        options.forceFieldFile  = optional("-ff");
+        options.databaseFile    = optional("-db");
+        options.jsonFile        = optional("-json");
+        options.compress        = compress;
+        options.temperature     = temperature;
+        options.molinfo         = molinfo;
+        options.energyHistogram = energyHisto;
+        options.energyWarnLow   = ewarnLow;
+        options.energyWarnHigh  = ewarnHi;
+        options.validate        = validate;
+        runEditMP(&msghandler, options, oenv);
+    }
+    catch (const gmx::InvalidInputError &ex)
+    {
+        fprintf(stderr, "%s\n", ex.what());
+        return 1;
     }
     return 0;
 }
