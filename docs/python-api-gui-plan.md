@@ -454,11 +454,15 @@ of `actgui` that fixes the electronegativity of atoms with one bond after
 `geometry_ff` with SQE is a second job (`edit_ff -p chi -mut Fixed`) that
 the page starts. One parameter is changed at a time. Uploaded XML files may
 have the document type that ACT writes, and no other.
+Two force fields are compared in a tab of their own: the force field of
+the workspace with the default or a file, as the parameters with another
+value, with other bounds or another way of training, and those that only
+one of them has. The page computes this from the two descriptions that
+`edit_ff -json` gives; after a training it shows what the training changed.
 Still open in B7 and B8: the file of the user with fixed parameters that
 `actgui` could read, reading a file with virtual sites of the user (they
-are made by point and click and can be saved), the comparison of two force
-fields, changes of parameters of particle types, and `geometry_ff` with a
-selection of compounds.
+are made by point and click and can be saved), changes of parameters of
+particle types, and `geometry_ff` with a selection of compounds.
 
 Virtual sites by point and click (B9) are done, without layer 2: the page
 computes the position of a site itself, with the formulas of
@@ -479,7 +483,7 @@ the user chooses another type of the same element where needed. If `gentop`
 could type a molecule for a force field without bonded parameters, the
 choice would not be needed.
 
-Of the molprop workspace (B10) two parts are done. A file is opened and
+The molprop workspace (B10) is done. A file is opened and
 the page shows the compounds, the number of values of each property and
 the result of `edit_mp -validate`. A force field is compared with the data
 of the file by `train_ff -nooptimize` (task `evaluate`): the user chooses
@@ -489,9 +493,14 @@ statistics and plots the values of the force field against the reference
 values from the files that `train_ff` writes for each property. The result
 of `train_ff` in JSON has the atoms of every compound with their forces
 and every data point; the server keeps only the statistics, the compounds
-and a few outliers for the page. Still to do in B10: a choice of the
-compounds and of the data sets for training and testing, and the
-histograms of the energies of a compound. Found on the way: `edit_mp -ff`
+and a few outliers for the page. The table of compounds says what each
+compound is used for, training, testing or nothing, by a click or for all
+compounds that are found; the request names those for testing and those
+that are not used, and the server checks the names against the file. For
+a compound with several structures a histogram shows the energies of the
+reference and of the force field for each term; the server reads them
+from the file with the whole result when a compound is asked for. Found
+on the way: `edit_mp -ff`
 stops with "No such QM property dipole" on a file with dimers, so the page
 does not give it a force field; `edit_mp` always writes its output file
 (`allmols.xml`), which is a second copy of a large file in the directory
@@ -663,13 +672,16 @@ there, in the modules `cluster_jobs.py`, `cluster_queue.py` and
   parameters, the summary of the sensitivity analysis and the comparison
   of the trained force field with the data.
 
+- The name of the program on the cluster is a setting (`alexandria`, or
+  `alexandria_d` for a build in double precision). The page offers the
+  kinds of parameters to train from those of the force field that are not
+  fixed, each property has a weight, and the compounds for testing are
+  those of the table or a part that is drawn.
+
 Still to do: a try on csb itself (so far only the stand-ins of the tests
-were used); the name of the program on the cluster, now `alexandria`, as a
-setting for double precision builds; results that are larger than fits in
-memory, since the archives are built and read in memory; and for the
-training a choice of the compounds, weights for the properties, the
-parameters to train offered from the force field instead of typed, and
-continuing from the population of an earlier training. A training on the
+were used); results that are larger than fits in memory, since the
+archives are built and read in memory; and continuing a training from the
+population of an earlier one. A training on the
 desktop ends at the time limit of a calculation. The command is made with
 the options that the `alexandria` of the desktop knows, so the program on
 the cluster must not be older than that: for a training it needs
