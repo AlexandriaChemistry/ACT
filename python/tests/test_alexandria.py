@@ -17,6 +17,7 @@ ctest sets them. Otherwise they are skipped.
 import math
 import os
 import sys
+import time
 import unittest
 from pathlib import Path
 
@@ -275,6 +276,37 @@ class AlexandriaTest(unittest.TestCase):
             self.assertLessEqual(end["best"]["train"], start["chi2"]["train"])
             self.assertEqual("s", end["elapsed"]["unit"])
             self.assertTrue(res.file("o").exists())
+
+    def test_training_stops_at_the_time_limit(self):
+        """!
+        @brief A training with more iterations than there is time for stops
+        when the time of -maxh is up, and ends with a force field as a
+        complete training does, without the sensitivity analysis.
+        """
+        seen = []
+        ffdir = self.data / "forcefields"
+        mpdir = self.data / "molprop"
+        began = time.monotonic()
+        # Two seconds, for iterations that would take days
+        with act.commands.train_ff(ff=ffdir / "halgren-PG.xml", mp=mpdir / "booze-mono.xml",
+                                   sel=mpdir / "booze-mono.dat", optimizer="MCMC", pop_size=1,
+                                   max_iter=100000000, seed=219463979, fit="sigma epsilon",
+                                   fc_epot=1.0, maxh=2.0/3600, on_progress=seen.append,
+                                   timeout=300) as res:
+            self.assertLess(time.monotonic() - began, 120)
+            self.assertEqual("yes", res.data["time_limit"]["reached"])
+            self.assertEqual("h", res.data["time_limit"]["limit"]["unit"])
+            self.assertAlmostEqual(2.0/3600, res.data["time_limit"]["limit"]["value"], places=6)
+            self.assertNotIn("sensitivity", res.data)
+            self.assertIn("(-maxh) was reached", res.log)
+            # It got somewhere, and wrote the force field of where it got
+            steps = [item for item in seen if item["event"] == "step"]
+            self.assertGreater(len(steps), 0)
+            self.assertLess(steps[-1]["iteration"], 100000000)
+            self.assertEqual("generation", seen[-1]["event"])
+            self.assertLess(seen[-1]["best"]["train"], seen[0]["chi2"]["train"])
+            self.assertTrue(res.file("o").exists())
+            self.assertGreater(res.file("o").stat().st_size, 1000)
 
     def test_missing_molecule_file(self):
         """!

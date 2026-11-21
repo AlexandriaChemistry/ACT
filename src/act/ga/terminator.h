@@ -37,6 +37,7 @@
 
 #include <limits>
 
+#include "act/utility/time_limit.h"
 #include "gene_pool.h"
 
 namespace gmx
@@ -100,6 +101,41 @@ public:
 
     /*!
      * \brief Will return true when \p generationNumber \f$\geq\f$ \p maxGenerations, and false otherwise.
+     * \param[in] tw                Text Writer
+     * \param[in] pool             The gene pool
+     * \param[in] generationNumber The generation number
+     * \param[in] minimum           Are we in a parameter minimum?
+     * \return true if we should terminate, false otherwise
+     */
+    bool terminate(gmx::TextWriter *tw,
+                           const GenePool  *pool,
+                           const int        generationNumber,
+                           bool             minimum) override;
+
+};
+
+/*!
+ * \brief Terminator which stops evolution when the wall time is up.
+ */
+class TimeTerminator : public Terminator
+{
+
+private:
+
+    //! The limit on the wall time
+    alexandria::TimeLimit timeLimit_;
+
+public:
+
+    /*!
+     * \brief Constructor
+     * \param[in] timeLimit The limit on the wall time
+     */
+    explicit TimeTerminator(const alexandria::TimeLimit &timeLimit)
+    : timeLimit_(timeLimit) {}
+
+    /*!
+     * \brief Will return true when the time is up, and false otherwise.
      * \param[in] tw                Text Writer
      * \param[in] pool             The gene pool
      * \param[in] generationNumber The generation number

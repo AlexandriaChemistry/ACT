@@ -69,6 +69,31 @@ bool GenerationTerminator::terminate(gmx::TextWriter *tw,
 * * * * * * * * * * * * * * * * * * * * * */
 
 /* * * * * * * * * * * * * * * * * * * * * *
+* BEGIN: TimeTerminator                    *
+* * * * * * * * * * * * * * * * * * * * * */
+
+bool TimeTerminator::terminate(gmx::TextWriter *tw,
+                               const GenePool  *,
+                               const int        generationNumber,
+                               bool             )
+{
+    if (timeLimit_.expired())
+    {
+        if (tw)
+        {
+            tw->writeStringFormatted("TimeTerminator: evolution will be terminated after generation %d as the time limit of %g hours (-maxh) has been reached.\n",
+                                     generationNumber, timeLimit_.hours());
+        }
+        return true;
+    }
+    return false;
+}
+
+/* * * * * * * * * * * * * * * * * * * * * *
+* END: TimeTerminator                      *
+* * * * * * * * * * * * * * * * * * * * * */
+
+/* * * * * * * * * * * * * * * * * * * * * *
 * BEGIN: TestGenTerminator                 *
 * * * * * * * * * * * * * * * * * * * * * */
 

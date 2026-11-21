@@ -311,6 +311,8 @@ void GAConfigHandler::add_options(std::vector<t_pargs>             *pargs,
           "Interval (in number of generations) between triggering the CatastrophePenalizer." },
         { "-gpout_interval", FALSE, etINT, {&gpoutInterval_},
           "Number of generations between writing the gene pool (-gpout). The file holds the population of the last generation that found a better individual for the training set, as written when it was found, and is also written at the end of the training. With 1 it is written in each generation that finds a better individual." },
+        { "-maxh", FALSE, etREAL, {&maxHours_},
+          "Stop the training after this number of hours since the program started, and end as after a complete training: the best force field, the gene pool and the other output are written, without the sensitivity analysis. The Monte Carlo iteration or the generation that is going on is finished first, and evaluating the result takes time as well, so leave a margin below the time limit of a queue. A Monte Carlo chain that runs on the GPU is not interrupted: there the time is checked between generations only. 0 means no limit." },
         { "-cp_pop_frac", FALSE, etREAL, {&cpPopFrac_},
           "Fraction [0, 1] of the genomes to randomize when the CatastrophePenalizer is triggered." },
         { "-nstfitness", FALSE, etINT, {&nstFitness_},
@@ -384,6 +386,10 @@ void GAConfigHandler::check_pargs(MsgHandler *msghandler)
     if (gpoutInterval_ < 1)
     {
         msghandler->fatal("-gpout_interval must be at least 1");
+    }
+    if (maxHours_ < 0)
+    {
+        msghandler->fatal("-maxh cannot be negative, use 0 for no limit");
     }
 
     GMX_RELEASE_ASSERT(nstFitness_ > 0, "-nstfitness must be positive.");

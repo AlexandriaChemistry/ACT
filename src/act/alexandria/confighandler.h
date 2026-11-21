@@ -42,6 +42,7 @@
 #include "act/alexandria/sensitivity.h"
 #include "act/constraints/shake.h"
 #include "act/properties/velocityhandler.h"
+#include "act/utility/time_limit.h"
 #include "gromacs/commandline/filenm.h"
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/utility/real.h"
@@ -173,6 +174,8 @@ private:
     int nstFitness_ = 1;
     //! Number of generations between writing the gene pool, see -gpout_interval
     int gpoutInterval_ = 5;
+    //! Wall time in hours after which the training stops, no limit if zero, see -maxh
+    real maxHours_ = 0;
 
 public:
 
@@ -307,6 +310,16 @@ public:
 
     //! \return the number of generations between writing the gene pool, see -gpout_interval
     int gpoutInterval() const { return gpoutInterval_; }
+
+    //! \return the wall time in hours after which the training stops, zero for no limit, see -maxh
+    double maxHours() const { return maxHours_; }
+
+    /*! \brief The limit on the wall time of the training, see -maxh
+     * The time counts from the start of the program, such that all
+     * processes have the same limit.
+     * \return The limit, which never expires if there is none
+     */
+    TimeLimit timeLimit() const { return TimeLimit(maxHours_); }
 
     //! \return for CatastrophePenalizer, the fraction of genomes to reinitialize
     real cpPopFrac() const { return cpPopFrac_; }

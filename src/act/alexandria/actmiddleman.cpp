@@ -120,6 +120,8 @@ ACTMiddleMan::ACTMiddleMan(MsgHandler                *msghandler,
                                                algorithm, 
                                                gach->maxGenerations());
         mut->setNstFitness(gach->nstFitness());
+        // The same limit as the master, counted from the start of this process
+        mut->setTimeLimit(gach->timeLimit());
         if (openConvFiles)
         {
             mut->openParamConvFiles(oenv);
@@ -137,6 +139,7 @@ ACTMiddleMan::ACTMiddleMan(MsgHandler                *msghandler,
                                                          bch->evaluateTestset(), algorithm,
                                                          gach->maxGenerations());
                 other->setNstFitness(gach->nstFitness());
+                other->setTimeLimit(gach->timeLimit());
                 lockstepMutators_.push_back(other);
             }
         }

@@ -170,6 +170,49 @@ TEST_F(TrainFFMpiTest, HybridHydrogenFluoride)
     runAndCheck("4S-lj14-7-pg-hvdw.xml", "hf-hf", options, 4);
 }
 
+// Test: With -maxh the genetic algorithm stops after the generation in which
+// the time is up, here the first of many, in which no individual starts a
+// Monte Carlo iteration. The training ends in an orderly way on all
+// processes, with the gene pool to continue from.
+TEST_F(TrainFFMpiTest, HybridMaxHours)
+{
+    auto options = combine(gaOptions("HYBRID", 1000000), mcmcOptions(100000000));
+    options.emplace_back("-fit", "charge eta chi zeta vs2a sigma epsilon gamma delta");
+    options.emplace_back("-fc_allelec", "1");
+    options.emplace_back("-fc_exch", "1");
+    options.emplace_back("-fc_disp", "1");
+    options.emplace_back("-maxh", "1e-9");
+    const auto progress = fileManager().getTemporaryFilePath("hybrid-maxh.jsonl");
+    options.emplace_back("-progress", progress);
+    const auto output = trainfftest::runTrainFF(&fileManager(), "hybridmaxh", "4S-lj14-7-pg-hvdw.xml", "hf-hf", options);
+    EXPECT_EQ(0, output.status);
+    if (gmx_node_rank() == 0)
+    {
+        ASSERT_TRUE(output.json["train_ff"].contains("time_limit"));
+        EXPECT_EQ("yes", output.json["train_ff"]["time_limit"]["reached"].get<std::string>());
+        EXPECT_TRUE(output.sensitivity.is_null());
+        bool terminated = false;
+        for (const auto &line : output.log)
+        {
+            terminated = terminated || line.find("TimeTerminator: evolution will be terminated after generation 1 ") != std::string::npos;
+        }
+        EXPECT_TRUE(terminated);
+        // One generation, and the individuals it ended with
+        const auto lines = trainfftest::readProgress(progress);
+        ASSERT_EQ(2U, lines.size());
+        EXPECT_EQ("generation", lines[1]["event"].get<std::string>());
+        EXPECT_EQ(1, lines[1]["generation"].get<int>());
+        const auto pool = trainfftest::readLines(fileManager().getTemporaryFilePath("hybridmaxh-pool.csv"));
+        int        n    = 0;
+        for (const auto &line : pool)
+        {
+            n += line.find_first_not_of(" \t\r") != std::string::npos ? 1 : 0;
+        }
+        EXPECT_EQ(popSize, n);
+    }
+    trainfftest::barrier();
+}
+
 // Test: With -progress the master writes a line with a JSON object for the
 // start and for each generation of HYBRID training, with the best chi
 // squared so far

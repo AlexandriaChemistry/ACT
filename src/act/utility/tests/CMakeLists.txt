@@ -49,6 +49,7 @@ gmx_add_unit_test(
     rotationTest.cpp
     simpsonTest.cpp
     stringutilTest.cpp
+    timelimitTest.cpp
     timingsTest.cpp
     unitsTest.cpp
     # pseudo-library for code for alexandria
