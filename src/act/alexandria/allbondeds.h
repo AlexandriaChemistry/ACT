@@ -59,6 +59,22 @@ class TextWriter;
 namespace alexandria
 {
 
+class JsonTree;
+
+    /*! \brief Where a measured bond length, angle or dihedral comes from
+     */
+    struct GeometrySample
+    {
+        //! The value, in pm or degrees
+        double           value      = 0;
+        //! The molecule, its place in the list of AllBondeds
+        int              molecule   = 0;
+        //! The calculation, its place in the experiments of the molecule
+        int              experiment = 0;
+        //! The atoms, their places in the topology of the molecule
+        std::vector<int> atoms;
+    };
+
     /*! \brief Base class for managing bonds, angles and dihedrals
      */
     class OneBonded
@@ -68,6 +84,10 @@ namespace alexandria
         Identifier id_;
         //! LSQ fitting structure
         gmx_stats  lsq_;
+        //! The values, in the order they were added
+        std::vector<double>         values_;
+        //! Where they come from, if that is kept
+        std::vector<GeometrySample> samples_;
     public:
         /*! Constructor
          * \param[in] id The identifier
@@ -81,6 +101,14 @@ namespace alexandria
          * \param[in] x The point to add
          */
         void addPoint(double x);
+        /*! Add where a data point comes from, after addPoint
+         * \param[in] sample The point and where it comes from
+         */
+        void addSample(GeometrySample sample) { samples_.push_back(std::move(sample)); }
+        //! \return the values, in the order they were added
+        const std::vector<double> &values() const { return values_; }
+        //! \return where they come from, empty if that was not kept
+        const std::vector<GeometrySample> &samples() const { return samples_; }
     
         /*! Write a histogram
          * \param[in] fn_prefix
@@ -145,6 +173,18 @@ namespace alexandria
         real                                               laspacing_ = 0.000001;
         //! Spacing for dihedrals in degrees
         real                                               dspacing_  = 1;
+        //! Whether to keep where each value comes from
+        bool                                               keepSamples_ = false;
+        //! A molecule from which values come: its name, the data files of
+        //! its calculations and the names of its atoms
+        struct SampledMolecule
+        {
+            std::string              name;
+            std::vector<std::string> datafiles;
+            std::vector<std::string> atomNames;
+        };
+        //! The molecules from which values come, if that is kept
+        std::vector<SampledMolecule>                       molecules_;
         /*! \brief Add bonds etc. for one molecule and list of atoms
          * \param[in] msghandler Message handler
          * \param[in] iType   InteractionType
@@ -152,13 +192,16 @@ namespace alexandria
          * \param[in] bondId  The bond identifier
          * \param[in] atomid  List of atoms involved in the interaction
          * \param[in] x       The coordinates
+         * \param[in] experiment The calculation of the coordinates, its place in
+         *                       the experiments of the molecule
           */
         void addBonded(MsgHandler                   *msghandler,
                        InteractionType               iType,
                        const ACTMol                 &mmi,
                        const Identifier             &bondId,         
                        const std::vector<int>       &atomid,
-                       const std::vector<gmx::RVec> &x);
+                       const std::vector<gmx::RVec> &x,
+                       int                           experiment = 0);
 
         /*! \brief Add bonds etc. for one molecule and list of atoms
          * \param[in] msghandler Message handler
@@ -176,6 +219,22 @@ namespace alexandria
     public:
         //! Constructor
         AllBondeds() = default;
+        /*! \brief Keep where each value comes from, see histogramsToJson
+         * \param[in] keep Whether to keep it
+         */
+        void setKeepSamples(bool keep) { keepSamples_ = keep; }
+        /*! \brief The histograms of the values, in JSON
+         * For each interaction type a list with, for each identifier, its
+         * unit, the width of a bin, the number of values and the bins that
+         * have values: the middle of the bin and the number of values in
+         * it. With samples kept, a bin lists up to maxSamples of its values
+         * with the molecule, the data file of the calculation and the atoms
+         * (numbers from one and names with numbers) they come from, and the
+         * number of the others (more).
+         * \param[in] maxSamples The most values that a bin lists
+         * \return the histograms, with the key histograms
+         */
+        JsonTree histogramsToJson(size_t maxSamples) const;
     
         /*! \brief Add command line options for class variables
          * \param[inout] pargs The command line parameters

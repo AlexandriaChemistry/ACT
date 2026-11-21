@@ -168,7 +168,10 @@ int geometry_ff(int argc, char *argv[])
         "file, geometry_ff.json by default: the number of compounds that were",
         "used, how many different bonds, angles and dihedrals were extracted,",
         "and the force field that was made with the result of the checks of",
-        "edit_ff -validate, in the same form as edit_ff writes them."
+        "edit_ff -validate, in the same form as edit_ff writes them, and the",
+        "histograms of the bond lengths, angles and dihedrals. With",
+        "[TT]-samples[tt] each bin of a histogram also lists some of its values",
+        "with the compound, the calculation and the atoms they come from."
     };
 
     std::vector<t_filenm> fnm = {
@@ -184,6 +187,7 @@ int geometry_ff(int argc, char *argv[])
     int                              maxwarn     = 0;
     int                              nBootStrap  = 0;
     gmx_bool                         bHisto      = false;
+    int                              nSamples    = 0;
     gmx_bool                         bBondOrder  = true;
     gmx_bool                         genBCC      = true;
     gmx_bool                         strict      = true;
@@ -194,6 +198,8 @@ int geometry_ff(int argc, char *argv[])
           "Will only write output if number of warnings is at most this." },
         { "-bootstrap", FALSE, etINT, {&nBootStrap},
           "Use bootstrap analysis for determining the uncertainty in the dissocation energy. If the value is less than 2 no bootstrapping will be done." },
+        { "-samples", FALSE, etINT, {&nSamples},
+          "With -json, the most values that each bin of a histogram lists with the compound, the calculation and the atoms they come from, to find where odd values come from. 0 for none." },
         { "-histo", FALSE, etBOOL, {&bHisto},
           "Print (hundreds of) xvg files containing histograms for bonds, angles and dihedrals" },
         { "-compress", FALSE, etBOOL, {&compress},
@@ -287,6 +293,12 @@ int geometry_ff(int argc, char *argv[])
         return 1;
     }
     std::vector<ACTMol> actmols;
+    const char *jsonFile = opt2fn_null("-json", fnm.size(), fnm.data());
+    if (nSamples < 0)
+    {
+        msghandler.fatal("The number of values listed in a bin (-samples) cannot be negative.");
+    }
+    bonds.setKeepSamples(jsonFile && nSamples > 0);
     bonds.extractGeometries(&msghandler, &mp, &actmols, &pd, gms);
     
     msghandler.writeDebug(memory_usage());
@@ -305,7 +317,6 @@ int geometry_ff(int argc, char *argv[])
     pd.updateCheckSum();
     writeForceField(opt2fn("-o", fnm.size(), fnm.data()), &pd, compress);
     bonds.writeSummary(tw);
-    const char *jsonFile = opt2fn_null("-json", fnm.size(), fnm.data());
     if (jsonFile)
     {
         // What was done and the force field as it was written, for
@@ -320,6 +331,7 @@ int geometry_ff(int argc, char *argv[])
         jtree.addObject(extracted);
         jtree.addObject(forceFieldToJson(pd));
         jtree.addObject(forceFieldIssuesToJson(validateForceField(pd)));
+        jtree.addObject(bonds.histogramsToJson(nSamples));
         jtree.write(jsonFile, true);
     }
     msghandler.writeDebug(memory_usage());
