@@ -523,6 +523,7 @@ void SimulationConfigHandler::add_minimize_options(std::vector<t_pargs> *pargs,
 void SimulationConfigHandler::add_MD_options(std::vector<t_pargs> *pargs)
 {
     commStr[0] = nullptr;
+    mdOptions_ = true;
     const std::vector<t_pargs> MDextra = {
         { "-nsteps", FALSE, etINT, {&nsteps_},
           "Number of integration steps." },
@@ -558,7 +559,10 @@ void SimulationConfigHandler::check_pargs(MsgHandler *)
     GMX_RELEASE_ASSERT(deltat_ > 0, "Integration time step must be larger than zero");
     minAlg_    = stringToEMinimizeAlgorithm(eminAlgs[0]);
     constrain_ = stringToConstraintType(constrainStr[0]);
-    if (commStr[0])
+    // The choices are kept in arrays that all handlers share. Without the MD
+    // options on this command line, the array has the choice of an earlier
+    // command line in the same process, if any.
+    if (mdOptions_ && commStr[0])
     {
         commRemoval_ = stringToCOMMRemoval(commStr[0]);
     }

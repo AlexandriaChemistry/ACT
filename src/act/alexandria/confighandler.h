@@ -575,6 +575,8 @@ private:
     int                nstcomm_              = 100;
     //! Whether the warning that the force tolerance is too strict was given, see toleranceWarning
     mutable bool       toleranceWarned_      = false;
+    //! Whether the MD options were added to a command line, see add_MD_options
+    bool               mdOptions_            = false;
 public:
     /*!
      * \brief Add command-line arguments to a vector
@@ -635,6 +637,8 @@ public:
     
     //! \return number of steps between energy output
     int nstener() const { return nstener_; }
+    //! \return number of steps between writing velocities
+    int nstvout() const { return nstvout_; }
 
     //! \return initial simulation temperature
     double temperature() const { return temperature_; }
