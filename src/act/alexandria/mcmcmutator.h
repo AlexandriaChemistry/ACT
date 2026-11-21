@@ -87,6 +87,8 @@ private:
     int                        myGeneration_   = 0;
     //! Number of steps between writing to the convergence files
     int                        nstFitness_     = 1;
+    //! The limit on the wall time, after which no iteration is started, see setTimeLimit
+    TimeLimit                  timeLimit_;
     //! Number of steps done
     long                       nStep_          = 0;
     //! Copy of max generations from GA config handler
@@ -374,6 +376,18 @@ public:
      * \param[in] nstFitness Number of steps between writing
      */
     void setNstFitness(int nstFitness) { nstFitness_ = nstFitness; }
+
+    /*! \brief Set a limit on the wall time, see GAConfigHandler::timeLimit
+     * When the time is up no further iteration is started: the steps
+     * end as if the last iteration had been done, with the best genome
+     * found so far. The iterations of a chain on the GPU are all done once
+     * the chain has started, see mutateOnGpu.
+     * \param[in] timeLimit The limit
+     */
+    void setTimeLimit(const TimeLimit &timeLimit) { timeLimit_ = timeLimit; }
+
+    //! \return Whether the wall time of setTimeLimit is up
+    bool timeIsUp() const { return timeLimit_.expired(); }
 
     /*! \brief Report the steps for a program that follows the training
      * \param[in] progress Where to report, nullptr for nowhere

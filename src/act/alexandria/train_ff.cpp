@@ -534,6 +534,7 @@ int OptACM::initMaster(const std::vector<t_filenm> &fnm,
         auto mut = new alexandria::MCMCMutator(portableSeed(&gen), &bch_, fitComp_, sii_, bch_.evaluateTestset(),
                                                algorithm, gach_.maxGenerations());
         mut->setNstFitness(gach_.nstFitness());
+        mut->setTimeLimit(gach_.timeLimit());
         mut->setProgress(progress_.get());
         //! \todo Only open these files when we are optimizing in verbose mode.
         if (msghandler_.verbose())
@@ -592,6 +593,15 @@ int OptACM::initMaster(const std::vector<t_filenm> &fnm,
         tw->writeStringFormatted("Appending a GenerationTerminator to the list of terminators...\n");
     }
     terminators_.push_back(new ga::GenerationTerminator(gach_.maxGenerations()));
+    // The wall time, see -maxh
+    if (gach_.timeLimit().limited())
+    {
+        if (tw)
+        {
+            tw->writeStringFormatted("Appending a TimeTerminator to the list of terminators...\n");
+        }
+        terminators_.push_back(new ga::TimeTerminator(gach_.timeLimit()));
+    }
     // maxGenerations will always be positive!
     // If maxTestGenerations is enabled and there is something to test as well
     if (gach_.maxTestGenerations() != -1 && mg_.iMolSelectSize(iMolSelect::Test) > 0)
@@ -950,8 +960,30 @@ bool OptACM::runMaster(bool               optimize,
         }
     }
     auto sensitivity = gach_.sensitivity();
+    // Out of time, see -maxh: what is left of it is for writing the result
+    const auto timeLimit = gach_.timeLimit();
+    const bool timeIsUp  = optimize && timeLimit.expired();
+    if (optimize && timeLimit.limited())
+    {
+        if (timeIsUp)
+        {
+            msghandler_.write(gmx::formatString("The training was stopped after %.3f hours as the time limit of %g hours (-maxh) was reached.%s",
+                                                timeLimit.elapsedHours(), timeLimit.hours(),
+                                                (gach_.optimizer() != OptimizerAlg::GA &&
+                                                 sensitivity != SensitivityMode::No) ?
+                                                " There is no sensitivity analysis." : ""));
+        }
+        if (jtree)
+        {
+            JsonTree limit("time_limit");
+            // As it was given, not with the digits of its conversion to seconds
+            limit.addValueUnit("limit", gmx::formatString("%g", gach_.maxHours()), "h");
+            limit.addObject("reached", timeIsUp ? "yes" : "no");
+            jtree->addObject(limit);
+        }
+    }
     if (gach_.optimizer() != OptimizerAlg::GA &&
-        sensitivity != SensitivityMode::No && msghandler_.ok())
+        sensitivity != SensitivityMode::No && msghandler_.ok() && !timeIsUp)
     {
         // Do sensitivity analysis only on the training set. The middlemen
         // wait for work and compute part of it.
@@ -1164,6 +1196,18 @@ int train_ff(int argc, char *argv[])
         "[TT]-fit 'a b c'[tt], and, finally, turn off optimization and random",
         "parameter initialization with the [TT]-nooptimize[tt] and",
         "[TT]-norandom_init[tt] flags.[PAR]",
+        "A training that may take longer than the time it is given, for instance",
+        "in a queue, can be told to stop in time with [TT]-maxh[tt], the number",
+        "of hours since the program started. When the time is up, the Monte Carlo",
+        "iteration or the generation that is going on is finished, and the program",
+        "ends as after a complete training: it writes the best force field found,",
+        "the gene pool ([TT]-gpout[tt]) and the other output files, but does no",
+        "sensitivity analysis. The json file tells whether the limit was reached.",
+        "Evaluating the result takes time as well, so the value should be somewhat",
+        "less than the time that is available. A following run continues from the",
+        "force field with [TT]-norandom_init[tt] and, for GA and HYBRID, from the",
+        "gene pool with [TT]-gpin[tt]. Monte Carlo chains that run on the GPU are",
+        "not interrupted: with those, the time is checked between generations.[PAR]",
         "With [TT]-progress[tt], lines with a json object are added to the",
         "given file while the force field is trained, such that another",
         "program can follow the training: one line at the start, one at the",

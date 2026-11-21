@@ -94,6 +94,8 @@ Long runs: progress, time limit, stopping
 
 For *simulate* a report has the step, the time, the temperature and the energies. For *train_ff* the key *event* tells what a report is: *start*, with the optimizer and the numbers of generations, iterations, individuals and parameters; *generation*, at the end of each generation, with the lowest :math:`\chi^2` so far in *best*; and *step*, a few times per second at most, for a step of the Monte Carlo chain of the master process.
 
+A training that may take longer than the time it has, for instance in a queue, is told to stop in time with the option *maxh* of *train_ff*, the number of hours since the program started. It then ends as a complete training does, with the force field and, for the genetic algorithm, the gene pool from which a following training continues (*gpin*); *res.data["time_limit"]["reached"]* tells whether that happened. This is not the argument *timeout* below, which stops the program without results.
+
 Other arguments of every command, which are not options of the program:
 
 * *processes*: the number of processes. More than one starts the program with the MPI launcher, see below.

@@ -209,6 +209,12 @@ void MCMCMutator::mutate(MsgHandler                *msghandler,
         genome->setFitness(ims_test, chi2_test);
     }
     startMutate(msghandler, &state, true);
+    if (timeIsUp())
+    {
+        // Out of time before the first iteration: the genome stays as it is
+        endMutate(bestGenome, &state);
+        return;
+    }
     if (!evaluateTestSet_ && fitComp_->chainReady())
     {
         mutateOnGpu(msghandler, genome, bestGenome, &state);
@@ -221,6 +227,11 @@ void MCMCMutator::mutate(MsgHandler                *msghandler,
     size_t     nParam   = genome->nBase();
     for (int iter = 0; iter < bch_->maxIter(); iter++)
     {
+        if (timeIsUp())
+        {
+            // The iterations so far are the result, see setTimeLimit
+            break;
+        }
         for (size_t pp = 0; pp < nParam; pp++)
         {
             const auto proposal = proposeStep(genome);
@@ -370,6 +381,15 @@ void MCMCMutator::mutateLockstep(MsgHandler                       *msghandler,
     // All genomes have the same number of parameters and iterations
     const auto *bch    = mutators[0]->bch_;
     size_t      nParam = genomes[0]->nBase();
+    // And the same limit on the wall time, see setTimeLimit
+    if (mutators[0]->timeIsUp())
+    {
+        for (size_t i = 0; i < n; i++)
+        {
+            mutators[i]->endMutate(bestGenomes[i], &states[i]);
+        }
+        return;
+    }
     if (fitComp->chainsReady(n))
     {
         // Each genome a chain of its own on the GPU, see mutateOnGpu
@@ -411,6 +431,10 @@ void MCMCMutator::mutateLockstep(MsgHandler                       *msghandler,
     std::vector<Proposal> proposals(n);
     for (int iter = 0; iter < bch->maxIter(); iter++)
     {
+        if (mutators[0]->timeIsUp())
+        {
+            break;
+        }
         for (size_t pp = 0; pp < nParam; pp++)
         {
             for (size_t i = 0; i < n; i++)

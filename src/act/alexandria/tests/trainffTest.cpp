@@ -794,6 +794,78 @@ TEST_F(TrainFFTest, NoProgressFileByDefault)
     EXPECT_FALSE(std::filesystem::exists(progress));
 }
 
+// Test: With -maxh the training stops when the time is up and ends in an
+// orderly way, without the sensitivity analysis. The time counts from the
+// start of the program, so for this test it is up before the first of
+// very many iterations.
+TEST_F(TrainFFTest, MaxHoursStopsTraining)
+{
+    auto options = combine(mcmcOptions(100000000), intraOptions());
+    options.emplace_back("-maxh", "1e-9");
+    const auto progress = fileManager().getTemporaryFilePath("maxh-progress.jsonl");
+    options.emplace_back("-progress", progress);
+    const auto output = trainfftest::runTrainFF(&fileManager(), "maxh", "halgren-PG.xml", "booze-mono", options);
+    ASSERT_EQ(0, output.status);
+    ASSERT_TRUE(output.json["train_ff"].contains("time_limit"));
+    const auto &limit = output.json["train_ff"]["time_limit"];
+    EXPECT_EQ("yes", limit["reached"].get<std::string>());
+    EXPECT_NEAR(1e-9, limit["limit"]["value"].get<double>(), 1e-12);
+    EXPECT_EQ("h", limit["limit"]["unit"].get<std::string>());
+    // No sensitivity analysis, which the log tells with the reason
+    EXPECT_TRUE(output.sensitivity.is_null());
+    EXPECT_FALSE(output.json["train_ff"].contains("sensitivity"));
+    bool told = false;
+    for (const auto &line : output.log)
+    {
+        told = told || (line.find("the time limit of 1e-09 hours (-maxh) was reached") != std::string::npos &&
+                        line.find("There is no sensitivity analysis") != std::string::npos);
+    }
+    EXPECT_TRUE(told);
+    // The start and the end of the one generation, without a step in between
+    const auto lines = trainfftest::readProgress(progress);
+    ASSERT_EQ(2U, lines.size());
+    EXPECT_EQ("start", lines[0]["event"].get<std::string>());
+    EXPECT_EQ("generation", lines[1]["event"].get<std::string>());
+    EXPECT_FALSE(lines[1]["improved"].get<bool>());
+    EXPECT_DOUBLE_EQ(lines[0]["chi2"]["train"].get<double>(), lines[1]["best"]["train"].get<double>());
+}
+
+// Test: A time limit that is not reached changes nothing but what the json
+// file tells about it
+TEST_F(TrainFFTest, MaxHoursNotReached)
+{
+    const auto options = combine(mcmcOptions(3), intraOptions());
+    const auto without = trainfftest::runTrainFF(&fileManager(), "nomaxh", "halgren-PG.xml", "booze-mono", options);
+    ASSERT_EQ(0, without.status);
+    EXPECT_FALSE(without.json["train_ff"].contains("time_limit"));
+    auto limited = options;
+    limited.emplace_back("-maxh", "1000");
+    const auto with = trainfftest::runTrainFF(&fileManager(), "ampleh", "halgren-PG.xml", "booze-mono", limited);
+    ASSERT_EQ(0, with.status);
+    ASSERT_TRUE(with.json["train_ff"].contains("time_limit"));
+    EXPECT_EQ("no", with.json["train_ff"]["time_limit"]["reached"].get<std::string>());
+    EXPECT_DOUBLE_EQ(1000, with.json["train_ff"]["time_limit"]["limit"]["value"].get<double>());
+    ASSERT_GT(without.finalChi2, 0);
+    EXPECT_DOUBLE_EQ(without.finalChi2, with.finalChi2);
+    EXPECT_EQ(without.json["train_ff"]["parameters"], with.json["train_ff"]["parameters"]);
+    // The sensitivity analysis is done as without a limit
+    EXPECT_FALSE(without.sensitivity.is_null());
+    EXPECT_FALSE(with.sensitivity.is_null());
+    for (const auto &line : with.log)
+    {
+        EXPECT_EQ(std::string::npos, line.find("was stopped")) << line;
+    }
+}
+
+// Test: A negative time limit is refused
+TEST_F(TrainFFTest, MaxHoursNegative)
+{
+    auto options = combine(mcmcOptions(1), intraOptions());
+    options.emplace_back("-maxh", "-1");
+    EXPECT_THROW(trainfftest::runTrainFF(&fileManager(), "negmaxh", "halgren-PG.xml", "booze-mono", options),
+                 gmx::GromacsException);
+}
+
 // Test: The outliers are listed with their structure, from the largest
 // to the smallest deviation
 TEST_F(TrainFFTest, OutlierOverview)

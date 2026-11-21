@@ -698,9 +698,11 @@ there, in the modules `cluster_jobs.py`, `cluster_queue.py` and
   continues from the trained force field without random values. The
   genetic algorithm needs an even number of individuals, which the server
   and the page now check; before that the program stopped on an assertion.
-  Not done: continuing a training that was stopped or ran out of time,
-  which leaves a gene pool or a force field in its directory but counts as
-  failed.
+  A training that would run out of time stops in an orderly way with
+  `train_ff -maxh` (class `TimeLimit`, checked before each Monte Carlo
+  iteration on every process and after each generation), and can then be
+  continued like one that is complete. A chain that runs on the GPU is not
+  interrupted; there the time is checked between generations only.
 
 Still to do: a try on csb itself (so far only the stand-ins of the tests
 were used); and results that are larger than fits in memory, since the

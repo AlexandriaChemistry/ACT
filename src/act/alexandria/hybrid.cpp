@@ -721,8 +721,10 @@ bool HybridGAMC::evolve(alexandria::MsgHandler       *msghandler,
                             nElites);
         }
         bool minimum = false;
-        // We only do the sensitivity analysis if needed.
-        if ((gach_->maxLocalMinimumGenerations() > 0) || adaptiveSteps_)
+        // We only do the sensitivity analysis if needed, and not when the
+        // time is up, see -maxh: the training ends after this generation.
+        if (((gach_->maxLocalMinimumGenerations() > 0) || adaptiveSteps_) &&
+            !gach_->timeLimit().expired())
         {
             alexandria::SensitivityAnalysis sens;
             // The local minimum test is two-dimensional if the analysis
