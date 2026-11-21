@@ -1,0 +1,5 @@
+<map id="src/act/forcefield/forcefield_json.h" name="src/act/forcefield/forcefield_json.h">
+<area shape="rect" id="Node000001" title="Declares functions that describe a force field in a JsonTree, for programs that read the output of th..." alt="" coords="13,5,145,50"/>
+<area shape="rect" id="Node000002" href="$forcefield__json_8cpp.xhtml" title="Implements functions that describe a force field in a JsonTree." alt="" coords="5,98,153,143"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="81,64,82,99,76,97,77,68"/>
+</map>

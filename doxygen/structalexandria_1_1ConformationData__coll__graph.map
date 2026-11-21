@@ -1,0 +1,17 @@
+<map id="alexandria::ConformationData" name="alexandria::ConformationData">
+<area shape="rect" id="Node000001" title="Coordinates, forces and energies of all conformations of a topology." alt="" coords="383,224,601,252"/>
+<area shape="rect" id="Node000002" href="$classalexandria_1_1ConformationArrays.xhtml" title=" " alt="" coords="25,5,213,50"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="227,36,296,52,329,65,360,81,403,115,439,154,485,225,480,224,434,158,399,119,357,86,327,70,294,57,229,41"/>
+<area shape="rect" id="Node000003" href="$classalexandria_1_1ConformationArrays.xhtml" title=" " alt="" coords="25,75,213,119"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="228,106,295,119,360,141,395,159,427,181,478,224,473,224,424,186,392,164,358,146,293,124,229,111"/>
+<area shape="rect" id="Node000004" href="$classalexandria_1_1ConformationEnergies.xhtml" title="The ACT energies of all conformations, per interaction type For each interaction type and conformatio..." alt="" coords="25,144,213,189"/>
+<area shape="poly" id="edge3_Node000001_Node000004" title=" " alt="" coords="227,168,293,175,359,186,413,203,462,224,457,224,412,208,358,192,293,180,228,173"/>
+<area shape="rect" id="Node000005" href="$classalexandria_1_1StructureVersion.xhtml" title="Number identifying the structure of a parameter map The number changes whenever pointers into the map..." alt="" coords="16,224,222,252"/>
+<area shape="poly" id="edge4_Node000001_Node000005" title=" " alt="" coords="236,236,385,237,380,240,237,241"/>
+<area shape="rect" id="Node000006" href="$structalexandria_1_1DeviationReference.xhtml" title="Reference data of all conformations for computing deviations The quantum chemistry energies and the B..." alt="" coords="5,280,233,308"/>
+<area shape="poly" id="edge5_Node000001_Node000006" title=" " alt="" coords="247,281,358,266,437,252,432,254,359,271,249,286"/>
+<area shape="rect" id="Node000007" href="$structalexandria_1_1FixedEnergies.xhtml" title="Energies and forces of the entries without shells in all conformations While relaxing the shells,..." alt="" coords="25,336,213,364"/>
+<area shape="poly" id="edge6_Node000001_Node000007" title=" " alt="" coords="228,339,293,328,358,310,420,281,468,254,473,252,422,286,360,315,294,333,229,344"/>
+<area shape="rect" id="Node000008" href="$structalexandria_1_1ShellRelaxation.xhtml" title="State of the shell relaxation of the conformations, see ForceComputer::updateShells In the layout of ..." alt="" coords="19,392,219,420"/>
+<area shape="poly" id="edge7_Node000001_Node000008" title=" " alt="" coords="234,399,297,387,357,365,397,339,431,308,478,254,483,251,435,311,400,343,360,370,298,392,235,404"/>
+</map>

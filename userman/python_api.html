@@ -1,0 +1,1287 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>2.8. Reference of the Python package &#8212; ACT 1.9b documentation</title>
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=03e43079" />
+    <link rel="stylesheet" type="text/css" href="../_static/classic.css?v=2bf1fcf8" />
+    <link rel="stylesheet" type="text/css" href="../_static/mystnb.11b39860a7a0cbfd473a3ad8a317855267ff0bd372690045ca344a6b62be495e.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="../_static/togglebutton.css?v=9c3e77be" />
+    <link rel="stylesheet" type="text/css" href="../_static/sphinx_lesson.css?v=e9df6548" />
+    <link rel="stylesheet" type="text/css" href="../_static/term_role_formatting.css?v=4194e21c" />
+    <link rel="stylesheet" type="text/css" href="../_static/sphinx_rtd_theme_ext_color_contrast.css?v=01954304" />
+    
+    <script src="../_static/documentation_options.js?v=3d00d7a2"></script>
+    <script src="../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="../_static/copybutton.js?v=6dbb43f8"></script>
+    <script src="../_static/minipres.js?v=a0d29692"></script>
+    <script>let toggleHintShow = 'Click to show';</script>
+    <script>let toggleHintHide = 'Click to hide';</script>
+    <script>let toggleOpenOnPrint = 'true';</script>
+    <script src="../_static/togglebutton.js?v=b8b12719"></script>
+    <script>var togglebuttonSelector = '.toggle, .admonition.dropdown';</script>
+    
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="2.9. The graphical user interface" href="gui.html" />
+    <link rel="prev" title="2.7. Using ACT from Python" href="python.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="Related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="gui.html" title="2.9. The graphical user interface"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="python.html" title="2.7. Using ACT from Python"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">ACT 1.9b documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="header.html" accesskey="U"><span class="section-number">2. </span>User Manual</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href=""><span class="section-number">2.8. </span>Reference of the Python package</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <section id="reference-of-the-python-package">
+<span id="sec-python-api"></span><h1><span class="section-number">2.8. </span>Reference of the Python package<a class="headerlink" href="#reference-of-the-python-package" title="Link to this heading">¶</a></h1>
+<p>The functions and classes of the package <em>act</em>, see <a class="reference internal" href="python.html#sec-python"><span class="std std-ref">Using ACT from Python</span></a>, with the documentation in the code. The classes of ACT are there when ACT was built with <em>-DACT_PYTHON=ON</em>, as in the conda package <em>alexandria-python</em>.</p>
+<section id="functions">
+<span id="module-act"></span><h2><span class="section-number">2.8.1. </span>Functions<a class="headerlink" href="#functions" title="Link to this heading">¶</a></h2>
+<dl class="py function">
+<dt class="sig sig-object py" id="act.build_arguments">
+<span class="sig-prename descclassname"><span class="pre">act.</span></span><span class="sig-name descname"><span class="pre">build_arguments</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">command</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#act.CommandInfo" title="act.CommandInfo"><span class="pre">CommandInfo</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">options</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Mapping</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">workdir</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">PathLike</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">base</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">PathLike</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">Path</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#act.build_arguments" title="Link to this definition">¶</a></dt>
+<dd><p>Turn keyword arguments into the command line of a command.</p>
+<p>The rules are:
+- A value None means that the option is not given.
+- A boolean option takes True or False and becomes -name or -noname.
+- Numbers, enums and strings are checked against the type of the option.
+- An input file must exist. Relative paths are relative to <code class="docutils literal notranslate"><span class="pre">base</span></code> and
+are made absolute, since the program runs in <code class="docutils literal notranslate"><span class="pre">workdir.</span></code>
+- An output file can be a path, or True for the default name in
+<code class="docutils literal notranslate"><span class="pre">workdir,</span></code> or False to leave an optional file out.
+- An option that takes several values takes a list.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>command</strong> – The command.</p></li>
+<li><p><strong>options</strong> – The options by their name on the command line or their
+name as a Python keyword argument.</p></li>
+<li><p><strong>workdir</strong> – The directory the program will run in.</p></li>
+<li><p><strong>base</strong> – The directory that relative paths are relative to, the
+current directory if None.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The arguments after the name of the command, and for each
+output file option the files the program is expected to write. That
+includes the files with default names that the program always writes.</p>
+</dd>
+<dt class="field-odd">Raises<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><a class="reference internal" href="#act.ActOptionError" title="act.ActOptionError"><strong>ActOptionError</strong></a> – for an unknown option or a value it cannot take.</p></li>
+<li><p><a class="reference internal" href="#act.ActNotFoundError" title="act.ActNotFoundError"><strong>ActNotFoundError</strong></a> – for an input file that does not exist.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="act.classes_available">
+<span class="sig-prename descclassname"><span class="pre">act.</span></span><span class="sig-name descname"><span class="pre">classes_available</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bool</span></span></span><a class="headerlink" href="#act.classes_available" title="Link to this definition">¶</a></dt>
+<dd><p>Whether this package has the classes of ACT, such as
+act.ForceField, which use the code of ACT directly instead of running
+the alexandria program.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>True if ACT was built with them.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="act.data_directory">
+<span class="sig-prename descclassname"><span class="pre">act.</span></span><span class="sig-name descname"><span class="pre">data_directory</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="headerlink" href="#act.data_directory" title="Link to this definition">¶</a></dt>
+<dd><p>The directory of the installation in which the classes of ACT
+look for the data files of ACT, such as the properties of the elements.
+The directory in the environment variable ACTDATA, if set, comes first.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>The directory, empty if this installation has none or was
+built without the classes.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="act.program_info">
+<span class="sig-prename descclassname"><span class="pre">act.</span></span><span class="sig-name descname"><span class="pre">program_info</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">refresh</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#act.ProgramInfo" title="act.ProgramInfo"><span class="pre">ProgramInfo</span></a></span></span><a class="headerlink" href="#act.program_info" title="Link to this definition">¶</a></dt>
+<dd><p>The commands of alexandria and their options.</p>
+<p>The program is asked for the description the first time; after that the
+answer is kept for as long as Python runs and the program file stays
+the same. A program that is replaced by a newer one at the same path is
+asked again, such that a process that runs for a long time, like the
+server of a user interface, does not go on with the options of the
+program it started with.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>refresh</strong> – Ask the program again in any case.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The description.</p>
+</dd>
+<dt class="field-odd">Raises<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><a class="reference internal" href="#act.ActNotFoundError" title="act.ActNotFoundError"><strong>ActNotFoundError</strong></a> – if the program cannot be found.</p></li>
+<li><p><a class="reference internal" href="#act.ActError" title="act.ActError"><strong>ActError</strong></a> – if the program does not give a description, which
+means that it is too old for this interface.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="act.read_molprop">
+<span class="sig-prename descclassname"><span class="pre">act.</span></span><span class="sig-name descname"><span class="pre">read_molprop</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">file</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">os.PathLike</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#act.MolProps" title="act.MolProps"><span class="pre">act.MolProps</span></a></span></span><a class="headerlink" href="#act.read_molprop" title="Link to this definition">¶</a></dt>
+<dd><p>Read the compounds of a molprop file with their reference data.</p>
+<p>Raises ActFileError if the file cannot be read.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="act.run">
+<span class="sig-prename descclassname"><span class="pre">act.</span></span><span class="sig-name descname"><span class="pre">run</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">command</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">workdir</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">PathLike</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">processes</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">timeout</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">check</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">env</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Mapping</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">str</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">on_progress</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Callable</span><span class="p"><span class="pre">[</span></span><span class="p"><span class="pre">[</span></span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">None</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">stop</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">options</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#act.Result" title="act.Result"><span class="pre">Result</span></a></span></span><a class="headerlink" href="#act.run" title="Link to this definition">¶</a></dt>
+<dd><p>Run a command of alexandria and return what it produced.</p>
+<p>For example</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">act</span>
+<span class="n">res</span> <span class="o">=</span> <span class="n">act</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="s2">"minimize"</span><span class="p">,</span> <span class="n">ff</span><span class="o">=</span><span class="s2">"ACS-pg1.xml"</span><span class="p">,</span> <span class="n">f</span><span class="o">=</span><span class="s2">"acetone.sdf"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">res</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">"rmsd"</span><span class="p">][</span><span class="s2">"value"</span><span class="p">],</span> <span class="n">res</span><span class="o">.</span><span class="n">file</span><span class="p">(</span><span class="s2">"c"</span><span class="p">))</span>
+</pre></div>
+</div>
+<p>The functions in act.commands do the same with the name of the command
+as the name of the function: act.commands.minimize(ff=…, f=…).</p>
+<p>If the command can write its results in JSON format (option -json), it
+is asked to, unless json=False is given.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>command</strong> – The name of the command, such as minimize.</p></li>
+<li><p><strong>workdir</strong> – The directory to run in, which is made if it does not
+exist and is kept. Without it the command runs in a temporary directory
+that is removed with the result.</p></li>
+<li><p><strong>processes</strong> – The number of processes; more than one starts the
+program with the MPI launcher.</p></li>
+<li><p><strong>timeout</strong> – Seconds after which the program is stopped, None for
+act.config.timeout.</p></li>
+<li><p><strong>check</strong> – Raise ActError if the program fails. With False the
+result is returned and its returncode tells what happened.</p></li>
+<li><p><strong>env</strong> – Environment variables to set for the program, on top of
+those of Python.</p></li>
+<li><p><strong>on_progress</strong> – A function that is called while the program runs,
+for commands with the option -progress, such as simulate. It gets one
+argument, the object that the program wrote: for simulate a dict with
+the step, the time, the temperature and the energies. An exception in
+the function stops the program.</p></li>
+<li><p><strong>stop</strong> – An object with a method is_set(), such as a
+threading.Event, with which another thread can stop the program: when
+is_set() returns True the program is stopped and ActCancelledError is
+raised.</p></li>
+<li><p><strong>options</strong> – The options of the command, see build_arguments() for
+the rules and act.program_info() for the options of each command.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The result.</p>
+</dd>
+<dt class="field-odd">Raises<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><a class="reference internal" href="#act.ActOptionError" title="act.ActOptionError"><strong>ActOptionError</strong></a> – for an unknown command or option, or a wrong value.</p></li>
+<li><p><a class="reference internal" href="#act.ActNotFoundError" title="act.ActNotFoundError"><strong>ActNotFoundError</strong></a> – if the program or an input file does not exist.</p></li>
+<li><p><a class="reference internal" href="#act.ActTimeoutError" title="act.ActTimeoutError"><strong>ActTimeoutError</strong></a> – if the program ran too long.</p></li>
+<li><p><a class="reference internal" href="#act.ActCancelledError" title="act.ActCancelledError"><strong>ActCancelledError</strong></a> – if the program was stopped through <code class="docutils literal notranslate"><span class="pre">stop.</span></code></p></li>
+<li><p><a class="reference internal" href="#act.ActError" title="act.ActError"><strong>ActError</strong></a> – if the program failed and check is True.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py data">
+<dt class="sig sig-object py" id="act.commands">
+<span class="sig-prename descclassname"><span class="pre">act.</span></span><span class="sig-name descname"><span class="pre">commands</span></span><a class="headerlink" href="#act.commands" title="Link to this definition">¶</a></dt>
+<dd><p>Create a module object.</p>
+<p>The name must be a string; the optional doc argument can have any type.</p>
+</dd></dl>
+
+<dl class="py data">
+<dt class="sig sig-object py" id="act.config">
+<span class="sig-prename descclassname"><span class="pre">act.</span></span><span class="sig-name descname"><span class="pre">config</span></span><a class="headerlink" href="#act.config" title="Link to this definition">¶</a></dt>
+<dd><p>Settings of the Python interface: where the program is and how
+it is started on several processes.</p>
+<p>There is one object of this class, act.config. The settings can also be
+given with environment variables: ACT_ALEXANDRIA for the program and
+ACT_MPIEXEC for the launcher of MPI programs.</p>
+</dd></dl>
+
+</section>
+<section id="classes">
+<h2><span class="section-number">2.8.2. </span>Classes<a class="headerlink" href="#classes" title="Link to this heading">¶</a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="act.CommandInfo">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">act.</span></span><span class="sig-name descname"><span class="pre">CommandInfo</span></span><a class="headerlink" href="#act.CommandInfo" title="Link to this definition">¶</a></dt>
+<dd><p>One command of alexandria, such as minimize, with its options.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="act.CommandInfo.find_option">
+<span class="sig-name descname"><span class="pre">find_option</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#act.OptionInfo" title="act.OptionInfo"><span class="pre">OptionInfo</span></a></span></span><a class="headerlink" href="#act.CommandInfo.find_option" title="Link to this definition">¶</a></dt>
+<dd><p>Look up an option by its name on the command line or by its
+name as a Python keyword argument.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>name</strong> – The name, without dash.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The option.</p>
+</dd>
+<dt class="field-odd">Raises<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="#act.ActOptionError" title="act.ActOptionError"><strong>ActOptionError</strong></a> – if the command has no such option. The
+message lists options with similar names.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="act.CommandInfo.from_json">
+<em class="property"><span class="k"><span class="pre">static</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">from_json</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#act.CommandInfo" title="act.CommandInfo"><span class="pre">CommandInfo</span></a></span></span><a class="headerlink" href="#act.CommandInfo.from_json" title="Link to this definition">¶</a></dt>
+<dd><p>Make a command from its description.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>name</strong> – The name of the command.</p></li>
+<li><p><strong>data</strong> – The description of the command.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The command.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="act.CommandInfo.has_option">
+<span class="sig-name descname"><span class="pre">has_option</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bool</span></span></span><a class="headerlink" href="#act.CommandInfo.has_option" title="Link to this definition">¶</a></dt>
+<dd><p>Whether the command has an option.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>name</strong> – The name on the command line, without dash.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>True if it has.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="act.ForceField">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">act.</span></span><span class="sig-name descname"><span class="pre">ForceField</span></span><a class="headerlink" href="#act.ForceField" title="Link to this definition">¶</a></dt>
+<dd><p>A force field: its particle types and the parameters of its interactions.</p>
+<p>Read one from a file with ForceField.read(file).</p>
+<dl class="py property">
+<dt class="sig sig-object py" id="act.ForceField.filename">
+<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">filename</span></span><a class="headerlink" href="#act.ForceField.filename" title="Link to this definition">¶</a></dt>
+<dd><p>The file the force field was read from.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="act.ForceField.interactions">
+<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">interactions</span></span><a class="headerlink" href="#act.ForceField.interactions" title="Link to this definition">¶</a></dt>
+<dd><p>The names of the interactions that the force field has parameters for.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="act.ForceField.parameter">
+<span class="sig-name descname"><span class="pre">parameter</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">interaction</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">identifier</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#act.Parameter" title="act.Parameter"><span class="pre">act.Parameter</span></a></span></span><a class="headerlink" href="#act.ForceField.parameter" title="Link to this definition">¶</a></dt>
+<dd><p>One parameter: of an interaction, for the types of the identifier as in the
+force field file (such as c3 or c3_b~h_b), by its name (such as sigma).</p>
+<p>Raises ActInputError if there is no such parameter.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="act.ForceField.parameters">
+<span class="sig-name descname"><span class="pre">parameters</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">interaction</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#act.Parameter" title="act.Parameter"><span class="pre">act.Parameter</span></a><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#act.ForceField.parameters" title="Link to this definition">¶</a></dt>
+<dd><p>The parameters of an interaction, such as VANDERWAALS, for all its entries.</p>
+<p>An empty list if the force field does not have the interaction. Raises
+ActInputError if ACT has no interaction of that name.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="act.ForceField.particle_type">
+<span class="sig-name descname"><span class="pre">particle_type</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#act.ParticleType" title="act.ParticleType"><span class="pre">act.ParticleType</span></a></span></span><a class="headerlink" href="#act.ForceField.particle_type" title="Link to this definition">¶</a></dt>
+<dd><p>A particle type with its kind, its options and its parameters.</p>
+<p>Raises ActInputError if the force field has no particle type of that name.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="act.ForceField.particle_types">
+<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">particle_types</span></span><a class="headerlink" href="#act.ForceField.particle_types" title="Link to this definition">¶</a></dt>
+<dd><p>The names of the particle types: atoms, shells and virtual sites.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="act.ForceField.polarizable">
+<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">polarizable</span></span><a class="headerlink" href="#act.ForceField.polarizable" title="Link to this definition">¶</a></dt>
+<dd><p>Whether the force field has particles that are polarizable.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="act.ForceField.read">
+<em class="property"><span class="k"><span class="pre">static</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">read</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">file</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">os.PathLike</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#act.ForceField" title="act.ForceField"><span class="pre">act.ForceField</span></a></span></span><a class="headerlink" href="#act.ForceField.read" title="Link to this definition">¶</a></dt>
+<dd><p>Read a force field from an XML file.</p>
+<p>A name without a directory is also looked for in the library of ACT.
+Raises ActFileError if the file cannot be read, and ActInputError if
+what is in it is not a consistent force field.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="act.ForceField.set_parameter">
+<span class="sig-name descname"><span class="pre">set_parameter</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">interaction</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">identifier</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">value</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">minimum</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">maximum</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mutability</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#act.ForceField.set_parameter" title="Link to this definition">¶</a></dt>
+<dd><p>Change the value, the bounds or the mutability (Bounded or Fixed) of a parameter.</p>
+<p>What is not given stays as it is. Raises ActInputError, and changes nothing, if
+the value would be outside the bounds, the minimum above the maximum, or a
+parameter negative that cannot be.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="act.ForceField.set_particle_parameter">
+<span class="sig-name descname"><span class="pre">set_particle_parameter</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">particle</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">value</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">minimum</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">maximum</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mutability</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#act.ForceField.set_particle_parameter" title="Link to this definition">¶</a></dt>
+<dd><p>Change a parameter of a particle type, such as its charge, see set_parameter.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="act.ForceField.validate">
+<span class="sig-name descname"><span class="pre">validate</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">list</span></span></span><a class="headerlink" href="#act.ForceField.validate" title="Link to this definition">¶</a></dt>
+<dd><p>The problems with the parameters, as edit_ff -validate lists them: an empty
+list if there are none, otherwise for each problem its kind, where it is and
+what is wrong.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="act.ForceField.write">
+<span class="sig-name descname"><span class="pre">write</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">file</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">os.PathLike</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">compress</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#act.ForceField.write" title="Link to this definition">¶</a></dt>
+<dd><p>Write the force field to an XML file, compressed if asked.</p>
+<p>Raises ActFileError if the file cannot be written.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="act.Minimization">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">act.</span></span><span class="sig-name descname"><span class="pre">Minimization</span></span><a class="headerlink" href="#act.Minimization" title="Link to this definition">¶</a></dt>
+<dd><p>The result of Molecule.minimize.</p>
+<dl class="py property">
+<dt class="sig sig-object py" id="act.Minimization.converged">
+<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">converged</span></span><a class="headerlink" href="#act.Minimization.converged" title="Link to this definition">¶</a></dt>
+<dd><p>Whether the forces are within the tolerance.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="act.Minimization.coordinates">
+<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">coordinates</span></span><a class="headerlink" href="#act.Minimization.coordinates" title="Link to this definition">¶</a></dt>
+<dd><p>The position of each particle in nm in the structure that was found.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="act.Minimization.energy_after">
+<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">energy_after</span></span><a class="headerlink" href="#act.Minimization.energy_after" title="Link to this definition">¶</a></dt>
+<dd><p>The energy by term in kJ/mol of the structure that was found.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="act.Minimization.energy_before">
+<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">energy_before</span></span><a class="headerlink" href="#act.Minimization.energy_before" title="Link to this definition">¶</a></dt>
+<dd><p>The energy by term in kJ/mol of the structure it started from.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="act.Minimization.rmsd">
+<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">rmsd</span></span><a class="headerlink" href="#act.Minimization.rmsd" title="Link to this definition">¶</a></dt>
+<dd><p>The root mean square distance in nm between the atoms before and after,
+with the structures on top of each other.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="act.Minimization.status">
+<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">status</span></span><a class="headerlink" href="#act.Minimization.status" title="Link to this definition">¶</a></dt>
+<dd><p>OK, or why the minimizer stopped, such as Too many steps. The structure is
+then the one with the lowest energy that was found.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="act.MolProps">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">act.</span></span><span class="sig-name descname"><span class="pre">MolProps</span></span><a class="headerlink" href="#act.MolProps" title="Link to this definition">¶</a></dt>
+<dd><p>The compounds of a molprop file with their reference data.</p>
+<p>Read them with act.read_molprop(file). A compound is found by its place or
+by its name: molprops[0] or molprops[“water”].</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="act.MolProps.__getitem__">
+<span class="sig-name descname"><span class="pre">__getitem__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">compound</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">object</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">object</span></span></span><a class="headerlink" href="#act.MolProps.__getitem__" title="Link to this definition">¶</a></dt>
+<dd><p>A compound, by its place or its name: its name, formula, charge, the compounds
+it consists of (fragments), and the number of calculations and of values of
+each property.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="act.MolProps.__len__">
+<span class="sig-name descname"><span class="pre">__len__</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">int</span></span></span><a class="headerlink" href="#act.MolProps.__len__" title="Link to this definition">¶</a></dt>
+<dd><p>The number of compounds.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="act.MolProps.calculations">
+<span class="sig-name descname"><span class="pre">calculations</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">compound</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">object</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">list</span></span></span><a class="headerlink" href="#act.MolProps.calculations" title="Link to this definition">¶</a></dt>
+<dd><p>The calculations or experiments of a compound, by its place or its name. For
+each: reference, conformation, method, basisset, program, jobtype, datafile,
+the atoms, their coordinates in nm, and the properties, each with observable,
+type, value, error, unit, temperature and, for a vector or tensor, vector.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="act.MolProps.exclude">
+<span class="sig-name descname"><span class="pre">exclude</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">compounds</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><span class="pre">object</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#act.MolProps" title="act.MolProps"><span class="pre">act.MolProps</span></a></span></span><a class="headerlink" href="#act.MolProps.exclude" title="Link to this definition">¶</a></dt>
+<dd><p>A new set without the given compounds, by place or name.
+Raises KeyError or IndexError for one that is not there.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="act.MolProps.filename">
+<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">filename</span></span><a class="headerlink" href="#act.MolProps.filename" title="Link to this definition">¶</a></dt>
+<dd><p>The file the compounds were read from.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="act.MolProps.merge">
+<span class="sig-name descname"><span class="pre">merge</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">other</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#act.MolProps" title="act.MolProps"><span class="pre">act.MolProps</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#act.MolProps" title="act.MolProps"><span class="pre">act.MolProps</span></a></span></span><a class="headerlink" href="#act.MolProps.merge" title="Link to this definition">¶</a></dt>
+<dd><p>A new set with the compounds of both, sorted by name, and the calculations of
+a compound that both have merged into one, as alexandria edit_mp merges
+molprop files.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="act.MolProps.names">
+<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">names</span></span><a class="headerlink" href="#act.MolProps.names" title="Link to this definition">¶</a></dt>
+<dd><p>The names of the compounds, in the order of the file.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="act.MolProps.select">
+<span class="sig-name descname"><span class="pre">select</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">compounds</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><span class="pre">object</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#act.MolProps" title="act.MolProps"><span class="pre">act.MolProps</span></a></span></span><a class="headerlink" href="#act.MolProps.select" title="Link to this definition">¶</a></dt>
+<dd><p>A new set with the given compounds, by place or name, in the order given.
+Raises KeyError or IndexError for one that is not there.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="act.MolProps.summary">
+<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">summary</span></span><a class="headerlink" href="#act.MolProps.summary" title="Link to this definition">¶</a></dt>
+<dd><p>The numbers of compounds, monomers, dimers and calculations, and the number
+of values of each property, as alexandria edit_mp reports them.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="act.MolProps.validate">
+<span class="sig-name descname"><span class="pre">validate</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">object</span></span></span><a class="headerlink" href="#act.MolProps.validate" title="Link to this definition">¶</a></dt>
+<dd><p>The check of alexandria edit_mp -validate: every calculation of a compound has
+the same atoms in the same order, and the compounds of a dimer are in the same
+order everywhere. Returns ok, the number of problems, the names of the
+compounds that have them (invalid) and the messages.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="act.MolProps.write">
+<span class="sig-name descname"><span class="pre">write</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">file</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">os.PathLike</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">compress</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#act.MolProps.write" title="Link to this definition">¶</a></dt>
+<dd><p>Write the compounds to a molprop file, compressed if asked.</p>
+<p>Raises ActFileError if the file cannot be written.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="act.Molecule">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">act.</span></span><span class="sig-name descname"><span class="pre">Molecule</span></span><a class="headerlink" href="#act.Molecule" title="Link to this definition">¶</a></dt>
+<dd><p>A molecule for a force field: its particles with their charges, its bonds,
+its structure and its energy.</p>
+<p>Make one with Molecule.from_smiles(smiles, forcefield) or
+Molecule.from_file(file, forcefield).</p>
+<dl class="py property">
+<dt class="sig sig-object py" id="act.Molecule.atoms">
+<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">atoms</span></span><a class="headerlink" href="#act.Molecule.atoms" title="Link to this definition">¶</a></dt>
+<dd><p>The particles: atoms, shells and virtual sites. For each its name,
+element, type in the force field, kind (particletype), mass and charge,
+in the order of the coordinates.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="act.Molecule.bonds">
+<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">bonds</span></span><a class="headerlink" href="#act.Molecule.bonds" title="Link to this definition">¶</a></dt>
+<dd><p>The bonds: for each the two particles, counted from zero, and the bond order.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="act.Molecule.charge">
+<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">charge</span></span><a class="headerlink" href="#act.Molecule.charge" title="Link to this definition">¶</a></dt>
+<dd><p>The total charge in e.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="act.Molecule.charges">
+<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">charges</span></span><a class="headerlink" href="#act.Molecule.charges" title="Link to this definition">¶</a></dt>
+<dd><p>The charge of each particle in e, a numpy array.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="act.Molecule.coordinates">
+<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">coordinates</span></span><a class="headerlink" href="#act.Molecule.coordinates" title="Link to this definition">¶</a></dt>
+<dd><p>The position of each particle in nm, a numpy array of shape (particles, 3).
+It is a copy: changing it does not change the molecule.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="act.Molecule.energy">
+<span class="sig-name descname"><span class="pre">energy</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span></span></span><a class="headerlink" href="#act.Molecule.energy" title="Link to this definition">¶</a></dt>
+<dd><p>The energy in kJ/mol for the structure of the molecule: a dict with the terms
+of the force field and their sum, EPOT.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="act.Molecule.forcefield">
+<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">forcefield</span></span><a class="headerlink" href="#act.Molecule.forcefield" title="Link to this definition">¶</a></dt>
+<dd><p>The force field the molecule was made for.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="act.Molecule.forces">
+<span class="sig-name descname"><span class="pre">forces</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">numpy.typing.NDArray</span><span class="p"><span class="pre">[</span></span><span class="pre">numpy.float64</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#act.Molecule.forces" title="Link to this definition">¶</a></dt>
+<dd><p>The force on each particle in kJ/mol nm, a numpy array of shape (particles, 3).</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="act.Molecule.formula">
+<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">formula</span></span><a class="headerlink" href="#act.Molecule.formula" title="Link to this definition">¶</a></dt>
+<dd><p>The chemical formula.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="act.Molecule.from_file">
+<em class="property"><span class="k"><span class="pre">static</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">from_file</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">file</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">os.PathLike</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">forcefield</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">object</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#act.Molecule" title="act.Molecule"><span class="pre">act.Molecule</span></a></span></span><a class="headerlink" href="#act.Molecule.from_file" title="Link to this definition">¶</a></dt>
+<dd><p>Read a molecule from a structure file, such as an sdf or pdb file, and make
+the topology for the force field and the charges.</p>
+<p>Raises ActFileError if the file is not there, and ActInputError if no
+molecule can be made of it with this force field.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="act.Molecule.from_smiles">
+<em class="property"><span class="k"><span class="pre">static</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">from_smiles</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">smiles</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">forcefield</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">object</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#act.Molecule" title="act.Molecule"><span class="pre">act.Molecule</span></a></span></span><a class="headerlink" href="#act.Molecule.from_smiles" title="Link to this definition">¶</a></dt>
+<dd><p>Make a molecule from a SMILES string: a structure, the topology for the
+force field and the charges, as the programs of ACT make them.</p>
+<p>Raises ActInputError if the string is no molecule or the force field has
+no types for its atoms.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="act.Molecule.generate_charges">
+<span class="sig-name descname"><span class="pre">generate_charges</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">algorithm</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#act.Molecule.generate_charges" title="Link to this definition">¶</a></dt>
+<dd><p>Make the charges again, for the structure the molecule has now.</p>
+<p>algorithm is EEM or SQE for the charge model of the force field, or None for the
+charges of the particle types as they are; as when the molecule was made if not
+given. The charges of ACT depend on the structure, so after a minimization
+they are other ones than before.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="act.Molecule.interaction_energy">
+<span class="sig-name descname"><span class="pre">interaction_energy</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span></span></span><a class="headerlink" href="#act.Molecule.interaction_energy" title="Link to this definition">¶</a></dt>
+<dd><p>The interaction energy in kJ/mol between the two compounds of a dimer, for
+the structure it has: the energy of the dimer minus those of the compounds,
+with the shells relaxed in each, by term, as alexandria simulate -sp reports it.
+Raises ActInputError for a molecule that is not made of two compounds.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="act.Molecule.mass">
+<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">mass</span></span><a class="headerlink" href="#act.Molecule.mass" title="Link to this definition">¶</a></dt>
+<dd><p>The mass in g/mol.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="act.Molecule.minimize">
+<span class="sig-name descname"><span class="pre">minimize</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">algorithm</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_iter</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tolerance</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">freeze</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">[]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">update</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#act.Minimization" title="act.Minimization"><span class="pre">act.Minimization</span></a></span></span><a class="headerlink" href="#act.Molecule.minimize" title="Link to this definition">¶</a></dt>
+<dd><p>Minimize the energy with respect to the positions of the atoms, as alexandria
+minimize does, and give the molecule the structure that is found.</p>
+<p>algorithm is LBFGS, Steep or Newton, max_iter the largest number of iterations
+and tolerance the mean square force at which to stop; what is not given is as
+in the program. The particles in freeze, numbered as in atoms, stay where they
+are. With update=False the molecule keeps its structure. Returns a Minimization
+with whether it converged, the energies before and after, the RMSD and the
+structure. A minimization that does not converge is told there, not raised.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="act.Molecule.name">
+<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">name</span></span><a class="headerlink" href="#act.Molecule.name" title="Link to this definition">¶</a></dt>
+<dd><p>The name of the molecule, empty if it has none.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="act.Molecule.normal_modes">
+<span class="sig-name descname"><span class="pre">normal_modes</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">minimize</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">algorithm</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_iter</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tolerance</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#act.NormalModes" title="act.NormalModes"><span class="pre">act.NormalModes</span></a></span></span><a class="headerlink" href="#act.Molecule.normal_modes" title="Link to this definition">¶</a></dt>
+<dd><p>The vibrations of the molecule, as alexandria nma computes them: frequencies,
+infrared intensities, the motion of the particles and the thermochemistry.</p>
+<p>The energy is minimized first, with algorithm, max_iter and tolerance as in
+minimize, and the molecule keeps that structure; give minimize=False for a
+molecule that is at its minimum already. Raises ActError if the minimization
+does not converge. Returns a NormalModes.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="act.Molecule.set_charges">
+<span class="sig-name descname"><span class="pre">set_charges</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">charges</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#act.Molecule.set_charges" title="Link to this definition">¶</a></dt>
+<dd><p>Give each particle a charge in e, in the order of atoms.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="act.Molecule.simulate">
+<span class="sig-name descname"><span class="pre">simulate</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">steps</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">timestep</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0.0002</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">temperature</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">seed</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">energy_interval</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">frame_interval</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">on_energies</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">object</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#act.Trajectory" title="act.Trajectory"><span class="pre">act.Trajectory</span></a></span></span><a class="headerlink" href="#act.Molecule.simulate" title="Link to this definition">¶</a></dt>
+<dd><p>Run a molecular dynamics simulation, as alexandria simulate does, from the
+structure of the molecule, which stays as it is.</p>
+<p>steps is the number of steps of timestep ps. With a temperature in K the atoms
+get velocities for it, drawn with the seed (0 for another one each time);
+without, they start at rest. The energies are kept every energy_interval steps
+and the structure every frame_interval steps, 0 for never. on_energies is a
+function that gets a dict with step, time, temperature and energies each time
+the energies are due; if it returns False the simulation ends there. Returns a
+Trajectory. Ctrl-C ends the simulation at the next energies.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="act.Molecule.write_openmm">
+<span class="sig-name descname"><span class="pre">write_openmm</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">file</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">os.PathLike</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">structure</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">os.PathLike</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">drude_mass</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0.1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">min_training</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">number_types</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">shells</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#act.Molecule.write_openmm" title="Link to this definition">¶</a></dt>
+<dd><p>Write the force field file with which OpenMM simulates this molecule, as
+alexandria gentop -openmm does.</p>
+<p>structure is a pdb file to write as well, with the structure the molecule has
+now and the names of the force field file, with the shells if shells is True.
+drude_mass is the mass in g/mol of a shell, which is taken from its atom.
+A parameter is written if it was trained on min_training data points at least.
+With number_types each atom gets a type of its own.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="act.NormalModes">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">act.</span></span><span class="sig-name descname"><span class="pre">NormalModes</span></span><a class="headerlink" href="#act.NormalModes" title="Link to this definition">¶</a></dt>
+<dd><p>The result of Molecule.normal_modes.</p>
+<dl class="py property">
+<dt class="sig sig-object py" id="act.NormalModes.frequencies">
+<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">frequencies</span></span><a class="headerlink" href="#act.NormalModes.frequencies" title="Link to this definition">¶</a></dt>
+<dd><p>The frequencies of the vibrations in cm^-1, from low to high, a numpy array.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="act.NormalModes.intensities">
+<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">intensities</span></span><a class="headerlink" href="#act.NormalModes.intensities" title="Link to this definition">¶</a></dt>
+<dd><p>The infrared intensity of each vibration, in intensity_unit, a numpy array.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="act.NormalModes.intensity_unit">
+<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">intensity_unit</span></span><a class="headerlink" href="#act.NormalModes.intensity_unit" title="Link to this definition">¶</a></dt>
+<dd><p>The unit of the intensities.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="act.NormalModes.minimization">
+<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">minimization</span></span><a class="headerlink" href="#act.NormalModes.minimization" title="Link to this definition">¶</a></dt>
+<dd><p>The Minimization that was done first, None if there was none.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="act.NormalModes.modes">
+<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">modes</span></span><a class="headerlink" href="#act.NormalModes.modes" title="Link to this definition">¶</a></dt>
+<dd><p>For each vibration its frequency, intensity, reduced_mass in g/mol and
+displacements: how each particle moves, a numpy array of x, y and z for
+each, normalized as quantum chemistry programs print them.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="act.NormalModes.spectrum">
+<span class="sig-name descname"><span class="pre">spectrum</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">linewidth</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">24.0</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">tuple</span></span></span><a class="headerlink" href="#act.NormalModes.spectrum" title="Link to this definition">¶</a></dt>
+<dd><p>The infrared spectrum: a line of the given width in cm^-1 at each frequency.</p>
+<p>Returns the frequencies, whole numbers of cm^-1, and the intensities, which
+add up to one, as alexandria nma -ir writes them, both as numpy arrays.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="act.NormalModes.thermochemistry">
+<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">thermochemistry</span></span><a class="headerlink" href="#act.NormalModes.thermochemistry" title="Link to this definition">¶</a></dt>
+<dd><p>The zero point energy, entropy, heat capacity and so on, each with value
+and unit, as alexandria nma reports them.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="act.OptionInfo">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">act.</span></span><span class="sig-name descname"><span class="pre">OptionInfo</span></span><a class="headerlink" href="#act.OptionInfo" title="Link to this definition">¶</a></dt>
+<dd><p>One option of a command.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="act.OptionInfo.from_json">
+<em class="property"><span class="k"><span class="pre">static</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">from_json</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#act.OptionInfo" title="act.OptionInfo"><span class="pre">OptionInfo</span></a></span></span><a class="headerlink" href="#act.OptionInfo.from_json" title="Link to this definition">¶</a></dt>
+<dd><p>Make an option from its description.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>data</strong> – One element of the array “options” of a command.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The option.</p>
+</dd>
+<dt class="field-odd">Raises<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="#act.ActError" title="act.ActError"><strong>ActError</strong></a> – if the description is not understood.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="act.OptionInfo.is_file">
+<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">is_file</span></span><a class="headerlink" href="#act.OptionInfo.is_file" title="Link to this definition">¶</a></dt>
+<dd><p>Whether the option is a file name.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>True for options of type file.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="act.OptionInfo.python_name">
+<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">python_name</span></span><a class="headerlink" href="#act.OptionInfo.python_name" title="Link to this definition">¶</a></dt>
+<dd><p>The name of the option as a Python keyword argument.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>The name, see python_name().</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="act.Parameter">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">act.</span></span><span class="sig-name descname"><span class="pre">Parameter</span></span><a class="headerlink" href="#act.Parameter" title="Link to this definition">¶</a></dt>
+<dd><p>A parameter of a force field, as it was when it was asked for.</p>
+<p>Change it with ForceField.set_parameter or set_particle_parameter.</p>
+<dl class="py property">
+<dt class="sig sig-object py" id="act.Parameter.identifier">
+<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">identifier</span></span><a class="headerlink" href="#act.Parameter.identifier" title="Link to this definition">¶</a></dt>
+<dd><p>The types it is for, as in the force field file, or the particle type.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="act.Parameter.interaction">
+<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">interaction</span></span><a class="headerlink" href="#act.Parameter.interaction" title="Link to this definition">¶</a></dt>
+<dd><p>The interaction it belongs to, empty for a parameter of a particle type.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="act.Parameter.maximum">
+<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">maximum</span></span><a class="headerlink" href="#act.Parameter.maximum" title="Link to this definition">¶</a></dt>
+<dd><p>The largest value that training gives it.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="act.Parameter.minimum">
+<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">minimum</span></span><a class="headerlink" href="#act.Parameter.minimum" title="Link to this definition">¶</a></dt>
+<dd><p>The smallest value that training gives it.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="act.Parameter.mutability">
+<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">mutability</span></span><a class="headerlink" href="#act.Parameter.mutability" title="Link to this definition">¶</a></dt>
+<dd><p>Whether training changes it: Bounded, Fixed, ACM or Dependent.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="act.Parameter.name">
+<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">name</span></span><a class="headerlink" href="#act.Parameter.name" title="Link to this definition">¶</a></dt>
+<dd><p>The name of the parameter, such as sigma.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="act.Parameter.nonnegative">
+<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">nonnegative</span></span><a class="headerlink" href="#act.Parameter.nonnegative" title="Link to this definition">¶</a></dt>
+<dd><p>Whether it may not be negative.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="act.Parameter.ntrain">
+<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">ntrain</span></span><a class="headerlink" href="#act.Parameter.ntrain" title="Link to this definition">¶</a></dt>
+<dd><p>The number of data points it was trained on.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="act.Parameter.uncertainty">
+<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">uncertainty</span></span><a class="headerlink" href="#act.Parameter.uncertainty" title="Link to this definition">¶</a></dt>
+<dd><p>The uncertainty of the value.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="act.Parameter.unit">
+<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">unit</span></span><a class="headerlink" href="#act.Parameter.unit" title="Link to this definition">¶</a></dt>
+<dd><p>The unit.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="act.Parameter.value">
+<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">value</span></span><a class="headerlink" href="#act.Parameter.value" title="Link to this definition">¶</a></dt>
+<dd><p>The value, in the unit.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="act.ParticleType">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">act.</span></span><span class="sig-name descname"><span class="pre">ParticleType</span></span><a class="headerlink" href="#act.ParticleType" title="Link to this definition">¶</a></dt>
+<dd><p>A particle type of a force field, as it was when it was asked for.</p>
+<dl class="py property">
+<dt class="sig sig-object py" id="act.ParticleType.description">
+<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">description</span></span><a class="headerlink" href="#act.ParticleType.description" title="Link to this definition">¶</a></dt>
+<dd><p>What the force field says about it.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="act.ParticleType.kind">
+<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">kind</span></span><a class="headerlink" href="#act.ParticleType.kind" title="Link to this definition">¶</a></dt>
+<dd><p>Atom, Shell or VSite.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="act.ParticleType.name">
+<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">name</span></span><a class="headerlink" href="#act.ParticleType.name" title="Link to this definition">¶</a></dt>
+<dd><p>The name.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="act.ParticleType.options">
+<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">options</span></span><a class="headerlink" href="#act.ParticleType.options" title="Link to this definition">¶</a></dt>
+<dd><p>The options: the element, and the types it has for each interaction.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="act.ParticleType.parameters">
+<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">parameters</span></span><a class="headerlink" href="#act.ParticleType.parameters" title="Link to this definition">¶</a></dt>
+<dd><p>Its own parameters, such as the charge and the mass.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="act.ProgramInfo">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">act.</span></span><span class="sig-name descname"><span class="pre">ProgramInfo</span></span><a class="headerlink" href="#act.ProgramInfo" title="Link to this definition">¶</a></dt>
+<dd><p>All the commands of the alexandria program.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="act.ProgramInfo.find_command">
+<span class="sig-name descname"><span class="pre">find_command</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#act.CommandInfo" title="act.CommandInfo"><span class="pre">CommandInfo</span></a></span></span><a class="headerlink" href="#act.ProgramInfo.find_command" title="Link to this definition">¶</a></dt>
+<dd><p>Look up a command.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>name</strong> – The name of the command, such as minimize.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The command.</p>
+</dd>
+<dt class="field-odd">Raises<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="#act.ActOptionError" title="act.ActOptionError"><strong>ActOptionError</strong></a> – if there is no such command.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="act.ProgramInfo.from_file">
+<em class="property"><span class="k"><span class="pre">static</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">from_file</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">os.PathLike</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#act.ProgramInfo" title="act.ProgramInfo"><span class="pre">ProgramInfo</span></a></span></span><a class="headerlink" href="#act.ProgramInfo.from_file" title="Link to this definition">¶</a></dt>
+<dd><p>Read the description from a file written by
+`alexandria help -export json`.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>path</strong> – The file.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The description.</p>
+</dd>
+<dt class="field-odd">Raises<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="#act.ActError" title="act.ActError"><strong>ActError</strong></a> – if the file is not valid JSON or not understood.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="act.ProgramInfo.from_json">
+<em class="property"><span class="k"><span class="pre">static</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">from_json</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#act.ProgramInfo" title="act.ProgramInfo"><span class="pre">ProgramInfo</span></a></span></span><a class="headerlink" href="#act.ProgramInfo.from_json" title="Link to this definition">¶</a></dt>
+<dd><p>Make the description of the program from the JSON document.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>data</strong> – The parsed document.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The description.</p>
+</dd>
+<dt class="field-odd">Raises<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="#act.ActError" title="act.ActError"><strong>ActError</strong></a> – if the document has another layout than this
+module understands.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="act.Result">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">act.</span></span><span class="sig-name descname"><span class="pre">Result</span></span><a class="headerlink" href="#act.Result" title="Link to this definition">¶</a></dt>
+<dd><p>What a command of alexandria produced.</p>
+<p>If the command ran in a temporary directory, that directory is removed
+when the result is no longer used, or when close() is called. Copy the
+files that should be kept, or give a directory with the argument
+workdir of the command.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="act.Result.close">
+<span class="sig-name descname"><span class="pre">close</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#act.Result.close" title="Link to this definition">¶</a></dt>
+<dd><p>Remove the temporary directory of the run, if it has one.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="act.Result.data">
+<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">data</span></span><a class="headerlink" href="#act.Result.data" title="Link to this definition">¶</a></dt>
+<dd><p>The results without the outer key.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>The JSON file of a command has one key, the name of the
+command, with everything below it. This is the content below that
+key, or None if there is no JSON file.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="act.Result.file">
+<span class="sig-name descname"><span class="pre">file</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">option</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Path</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span></span><a class="headerlink" href="#act.Result.file" title="Link to this definition">¶</a></dt>
+<dd><p>The output file of an option.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>option</strong> – The name of the option, such as c for the structure.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The first file of the option, None if it was not written.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="act.Result.json">
+<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">json</span></span><a class="headerlink" href="#act.Result.json" title="Link to this definition">¶</a></dt>
+<dd><p>The results the program wrote in JSON format.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>The parsed file of the option -json, None if the command
+has no such option or the file was not written.</p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference internal" href="#act.ActError" title="act.ActError"><strong>ActError</strong></a> – if the file is not valid JSON.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="act.Result.log">
+<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">log</span></span><a class="headerlink" href="#act.Result.log" title="Link to this definition">¶</a></dt>
+<dd><p>The log file of the program.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>The text of the file of option -g, empty if there is none.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="act.Result.ok">
+<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">ok</span></span><a class="headerlink" href="#act.Result.ok" title="Link to this definition">¶</a></dt>
+<dd><p>Whether the program finished without error.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>True if the exit status is zero.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="act.Trajectory">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">act.</span></span><span class="sig-name descname"><span class="pre">Trajectory</span></span><a class="headerlink" href="#act.Trajectory" title="Link to this definition">¶</a></dt>
+<dd><p>The result of Molecule.simulate.</p>
+<dl class="py property">
+<dt class="sig sig-object py" id="act.Trajectory.energies">
+<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">energies</span></span><a class="headerlink" href="#act.Trajectory.energies" title="Link to this definition">¶</a></dt>
+<dd><p>The energies in kJ/mol at these times: for each term of the force field, for
+the potential (EPOT), kinetic (EKIN) and total energy (ETOT) a numpy array.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="act.Trajectory.energy_steps">
+<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">energy_steps</span></span><a class="headerlink" href="#act.Trajectory.energy_steps" title="Link to this definition">¶</a></dt>
+<dd><p>The steps of which there are energies, a numpy array.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="act.Trajectory.energy_times">
+<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">energy_times</span></span><a class="headerlink" href="#act.Trajectory.energy_times" title="Link to this definition">¶</a></dt>
+<dd><p>The times in ps of the energies, a numpy array.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="act.Trajectory.frame_steps">
+<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">frame_steps</span></span><a class="headerlink" href="#act.Trajectory.frame_steps" title="Link to this definition">¶</a></dt>
+<dd><p>The steps of which there is a structure, a numpy array.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="act.Trajectory.frames">
+<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">frames</span></span><a class="headerlink" href="#act.Trajectory.frames" title="Link to this definition">¶</a></dt>
+<dd><p>The structures, a numpy array of shape (structures, particles, 3), in nm.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="act.Trajectory.steps">
+<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">steps</span></span><a class="headerlink" href="#act.Trajectory.steps" title="Link to this definition">¶</a></dt>
+<dd><p>The number of steps that were asked for.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="act.Trajectory.temperature">
+<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">temperature</span></span><a class="headerlink" href="#act.Trajectory.temperature" title="Link to this definition">¶</a></dt>
+<dd><p>The temperature in K at these times, a numpy array.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="act.Trajectory.times">
+<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">times</span></span><a class="headerlink" href="#act.Trajectory.times" title="Link to this definition">¶</a></dt>
+<dd><p>The times in ps of the structures, a numpy array.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="act.Trajectory.timestep">
+<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">timestep</span></span><a class="headerlink" href="#act.Trajectory.timestep" title="Link to this definition">¶</a></dt>
+<dd><p>The time step in ps.</p>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="errors">
+<h2><span class="section-number">2.8.3. </span>Errors<a class="headerlink" href="#errors" title="Link to this heading">¶</a></h2>
+<dl class="py exception">
+<dt class="sig sig-object py" id="act.ActCancelledError">
+<em class="property"><span class="k"><span class="pre">exception</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">act.</span></span><span class="sig-name descname"><span class="pre">ActCancelledError</span></span><a class="headerlink" href="#act.ActCancelledError" title="Link to this definition">¶</a></dt>
+<dd><p>The program was stopped because the caller asked for it.</p>
+<p>Derived from ActError.</p>
+</dd></dl>
+
+<dl class="py exception">
+<dt class="sig sig-object py" id="act.ActError">
+<em class="property"><span class="k"><span class="pre">exception</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">act.</span></span><span class="sig-name descname"><span class="pre">ActError</span></span><a class="headerlink" href="#act.ActError" title="Link to this definition">¶</a></dt>
+<dd><p>Base class of all errors of the Python interface to ACT.</p>
+<p>When a program of ACT fails, the exception carries what is known about
+the run, such that a caller can show it or store it.</p>
+<p>Derived from Exception.</p>
+</dd></dl>
+
+<dl class="py exception">
+<dt class="sig sig-object py" id="act.ActFileError">
+<em class="property"><span class="k"><span class="pre">exception</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">act.</span></span><span class="sig-name descname"><span class="pre">ActFileError</span></span><a class="headerlink" href="#act.ActFileError" title="Link to this definition">¶</a></dt>
+<dd><p>A file that the classes of ACT cannot read or write: it is not
+there, it is not what it should be, or the place cannot be written.</p>
+<p>Derived from ActError, OSError.</p>
+</dd></dl>
+
+<dl class="py exception">
+<dt class="sig sig-object py" id="act.ActInputError">
+<em class="property"><span class="k"><span class="pre">exception</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">act.</span></span><span class="sig-name descname"><span class="pre">ActInputError</span></span><a class="headerlink" href="#act.ActInputError" title="Link to this definition">¶</a></dt>
+<dd><p>Input that the classes of ACT do not accept, such as a force
+field with a value that ACT does not know.</p>
+<p>Derived from ActError, ValueError.</p>
+</dd></dl>
+
+<dl class="py exception">
+<dt class="sig sig-object py" id="act.ActInternalError">
+<em class="property"><span class="k"><span class="pre">exception</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">act.</span></span><span class="sig-name descname"><span class="pre">ActInternalError</span></span><a class="headerlink" href="#act.ActInternalError" title="Link to this definition">¶</a></dt>
+<dd><p>Something that should not happen inside ACT, which is a bug to
+report. The process is still alive.</p>
+<p>Derived from ActError, RuntimeError.</p>
+</dd></dl>
+
+<dl class="py exception">
+<dt class="sig sig-object py" id="act.ActNotFoundError">
+<em class="property"><span class="k"><span class="pre">exception</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">act.</span></span><span class="sig-name descname"><span class="pre">ActNotFoundError</span></span><a class="headerlink" href="#act.ActNotFoundError" title="Link to this definition">¶</a></dt>
+<dd><p>The alexandria program, or a file it needs, cannot be found.</p>
+<p>Derived from ActError, FileNotFoundError.</p>
+</dd></dl>
+
+<dl class="py exception">
+<dt class="sig sig-object py" id="act.ActOptionError">
+<em class="property"><span class="k"><span class="pre">exception</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">act.</span></span><span class="sig-name descname"><span class="pre">ActOptionError</span></span><a class="headerlink" href="#act.ActOptionError" title="Link to this definition">¶</a></dt>
+<dd><p>An option that the program does not have, or a value that the
+option does not accept. Raised before a program is started.</p>
+<p>Derived from ActError, ValueError.</p>
+</dd></dl>
+
+<dl class="py exception">
+<dt class="sig sig-object py" id="act.ActTimeoutError">
+<em class="property"><span class="k"><span class="pre">exception</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">act.</span></span><span class="sig-name descname"><span class="pre">ActTimeoutError</span></span><a class="headerlink" href="#act.ActTimeoutError" title="Link to this definition">¶</a></dt>
+<dd><p>The program ran longer than the time it was given and was stopped.</p>
+<p>Derived from ActError, TimeoutError.</p>
+</dd></dl>
+
+</section>
+</section>
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../index.html">
+              <img class="logo" src="../_static/AClogo.png" alt="Logo of ACT"/>
+            </a></p>
+<h3><a href="../index.html">Table of Contents</a></h3>
+<p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../preface/preface.html">1. Preface</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="header.html">2. User Manual</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="installation.html">2.1. Installation of the ACT</a></li>
+<li class="toctree-l2"><a class="reference internal" href="verification.html">2.2. Verifying changes to ACT</a></li>
+<li class="toctree-l2"><a class="reference internal" href="using.html">2.3. Using the ACT</a></li>
+<li class="toctree-l2"><a class="reference internal" href="performance.html">2.4. Getting the best performance from ACT</a></li>
+<li class="toctree-l2"><a class="reference internal" href="simulation.html">2.5. MD Simulations with Alexandria Force Fields</a></li>
+<li class="toctree-l2"><a class="reference internal" href="properties.html">2.6. Predicting Molecular Properties</a></li>
+<li class="toctree-l2"><a class="reference internal" href="python.html">2.7. Using ACT from Python</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">2.8. Reference of the Python package</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#functions">2.8.1. Functions</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#act.build_arguments"><code class="docutils literal notranslate"><span class="pre">build_arguments()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#act.classes_available"><code class="docutils literal notranslate"><span class="pre">classes_available()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#act.data_directory"><code class="docutils literal notranslate"><span class="pre">data_directory()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#act.program_info"><code class="docutils literal notranslate"><span class="pre">program_info()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#act.read_molprop"><code class="docutils literal notranslate"><span class="pre">read_molprop()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#act.run"><code class="docutils literal notranslate"><span class="pre">run()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#act.commands"><code class="docutils literal notranslate"><span class="pre">commands</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#act.config"><code class="docutils literal notranslate"><span class="pre">config</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#classes">2.8.2. Classes</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#act.CommandInfo"><code class="docutils literal notranslate"><span class="pre">CommandInfo</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#act.ForceField"><code class="docutils literal notranslate"><span class="pre">ForceField</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#act.Minimization"><code class="docutils literal notranslate"><span class="pre">Minimization</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#act.MolProps"><code class="docutils literal notranslate"><span class="pre">MolProps</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#act.Molecule"><code class="docutils literal notranslate"><span class="pre">Molecule</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#act.NormalModes"><code class="docutils literal notranslate"><span class="pre">NormalModes</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#act.OptionInfo"><code class="docutils literal notranslate"><span class="pre">OptionInfo</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#act.Parameter"><code class="docutils literal notranslate"><span class="pre">Parameter</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#act.ParticleType"><code class="docutils literal notranslate"><span class="pre">ParticleType</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#act.ProgramInfo"><code class="docutils literal notranslate"><span class="pre">ProgramInfo</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#act.Result"><code class="docutils literal notranslate"><span class="pre">Result</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#act.Trajectory"><code class="docutils literal notranslate"><span class="pre">Trajectory</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#errors">2.8.3. Errors</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#act.ActCancelledError"><code class="docutils literal notranslate"><span class="pre">ActCancelledError</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#act.ActError"><code class="docutils literal notranslate"><span class="pre">ActError</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#act.ActFileError"><code class="docutils literal notranslate"><span class="pre">ActFileError</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#act.ActInputError"><code class="docutils literal notranslate"><span class="pre">ActInputError</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#act.ActInternalError"><code class="docutils literal notranslate"><span class="pre">ActInternalError</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#act.ActNotFoundError"><code class="docutils literal notranslate"><span class="pre">ActNotFoundError</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#act.ActOptionError"><code class="docutils literal notranslate"><span class="pre">ActOptionError</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#act.ActTimeoutError"><code class="docutils literal notranslate"><span class="pre">ActTimeoutError</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="gui.html">2.9. The graphical user interface</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../refman/header.html">3. Reference Manual</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../jupyter/header.html">4. Interactive Notebooks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../devman/header.html">5. Developer Manual</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../references.html">6. References</a></li>
+</ul>
+
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/userman/python_api.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<search id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="Related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="gui.html" title="2.9. The graphical user interface"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="python.html" title="2.7. Using ACT from Python"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">ACT 1.9b documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="header.html" ><span class="section-number">2. </span>User Manual</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href=""><span class="section-number">2.8. </span>Reference of the Python package</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+    &#169; Copyright 2026, ACT development team.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 8.2.3.
+    </div>
+  </body>
+</html>

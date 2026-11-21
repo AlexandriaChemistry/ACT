@@ -1,0 +1,5 @@
+<map id="alexandria::gpu::MultipoleSystem" name="alexandria::gpu::MultipoleSystem">
+<area shape="rect" id="Node000001" title="The dipoles and quadrupoles of the molecules, as MultiPoleDevComputer The moments are those of the ch..." alt="" coords="5,123,197,168"/>
+<area shape="rect" id="Node000002" href="$structalexandria_1_1gpu_1_1MultipoleStructure.xhtml" title="A structure of the multipoles of a molecule, in a block of its own, see MultipoleSystem." alt="" coords="5,5,197,50"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="103,64,104,123,98,122,99,68"/>
+</map>

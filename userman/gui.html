@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>2.9. The graphical user interface &#8212; ACT 1.9b documentation</title>
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=03e43079" />
+    <link rel="stylesheet" type="text/css" href="../_static/classic.css?v=2bf1fcf8" />
+    <link rel="stylesheet" type="text/css" href="../_static/mystnb.11b39860a7a0cbfd473a3ad8a317855267ff0bd372690045ca344a6b62be495e.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="../_static/togglebutton.css?v=9c3e77be" />
+    <link rel="stylesheet" type="text/css" href="../_static/sphinx_lesson.css?v=e9df6548" />
+    <link rel="stylesheet" type="text/css" href="../_static/term_role_formatting.css?v=4194e21c" />
+    <link rel="stylesheet" type="text/css" href="../_static/sphinx_rtd_theme_ext_color_contrast.css?v=01954304" />
+    
+    <script src="../_static/documentation_options.js?v=3d00d7a2"></script>
+    <script src="../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="../_static/copybutton.js?v=6dbb43f8"></script>
+    <script src="../_static/minipres.js?v=a0d29692"></script>
+    <script>let toggleHintShow = 'Click to show';</script>
+    <script>let toggleHintHide = 'Click to hide';</script>
+    <script>let toggleOpenOnPrint = 'true';</script>
+    <script src="../_static/togglebutton.js?v=b8b12719"></script>
+    <script>var togglebuttonSelector = '.toggle, .admonition.dropdown';</script>
+    <script>window.MathJax = {"options": {"processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
+    <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="3. Reference Manual" href="../refman/header.html" />
+    <link rel="prev" title="2.8. Reference of the Python package" href="python_api.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="Related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../refman/header.html" title="3. Reference Manual"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="python_api.html" title="2.8. Reference of the Python package"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">ACT 1.9b documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="header.html" accesskey="U"><span class="section-number">2. </span>User Manual</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href=""><span class="section-number">2.9. </span>The graphical user interface</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <section id="the-graphical-user-interface">
+<span id="sec-gui"></span><h1><span class="section-number">2.9. </span>The graphical user interface<a class="headerlink" href="#the-graphical-user-interface" title="Link to this heading">¶</a></h1>
+<p>ACT-GUI is a user interface for ACT that runs in a web browser. A small server on your own computer runs the commands of <em>alexandria</em> through the Python package of <a class="reference internal" href="python.html#sec-python"><span class="std std-ref">Using ACT from Python</span></a>, and a page shows the results: molecules in three dimensions with their charges, spectra, force fields, and how well a force field reproduces reference data. Long calculations can be sent from the page to a cluster on which you have an account. The interface is a repository of its own, <a class="reference external" href="https://github.com/AlexandriaChemistry/ACT-GUI">ACT-GUI</a>, which takes over from the program <em>actgui</em> of ACT-utilities.</p>
+<p>Everything the interface does, it does by running <em>alexandria</em> with options that it shows or that this manual describes, so a calculation that was tried in the interface can be repeated on the command line or in a script.</p>
+<section id="installing-and-starting">
+<h2><span class="section-number">2.9.1. </span>Installing and starting<a class="headerlink" href="#installing-and-starting" title="Link to this heading">¶</a></h2>
+<p>The interface needs ACT with its Python package, and Python 3.9 or newer with the packages <em>fastapi</em> and <em>uvicorn</em>. To save plots as PDF files it uses <a class="reference external" href="https://github.com/AlexandriaChemistry/plotXVG">plotXVG</a> when that is installed. From a copy of the repository:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip<span class="w"> </span>install<span class="w"> </span><span class="s2">".[plots]"</span>
+act-gui
+</pre></div>
+</div>
+<p><em>act-gui</em>, or <em>python -m act_gui</em>, prints an address and opens it in the browser. The server listens on your own computer only, and the address has a key without which it does not answer. Uploaded files and results are kept in a temporary directory that is removed when the program ends; <em>–data DIR</em> keeps them in a directory. <em>–no-browser</em> does not open a browser and <em>–port</em> chooses the port.</p>
+<p>The interface finds <em>alexandria</em> as the Python package does: the program the package was installed with, or the one in the environment variable <em>ACT_ALEXANDRIA</em>. Calculations on more than one process need <em>mpirun</em>, <em>mpiexec</em> or <em>srun</em> in the <em>PATH</em>, or the launcher in <em>ACT_MPIEXEC</em>.</p>
+</section>
+<section id="the-molecule-workspace">
+<h2><span class="section-number">2.9.2. </span>The molecule workspace<a class="headerlink" href="#the-molecule-workspace" title="Link to this heading">¶</a></h2>
+<p>A molecule is given as a SMILES string or as a file, and is read with the default force field, the force field of the force field workspace or a force field file. The viewer shows it coloured by element or by charge, and the tabs run the calculations for one molecule (<a class="reference internal" href="#fig-gui-molecule"><span class="std std-numref">Fig. 2.12</span></a>):</p>
+<ul class="simple">
+<li><p><em>Charges</em>: the charges and the topology (<em>alexandria gentop</em>).</p></li>
+<li><p><em>Minimize</em>: an energy minimization (<em>minimize</em>), with the minimized structure on top of the original one, the RMSD and the energy terms.</p></li>
+<li><p><em>Normal modes</em>: the vibrations (<em>nma</em>) with the infrared spectrum, the animated modes and the thermochemistry.</p></li>
+<li><p><em>Simulate</em>: a short molecular dynamics simulation (<em>simulate</em>), with the energies plotted while it runs and the trajectory animated afterwards.</p></li>
+<li><p><em>OpenMM</em>: an archive with which the molecule is simulated with OpenMM and the same force field, see <a class="reference internal" href="simulation.html#sec-simulations"><span class="std std-ref">MD Simulations with Alexandria Force Fields</span></a>.</p></li>
+</ul>
+<figure class="align-center" id="fig-gui-molecule">
+<a class="reference internal image-reference" href="../_images/gui-molecule.png"><img alt="../_images/gui-molecule.png" src="../_images/gui-molecule.png" style="width: 100%;" />
+</a>
+<figcaption>
+<p><span class="caption-number">Fig. 2.12 </span><span class="caption-text">The molecule workspace after a normal mode analysis of acetone. The atoms are coloured by charge; a click on a line under the spectrum or on a row of the table animates that vibration.</span><a class="headerlink" href="#fig-gui-molecule" title="Link to this image">¶</a></p>
+</figcaption>
+</figure>
+</section>
+<section id="the-force-field-workspace">
+<h2><span class="section-number">2.9.3. </span>The force field workspace<a class="headerlink" href="#the-force-field-workspace" title="Link to this heading">¶</a></h2>
+<p>This workspace has one force field at a time, which is made there or opened from a file. Each step writes a new file that can be saved and that the other workspaces can use.</p>
+<ul class="simple">
+<li><p><em>Generate</em> makes a new force field with <em>alexandria gen_ff</em> from a few choices: the charge model, the potentials with their combination rules, the atom types and which of them get a shell, and virtual sites.</p></li>
+<li><p><em>Virtual sites</em> defines sites by picking two, three or four atoms of a molecule in the viewer and choosing the kind of site; the site is shown where it would be. The sites can be saved in the file format of <em>gen_ff -vs</em>, and such a file can be opened.</p></li>
+<li><p><em>Geometry</em> takes bond lengths, angles and dihedral angles from the compounds of a molprop file (<em>geometry_ff</em>): a file of its own, or the file of the molprop workspace with the compounds that are ticked there.</p></li>
+<li><p><em>Edit and validate</em> lists the parameters with their value, bounds and whether they are trained (<a class="reference internal" href="#fig-gui-forcefield"><span class="std std-numref">Fig. 2.13</span></a>), changes them with <em>edit_ff</em>, and shows the problems that <em>edit_ff -validate</em> finds. Of a particle type the charge and the width of its distribution can be changed, not the mass.</p></li>
+<li><p><em>Compare</em> lists what differs between the force field of the workspace and another one: parameters with another value, with other bounds or another way of training, and those that only one of the two has.</p></li>
+</ul>
+<figure class="align-center" id="fig-gui-forcefield">
+<a class="reference internal image-reference" href="../_images/gui-forcefield.png"><img alt="../_images/gui-forcefield.png" src="../_images/gui-forcefield.png" style="width: 100%;" />
+</a>
+<figcaption>
+<p><span class="caption-number">Fig. 2.13 </span><span class="caption-text">The parameters of a force field. The bar shows where a value is between its bounds; a click on a row opens the form to change the value, the bounds or whether the parameter is trained.</span><a class="headerlink" href="#fig-gui-forcefield" title="Link to this image">¶</a></p>
+</figcaption>
+</figure>
+</section>
+<section id="the-molprop-workspace">
+<h2><span class="section-number">2.9.4. </span>The molprop workspace<a class="headerlink" href="#the-molprop-workspace" title="Link to this heading">¶</a></h2>
+<p>A molprop file with compounds and their reference data is opened and checked (<em>edit_mp -validate</em>). The page lists the compounds, the number of values of each property and the problems that were found. The table of compounds also says what each compound is used for: training, testing or nothing. A click changes that for one compound, and the buttons above the table for all compounds that the table shows.</p>
+<p><strong>Selection files.</strong> The choices of the table make the selection file that <em>train_ff</em> reads with <em>-sel</em>, see <a class="reference internal" href="using.html#sec-files"><span class="std std-ref">ACT File formats</span></a>: a line for each compound that is used, with <em>Train</em> or <em>Test</em>. The box in front of a compound says whether it is used, and the box in the header does so for all compounds that the table shows, which can be limited to those that have values of one property. For a file with dimers the card <em>Selection file</em> lists the monomers, and ticking monomers chooses the dimers they are in: with the dimers A#B, A#C and B#C, ticking only A gives A#B and A#C but not B#C. The other setting uses a dimer only when all its monomers are ticked. <em>Draw at random</em> uses a percentage of the ticked compounds for testing. <em>Save</em> writes the file, named after the molprop file with the extension <em>.dat</em>, and <em>Open</em> reads a selection file that exists already: the table then says what the file says, and compounds of the molprop file that the selection does not have are not used. A comparison or a training, on your own computer or on a cluster, uses what the table says at that moment.</p>
+<p><strong>Comparing.</strong> A force field is compared with the data of the file by <em>train_ff -nooptimize</em>, for the properties that are chosen. The page shows the statistics for each property and data set and a plot of the values of the force field against the reference values (<a class="reference internal" href="#fig-gui-comparison"><span class="std std-numref">Fig. 2.14</span></a>), which can be saved as a PDF file. For a compound with several structures, such as a dimer, a histogram shows the energies of the reference and of the force field.</p>
+<figure class="align-center" id="fig-gui-comparison">
+<a class="reference internal image-reference" href="../_images/gui-comparison.png"><img alt="../_images/gui-comparison.png" src="../_images/gui-comparison.png" style="width: 100%;" />
+</a>
+<figcaption>
+<p><span class="caption-number">Fig. 2.14 </span><span class="caption-text">A force field compared with the interaction energies of dimers: each point is a structure, and the dashed line is where the force field equals the reference.</span><a class="headerlink" href="#fig-gui-comparison" title="Link to this image">¶</a></p>
+</figcaption>
+</figure>
+<p><strong>Training.</strong> With <em>Train</em> instead of <em>Compare</em> the force field is trained on the data (<em>train_ff</em>). The force field offers the kinds of parameters that are not fixed, each property has a weight, and the optimizer is Monte Carlo or the genetic algorithm with or without Monte Carlo, see <a class="reference internal" href="performance.html#sec-performance"><span class="std std-ref">Getting the best performance from ACT</span></a> for what they need. <em>train_ff</em> has one set of parameters for each process, so the number of processes is the size of the population, which the genetic algorithm needs to be even. The compounds for testing are those that the table says, or a percentage that is drawn at random with a fixed seed. Note that <em>train_ff</em> starts from random values of the parameters unless <em>From random values</em> is switched off.</p>
+<p>The page follows a training with a plot of <span class="math notranslate nohighlight">\(\chi^2\)</span> (<a class="reference internal" href="#fig-gui-training"><span class="std std-numref">Fig. 2.15</span></a>) and can stop it. Afterwards it lists the trained parameters with the result of the sensitivity analysis, compares the trained force field with the data, and shows what the training changed. The trained force field can be saved or opened in the force field workspace. A calculation on your own computer may take ten minutes, and a job on a cluster the time it asks for. A training is told to stop somewhat before that (<em>train_ff -maxh</em>) and then ends in order, with the best force field it found; the page says that its time was up. Longer trainings belong on a cluster.</p>
+<p><em>Continue training</em> sets the form up to train further from a training that is done: the next one starts from the trained force field instead of random values, and with the genetic algorithm also from the individuals that the earlier training ended with (<em>-gpin</em>), for which it needs as many processes as there were individuals. Monte Carlo alone continues from the force field only. A training that stopped because its time was up is continued in the same way.</p>
+<figure class="align-center" id="fig-gui-training">
+<a class="reference internal image-reference" href="../_images/gui-training.png"><img alt="../_images/gui-training.png" src="../_images/gui-training.png" style="width: 100%;" />
+</a>
+<figcaption>
+<p><span class="caption-number">Fig. 2.15 </span><span class="caption-text">A short training: the lowest <span class="math notranslate nohighlight">\(\chi^2\)</span> so far, and the parameters of the trained force field.</span><a class="headerlink" href="#fig-gui-training" title="Link to this image">¶</a></p>
+</figcaption>
+</figure>
+</section>
+<section id="jobs-on-a-cluster">
+<span id="sec-gui-cluster"></span><h2><span class="section-number">2.9.5. </span>Jobs on a cluster<a class="headerlink" href="#jobs-on-a-cluster" title="Link to this heading">¶</a></h2>
+<p>Long calculations, a comparison with a large file or a training, can run on a Slurm cluster on which you have an account. In the tab <em>Cluster</em> you give the name of the server, your user name there and a working directory; how ACT is made available in a job (a module, a file that the shell reads, a conda environment, or nothing); the partitions for jobs with and without a GPU; and the name of the program there, <em>alexandria</em> or <em>alexandria_d</em>. The settings are kept in the file <em>act-gui/settings.json</em> in your configuration directory.</p>
+<p>The interface logs in with the <em>ssh</em> program of your computer, which uses your own keys and settings. It never asks for a password and keeps none, so the login has to work without a question: set up a key for the server, or open one connection in a terminal with connection sharing if the server asks for a password or a code each time. <em>Test the login</em> logs in once and tells whether the directory is there and the server has Slurm.</p>
+<p>A cluster may block an account that logs in often, so the interface logs in as seldom as it can:</p>
+<ul class="simple">
+<li><p>Before anything is sent, the page shows the job: the script for Slurm, the command and the files that go along. The files get a name after their option, such as <em>ff.xml</em>, so no name of a file on your computer goes to the cluster.</p></li>
+<li><p>Sending a job is one login. The files go to a directory of the job below the working directory, where <em>sbatch</em> is started.</p></li>
+<li><p>One login asks for the state of all jobs together, not more often than the settings say (every two minutes by default), and only while the page is open. A training also tells how far it is (<a class="reference internal" href="#fig-gui-cluster"><span class="std std-numref">Fig. 2.16</span></a>).</p></li>
+<li><p>When a job has ended, one more login fetches its results, which are then shown as those of a calculation on your own computer.</p></li>
+<li><p>After a login that did not work the cluster is not asked again until you press the button.</p></li>
+</ul>
+<p>What is known about the jobs is kept on your computer, so they are still listed when the interface is started again. <em>Stop</em> cancels a job with <em>scancel</em>. Nothing is ever removed on the cluster: the directory of a job stays there until you remove it.</p>
+<p>The program on the cluster has to know the options that the <em>alexandria</em> of your computer uses, so the two should be of the same version; a training needs <em>train_ff -progress</em>.</p>
+<figure class="align-center" id="fig-gui-cluster">
+<a class="reference internal image-reference" href="../_images/gui-cluster.png"><img alt="../_images/gui-cluster.png" src="../_images/gui-cluster.png" style="width: 100%;" />
+</a>
+<figcaption>
+<p><span class="caption-number">Fig. 2.16 </span><span class="caption-text">The jobs on the cluster, with how far a training was when the cluster was last asked, and the settings below.</span><a class="headerlink" href="#fig-gui-cluster" title="Link to this image">¶</a></p>
+</figcaption>
+</figure>
+</section>
+</section>
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../index.html">
+              <img class="logo" src="../_static/AClogo.png" alt="Logo of ACT"/>
+            </a></p>
+<h3><a href="../index.html">Table of Contents</a></h3>
+<p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../preface/preface.html">1. Preface</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="header.html">2. User Manual</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="installation.html">2.1. Installation of the ACT</a></li>
+<li class="toctree-l2"><a class="reference internal" href="verification.html">2.2. Verifying changes to ACT</a></li>
+<li class="toctree-l2"><a class="reference internal" href="using.html">2.3. Using the ACT</a></li>
+<li class="toctree-l2"><a class="reference internal" href="performance.html">2.4. Getting the best performance from ACT</a></li>
+<li class="toctree-l2"><a class="reference internal" href="simulation.html">2.5. MD Simulations with Alexandria Force Fields</a></li>
+<li class="toctree-l2"><a class="reference internal" href="properties.html">2.6. Predicting Molecular Properties</a></li>
+<li class="toctree-l2"><a class="reference internal" href="python.html">2.7. Using ACT from Python</a></li>
+<li class="toctree-l2"><a class="reference internal" href="python_api.html">2.8. Reference of the Python package</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">2.9. The graphical user interface</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#installing-and-starting">2.9.1. Installing and starting</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#the-molecule-workspace">2.9.2. The molecule workspace</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#the-force-field-workspace">2.9.3. The force field workspace</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#the-molprop-workspace">2.9.4. The molprop workspace</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#jobs-on-a-cluster">2.9.5. Jobs on a cluster</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../refman/header.html">3. Reference Manual</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../jupyter/header.html">4. Interactive Notebooks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../devman/header.html">5. Developer Manual</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../references.html">6. References</a></li>
+</ul>
+
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/userman/gui.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<search id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="Related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../refman/header.html" title="3. Reference Manual"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="python_api.html" title="2.8. Reference of the Python package"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">ACT 1.9b documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="header.html" ><span class="section-number">2. </span>User Manual</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href=""><span class="section-number">2.9. </span>The graphical user interface</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+    &#169; Copyright 2026, ACT development team.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 8.2.3.
+    </div>
+  </body>
+</html>

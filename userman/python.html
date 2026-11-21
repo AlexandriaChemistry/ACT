@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>2.7. Using ACT from Python &#8212; ACT 1.9b documentation</title>
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=03e43079" />
+    <link rel="stylesheet" type="text/css" href="../_static/classic.css?v=2bf1fcf8" />
+    <link rel="stylesheet" type="text/css" href="../_static/mystnb.11b39860a7a0cbfd473a3ad8a317855267ff0bd372690045ca344a6b62be495e.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="../_static/togglebutton.css?v=9c3e77be" />
+    <link rel="stylesheet" type="text/css" href="../_static/sphinx_lesson.css?v=e9df6548" />
+    <link rel="stylesheet" type="text/css" href="../_static/term_role_formatting.css?v=4194e21c" />
+    <link rel="stylesheet" type="text/css" href="../_static/sphinx_rtd_theme_ext_color_contrast.css?v=01954304" />
+    
+    <script src="../_static/documentation_options.js?v=3d00d7a2"></script>
+    <script src="../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="../_static/copybutton.js?v=6dbb43f8"></script>
+    <script src="../_static/minipres.js?v=a0d29692"></script>
+    <script>let toggleHintShow = 'Click to show';</script>
+    <script>let toggleHintHide = 'Click to hide';</script>
+    <script>let toggleOpenOnPrint = 'true';</script>
+    <script src="../_static/togglebutton.js?v=b8b12719"></script>
+    <script>var togglebuttonSelector = '.toggle, .admonition.dropdown';</script>
+    <script>window.MathJax = {"options": {"processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
+    <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="2.8. Reference of the Python package" href="python_api.html" />
+    <link rel="prev" title="2.6. Predicting Molecular Properties" href="properties.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="Related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="python_api.html" title="2.8. Reference of the Python package"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="properties.html" title="2.6. Predicting Molecular Properties"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">ACT 1.9b documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="header.html" accesskey="U"><span class="section-number">2. </span>User Manual</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href=""><span class="section-number">2.7. </span>Using ACT from Python</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <section id="using-act-from-python">
+<span id="sec-python"></span><h1><span class="section-number">2.7. </span>Using ACT from Python<a class="headerlink" href="#using-act-from-python" title="Link to this heading">¶</a></h1>
+<p>The Python package <em>act</em> runs the commands of the <em>alexandria</em> program from Python: the options of a command are keyword arguments, and the results come back as Python objects and files. It is installed together with ACT, next to the program it starts, and needs no other package than the Python standard library. The graphical user interface, see <a class="reference internal" href="gui.html#sec-gui"><span class="std std-ref">The graphical user interface</span></a>, is built on it.</p>
+<p>The package starts the program as a separate process for each command. A second layer, the classes of ACT in Python, is being built: see <a class="reference internal" href="#sec-python-classes"><span class="std std-ref">The classes of ACT</span></a> for what there is.</p>
+<section id="running-a-command">
+<h2><span class="section-number">2.7.1. </span>Running a command<a class="headerlink" href="#running-a-command" title="Link to this heading">¶</a></h2>
+<p>Each command of <em>alexandria</em> is a function in <em>act.commands</em> with the name of the command:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">act</span>
+
+<span class="n">res</span> <span class="o">=</span> <span class="n">act</span><span class="o">.</span><span class="n">commands</span><span class="o">.</span><span class="n">minimize</span><span class="p">(</span><span class="n">ff</span><span class="o">=</span><span class="s2">"ACS-pg1.xml"</span><span class="p">,</span> <span class="n">smiles</span><span class="o">=</span><span class="s2">"CC(=O)C"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">res</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">"rmsd"</span><span class="p">])</span>        <span class="c1"># {'value': 0.0019, 'unit': 'nm'}</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">res</span><span class="o">.</span><span class="n">file</span><span class="p">(</span><span class="s2">"c"</span><span class="p">))</span>           <span class="c1"># the file with the minimized structure</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="n">act</span><span class="o">.</span><span class="n">commands</span><span class="o">.</span><span class="n">available</span><span class="p">())</span>    <span class="c1"># the commands</span>
+<span class="n">help</span><span class="p">(</span><span class="n">act</span><span class="o">.</span><span class="n">commands</span><span class="o">.</span><span class="n">train_ff</span><span class="p">)</span>        <span class="c1"># the options of a command</span>
+</pre></div>
+</div>
+<p>The keyword arguments are the options of the command without the dash, so <em>alexandria minimize -ff ACS-pg1.xml -maxiter 500</em> becomes <em>minimize(ff=”ACS-pg1.xml”, maxiter=500)</em>. The rules are:</p>
+<ul class="simple">
+<li><p>An option that is a flag takes <em>True</em> or <em>False</em>: <em>optimize=False</em> gives <em>-nooptimize</em>.</p></li>
+<li><p>An option that takes several values or files takes a list.</p></li>
+<li><p>An option for an output file takes a file name, or <em>True</em> for the name that the program uses by default. Output files that the program always writes, such as the log file, need not be asked for.</p></li>
+<li><p>File names are relative to the directory from which Python runs, also when the command runs in another directory.</p></li>
+</ul>
+<p>The options are checked before the program starts, against the description that the program gives of itself (<em>alexandria help -export json</em>). A name that is not an option of the command, a value of the wrong type, a text that starts with a dash where a value is expected, and an input file that does not exist raise an error at once.</p>
+<p><em>act.run(“minimize”, ff=…, smiles=…)</em> does the same as <em>act.commands.minimize(…)</em>, with the name of the command as a text.</p>
+</section>
+<section id="the-result">
+<h2><span class="section-number">2.7.2. </span>The result<a class="headerlink" href="#the-result" title="Link to this heading">¶</a></h2>
+<p>A command returns an object of the class <em>act.Result</em>:</p>
+<ul class="simple">
+<li><p><em>data</em> has what the program wrote in JSON format: numbers are numbers, and a quantity with a unit is a dict with <em>value</em> and <em>unit</em>. Commands that can write JSON are asked to do so, unless <em>json=False</em> is given.</p></li>
+<li><p><em>files</em> has the output files that exist, by the name of their option, each as a list; <em>file(“c”)</em> gives the first file of the option <em>-c</em>, or <em>None</em>.</p></li>
+<li><p><em>log</em> has the text of the log file, <em>stdout</em> and <em>stderr</em> what the program printed, <em>args</em> the command line that was run, and <em>returncode</em> the exit status.</p></li>
+<li><p><em>workdir</em> is the directory in which the program ran.</p></li>
+</ul>
+<p>By default a command runs in a temporary directory, which is removed when the result is no longer used. Copy the files that should be kept, or give a directory, which is made if needed and kept:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">res</span> <span class="o">=</span> <span class="n">act</span><span class="o">.</span><span class="n">commands</span><span class="o">.</span><span class="n">nma</span><span class="p">(</span><span class="n">ff</span><span class="o">=</span><span class="s2">"ACS-pg1.xml"</span><span class="p">,</span> <span class="n">smiles</span><span class="o">=</span><span class="s2">"O"</span><span class="p">,</span> <span class="n">ir</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">workdir</span><span class="o">=</span><span class="s2">"water-nma"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">res</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">"Frequencies"</span><span class="p">])</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">res</span><span class="o">.</span><span class="n">file</span><span class="p">(</span><span class="s2">"ir"</span><span class="p">))</span>          <span class="c1"># water-nma/IRspectrum.xvg</span>
+</pre></div>
+</div>
+<p>A result can be used in a <em>with</em> statement, which removes a temporary directory at the end of the block.</p>
+</section>
+<section id="errors">
+<h2><span class="section-number">2.7.3. </span>Errors<a class="headerlink" href="#errors" title="Link to this heading">¶</a></h2>
+<p>All errors are subclasses of <em>act.ActError</em>:</p>
+<ul class="simple">
+<li><p><em>act.ActOptionError</em>: an unknown command or option, or a value that the option cannot take. Nothing was started.</p></li>
+<li><p><em>act.ActNotFoundError</em>: the program, the launcher for several processes or an input file was not found. Nothing was started.</p></li>
+<li><p><em>act.ActTimeoutError</em> and <em>act.ActCancelledError</em>: the program was stopped because it ran too long, or because the caller asked for it.</p></li>
+<li><p><em>act.ActError</em> itself: the program ran and failed. The message has the errors that the program reported, and the exception carries <em>returncode</em>, <em>stdout</em>, <em>stderr</em>, <em>log</em> and <em>command_line</em>.</p></li>
+</ul>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">try</span><span class="p">:</span>
+    <span class="n">act</span><span class="o">.</span><span class="n">commands</span><span class="o">.</span><span class="n">minimize</span><span class="p">(</span><span class="n">ff</span><span class="o">=</span><span class="s2">"ACS-pg1.xml"</span><span class="p">,</span> <span class="n">smiles</span><span class="o">=</span><span class="s2">"not a molecule"</span><span class="p">)</span>
+<span class="k">except</span> <span class="n">act</span><span class="o">.</span><span class="n">ActError</span> <span class="k">as</span> <span class="n">error</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">error</span><span class="p">)</span>               <span class="c1"># ... Cannot interpret the SMILES string ...</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">error</span><span class="o">.</span><span class="n">returncode</span><span class="p">)</span>    <span class="c1"># 1</span>
+</pre></div>
+</div>
+<p>With <em>check=False</em> a program that fails raises no error: the result is returned and its <em>returncode</em> tells what happened.</p>
+</section>
+<section id="long-runs-progress-time-limit-stopping">
+<h2><span class="section-number">2.7.4. </span>Long runs: progress, time limit, stopping<a class="headerlink" href="#long-runs-progress-time-limit-stopping" title="Link to this heading">¶</a></h2>
+<p><em>simulate</em> and <em>train_ff</em> can report how far they are while they run (their option <em>-progress</em>). The argument <em>on_progress</em> takes a function that is called with each report:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">report</span><span class="p">(</span><span class="n">item</span><span class="p">):</span>
+    <span class="k">if</span> <span class="n">item</span><span class="p">[</span><span class="s2">"event"</span><span class="p">]</span> <span class="o">==</span> <span class="s2">"generation"</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="n">item</span><span class="p">[</span><span class="s2">"generation"</span><span class="p">],</span> <span class="n">item</span><span class="p">[</span><span class="s2">"best"</span><span class="p">][</span><span class="s2">"train"</span><span class="p">])</span>
+
+<span class="n">res</span> <span class="o">=</span> <span class="n">act</span><span class="o">.</span><span class="n">commands</span><span class="o">.</span><span class="n">train_ff</span><span class="p">(</span><span class="n">ff</span><span class="o">=</span><span class="s2">"start.xml"</span><span class="p">,</span> <span class="n">mp</span><span class="o">=</span><span class="s2">"dimers.xml"</span><span class="p">,</span> <span class="n">sel</span><span class="o">=</span><span class="s2">"dimers.dat"</span><span class="p">,</span>
+                            <span class="n">optimizer</span><span class="o">=</span><span class="s2">"HYBRID"</span><span class="p">,</span> <span class="n">pop_size</span><span class="o">=</span><span class="mi">8</span><span class="p">,</span> <span class="n">max_generations</span><span class="o">=</span><span class="mi">50</span><span class="p">,</span>
+                            <span class="n">fit</span><span class="o">=</span><span class="s2">"sigma epsilon"</span><span class="p">,</span> <span class="n">fc_inter</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span>
+                            <span class="n">processes</span><span class="o">=</span><span class="mi">8</span><span class="p">,</span> <span class="n">on_progress</span><span class="o">=</span><span class="n">report</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">res</span><span class="o">.</span><span class="n">file</span><span class="p">(</span><span class="s2">"o"</span><span class="p">))</span>           <span class="c1"># the trained force field</span>
+</pre></div>
+</div>
+<p>For <em>simulate</em> a report has the step, the time, the temperature and the energies. For <em>train_ff</em> the key <em>event</em> tells what a report is: <em>start</em>, with the optimizer and the numbers of generations, iterations, individuals and parameters; <em>generation</em>, at the end of each generation, with the lowest <span class="math notranslate nohighlight">\(\chi^2\)</span> so far in <em>best</em>; and <em>step</em>, a few times per second at most, for a step of the Monte Carlo chain of the master process.</p>
+<p>A training that may take longer than the time it has, for instance in a queue, is told to stop in time with the option <em>maxh</em> of <em>train_ff</em>, the number of hours since the program started. It then ends as a complete training does, with the force field and, for the genetic algorithm, the gene pool from which a following training continues (<em>gpin</em>); <em>res.data[“time_limit”][“reached”]</em> tells whether that happened. This is not the argument <em>timeout</em> below, which stops the program without results.</p>
+<p>Other arguments of every command, which are not options of the program:</p>
+<ul class="simple">
+<li><p><em>processes</em>: the number of processes. More than one starts the program with the MPI launcher, see below.</p></li>
+<li><p><em>timeout</em>: the number of seconds after which the program is stopped.</p></li>
+<li><p><em>stop</em>: an object with a method <em>is_set()</em>, such as a <em>threading.Event</em>, with which another thread stops the program.</p></li>
+<li><p><em>env</em>: environment variables for the program, on top of those of Python.</p></li>
+</ul>
+</section>
+<section id="which-program-and-how-it-is-started">
+<h2><span class="section-number">2.7.5. </span>Which program, and how it is started<a class="headerlink" href="#which-program-and-how-it-is-started" title="Link to this heading">¶</a></h2>
+<p>The package starts the <em>alexandria</em> it was installed with. Otherwise it takes <em>alexandria</em>, or <em>alexandria_d</em> of a build in double precision, from the <em>PATH</em>. Another program, or a command that starts it such as that of a container, is chosen with the environment variable <em>ACT_ALEXANDRIA</em> or in Python:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">act</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">executable</span> <span class="o">=</span> <span class="s2">"/opt/act-test/bin/alexandria"</span>
+<span class="n">act</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">mpi_launcher</span> <span class="o">=</span> <span class="p">[</span><span class="s2">"srun"</span><span class="p">,</span> <span class="s2">"--mpi=pmix"</span><span class="p">]</span>
+<span class="n">act</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">timeout</span> <span class="o">=</span> <span class="mi">3600</span>
+</pre></div>
+</div>
+<p>For several processes the package looks for <em>mpirun</em>, <em>mpiexec</em> or <em>srun</em>; the environment variable <em>ACT_MPIEXEC</em> or <em>act.config.mpi_launcher</em> names another launcher, and <em>act.config.mpi_processes_flag</em> the option with which it takes the number of processes, <em>-n</em> by default.</p>
+</section>
+<section id="the-options-of-the-program-as-data">
+<h2><span class="section-number">2.7.6. </span>The options of the program as data<a class="headerlink" href="#the-options-of-the-program-as-data" title="Link to this heading">¶</a></h2>
+<p><em>act.program_info()</em> gives the description of all commands that the package itself uses: for each command its options with their type, default value, allowed values and help text. A program that builds forms or command lines can use it:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">command</span> <span class="o">=</span> <span class="n">act</span><span class="o">.</span><span class="n">program_info</span><span class="p">()</span><span class="o">.</span><span class="n">find_command</span><span class="p">(</span><span class="s2">"minimize"</span><span class="p">)</span>
+<span class="k">for</span> <span class="n">option</span> <span class="ow">in</span> <span class="n">command</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">values</span><span class="p">():</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">option</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">option</span><span class="o">.</span><span class="n">type</span><span class="p">,</span> <span class="n">option</span><span class="o">.</span><span class="n">default</span><span class="p">,</span> <span class="n">option</span><span class="o">.</span><span class="n">description</span><span class="p">)</span>
+</pre></div>
+</div>
+<p><em>act.build_arguments(command, options, workdir)</em> makes the list of arguments for a command without running it, with the output files that the command would write. This is how the graphical user interface makes the command of a job that runs on a cluster.</p>
+</section>
+<section id="the-classes-of-act">
+<span id="sec-python-classes"></span><h2><span class="section-number">2.7.7. </span>The classes of ACT<a class="headerlink" href="#the-classes-of-act" title="Link to this heading">¶</a></h2>
+<p>When ACT is built with <em>-DACT_PYTHON=ON</em>, which needs <a class="reference external" href="https://pybind11.readthedocs.io">pybind11</a>, the package also has classes that use the code of ACT directly, without a program in between. <em>act.classes_available()</em> tells whether an installation has them; the conda package <em>alexandria-python</em> does. There are the force field, the molecule with its energy, its minimum, its vibrations and simulations of it, and the compounds of a molprop file. Numbers such as coordinates, forces, charges, frequencies and the energies along a simulation come as <em>numpy</em> arrays, which are copies: changing them does not change the molecule. All functions and classes of the package are described in <a class="reference internal" href="python_api.html#sec-python-api"><span class="std std-ref">Reference of the Python package</span></a>.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">act</span>
+
+<span class="n">ff</span> <span class="o">=</span> <span class="n">act</span><span class="o">.</span><span class="n">ForceField</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="s2">"ACS-pg1.xml"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">ff</span><span class="o">.</span><span class="n">particle_types</span><span class="p">[:</span><span class="mi">5</span><span class="p">],</span> <span class="n">ff</span><span class="o">.</span><span class="n">interactions</span><span class="p">,</span> <span class="n">ff</span><span class="o">.</span><span class="n">polarizable</span><span class="p">)</span>
+
+<span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">ff</span><span class="o">.</span><span class="n">parameters</span><span class="p">(</span><span class="s2">"VANDERWAALS"</span><span class="p">)[:</span><span class="mi">3</span><span class="p">]:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">p</span><span class="o">.</span><span class="n">identifier</span><span class="p">,</span> <span class="n">p</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">p</span><span class="o">.</span><span class="n">value</span><span class="p">,</span> <span class="n">p</span><span class="o">.</span><span class="n">unit</span><span class="p">,</span> <span class="n">p</span><span class="o">.</span><span class="n">minimum</span><span class="p">,</span> <span class="n">p</span><span class="o">.</span><span class="n">maximum</span><span class="p">,</span> <span class="n">p</span><span class="o">.</span><span class="n">mutability</span><span class="p">)</span>
+
+<span class="n">sigma</span> <span class="o">=</span> <span class="n">ff</span><span class="o">.</span><span class="n">parameter</span><span class="p">(</span><span class="s2">"VANDERWAALS"</span><span class="p">,</span> <span class="s2">"Ar"</span><span class="p">,</span> <span class="s2">"sigma"</span><span class="p">)</span>
+<span class="n">ff</span><span class="o">.</span><span class="n">set_parameter</span><span class="p">(</span><span class="s2">"VANDERWAALS"</span><span class="p">,</span> <span class="s2">"Ar"</span><span class="p">,</span> <span class="s2">"sigma"</span><span class="p">,</span> <span class="n">value</span><span class="o">=</span><span class="mf">0.3</span><span class="p">,</span> <span class="n">mutability</span><span class="o">=</span><span class="s2">"Fixed"</span><span class="p">)</span>
+<span class="n">ff</span><span class="o">.</span><span class="n">set_particle_parameter</span><span class="p">(</span><span class="s2">"c3_s"</span><span class="p">,</span> <span class="s2">"charge"</span><span class="p">,</span> <span class="n">minimum</span><span class="o">=-</span><span class="mf">3.0</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">ff</span><span class="o">.</span><span class="n">particle_type</span><span class="p">(</span><span class="s2">"c3_s"</span><span class="p">)</span><span class="o">.</span><span class="n">parameters</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">ff</span><span class="o">.</span><span class="n">validate</span><span class="p">())</span>           <span class="c1"># the problems that edit_ff -validate lists</span>
+<span class="n">ff</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">"changed.xml"</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>A parameter that is asked for is a copy of what the force field has at that moment; it is changed through the force field, which checks the change first: the value stays within the bounds, the minimum below the maximum, and a parameter that cannot be negative stays so. A change that is refused changes nothing.</p>
+<p>A molecule is made for a force field, from a SMILES string or a structure file, with its topology and charges as the programs of ACT make them:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">mol</span> <span class="o">=</span> <span class="n">act</span><span class="o">.</span><span class="n">Molecule</span><span class="o">.</span><span class="n">from_smiles</span><span class="p">(</span><span class="s2">"CC(=O)C"</span><span class="p">,</span> <span class="n">ff</span><span class="p">)</span>      <span class="c1"># or act.Molecule.from_file("acetone.sdf", ff)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">mol</span><span class="o">.</span><span class="n">formula</span><span class="p">,</span> <span class="n">mol</span><span class="o">.</span><span class="n">charge</span><span class="p">,</span> <span class="n">mol</span><span class="o">.</span><span class="n">mass</span><span class="p">)</span>
+<span class="k">for</span> <span class="n">atom</span> <span class="ow">in</span> <span class="n">mol</span><span class="o">.</span><span class="n">atoms</span><span class="p">[:</span><span class="mi">4</span><span class="p">]:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">atom</span><span class="p">[</span><span class="s2">"name"</span><span class="p">],</span> <span class="n">atom</span><span class="p">[</span><span class="s2">"type"</span><span class="p">],</span> <span class="n">atom</span><span class="p">[</span><span class="s2">"particletype"</span><span class="p">],</span> <span class="n">atom</span><span class="p">[</span><span class="s2">"charge"</span><span class="p">])</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">mol</span><span class="o">.</span><span class="n">bonds</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>            <span class="c1"># {'atoms': [0, 2], 'order': 1}</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">mol</span><span class="o">.</span><span class="n">coordinates</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>      <span class="c1"># x, y and z in nm</span>
+<span class="n">energy</span> <span class="o">=</span> <span class="n">mol</span><span class="o">.</span><span class="n">energy</span><span class="p">()</span>          <span class="c1"># by term, in kJ/mol</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">energy</span><span class="p">[</span><span class="s2">"EPOT"</span><span class="p">],</span> <span class="n">energy</span><span class="p">[</span><span class="s2">"COULOMB"</span><span class="p">])</span>
+<span class="n">forces</span> <span class="o">=</span> <span class="n">mol</span><span class="o">.</span><span class="n">forces</span><span class="p">()</span>          <span class="c1"># on each particle, in kJ/mol nm</span>
+</pre></div>
+</div>
+<p>For a dimer, a structure of two compounds, the interaction energy is the energy of the dimer minus those of the compounds, as <em>alexandria simulate -sp</em> reports it:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">dimer</span> <span class="o">=</span> <span class="n">act</span><span class="o">.</span><span class="n">Molecule</span><span class="o">.</span><span class="n">from_file</span><span class="p">(</span><span class="s2">"water_dimer.pdb"</span><span class="p">,</span> <span class="n">ff</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">dimer</span><span class="o">.</span><span class="n">interaction_energy</span><span class="p">())</span>   <span class="c1"># by term, in kJ/mol</span>
+</pre></div>
+</div>
+<p>The energy is minimized and the vibrations are computed as <em>alexandria minimize</em> and <em>alexandria nma</em> do it:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">res</span> <span class="o">=</span> <span class="n">mol</span><span class="o">.</span><span class="n">minimize</span><span class="p">()</span>           <span class="c1"># the molecule gets the structure of the minimum</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">res</span><span class="o">.</span><span class="n">converged</span><span class="p">,</span> <span class="n">res</span><span class="o">.</span><span class="n">status</span><span class="p">,</span> <span class="n">res</span><span class="o">.</span><span class="n">rmsd</span><span class="p">,</span> <span class="n">res</span><span class="o">.</span><span class="n">energy_after</span><span class="p">[</span><span class="s2">"EPOT"</span><span class="p">])</span>
+<span class="n">res</span> <span class="o">=</span> <span class="n">mol</span><span class="o">.</span><span class="n">minimize</span><span class="p">(</span><span class="n">algorithm</span><span class="o">=</span><span class="s2">"Newton"</span><span class="p">,</span> <span class="n">max_iter</span><span class="o">=</span><span class="mi">500</span><span class="p">,</span> <span class="n">tolerance</span><span class="o">=</span><span class="mf">1e-8</span><span class="p">,</span> <span class="n">freeze</span><span class="o">=</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">2</span><span class="p">])</span>
+
+<span class="n">modes</span> <span class="o">=</span> <span class="n">mol</span><span class="o">.</span><span class="n">normal_modes</span><span class="p">()</span>     <span class="c1"># minimizes first, unless minimize=False</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">modes</span><span class="o">.</span><span class="n">frequencies</span><span class="p">)</span>       <span class="c1"># in 1/cm</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">modes</span><span class="o">.</span><span class="n">intensities</span><span class="p">,</span> <span class="n">modes</span><span class="o">.</span><span class="n">intensity_unit</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">modes</span><span class="o">.</span><span class="n">modes</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="s2">"reduced_mass"</span><span class="p">],</span> <span class="n">modes</span><span class="o">.</span><span class="n">modes</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="s2">"displacements"</span><span class="p">][</span><span class="mi">0</span><span class="p">])</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">modes</span><span class="o">.</span><span class="n">thermochemistry</span><span class="p">[</span><span class="s2">"T=298.15"</span><span class="p">][</span><span class="s2">"Standard entropy"</span><span class="p">][</span><span class="s2">"Total"</span><span class="p">])</span>
+<span class="n">x</span><span class="p">,</span> <span class="n">y</span> <span class="o">=</span> <span class="n">modes</span><span class="o">.</span><span class="n">spectrum</span><span class="p">(</span><span class="n">linewidth</span><span class="o">=</span><span class="mi">24</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>A molecular dynamics simulation, as <em>alexandria simulate</em> does it, starts from the structure of the molecule and leaves it as it is:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">follow</span><span class="p">(</span><span class="n">item</span><span class="p">):</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">item</span><span class="p">[</span><span class="s2">"step"</span><span class="p">],</span> <span class="n">item</span><span class="p">[</span><span class="s2">"time"</span><span class="p">],</span> <span class="n">item</span><span class="p">[</span><span class="s2">"temperature"</span><span class="p">],</span> <span class="n">item</span><span class="p">[</span><span class="s2">"energies"</span><span class="p">][</span><span class="s2">"EPOT"</span><span class="p">])</span>
+    <span class="k">return</span> <span class="n">item</span><span class="p">[</span><span class="s2">"temperature"</span><span class="p">]</span> <span class="o">&lt;</span> <span class="mi">2000</span>      <span class="c1"># False ends the simulation</span>
+
+<span class="n">traj</span> <span class="o">=</span> <span class="n">mol</span><span class="o">.</span><span class="n">simulate</span><span class="p">(</span><span class="n">steps</span><span class="o">=</span><span class="mi">10000</span><span class="p">,</span> <span class="n">timestep</span><span class="o">=</span><span class="mf">0.0002</span><span class="p">,</span> <span class="n">temperature</span><span class="o">=</span><span class="mi">300</span><span class="p">,</span> <span class="n">seed</span><span class="o">=</span><span class="mi">1993</span><span class="p">,</span>
+                    <span class="n">energy_interval</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span> <span class="n">frame_interval</span><span class="o">=</span><span class="mi">500</span><span class="p">,</span> <span class="n">on_energies</span><span class="o">=</span><span class="n">follow</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">traj</span><span class="o">.</span><span class="n">energy_times</span><span class="p">,</span> <span class="n">traj</span><span class="o">.</span><span class="n">energies</span><span class="p">[</span><span class="s2">"ETOT"</span><span class="p">],</span> <span class="n">traj</span><span class="o">.</span><span class="n">temperature</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">traj</span><span class="o">.</span><span class="n">times</span><span class="p">,</span> <span class="n">traj</span><span class="o">.</span><span class="n">frames</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">][</span><span class="mi">0</span><span class="p">])</span>      <span class="c1"># the structures, in nm</span>
+</pre></div>
+</div>
+<p>The times are in ps. Without a temperature the atoms start at rest; with one they get velocities for it, the same each time for the same seed. Other threads of Python run while the simulation does, and Ctrl-C ends it the next time the energies are due.</p>
+<p>The charges of ACT depend on the structure. They are made when the molecule is made, and again on request, for the structure the molecule has then; they can also be set by hand. The files for a simulation with OpenMM, see <a class="reference internal" href="simulation.html#sec-simulations"><span class="std std-ref">MD Simulations with Alexandria Force Fields</span></a>, are those of <em>alexandria gentop -openmm</em>:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">mol</span><span class="o">.</span><span class="n">minimize</span><span class="p">()</span>
+<span class="n">mol</span><span class="o">.</span><span class="n">generate_charges</span><span class="p">()</span>                     <span class="c1"># for the minimized structure</span>
+<span class="n">mol</span><span class="o">.</span><span class="n">set_charges</span><span class="p">([</span><span class="mf">0.0</span><span class="p">]</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="n">mol</span><span class="o">.</span><span class="n">atoms</span><span class="p">))</span>    <span class="c1"># or one charge for each particle</span>
+<span class="n">mol</span><span class="o">.</span><span class="n">generate_charges</span><span class="p">(</span><span class="s2">"SQE"</span><span class="p">)</span>
+
+<span class="n">mol</span><span class="o">.</span><span class="n">write_openmm</span><span class="p">(</span><span class="s2">"acetone-openmm.xml"</span><span class="p">,</span> <span class="n">structure</span><span class="o">=</span><span class="s2">"acetone.pdb"</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>A minimization that does not converge is told in the result, with the structure of the lowest energy that was found; <em>update=False</em> leaves the structure of the molecule as it is. Normal modes of a structure that is no minimum make no sense, so there a minimization that does not converge raises an error.</p>
+<p>The particles are the atoms, shells and virtual sites of the molecule, in the order of the coordinates. The numbers are those that <em>alexandria gentop</em>, <em>minimize</em> and <em>nma</em> report for the same molecule and force field. <em>act.data_directory()</em> tells where the classes look for the data files of ACT, after the directory in the environment variable <em>ACTDATA</em>. A molecule keeps the force field it was made for, with the parameters that the force field had at that moment.</p>
+<p>The compounds of a molprop file, see <a class="reference internal" href="using.html#sec-files"><span class="std std-ref">ACT File formats</span></a>, with their reference data:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">mps</span> <span class="o">=</span> <span class="n">act</span><span class="o">.</span><span class="n">read_molprop</span><span class="p">(</span><span class="s2">"alcohols.xml"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">mps</span><span class="p">),</span> <span class="n">mps</span><span class="o">.</span><span class="n">names</span><span class="p">,</span> <span class="n">mps</span><span class="o">.</span><span class="n">summary</span><span class="p">[</span><span class="s2">"properties"</span><span class="p">])</span>
+<span class="n">water</span> <span class="o">=</span> <span class="n">mps</span><span class="p">[</span><span class="s2">"water"</span><span class="p">]</span>                       <span class="c1"># or mps[0]: a compound by name or by place</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">water</span><span class="p">[</span><span class="s2">"formula"</span><span class="p">],</span> <span class="n">water</span><span class="p">[</span><span class="s2">"charge"</span><span class="p">],</span> <span class="n">water</span><span class="p">[</span><span class="s2">"fragments"</span><span class="p">],</span> <span class="n">water</span><span class="p">[</span><span class="s2">"properties"</span><span class="p">])</span>
+<span class="k">for</span> <span class="n">calc</span> <span class="ow">in</span> <span class="n">mps</span><span class="o">.</span><span class="n">calculations</span><span class="p">(</span><span class="s2">"water"</span><span class="p">):</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">calc</span><span class="p">[</span><span class="s2">"method"</span><span class="p">],</span> <span class="n">calc</span><span class="p">[</span><span class="s2">"basisset"</span><span class="p">],</span> <span class="n">calc</span><span class="p">[</span><span class="s2">"jobtype"</span><span class="p">],</span> <span class="n">calc</span><span class="p">[</span><span class="s2">"coordinates"</span><span class="p">][</span><span class="mi">0</span><span class="p">])</span>
+    <span class="k">for</span> <span class="n">prop</span> <span class="ow">in</span> <span class="n">calc</span><span class="p">[</span><span class="s2">"properties"</span><span class="p">]:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="n">prop</span><span class="p">[</span><span class="s2">"observable"</span><span class="p">],</span> <span class="n">prop</span><span class="p">[</span><span class="s2">"type"</span><span class="p">],</span> <span class="n">prop</span><span class="p">[</span><span class="s2">"value"</span><span class="p">],</span> <span class="n">prop</span><span class="p">[</span><span class="s2">"unit"</span><span class="p">])</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">mps</span><span class="o">.</span><span class="n">validate</span><span class="p">())</span>                      <span class="c1"># the check of edit_mp -validate</span>
+<span class="n">mps</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">"copy.xml"</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>New sets are made from others, which stay as they are:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">alcohols</span> <span class="o">=</span> <span class="n">mps</span><span class="o">.</span><span class="n">select</span><span class="p">([</span><span class="s2">"methanol"</span><span class="p">,</span> <span class="s2">"ethanol"</span><span class="p">])</span>   <span class="c1"># these compounds, in this order</span>
+<span class="n">others</span> <span class="o">=</span> <span class="n">mps</span><span class="o">.</span><span class="n">exclude</span><span class="p">([</span><span class="s2">"water"</span><span class="p">])</span>                   <span class="c1"># all but these</span>
+<span class="n">both</span> <span class="o">=</span> <span class="n">alcohols</span><span class="o">.</span><span class="n">merge</span><span class="p">(</span><span class="n">act</span><span class="o">.</span><span class="n">read_molprop</span><span class="p">(</span><span class="s2">"water-butanol.xml"</span><span class="p">))</span>
+<span class="n">both</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">"merged.xml"</span><span class="p">)</span>                          <span class="c1"># as alexandria edit_mp -mp alcohols.xml water-butanol.xml</span>
+</pre></div>
+</div>
+<p>A merge sorts the compounds by name and joins the calculations of a compound that both sets have, as <em>alexandria edit_mp</em> does with files.</p>
+<p>The coordinates are in nm and the values in the units that ACT computes with, which each property names. A property is a number (<em>value</em>) or a vector or tensor (<em>vector</em>); what it is not, is <em>None</em>.</p>
+<p>Errors are exceptions, and Python lives on: <em>act.ActFileError</em> (also an <em>OSError</em>) for a file that is missing, is not what it should be or cannot be written, <em>act.ActInputError</em> (also a <em>ValueError</em>) for input that is not accepted, such as a parameter that does not exist, a SMILES string that is no molecule or a molecule that the force field has no types for, and <em>act.ActInternalError</em> for what should not happen inside ACT. All are subclasses of <em>act.ActError</em>.</p>
+<p>The warnings and the information of ACT, such as an atom type that the force field does not have, go to the logger <em>act</em> of the module <em>logging</em>. Nothing is shown unless the program asks for it:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
+<span class="n">logging</span><span class="o">.</span><span class="n">basicConfig</span><span class="p">(</span><span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">INFO</span><span class="p">)</span>   <span class="c1"># or logging.WARNING for the warnings only</span>
+</pre></div>
+</div>
+</section>
+<section id="the-class-act-of-earlier-versions">
+<h2><span class="section-number">2.7.8. </span>The class ACT of earlier versions<a class="headerlink" href="#the-class-act-of-earlier-versions" title="Link to this heading">¶</a></h2>
+<p>Until ACT 1.9b the module <em>act.py</em> of ACT-utilities had a class <em>ACT</em> that wrote command lines for <em>alexandria</em>. It is now <em>act.legacy.ACT</em>, and <em>from act import ACT</em> still works, with a warning. New scripts should use the functions above.</p>
+</section>
+</section>
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../index.html">
+              <img class="logo" src="../_static/AClogo.png" alt="Logo of ACT"/>
+            </a></p>
+<h3><a href="../index.html">Table of Contents</a></h3>
+<p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../preface/preface.html">1. Preface</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="header.html">2. User Manual</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="installation.html">2.1. Installation of the ACT</a></li>
+<li class="toctree-l2"><a class="reference internal" href="verification.html">2.2. Verifying changes to ACT</a></li>
+<li class="toctree-l2"><a class="reference internal" href="using.html">2.3. Using the ACT</a></li>
+<li class="toctree-l2"><a class="reference internal" href="performance.html">2.4. Getting the best performance from ACT</a></li>
+<li class="toctree-l2"><a class="reference internal" href="simulation.html">2.5. MD Simulations with Alexandria Force Fields</a></li>
+<li class="toctree-l2"><a class="reference internal" href="properties.html">2.6. Predicting Molecular Properties</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">2.7. Using ACT from Python</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#running-a-command">2.7.1. Running a command</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#the-result">2.7.2. The result</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#errors">2.7.3. Errors</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#long-runs-progress-time-limit-stopping">2.7.4. Long runs: progress, time limit, stopping</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#which-program-and-how-it-is-started">2.7.5. Which program, and how it is started</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#the-options-of-the-program-as-data">2.7.6. The options of the program as data</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#the-classes-of-act">2.7.7. The classes of ACT</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#the-class-act-of-earlier-versions">2.7.8. The class ACT of earlier versions</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="python_api.html">2.8. Reference of the Python package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="gui.html">2.9. The graphical user interface</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../refman/header.html">3. Reference Manual</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../jupyter/header.html">4. Interactive Notebooks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../devman/header.html">5. Developer Manual</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../references.html">6. References</a></li>
+</ul>
+
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/userman/python.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<search id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="Related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="python_api.html" title="2.8. Reference of the Python package"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="properties.html" title="2.6. Predicting Molecular Properties"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">ACT 1.9b documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="header.html" ><span class="section-number">2. </span>User Manual</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href=""><span class="section-number">2.7. </span>Using ACT from Python</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+    &#169; Copyright 2026, ACT development team.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 8.2.3.
+    </div>
+  </body>
+</html>

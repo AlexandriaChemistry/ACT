@@ -1,0 +1,7 @@
+<map id="alexandria::gpu::InteractionList" name="alexandria::gpu::InteractionList">
+<area shape="rect" id="Node000001" title="A list of interactions of one potential in a block, see SystemBlock The interactions without shells a..." alt="" coords="100,106,323,134"/>
+<area shape="rect" id="Node000002" href="$structalexandria_1_1gpu_1_1PairEntry.xhtml" title="A pair interaction with prepared parameters, see PairKernel For the potentials other than Coulomb,..." alt="" coords="5,5,194,33"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="126,41,199,105,194,106,124,46"/>
+<area shape="rect" id="Node000003" href="$structalexandria_1_1gpu_1_1BondedEntry.xhtml" title="A bonded interaction with prepared parameters, see BondedKernel." alt="" coords="218,5,432,33"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="301,42,228,108,225,103,296,44"/>
+</map>

@@ -1,0 +1,44 @@
+<map id="src/act/properties/tests/minimizeTest.cpp" name="src/act/properties/tests/minimizeTest.cpp">
+<area shape="rect" id="Node000001" title="Tests of the alexandria minimize tool, in particular of the JSON output that the Python interface and..." alt="" coords="688,5,864,50"/>
+<area shape="rect" id="Node000002" href="$actpre_8h.xhtml" title="Prerequisite header file for ACT build." alt="" coords="5,106,80,134"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="685,30,569,36,419,47,255,68,173,82,93,101,85,103,82,98,91,95,172,77,254,62,419,42,569,31,691,29"/>
+<area shape="rect" id="Node000003" title=" " alt="" coords="104,106,189,134"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="685,33,588,42,466,55,333,74,202,101,192,103,190,98,201,95,332,68,465,49,587,37,691,32"/>
+<area shape="rect" id="Node000004" title=" " alt="" coords="213,106,275,134"/>
+<area shape="poly" id="edge3_Node000001_Node000004" title=" " alt="" coords="685,34,603,43,502,55,394,74,289,101,282,103,281,98,287,95,393,69,501,50,602,38,690,33"/>
+<area shape="rect" id="Node000005" title=" " alt="" coords="299,106,388,134"/>
+<area shape="poly" id="edge4_Node000001_Node000005" title=" " alt="" coords="685,42,553,66,402,101,391,104,390,99,400,95,552,61,690,40"/>
+<area shape="rect" id="Node000006" title=" " alt="" coords="413,106,485,134"/>
+<area shape="poly" id="edge5_Node000001_Node000006" title=" " alt="" coords="685,47,596,72,498,101,492,103,490,98,496,95,594,66,690,46"/>
+<area shape="rect" id="Node000007" title=" " alt="" coords="510,106,613,134"/>
+<area shape="poly" id="edge6_Node000001_Node000007" title=" " alt="" coords="727,50,607,103,605,98,722,51"/>
+<area shape="rect" id="Node000008" title=" " alt="" coords="637,106,688,134"/>
+<area shape="poly" id="edge7_Node000001_Node000008" title=" " alt="" coords="751,49,692,99,690,94,747,51"/>
+<area shape="rect" id="Node000009" title=" " alt="" coords="563,191,708,218"/>
+<area shape="poly" id="edge8_Node000001_Node000009" title=" " alt="" coords="766,49,738,96,702,144,664,183,661,178,698,141,734,93,761,52"/>
+<area shape="rect" id="Node000010" title=" " alt="" coords="732,191,774,218"/>
+<area shape="poly" id="edge9_Node000001_Node000010" title=" " alt="" coords="775,49,759,177,755,173,771,52"/>
+<area shape="rect" id="Node000011" title=" " alt="" coords="797,191,856,218"/>
+<area shape="poly" id="edge10_Node000001_Node000011" title=" " alt="" coords="784,48,821,177,816,174,780,52"/>
+<area shape="rect" id="Node000012" title=" " alt="" coords="1133,106,1192,134"/>
+<area shape="poly" id="edge11_Node000001_Node000012" title=" " alt="" coords="864,39,985,62,1115,95,1124,101,1119,100,1114,101,983,67,864,44"/>
+<area shape="rect" id="Node000013" title=" " alt="" coords="1066,191,1128,218"/>
+<area shape="poly" id="edge12_Node000001_Node000013" title=" " alt="" coords="864,37,944,58,984,74,1021,96,1042,114,1060,134,1087,178,1082,176,1056,138,1039,117,1018,100,982,79,942,63,864,42"/>
+<area shape="rect" id="Node000014" href="$output__checks_8h.xhtml" title="Helpers for tests that keep what a tool writes as reference data: the JSON output,..." alt="" coords="864,98,1008,143"/>
+<area shape="poly" id="edge13_Node000001_Node000014" title=" " alt="" coords="815,48,887,91,882,90,814,53"/>
+<area shape="rect" id="Node000015" title=" " alt="" coords="1152,191,1290,218"/>
+<area shape="poly" id="edge22_Node000001_Node000015" title=" " alt="" coords="864,39,961,60,1012,76,1061,96,1093,116,1123,140,1188,183,1183,182,1120,145,1090,121,1059,100,1010,81,959,65,864,44"/>
+<area shape="rect" id="Node000017" title=" " alt="" coords="1217,106,1423,134"/>
+<area shape="poly" id="edge20_Node000001_Node000017" title=" " alt="" coords="864,40,1204,95,1237,103,1231,103,1203,101,864,45"/>
+<area shape="rect" id="Node000018" title=" " alt="" coords="1447,106,1614,134"/>
+<area shape="poly" id="edge21_Node000001_Node000018" title=" " alt="" coords="864,32,1121,55,1278,73,1435,95,1463,103,1458,103,1434,101,1277,78,1121,61,864,38"/>
+<area shape="rect" id="Node000019" title=" " alt="" coords="1638,106,1831,134"/>
+<area shape="poly" id="edge23_Node000001_Node000019" title=" " alt="" coords="864,30,1199,51,1412,70,1627,95,1661,103,1656,103,1626,101,1412,75,1199,57,864,36"/>
+<area shape="poly" id="edge17_Node000014_Node000009" title=" " alt="" coords="866,141,699,189,698,184,861,142"/>
+<area shape="poly" id="edge14_Node000014_Node000010" title=" " alt="" coords="890,143,789,190,788,185,885,144"/>
+<area shape="poly" id="edge15_Node000014_Node000011" title=" " alt="" coords="910,142,857,183,855,178,905,144"/>
+<area shape="poly" id="edge16_Node000014_Node000013" title=" " alt="" coords="979,141,1060,184,1055,183,978,146"/>
+<area shape="poly" id="edge18_Node000014_Node000015" title=" " alt="" coords="1009,140,1164,186,1158,186,1008,145"/>
+<area shape="rect" id="Node000016" title=" " alt="" coords="880,191,1042,218"/>
+<area shape="poly" id="edge19_Node000014_Node000016" title=" " alt="" coords="944,141,955,177,950,174,941,145"/>
+</map>

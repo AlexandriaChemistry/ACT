@@ -1,0 +1,25 @@
+<map id="src/act/import/tests/smilesTest.cpp" name="src/act/import/tests/smilesTest.cpp">
+<area shape="rect" id="Node000001" title="Tests of making molecules from SMILES strings, see importSmiles." alt="" coords="470,5,618,50"/>
+<area shape="rect" id="Node000002" href="$actpre_8h.xhtml" title="Prerequisite header file for ACT build." alt="" coords="5,98,80,126"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="467,39,303,64,95,100,94,95,302,59,472,37"/>
+<area shape="rect" id="Node000003" title=" " alt="" coords="104,98,189,126"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="470,46,204,100,203,95,469,41"/>
+<area shape="rect" id="Node000004" title=" " alt="" coords="213,98,275,126"/>
+<area shape="poly" id="edge3_Node000001_Node000004" title=" " alt="" coords="472,49,291,100,290,95,467,49"/>
+<area shape="rect" id="Node000005" title=" " alt="" coords="300,98,367,126"/>
+<area shape="poly" id="edge4_Node000001_Node000005" title=" " alt="" coords="491,50,382,94,380,89,485,51"/>
+<area shape="rect" id="Node000006" title=" " alt="" coords="391,98,494,126"/>
+<area shape="poly" id="edge5_Node000001_Node000006" title=" " alt="" coords="520,50,472,90,470,85,515,51"/>
+<area shape="rect" id="Node000007" title=" " alt="" coords="519,98,569,126"/>
+<area shape="poly" id="edge6_Node000001_Node000007" title=" " alt="" coords="546,49,546,84,542,81,542,52"/>
+<area shape="rect" id="Node000008" title=" " alt="" coords="593,98,652,126"/>
+<area shape="poly" id="edge7_Node000001_Node000008" title=" " alt="" coords="566,48,602,87,597,86,563,53"/>
+<area shape="rect" id="Node000009" title=" " alt="" coords="676,98,735,126"/>
+<area shape="poly" id="edge8_Node000001_Node000009" title=" " alt="" coords="587,48,668,91,663,90,586,53"/>
+<area shape="rect" id="Node000010" title=" " alt="" coords="759,98,822,126"/>
+<area shape="poly" id="edge9_Node000001_Node000010" title=" " alt="" coords="610,48,748,96,742,95,609,53"/>
+<area shape="rect" id="Node000011" title=" " alt="" coords="846,98,1036,126"/>
+<area shape="poly" id="edge10_Node000001_Node000011" title=" " alt="" coords="618,42,865,94,860,95,618,47"/>
+<area shape="rect" id="Node000012" title=" " alt="" coords="1061,98,1253,126"/>
+<area shape="poly" id="edge11_Node000001_Node000012" title=" " alt="" coords="618,36,1048,95,1043,96,618,41"/>
+</map>

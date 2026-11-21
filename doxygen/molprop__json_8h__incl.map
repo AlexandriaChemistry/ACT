@@ -1,0 +1,7 @@
+<map id="src/act/molprop/molprop_json.h" name="src/act/molprop/molprop_json.h">
+<area shape="rect" id="Node000001" title="Declares functions that describe the content of molprop files in a JsonTree, for programs that read t..." alt="" coords="5,5,186,50"/>
+<area shape="rect" id="Node000002" title=" " alt="" coords="25,98,83,126"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="87,49,70,85,65,82,83,52"/>
+<area shape="rect" id="Node000003" title=" " alt="" coords="107,98,169,126"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="108,48,127,84,122,84,105,53"/>
+</map>

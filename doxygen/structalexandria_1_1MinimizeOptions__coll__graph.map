@@ -1,0 +1,9 @@
+<map id="alexandria::MinimizeOptions" name="alexandria::MinimizeOptions">
+<area shape="rect" id="Node000001" title="What alexandria minimize does, as its command line gives it." alt="" coords="123,200,332,228"/>
+<area shape="rect" id="Node000002" href="$classalexandria_1_1SimulationConfigHandler.xhtml" title="Class to handle command line options for MD simulations and energy minimization." alt="" coords="5,82,215,127"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="146,135,216,199,211,200,144,140"/>
+<area shape="rect" id="Node000003" href="$classalexandria_1_1ConfigHandler.xhtml" title=" " alt="" coords="15,5,205,33"/>
+<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="111,46,113,82,107,81,109,51"/>
+<area shape="rect" id="Node000004" href="$classalexandria_1_1CompoundReader.xhtml" title=" " alt="" coords="239,91,453,118"/>
+<area shape="poly" id="edge3_Node000001_Node000004" title=" " alt="" coords="323,128,270,178,244,202,241,197,267,174,318,130"/>
+</map>

@@ -1,0 +1,7 @@
+<map id="src/act/forcefield/setrecipe.h" name="src/act/forcefield/setrecipe.h">
+<area shape="rect" id="Node000001" title="A recipe for the parameters of an interaction, for the processor and the GPU." alt="" coords="55,5,185,50"/>
+<area shape="rect" id="Node000002" href="$parameterrecipes_8h.xhtml" title="Recipes for the parameters of interactions in the units of the program, from the values of the force ..." alt="" coords="44,98,196,143"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="121,63,123,99,117,97,119,68"/>
+<area shape="rect" id="Node000003" href="$parameterUpdateTest_8cpp.xhtml" title="Tests that updating the force field one parameter at a time, as the MCMC steps of training do,..." alt="" coords="5,191,235,235"/>
+<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="122,156,122,192,118,189,118,160"/>
+</map>

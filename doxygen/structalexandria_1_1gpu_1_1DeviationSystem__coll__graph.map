@@ -1,0 +1,9 @@
+<map id="alexandria::gpu::DeviationSystem" name="alexandria::gpu::DeviationSystem">
+<area shape="rect" id="Node000001" title="What computeDeviations needs, the energy types and the reference data As ForceEnergyDevComputer::calc..." alt="" coords="355,57,548,102"/>
+<area shape="rect" id="Node000002" href="$structalexandria_1_1gpu_1_1DeviationType.xhtml" title="An energy type of a block, see DeviationSystem." alt="" coords="5,5,229,33"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="244,31,331,46,368,56,363,56,330,51,244,37"/>
+<area shape="rect" id="Node000003" href="$structalexandria_1_1gpu_1_1DeviationDimer.xhtml" title="A dimer of one replica with its reference data, see DeviationSystem." alt="" coords="20,57,214,102"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="229,77,357,78,352,80,230,82"/>
+<area shape="rect" id="Node000004" href="$structalexandria_1_1gpu_1_1DeviationMonomer.xhtml" title="A topology of one replica with the reference potential energies, see DeviationSystem." alt="" coords="20,126,214,171"/>
+<area shape="poly" id="edge3_Node000001_Node000004" title=" " alt="" coords="229,127,330,107,360,103,365,102,331,112,230,132"/>
+</map>
