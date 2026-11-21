@@ -10,7 +10,7 @@
 # of the conda-forge feedstock takes the archive of a release tag instead.
 
 context:
-  version: "1.9b"
+  version: "1.95b"
 
 recipe:
   name: alexandria-split
@@ -23,7 +23,7 @@ source:
 # files that are on the channel already, and alexandria-python requires the
 # alexandria of its own build, by its name.
 build:
-  number: 3
+  number: 0
   skip:
     - not ((osx and arm64) or (linux and (x86_64 or aarch64)))
 
