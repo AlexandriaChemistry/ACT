@@ -422,7 +422,10 @@ TEST_F(MinimizeTest, ResultsDefaults)
 
 TEST_F(MinimizeTest, ResultsPolarizable)
 {
-    checkMinimization("acetone.sdf", "ACS-pg1.xml", "results-polarizable", {});
+    // With the default tolerance of the forces, 1e-6, a build in single
+    // precision may not find a lower minimum at the end, depending on the
+    // platform, which a build in double precision does
+    checkMinimization("acetone.sdf", "ACS-pg1.xml", "results-polarizable", { "-toler", "0.0001" });
 }
 
 TEST_F(MinimizeTest, ResultsNewton)
