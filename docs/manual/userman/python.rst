@@ -6,7 +6,7 @@ Using ACT from Python
 
 The Python package *act* runs the commands of the *alexandria* program from Python: the options of a command are keyword arguments, and the results come back as Python objects and files. It is installed together with ACT, next to the program it starts, and needs no other package than the Python standard library. The graphical user interface, see :ref:`sec-gui`, is built on it.
 
-The package starts the program as a separate process for each command. It does not give access to the data structures of ACT inside Python; that is planned as a second layer.
+The package starts the program as a separate process for each command. A second layer, the classes of ACT in Python, is being built: see :ref:`sec-python-classes` for what there is.
 
 ==================
 Running a command
@@ -128,6 +128,36 @@ The options of the program as data
        print(option.name, option.type, option.default, option.description)
 
 *act.build_arguments(command, options, workdir)* makes the list of arguments for a command without running it, with the output files that the command would write. This is how the graphical user interface makes the command of a job that runs on a cluster.
+
+.. _sec-python-classes:
+
+========================
+The classes of ACT
+========================
+When ACT is built with *-DACT_PYTHON=ON*, which needs `pybind11`_, the package also has classes that use the code of ACT directly, without a program in between. *act.classes_available()* tells whether an installation has them. So far there is the force field; molecules with their energies are next.
+
+.. code-block:: python
+
+   import act
+
+   ff = act.ForceField.read("ACS-pg1.xml")
+   print(ff.particle_types[:5], ff.interactions, ff.polarizable)
+
+   for p in ff.parameters("VANDERWAALS")[:3]:
+       print(p.identifier, p.name, p.value, p.unit, p.minimum, p.maximum, p.mutability)
+
+   sigma = ff.parameter("VANDERWAALS", "Ar", "sigma")
+   ff.set_parameter("VANDERWAALS", "Ar", "sigma", value=0.3, mutability="Fixed")
+   ff.set_particle_parameter("c3_s", "charge", minimum=-3.0)
+   print(ff.particle_type("c3_s").parameters)
+   print(ff.validate())           # the problems that edit_ff -validate lists
+   ff.write("changed.xml")
+
+A parameter that is asked for is a copy of what the force field has at that moment; it is changed through the force field, which checks the change first: the value stays within the bounds, the minimum below the maximum, and a parameter that cannot be negative stays so. A change that is refused changes nothing.
+
+Errors are exceptions, and Python lives on: *act.ActFileError* (also an *OSError*) for a file that is missing, is not what it should be or cannot be written, *act.ActInputError* (also a *ValueError*) for input that is not accepted, such as a parameter that does not exist, and *act.ActInternalError* for what should not happen inside ACT. All are subclasses of *act.ActError*.
+
+.. _pybind11: https://pybind11.readthedocs.io
 
 ====================================
 The class ACT of earlier versions

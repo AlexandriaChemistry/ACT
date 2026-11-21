@@ -394,8 +394,14 @@ found is in the exception.
 | `mol.write_openmm()` | `writeOpenMM` | the force field file for OpenMM |
 | `act.MolProp`, `act.read_molprop` | `MolPropRead`, `MolPropWrite`, `validateMolProps` | iterate over compounds, experiments and energies; `validate()` |
 
-*Status of A7.* `act.ForceField` reads and writes a file and tells its
-particle types and interactions; its parameters are next.
+*Status of A7.* `act.ForceField` is done: `read`, `write`, `particle_types`,
+`interactions`, `parameters(interaction)`, `parameter(interaction,
+identifier, name)`, `particle_type(name)`, `set_parameter` and
+`set_particle_parameter` with value, bounds and mutability by keyword, and
+`validate()`. A parameter that Python gets is a copy (`act.Parameter`), not
+a reference into the force field; a change goes through the force field,
+is checked first, and changes nothing when it is refused. `act.Molecule`
+is next.
 
 This is the API of issue 59, with other names:
 
