@@ -26,16 +26,23 @@ build:
   number: 0
   skip:
     - not ((osx and arm64) or (linux and (x86_64 or aarch64)))
+    # Double precision for the processor only, single with the GPU where there is one
+    - precision == "double" and gpu != "none"
+    - linux and precision == "single" and gpu == "none"
 
 outputs:
   - package:
       name: alexandria
     build:
-      string: mpi_${{ mpi }}_${{ gpu }}_h${{ hash }}_${{ build_number }}
+      string: mpi_${{ mpi }}_${{ gpu }}_${{ precision }}_h${{ hash }}_${{ build_number }}
       script:
         file: build.sh
         env:
           ACT_GPU_VARIANT: ${{ gpu }}
+          ACT_PRECISION: ${{ precision }}
+      # conda takes single precision unless double is asked for
+      variant:
+        down_prioritize_variant: ${{ 1 if precision == "double" else 0 }}
     requirements:
       build:
         - ${{ compiler('c') }}
@@ -97,7 +104,7 @@ outputs:
           - alexandria -h
           - alexandria train_ff -h
           - test -f $PREFIX/share/act/alexandria.json
-          - 'alexandria -version | grep "Precision: *single"'
+          - 'alexandria -version | grep "Precision: *${{ precision }}"'
           - if: (osx and arm64) or (linux and aarch64)
             then: 'alexandria -version | grep "Explicit SIMD: *ARM_NEON"'
           - if: linux and x86_64
@@ -113,9 +120,13 @@ outputs:
   - package:
       name: alexandria-python
     build:
-      string: py${{ act_python | replace(".", "") }}_mpi_${{ mpi }}_h${{ hash }}_${{ build_number }}
+      string: py${{ act_python | replace(".", "") }}_mpi_${{ mpi }}_${{ precision }}_h${{ hash }}_${{ build_number }}
       script:
         file: build-python.sh
+        env:
+          ACT_PRECISION: ${{ precision }}
+      variant:
+        down_prioritize_variant: ${{ 1 if precision == "double" else 0 }}
     requirements:
       build:
         - ${{ compiler('c') }}
