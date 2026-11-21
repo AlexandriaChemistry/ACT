@@ -1277,7 +1277,9 @@ class MolPropsTest(unittest.TestCase):
         self.assertIsInstance(checked["messages"], list)
         # Dimers, of which the compounds are compared with each other
         checked = act.read_molprop(self.mpdir / "booze-inter.xml").validate()
-        self.assertEqual({"checked", "ok", "problems", "invalid", "messages"}, set(checked))
+        self.assertEqual({"checked", "ok", "problems", "invalid", "duplicates", "with_duplicates",
+                          "messages"}, set(checked))
+        self.assertEqual(0, checked["duplicates"])
         self.assertTrue(checked["ok"])
         # A file with a problem is in the tests of edit_mp, which uses the same check
 

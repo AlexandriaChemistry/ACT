@@ -76,12 +76,18 @@ struct MolPropValidation
     size_t                nproblem = 0;
     //! The names of the molecules with problems
     std::set<std::string> invalid;
+    //! The number of calculations that were there twice, with the same results, and were removed
+    size_t                nduplicate = 0;
+    //! The names of the molecules that had such calculations
+    std::set<std::string> duplicated;
 };
 
 /*! \brief Check that a set of molecules is consistent, as edit_mp -validate
  * First each molecule is checked with MolProp::validate, which removes the
  * experiments with the atoms in another order than the reference
- * experiment. Then all molecules are checked together:
+ * experiment, and the calculations that are there twice with the same
+ * results; the latter are counted, and reported with a warning for each
+ * molecule, but are no problem. Then all molecules are checked together:
  * - each fragment has an InChI as its identifier, and
  * - each compound, a fragment identified by its InChI and formula, has its
  *   atoms in the same order (names and types) in all molecules, such that it can be

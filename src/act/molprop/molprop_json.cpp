@@ -171,6 +171,8 @@ JsonTree molPropValidationToJson(const MolPropValidation               &validati
     jv.addBool("ok", validation.nproblem == 0);
     jv.addObject("problems", static_cast<int>(validation.nproblem));
     jv.addArray("invalid", std::vector<std::string>(validation.invalid.begin(), validation.invalid.end()));
+    jv.addObject("duplicates", static_cast<int>(validation.nduplicate));
+    jv.addArray("with_duplicates", std::vector<std::string>(validation.duplicated.begin(), validation.duplicated.end()));
     JsonTree jmsgs = JsonTree::array("messages");
     for (const auto &message : messages)
     {
