@@ -1,5 +1,6 @@
-# Recipe for the conda package alexandria, built with rattler-build, see
-# README.md in this directory and docs/conda-packaging-plan.md. It needs the
+# Recipe for the conda packages alexandria (programs, libraries and data) and
+# alexandria-python (the Python package act), built with rattler-build, see
+# README.md in this directory and docs/conda-packaging-plan.md. They need the
 # package act-utilities of the repository ACT-utilities.
 #
 # The source is the directory or archive in the environment variable
@@ -100,6 +101,69 @@ outputs:
             then: 'alexandria -version | grep "Explicit SIMD: *AVX2"'
           - if: gpu == "sycl_cuda"
             then: 'alexandria -version | grep "GPU support: *SYCL"'
+
+  # The Python package act: the alexandria program from Python, and the
+  # classes of ACT in the module act._core. The module has the code of ACT
+  # in it (static libraries, without GPU support), such that it depends on
+  # the Python version only, and is built once for each. It runs the program
+  # and reads the data files of the package alexandria it was built with.
+  - package:
+      name: alexandria-python
+    build:
+      string: py${{ act_python | replace(".", "") }}_mpi_${{ mpi }}_h${{ hash }}_${{ build_number }}
+      script:
+        file: build-python.sh
+    requirements:
+      build:
+        - ${{ compiler('c') }}
+        - ${{ compiler('cxx') }}
+        - ${{ stdlib('c') }}
+        - cmake >=3.24
+        - make
+        - if: build_platform != target_platform
+          then:
+            - ${{ mpi }}
+        - if: linux and x86_64
+          then:
+            - x86_64-microarch-level ==3
+      host:
+        - ${{ mpi }}
+        - python ${{ act_python }}.*
+        - pybind11 >=2.10
+        # The program for the tests in build-python.sh
+        - ${{ pin_subpackage('alexandria', exact=True) }}
+        - act-utilities ==${{ version }}
+        - libxml2-devel
+        - eigen >=5
+        - nlohmann_json
+        - libboost-devel
+        - librdkit-dev
+        - librdkit
+        - libsqlite
+      run:
+        - python
+        - ${{ mpi }}
+        - ${{ pin_subpackage('alexandria', exact=True) }}
+        - ${{ pin_compatible('librdkit', upper_bound='x.x.x') }}
+      ignore_run_exports:
+        by_name:
+          - librdkit
+    tests:
+      - python:
+          imports:
+            - act
+            - act._core
+          pip_check: false
+      - script:
+          # See the tests of alexandria
+          - export UCX_TLS=self,sm,tcp
+          - python check-python-package.py
+        files:
+          recipe:
+            - check-python-package.py
+          source:
+            - src/act/testdata/forcefields/ACS-g1.xml
+            - src/act/testdata/molecules/acetone.sdf
 
 about:
   homepage: https://github.com/AlexandriaChemistry/ACT

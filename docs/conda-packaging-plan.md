@@ -424,6 +424,11 @@ by hand (`workflow_dispatch`):
    `alexandria` depends on it. This replaces the output `alexandria-python`
    and the options `ACT_INSTALL_PYTHON` and `ACT_PYTHON_ONLY`. See section 13.
 6. Decided: the package version follows the ACT version, now 1.9b.
+7. Done, the choices can still be changed: the Python package `act` of ACT
+   (the alexandria program from Python and the classes of ACT, see
+   `docs/python-api-gui-plan.md`) is the output `alexandria-python` of the
+   recipe. The name was reserved for the scripts that went to
+   `act-utilities`; the import name stays `act`. See section 14.
 
 ## 13. Moving the Python code to ACT-utilities
 
@@ -447,3 +452,23 @@ the CI of ACT installs it from its main branch. The steps:
 5. The manual: the chapters that use the scripts say where they come from.
 6. The recipe: `alexandria` depends on the ACT-utilities package instead of
    `alexandria-python`.
+
+## 14. The package `alexandria-python`
+
+The Python package `act` has a compiled module, `act._core`, with the
+classes of ACT (pybind11, CMake option `ACT_PYTHON`). A compiled module is
+for one Python version, so it cannot be in `alexandria`, which does not
+depend on Python, and it cannot be `noarch`.
+
+| Topic | Choice | Reason |
+|-------|--------|--------|
+| Output | `alexandria-python` in the same recipe, built by `build-python.sh` | One version and one source for the program and its Python package. |
+| Contents | The whole package `act`: the modules that run the program and the module `_core` | One package to install; `alexandria` stays free of Python files. |
+| Python versions | The key `act_python` in `variants.yaml`, now 3.11 to 3.14 | The key `python` of conda-forge would also multiply `alexandria`, which has a Python in its build for a check of CMake only. The feedstock of conda-forge has to map its `python` key to this. |
+| Libraries of ACT | Static, inside the module, without GPU support | Importing the module loads nothing of AdaptiveCpp or CUDA, and the module does not depend on how the libraries of `alexandria` were built. The price: ACT is compiled once for each Python version, and the classes do not use a GPU. Linking the module to the shared libraries of `alexandria` is the alternative when the classes should use the GPU. |
+| MPI | The same variants as `alexandria` | The libraries of ACT call MPI, so the module links to the MPI library of the environment. |
+| Dependency | The exact build of `alexandria` of the same recipe | The package runs its program and reads its data files in `share/act`. |
+| Tests | `python/tests/test_core.py` in the build script, with the installed module and the program of `alexandria`; imports and `check-python-package.py` as package tests | The package test has only the two test files it needs, such that the package stays small. |
+| Pull requests | One Python version (3.13); tags and runs by hand build all | Compile time. |
+
+Not tested on a machine of ours: Linux, which only the workflow builds.

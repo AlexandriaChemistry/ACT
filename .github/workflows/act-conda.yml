@@ -1,10 +1,12 @@
 name: Conda packages
 run-name: ${{ github.actor }} builds the conda packages of ACT
-# Builds the conda packages act-utilities and alexandria with the recipes in
-# admin/conda of ACT and conda of ACT-utilities, see admin/conda/README.md.
-# Pull requests that change the recipe only build and test them. A tag v*
-# uploads them to the channel alexandriachemistry on anaconda.org with the
-# label main, a run by hand with the label that is given, dev by default.
+# Builds the conda packages act-utilities, alexandria and alexandria-python
+# with the recipes in admin/conda of ACT and conda of ACT-utilities, see
+# admin/conda/README.md. Pull requests that change the recipe only build and
+# test them, alexandria-python for one Python version. A tag v* uploads them
+# to the channel alexandriachemistry on anaconda.org with the label main, a
+# run by hand with the label that is given, dev by default; both build
+# alexandria-python for all Python versions of admin/conda/variants.yaml.
 on:
   push:
     tags:
@@ -50,6 +52,9 @@ jobs:
       # Inside the workspace, since upload-artifact refuses paths with ..;
       # the build of alexandria takes the last commit, not these files
       CONDA_OUT: ${{ github.workspace }}/conda-out
+      # The module of alexandria-python is compiled for each Python version,
+      # with all of ACT in it: a pull request tries one version
+      PYTHON_VARIANT: ${{ github.event_name == 'pull_request' && '--variant act_python=3.13' || '' }}
     steps:
       - name: Check out ACT
         uses: actions/checkout@v6
@@ -75,11 +80,11 @@ jobs:
           ACT_UTILITIES_SOURCE=${{ github.workspace }}/ACT-utilities \
             rattler-build build --recipe ACT-utilities/conda/recipe.yaml \
                                 --channel conda-forge --output-dir ${CONDA_OUT}
-      - name: Build alexandria
+      - name: Build alexandria and alexandria-python
         shell: bash -el {0}
         run: |
           # From the last commit, with act-utilities from the step above
-          admin/conda/build-local.sh ${CONDA_OUT} --variant mpi=${{ matrix.mpi }} \
+          admin/conda/build-local.sh ${CONDA_OUT} --variant mpi=${{ matrix.mpi }} ${PYTHON_VARIANT} \
                                      --channel file://$(cd ${CONDA_OUT} && pwd)
           ls -l ${CONDA_OUT}/*/*.conda
       - name: Keep the packages
