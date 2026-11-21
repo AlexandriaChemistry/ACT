@@ -35,11 +35,14 @@
 
 #include <gtest/gtest.h>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "act/alexandria/confighandler.h"
 #include "act/alexandria/sensitivity.h"
 #include "act/basics/msg_handler.h"
+#include "act/constraints/shake.h"
+#include "act/properties/velocityhandler.h"
 #include "gromacs/commandline/filenm.h"
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/fileio/oenv.h"
@@ -358,6 +361,207 @@ TEST(ConfigHandlerTest, SimulationConfigHandlerDefaults)
     EXPECT_FALSE(simCfg.singlePoint());
     EXPECT_EQ(simCfg.maxIter(), 0);
     EXPECT_GT(simCfg.deltat(), 0.0);
+}
+
+// ---- SimulationConfigHandler from the command line ----
+//
+// What the command line of minimize, nma and simulate gives, such that a
+// change in how the options are turned into settings shows.
+
+//! The option sets of the tools
+enum class SimulationOptionSet
+{
+    //! minimize: the minimization options with -ws
+    Minimize,
+    //! nma: -sp, -minimize and the minimization options
+    Nma,
+    //! simulate: as nma, with the MD options
+    Simulate
+};
+
+/*! \brief Parse a command line into simulation settings as a tool does
+ * \param[in] sch  The settings
+ * \param[in] set  The options that the tool has
+ * \param[in] args The arguments
+ */
+static void parseSimulationOptions(SimulationConfigHandler         *sch,
+                                   SimulationOptionSet              set,
+                                   const std::vector<const char *> &args)
+{
+    std::vector<t_pargs>  pargs;
+    std::vector<t_filenm> fnms;
+    if (SimulationOptionSet::Minimize == set)
+    {
+        sch->add_minimize_options(&pargs, true);
+    }
+    else
+    {
+        sch->add_options(&pargs, &fnms);
+        if (SimulationOptionSet::Simulate == set)
+        {
+            sch->add_MD_options(&pargs);
+        }
+    }
+    std::vector<const char *> cmdline = { "test" };
+    cmdline.insert(cmdline.end(), args.begin(), args.end());
+    gmx::test::CommandLine    cmd(cmdline);
+    gmx_output_env_t         *oenv = nullptr;
+    ASSERT_TRUE(parse_common_args(&cmd.argc(), cmd.argv(), 0, 0, nullptr,
+                                  pargs.size(), pargs.data(), 0, nullptr, 0, nullptr, &oenv));
+    output_env_done(oenv);
+    MsgHandler msghandler;
+    sch->check_pargs(&msghandler);
+}
+
+/*! \brief Check that settings have the values of a tool without options
+ * \param[in] sch The settings
+ */
+static void expectSimulationDefaults(const SimulationConfigHandler &sch)
+{
+    EXPECT_FALSE(sch.singlePoint());
+    EXPECT_FALSE(sch.minimize());
+    EXPECT_EQ(eMinimizeAlgorithm::LBFGS, sch.minAlg());
+    EXPECT_EQ(0, sch.maxIter());
+    EXPECT_EQ(100, sch.shellMaxIter());
+    EXPECT_EQ(1, sch.minimizeRetries());
+    EXPECT_DOUBLE_EQ(static_cast<real>(0.002), sch.minimizeDisplacement());
+    EXPECT_FALSE(sch.forceReminimize());
+    EXPECT_DOUBLE_EQ(static_cast<real>(1e-6), sch.forceTolerance());
+    EXPECT_DOUBLE_EQ(1.0, sch.overRelax());
+    EXPECT_EQ(0, sch.kFBPR());
+    EXPECT_EQ(0, sch.r0FBPR());
+    EXPECT_EQ(ConstraintType::No, sch.constraintType());
+    EXPECT_FALSE(sch.constrain());
+    EXPECT_EQ(1000, sch.constraintMaxIter());
+    EXPECT_DOUBLE_EQ(static_cast<real>(1e-6), sch.constraintTolerance());
+    EXPECT_FALSE(sch.writeShells());
+    EXPECT_EQ(0, sch.nsteps());
+    EXPECT_DOUBLE_EQ(static_cast<real>(0.0002), sch.deltat());
+    EXPECT_EQ(0, sch.temperature());
+    EXPECT_EQ(0, sch.seed());
+    EXPECT_EQ(1, sch.nstxout());
+    EXPECT_EQ(0, sch.nstvout());
+    EXPECT_EQ(1, sch.nstener());
+    EXPECT_EQ(COMMRemoval::Angular, sch.commRemoval());
+    EXPECT_EQ(100, sch.nstcomm());
+}
+
+TEST(ConfigHandlerTest, SimulationOptionsDefaults)
+{
+    for (auto set : { SimulationOptionSet::Minimize, SimulationOptionSet::Nma, SimulationOptionSet::Simulate })
+    {
+        SCOPED_TRACE(static_cast<int>(set));
+        SimulationConfigHandler sch;
+        parseSimulationOptions(&sch, set, {});
+        expectSimulationDefaults(sch);
+    }
+}
+
+TEST(ConfigHandlerTest, SimulationOptionsAllSet)
+{
+    SimulationConfigHandler sch;
+    parseSimulationOptions(&sch, SimulationOptionSet::Simulate,
+                           { "-sp", "-minimize", "-minalg", "Steep", "-maxiter", "77",
+                             "-shell_max_iter", "33", "-maxretries", "4", "-maxdisplacement", "0.01",
+                             "-forcereminimize", "-toler", "0.0001", "-overrelax", "1.5",
+                             "-kfbpr", "250", "-r0fbpr", "0.3", "-constrain", "angles",
+                             "-constr_maxiter", "55", "-constr_toler", "0.0002",
+                             "-nsteps", "1234", "-deltat", "0.0005", "-ws", "-temp", "310",
+                             "-seed", "42", "-nstxout", "7", "-nstvout", "8", "-nstener", "9",
+                             "-comm", "linear", "-nstcomm", "11" });
+    EXPECT_TRUE(sch.singlePoint());
+    EXPECT_TRUE(sch.minimize());
+    EXPECT_EQ(eMinimizeAlgorithm::Steep, sch.minAlg());
+    EXPECT_EQ(77, sch.maxIter());
+    EXPECT_EQ(33, sch.shellMaxIter());
+    EXPECT_EQ(4, sch.minimizeRetries());
+    EXPECT_DOUBLE_EQ(static_cast<real>(0.01), sch.minimizeDisplacement());
+    EXPECT_TRUE(sch.forceReminimize());
+    EXPECT_DOUBLE_EQ(static_cast<real>(0.0001), sch.forceTolerance());
+    EXPECT_DOUBLE_EQ(1.5, sch.overRelax());
+    EXPECT_DOUBLE_EQ(250, sch.kFBPR());
+    EXPECT_DOUBLE_EQ(static_cast<real>(0.3), sch.r0FBPR());
+    EXPECT_EQ(ConstraintType::Angles, sch.constraintType());
+    EXPECT_TRUE(sch.constrain());
+    EXPECT_EQ(55, sch.constraintMaxIter());
+    EXPECT_DOUBLE_EQ(static_cast<real>(0.0002), sch.constraintTolerance());
+    EXPECT_EQ(1234, sch.nsteps());
+    EXPECT_DOUBLE_EQ(static_cast<real>(0.0005), sch.deltat());
+    EXPECT_TRUE(sch.writeShells());
+    EXPECT_DOUBLE_EQ(310, sch.temperature());
+    EXPECT_EQ(42, sch.seed());
+    EXPECT_EQ(7, sch.nstxout());
+    EXPECT_EQ(8, sch.nstvout());
+    EXPECT_EQ(9, sch.nstener());
+    EXPECT_EQ(COMMRemoval::Linear, sch.commRemoval());
+    EXPECT_EQ(11, sch.nstcomm());
+}
+
+TEST(ConfigHandlerTest, SimulationOptionsMinimizationAlgorithms)
+{
+    const std::vector<std::pair<const char *, eMinimizeAlgorithm>> choices = {
+        { "LBFGS", eMinimizeAlgorithm::LBFGS },
+        { "Newton", eMinimizeAlgorithm::Newton },
+        { "Steep", eMinimizeAlgorithm::Steep }
+    };
+    for (const auto &choice : choices)
+    {
+        for (auto set : { SimulationOptionSet::Minimize, SimulationOptionSet::Nma, SimulationOptionSet::Simulate })
+        {
+            SimulationConfigHandler sch;
+            parseSimulationOptions(&sch, set, { "-minalg", choice.first });
+            EXPECT_EQ(choice.second, sch.minAlg()) << choice.first;
+        }
+    }
+}
+
+TEST(ConfigHandlerTest, SimulationOptionsConstraints)
+{
+    const std::vector<std::pair<const char *, ConstraintType>> choices = {
+        { "no", ConstraintType::No },
+        { "bonds", ConstraintType::Bonds },
+        { "angles", ConstraintType::Angles }
+    };
+    for (const auto &choice : choices)
+    {
+        for (auto set : { SimulationOptionSet::Minimize, SimulationOptionSet::Nma, SimulationOptionSet::Simulate })
+        {
+            SimulationConfigHandler sch;
+            parseSimulationOptions(&sch, set, { "-constrain", choice.first });
+            EXPECT_EQ(choice.second, sch.constraintType()) << choice.first;
+        }
+    }
+}
+
+TEST(ConfigHandlerTest, SimulationOptionsCenterOfMass)
+{
+    const std::vector<std::pair<const char *, COMMRemoval>> choices = {
+        { "angular", COMMRemoval::Angular },
+        { "linear", COMMRemoval::Linear },
+        { "none", COMMRemoval::None }
+    };
+    for (const auto &choice : choices)
+    {
+        SimulationConfigHandler sch;
+        parseSimulationOptions(&sch, SimulationOptionSet::Simulate, { "-comm", choice.first });
+        EXPECT_EQ(choice.second, sch.commRemoval()) << choice.first;
+    }
+}
+
+TEST(ConfigHandlerTest, SimulationOptionsNotKeptBetweenParses)
+{
+    // The choices of one command line do not carry over to the next one in
+    // the same process, for any of the tools
+    for (auto set : { SimulationOptionSet::Minimize, SimulationOptionSet::Nma, SimulationOptionSet::Simulate })
+    {
+        SCOPED_TRACE(static_cast<int>(set));
+        SimulationConfigHandler first;
+        parseSimulationOptions(&first, SimulationOptionSet::Simulate,
+                               { "-minalg", "Newton", "-constrain", "bonds", "-comm", "linear" });
+        SimulationConfigHandler second;
+        parseSimulationOptions(&second, set, {});
+        expectSimulationDefaults(second);
+    }
 }
 
 TEST(ConfigHandlerTest, SimulationConfigHandlerSetters)
