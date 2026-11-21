@@ -5,7 +5,7 @@
   <Bool Name="converged">true</Bool>
   <Object Name="rmsd">
     <String Name="unit">nm</String>
-    <Real Name="value">0.019176370931997068</Real>
+    <Real Name="value">0.019176364395928486</Real>
   </Object>
   <Object Name="Energies before">
     <Object Name="ALLELEC">
@@ -427,123 +427,123 @@
       <Int Name="Length">20</Int>
       <Sequence>
         <Int Name="Length">3</Int>
-        <Real>-0.010648944764020073</Real>
-        <Real>-0.0034782190547448357</Real>
-        <Real>0.13021830366060555</Real>
+        <Real>-0.010648951619067336</Real>
+        <Real>-0.003478225904950249</Real>
+        <Real>0.13021830058614578</Real>
       </Sequence>
       <Sequence>
         <Int Name="Length">3</Int>
-        <Real>-0.010585981621558629</Real>
-        <Real>-0.0034578662652764791</Real>
-        <Real>0.12945629439253048</Real>
+        <Real>-0.010585988804339832</Real>
+        <Real>-0.0034578755615674857</Real>
+        <Real>0.12945629118415805</Real>
       </Sequence>
       <Sequence>
         <Int Name="Length">3</Int>
-        <Real>-0.00082337330927145791</Real>
-        <Real>-0.00026888056131670995</Real>
-        <Real>0.01006727458136333</Real>
+        <Real>-0.00082336655646664085</Real>
+        <Real>-0.00026882234532018428</Real>
+        <Real>0.010067278833897696</Real>
       </Sequence>
       <Sequence>
         <Int Name="Length">3</Int>
-        <Real>-0.00048457087869991505</Real>
-        <Real>-0.00015845819898279302</Real>
-        <Real>0.0059332354291282662</Real>
+        <Real>-0.00048456394190516359</Real>
+        <Real>-0.00015840137509329019</Real>
+        <Real>0.0059332396574881194</Real>
       </Sequence>
       <Sequence>
         <Int Name="Length">3</Int>
-        <Real>-0.12102459214218246</Real>
-        <Real>0.0021704829239651406</Real>
-        <Real>-0.079940933320114579</Real>
+        <Real>-0.12102458877204959</Real>
+        <Real>0.0021704631875664152</Real>
+        <Real>-0.079940928844182885</Real>
       </Sequence>
       <Sequence>
         <Int Name="Length">3</Int>
-        <Real>-0.12325952701050209</Real>
-        <Real>0.0022867974062449996</Real>
-        <Real>-0.084268823647145386</Real>
+        <Real>-0.12325952359628194</Real>
+        <Real>0.0022867748037011756</Real>
+        <Real>-0.084268819395350775</Real>
       </Sequence>
       <Sequence>
         <Int Name="Length">3</Int>
-        <Real>0.13240616860349119</Real>
-        <Real>0.0015468914452416709</Real>
-        <Real>-0.059231507536625774</Real>
+        <Real>0.13240616784035411</Real>
+        <Real>0.0015468833151726544</Real>
+        <Real>-0.059231510997304601</Real>
       </Sequence>
       <Sequence>
         <Int Name="Length">3</Int>
-        <Real>0.13531607314994518</Real>
-        <Real>0.0016505478119317951</Real>
-        <Real>-0.063139019348093767</Real>
+        <Real>0.13531607224720821</Real>
+        <Real>0.001650537331532231</Real>
+        <Real>-0.063139022959523713</Real>
       </Sequence>
       <Sequence>
         <Int Name="Length">3</Int>
-        <Real>-0.21206566524829776</Real>
-        <Real>0.00049735842320212638</Real>
-        <Real>-0.016412742531998516</Real>
+        <Real>-0.21206565321000925</Real>
+        <Real>0.00049732600505135015</Real>
+        <Real>-0.016412725582752474</Real>
       </Sequence>
       <Sequence>
         <Int Name="Length">3</Int>
-        <Real>-0.21384384664249775</Real>
-        <Real>0.00054472576646062525</Real>
-        <Real>-0.018166235583198277</Real>
+        <Real>-0.2138438347092966</Real>
+        <Real>0.00054469202285981587</Real>
+        <Real>-0.018166218703613318</Real>
       </Sequence>
       <Sequence>
         <Int Name="Length">3</Int>
-        <Real>-0.11996993035013841</Real>
-        <Real>0.094809289966061611</Real>
-        <Real>-0.14086618101182558</Real>
+        <Real>-0.1199699539031661</Real>
+        <Real>0.09480923096536463</Real>
+        <Real>-0.14086624941001355</Real>
       </Sequence>
       <Sequence>
         <Int Name="Length">3</Int>
-        <Real>-0.12070305279120359</Real>
-        <Real>0.095208693040508552</Real>
-        <Real>-0.14282728733841282</Real>
+        <Real>-0.12070307636773241</Real>
+        <Real>0.095208632564257129</Real>
+        <Real>-0.14282735566719468</Real>
       </Sequence>
       <Sequence>
         <Int Name="Length">3</Int>
-        <Real>-0.12002018812882752</Real>
-        <Real>-0.087081524460662529</Real>
-        <Real>-0.14572859528546678</Real>
+        <Real>-0.12002016695767241</Real>
+        <Real>-0.087081589347751093</Real>
+        <Real>-0.14572854048492956</Real>
       </Sequence>
       <Sequence>
         <Int Name="Length">3</Int>
-        <Real>-0.1207535023227866</Real>
-        <Real>-0.087375175277206979</Real>
-        <Real>-0.14770822934718419</Real>
+        <Real>-0.12075348100222359</Real>
+        <Real>-0.087375241604508311</Real>
+        <Real>-0.14770817472333375</Real>
       </Sequence>
       <Sequence>
         <Int Name="Length">3</Int>
-        <Real>0.21191306547133409</Real>
-        <Real>-0.00054621649184090251</Real>
-        <Real>0.01823680558607188</Real>
+        <Real>0.21191306699610207</Real>
+        <Real>-0.00054644996366631717</Real>
+        <Real>0.018236785722480286</Real>
       </Sequence>
       <Sequence>
         <Int Name="Length">3</Int>
-        <Real>0.21395334084279113</Real>
-        <Real>-0.00050824104459132866</Real>
-        <Real>0.016795153966942679</Real>
+        <Real>0.21395334226614779</Real>
+        <Real>-0.00050847678922022899</Real>
+        <Real>0.01679513396855185</Real>
       </Sequence>
       <Sequence>
         <Int Name="Length">3</Int>
-        <Real>0.14165808461104207</Real>
-        <Real>-0.087726111819757702</Real>
-        <Real>-0.1243437639612093</Real>
+        <Real>0.14165795854114732</Real>
+        <Real>-0.087726042310363753</Real>
+        <Real>-0.12434388871239907</Real>
       </Sequence>
       <Sequence>
         <Int Name="Length">3</Int>
-        <Real>0.14270252204976611</Real>
-        <Real>-0.088024150702032525</Real>
-        <Real>-0.12617828240650597</Real>
+        <Real>0.14270239472364432</Real>
+        <Real>-0.08802408183112001</Real>
+        <Real>-0.12617840752327594</Real>
       </Sequence>
       <Sequence>
         <Int Name="Length">3</Int>
-        <Real>0.1417084815060729</Real>
-        <Real>0.094166257231552711</Real>
-        <Real>-0.11948092611318438</Real>
+        <Real>0.14170859367515468</Real>
+        <Real>0.094166324578094041</Real>
+        <Real>-0.11948079881993537</Real>
       </Sequence>
       <Sequence>
         <Int Name="Length">3</Int>
-        <Real>0.14275311226338486</Real>
-        <Real>0.09456130950928171</Real>
-        <Real>-0.12129691559277041</Real>
+        <Real>0.14275322553943262</Real>
+        <Real>0.094561376278230191</Real>
+        <Real>-0.12129678812317143</Real>
       </Sequence>
     </Sequence>
     <Sequence Name="before">
