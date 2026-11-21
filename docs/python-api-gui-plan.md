@@ -459,10 +459,13 @@ the workspace with the default or a file, as the parameters with another
 value, with other bounds or another way of training, and those that only
 one of them has. The page computes this from the two descriptions that
 `edit_ff -json` gives; after a training it shows what the training changed.
+`geometry_ff` takes the file of the molprop workspace with the compounds
+that are ticked there, as a selection that the server writes; without
+compounds that are left out it gets no selection, as before.
 Still open in B7 and B8: the file of the user with fixed parameters that
 `actgui` could read, reading a file with virtual sites of the user (they
-are made by point and click and can be saved), changes of parameters of
-particle types, and `geometry_ff` with a selection of compounds.
+are made by point and click and can be saved), and changes of parameters
+of particle types.
 
 Virtual sites by point and click (B9) are done, without layer 2: the page
 computes the position of a site itself, with the formulas of
