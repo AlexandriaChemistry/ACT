@@ -379,8 +379,11 @@ build tree. The test workflows build the module (`-DACT_PYTHON=ON`, with
 pybind11 from conda-forge): statically linked in double precision on Linux
 and macOS, with the shared libraries in single precision on Linux. The
 conda package `alexandria-python` has the package `act` with the module, for
-each Python version, see section 14 of `docs/conda-packaging-plan.md`. Not
-done yet: `MsgHandler` to `logging`. XML
+each Python version, see section 14 of `docs/conda-packaging-plan.md`. The
+warnings and the information that the functions of ACT give their message
+handler go to the logger `act` of the module `logging` when the call is
+done, the errors in the exception; the package adds a `NullHandler`, so
+nothing is shown unless the program configures logging. XML
 files are read without the messages that libxml2 prints; what the parser
 found is in the exception.
 

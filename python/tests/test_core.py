@@ -965,6 +965,22 @@ class MoleculeTest(unittest.TestCase):
         mol.generate_charges()
         self.assertGreater(max(abs(q) for q in mol.charges), 0.1)
 
+    def test_messages_go_to_the_logger(self):
+        """!
+        @brief The warnings and the information of ACT go to the logger act,
+        which shows nothing unless the program asks for it.
+        """
+        import logging  # pylint: disable=import-outside-toplevel
+        with self.assertLogs("act", level="INFO") as logged:
+            act.Molecule.from_smiles("CC(=O)C", self.ff)
+        self.assertTrue(any("propan-2-one" in line for line in logged.output), logged.output)
+        self.assertTrue(all(line.split(":")[0] in ("INFO", "WARNING") for line in logged.output), logged.output)
+        # The package does not print them by itself
+        self.assertTrue(any(isinstance(h, logging.NullHandler) for h in logging.getLogger("act").handlers))
+        # An error is raised, not logged
+        with self.assertRaises(act.ActInputError):
+            act.Molecule.from_smiles("C(C", self.ff)
+
     def test_molecule_from_file(self):
         """!
         @brief A molecule is read from a structure file.

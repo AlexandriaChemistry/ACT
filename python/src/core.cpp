@@ -688,9 +688,75 @@ class QuietMessages
 public:
     QuietMessages()
     {
-        // Only what ends a program is printed, and that throws here
+        // Only what ends a program is printed, and that throws here; the
+        // rest is kept for the exception and for the logger of Python
         handler_.setPrintLevel(ACTStatus::Fatal);
-        handler_.record(&messages_, ACTStatus::Warning);
+        handler_.record(&messages_, ACTStatus::Info);
+    }
+    //! Gives the messages to the logger of Python, see forward
+    ~QuietMessages() { forward(); }
+    //! Not copied, the handler records into the object
+    QuietMessages(const QuietMessages &)            = delete;
+    //! Not copied, the handler records into the object
+    QuietMessages &operator=(const QuietMessages &) = delete;
+    /*! \brief Give the warnings and the other messages to the logger act of Python
+     *
+     * Warnings at the level WARNING and information at INFO, such that a
+     * program sees them as those of any module, for instance with
+     * logging.basicConfig(level=logging.INFO). Errors are
+     * not logged, since they are raised. Nothing is logged while an
+     * exception is on its way, and logging never fails a call.
+     */
+    void forward() noexcept
+    {
+        if (forwarded_ || messages_.empty() || std::uncaught_exceptions() > 0)
+        {
+            return;
+        }
+        forwarded_ = true;
+        try
+        {
+            if (PyErr_Occurred())
+            {
+                return;
+            }
+            const auto logger = py::module_::import("logging").attr("getLogger")("act");
+            for (const auto &message : messages_)
+            {
+                if (message.level <= ACTStatus::Error)
+                {
+                    continue;
+                }
+                // The levels WARNING and INFO of the module logging
+                const int level = ACTStatus::Warning == message.level ? 30 : 20;
+                if (!logger.attr("isEnabledFor")(level).cast<bool>())
+                {
+                    continue;
+                }
+                std::string text = message.text;
+                while (!text.empty() && (text.back() == '\n' || text.back() == ' '))
+                {
+                    text.pop_back();
+                }
+                while (!text.empty() && (text.front() == '\n' || text.front() == ' '))
+                {
+                    text.erase(text.begin());
+                }
+                if (ACTMessage::Silent != message.actm)
+                {
+                    text = actMessage(message.actm) + (text.empty() ? "" : ": " + text);
+                }
+                if (!text.empty())
+                {
+                    logger.attr("log")(level, "%s", text);
+                }
+            }
+        }
+        catch (...)
+        {
+            // A logger that fails does not fail the call
+            PyErr_Clear();
+        }
     }
     //! \return The message handler to give to a function of ACT
     MsgHandler *handler() { return &handler_; }
@@ -727,6 +793,8 @@ private:
     MsgHandler                      handler_;
     //! What it was told
     std::vector<ACTRecordedMessage> messages_;
+    //! Whether the messages went to the logger already
+    bool                            forwarded_ = false;
 };
 
 /*! \brief A molecule as Python has it
