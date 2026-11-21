@@ -618,8 +618,11 @@ Of a particle type the parameters of its charge (`charge`, `zeta`,
 does not change the mass or the reference enthalpy.
 A file with virtual sites of the user, in the form of `gen_ff -vs`, is
 read into the list of sites; they can be saved in the same form.
-Still open in B7 and B8: the file of the user with fixed parameters that
-`actgui` could read.
+The file of the user with fixed parameters that `actgui` could read
+(`interaction|potential|atom type|parameter|value|unit` on each line) is
+opened in the form of the generator; the server fixes each parameter at its
+value in the table of `gen_ff`, and refuses one that the selected type does
+not have or that has another unit.
 
 Virtual sites by point and click (B9) are done, without layer 2: the page
 computes the position of a site itself, with the formulas of
@@ -907,11 +910,11 @@ The public server of stage 2 does not send jobs to Slurm.
 **B12. Release.** Conda package `act-gui`, a manual chapter with screenshots,
 removal of `actgui` from ACT-utilities.
 
-*To do before `actgui` is removed:* the force field workspace must read the
-file of the user with fixed parameters that `actgui` could read (still open
-in B7 and B8); without it, retiring `actgui` loses a function. The atom
-types and predefined virtual sites move from `share` of ACT-utilities into
-the package `act-gui` in the same step.
+*Before `actgui` is removed:* the force field workspace reads the file of
+the user with fixed parameters that `actgui` could read (done, see B7 and
+B8), so the interface has all functions of `actgui`. The atom types and
+predefined virtual sites move from `share` of ACT-utilities into the
+package `act-gui` in the same step.
 
 *Release 1.95.* The rest of the plan and bug fixes go onto the branch
 `release-1-95`, no new features. The server (B11, B13) comes after 1.95.
