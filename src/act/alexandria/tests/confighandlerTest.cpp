@@ -149,6 +149,12 @@ TEST(ConfigHandlerTest, EMinimizeAlgorithmRoundTrip)
     check(eMinimizeAlgorithm::Newton);
 }
 
+TEST(ConfigHandlerTest, StringToEMinimizeAlgorithmInvalid)
+{
+    EXPECT_THROW(stringToEMinimizeAlgorithm("CG"), gmx::InvalidInputError);
+    EXPECT_THROW(stringToEMinimizeAlgorithm("lbfgs"), gmx::InvalidInputError);
+}
+
 TEST(ConfigHandlerTest, EMinimizeAlgorithmToStringValues)
 {
     EXPECT_EQ(eMinimizeAlgorithmToString(eMinimizeAlgorithm::LBFGS), "LBFGS");
@@ -562,6 +568,74 @@ TEST(ConfigHandlerTest, SimulationOptionsNotKeptBetweenParses)
         parseSimulationOptions(&second, set, {});
         expectSimulationDefaults(second);
     }
+}
+
+TEST(ConfigHandlerTest, SimulationSettingsOutOfRange)
+{
+    // Each value is refused, with the name of the option in the message,
+    // from the command line and from a program that sets it
+    const std::vector<std::pair<std::vector<const char *>, const char *>> wrong = {
+        { { "-nsteps", "-1" }, "-nsteps" },
+        { { "-deltat", "0" }, "-deltat" },
+        { { "-deltat", "-0.001" }, "-deltat" },
+        { { "-temp", "-1" }, "-temp" },
+        { { "-nstxout", "-1" }, "-nstxout" },
+        { { "-nstener", "-5" }, "-nstener" },
+        { { "-nstcomm", "-1" }, "-nstcomm" },
+        { { "-maxiter", "-1" }, "-maxiter" },
+        { { "-toler", "0" }, "-toler" },
+        { { "-overrelax", "0" }, "-overrelax" },
+        { { "-kfbpr", "-10" }, "-kfbpr" },
+        { { "-constr_toler", "0" }, "-constr_toler" }
+    };
+    for (const auto &w : wrong)
+    {
+        SimulationConfigHandler sch;
+        try
+        {
+            parseSimulationOptions(&sch, SimulationOptionSet::Simulate, w.first);
+            ADD_FAILURE() << w.second << " " << w.first[1] << " was accepted";
+        }
+        catch (const gmx::InvalidInputError &ex)
+        {
+            EXPECT_NE(std::string::npos, std::string(ex.what()).find(w.second)) << ex.what();
+        }
+    }
+    SimulationConfigHandler set;
+    set.setSimulation(10, 0, 300, 1, 1, 1);
+    EXPECT_THROW(set.validate(), gmx::InvalidInputError);
+    set.setSimulation(10, 0.001, -300, 1, 1, 1);
+    EXPECT_THROW(set.validate(), gmx::InvalidInputError);
+    set.setSimulation(10, 0.001, 300, 1, 1, 1);
+    EXPECT_NO_THROW(set.validate());
+    set.setForceTolerance(-1e-6);
+    EXPECT_THROW(set.validate(), gmx::InvalidInputError);
+}
+
+TEST(ConfigHandlerTest, SimulationSettingsWithoutCommandLine)
+{
+    // Settings that never saw a command line keep their values when they
+    // are checked as after one
+    SimulationConfigHandler sch;
+    sch.setMinimizeAlgorithm(eMinimizeAlgorithm::Newton);
+    MsgHandler msghandler;
+    EXPECT_NO_THROW(sch.check_pargs(&msghandler));
+    EXPECT_EQ(eMinimizeAlgorithm::Newton, sch.minAlg());
+    EXPECT_NO_THROW(sch.validate());
+}
+
+TEST(ConfigHandlerTest, ShellTolerance)
+{
+    SimulationConfigHandler sch;
+    sch.setForceTolerance(1e-4);
+    MsgHandler msghandler;
+    msghandler.setPrintLevel(ACTStatus::Fatal);
+    // Below the force tolerance: as asked
+    EXPECT_DOUBLE_EQ(1e-6, sch.shellTolerance(1e-6, &msghandler));
+    // Otherwise a tenth of the force tolerance, also without messages
+    EXPECT_DOUBLE_EQ(static_cast<real>(1e-4)/10, sch.shellTolerance(1e-4, &msghandler));
+    EXPECT_DOUBLE_EQ(static_cast<real>(1e-4)/10, sch.shellTolerance(1, nullptr));
+    EXPECT_TRUE(msghandler.ok());
 }
 
 TEST(ConfigHandlerTest, SimulationConfigHandlerSetters)

@@ -140,13 +140,7 @@ int nma(int argc, char *argv[])
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
     
     (void) pd.verifyCheckSum(&msghandler);
-    if (shellToler >= sch.forceTolerance())
-    {
-        shellToler = sch.forceTolerance()/10;
-        msghandler.msg(ACTStatus::Warning,
-                       gmx::formatString("Shell tolerance larger than atom tolerance, changing it to %g",
-                                         shellToler));
-    }
+    shellToler = sch.shellTolerance(shellToler, &msghandler);
     ForceComputer forceComp;
     double epsilonr;
     epsilonr = pd.epsilonr();
