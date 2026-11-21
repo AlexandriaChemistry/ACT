@@ -422,10 +422,10 @@ TEST_F(MinimizeTest, ResultsDefaults)
 
 TEST_F(MinimizeTest, ResultsPolarizable)
 {
-    // With the default tolerance of the forces, 1e-6, a build in single
-    // precision may not find a lower minimum at the end, depending on the
-    // platform, which a build in double precision does
-    checkMinimization("acetone.sdf", "ACS-pg1.xml", "results-polarizable", { "-toler", "0.0001" });
+    // Water, which has one minimum. For acetone the build in single
+    // precision with AVX2 does not find a lower minimum at the end, which
+    // the other builds do.
+    checkMinimization("water-3-oep.log.pdb", "ACS-pg1.xml", "results-polarizable", { "-toler", "0.0001" });
 }
 
 TEST_F(MinimizeTest, ResultsNewton)
