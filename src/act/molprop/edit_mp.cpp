@@ -183,7 +183,10 @@ static bool dump_molecule(MsgHandler        *msghandler,
                 auto pidJ = pd.findParticleType(atomId[aj]);
                 // The bond corrections are identified by the ACM types, see MolGen
                 auto acmtype = InteractionType::ELECTRONEGATIVITYEQUALIZATION;
-                if (pidI->hasInteractionType(acmtype) && pidJ->hasInteractionType(acmtype))
+                // A force field without bond charge corrections, such as one with
+                // fixed charges, has none to count
+                if (pd.interactionPresent(bctype) &&
+                    pidI->hasInteractionType(acmtype) && pidJ->hasInteractionType(acmtype))
                 {
                     const auto zidI = pidI->interactionTypeToIdentifier(acmtype);
                     const auto zidJ = pidJ->interactionTypeToIdentifier(acmtype);
@@ -297,6 +300,8 @@ static std::set<std::string> check_mp(MsgHandler           *msghandler,
                     basis  = ci.getBasisset();
                 }
                 double T = 0;
+                // Dimers, for instance, have no dipole or potential of an optimized structure
+                if (m->hasQMProperty(MolPropObservable::DIPOLE, T, JobType::OPT))
                 {
                     auto &gp = m->qmProperty(MolPropObservable::DIPOLE, T, JobType::OPT);
                     if (gp)
@@ -305,6 +310,10 @@ static std::set<std::string> check_mp(MsgHandler           *msghandler,
                         const name_mu nmu = { ci.getDatafile(), { static_cast<real>(mu[XX]), static_cast<real>(mu[YY]), static_cast<real>(mu[ZZ]) } };
                         mus.push_back(nmu);
                     }
+                }
+                if (!m->hasQMProperty(MolPropObservable::POTENTIAL, T, JobType::OPT))
+                {
+                    continue;
                 }
                 auto Xcalc = ci.getCoordinates();
                 auto &gp = m->qmProperty(MolPropObservable::POTENTIAL, T, JobType::OPT);
