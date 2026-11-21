@@ -33,6 +33,21 @@ import act  # noqa: E402  pylint: disable=wrong-import-position
 TESTDATA = os.environ.get("ACT_TESTDATA", "")
 
 
+def plain(value):
+    """!
+    @brief Lists instead of numpy arrays, also in dicts and lists, for comparisons.
+    @param value What the classes returned.
+    @return The same with lists.
+    """
+    if hasattr(value, "tolist"):
+        return value.tolist()
+    if isinstance(value, dict):
+        return {key: plain(item) for key, item in value.items()}
+    if isinstance(value, (list, tuple)):
+        return [plain(item) for item in value]
+    return value
+
+
 class WithoutClassesTest(unittest.TestCase):
     """!
     @brief What a Python gets that has the package without its classes.
@@ -406,7 +421,7 @@ class MoleculeTest(unittest.TestCase):
         self.assertTrue(all(a["type"] in self.ff.particle_types for a in atoms))
         # The charges are those of the particles, and add up to the charge
         charges = mol.charges
-        self.assertEqual([a["charge"] for a in atoms], charges)
+        self.assertEqual([a["charge"] for a in atoms], plain(charges))
         self.assertAlmostEqual(0.0, sum(charges), places=6)
         self.assertGreater(max(abs(q) for q in charges), 0.1)
         # Nine bonds, of which one is double, between atoms
@@ -493,8 +508,8 @@ class MoleculeTest(unittest.TestCase):
         self.assertGreater(res.rmsd, 1e-5)
         self.assertLess(res.rmsd, 0.05)
         # The molecule has the new structure and its energy
-        self.assertEqual(res.coordinates, mol.coordinates)
-        self.assertNotEqual(start, mol.coordinates)
+        self.assertEqual(plain(res.coordinates), plain(mol.coordinates))
+        self.assertNotEqual(plain(start), plain(mol.coordinates))
         self.assertAlmostEqual(res.energy_after["EPOT"], mol.energy()["EPOT"],
                                delta=1e-4 * abs(before))
         # The forces on the atoms are gone
@@ -517,8 +532,8 @@ class MoleculeTest(unittest.TestCase):
         start = mol.coordinates
         res = mol.minimize(update=False)
         self.assertTrue(res.converged)
-        self.assertEqual(start, mol.coordinates)
-        self.assertNotEqual(start, res.coordinates)
+        self.assertEqual(plain(start), plain(mol.coordinates))
+        self.assertNotEqual(plain(start), plain(res.coordinates))
         self.assertEqual(len(start), len(res.coordinates))
         self.assertAlmostEqual(res.energy_before["EPOT"], mol.energy()["EPOT"], places=6)
 
@@ -581,7 +596,7 @@ class MoleculeTest(unittest.TestCase):
         for settings in wrong:
             with self.assertRaises(act.ActInputError, msg=repr(settings)):
                 mol.minimize(**settings)
-        self.assertEqual(start, mol.coordinates)
+        self.assertEqual(plain(start), plain(mol.coordinates))
         with self.assertRaises(TypeError):
             mol.minimize("LBFGS")  # pylint: disable=too-many-function-args
         with self.assertRaises(TypeError):
@@ -597,7 +612,7 @@ class MoleculeTest(unittest.TestCase):
         modes = mol.normal_modes()
         # Water has three vibrations: a bend and two stretches
         self.assertEqual(3, len(modes.frequencies))
-        self.assertEqual(sorted(modes.frequencies), modes.frequencies)
+        self.assertEqual(sorted(modes.frequencies), plain(modes.frequencies))
         self.assertGreater(modes.frequencies[0], 500)
         self.assertLess(modes.frequencies[0], 2500)
         self.assertGreater(modes.frequencies[1], 2500)
@@ -614,7 +629,7 @@ class MoleculeTest(unittest.TestCase):
             self.assertTrue(all(len(d) == 3 for d in mode["displacements"]))
         # The molecule was minimized first, and has that structure now
         self.assertTrue(modes.minimization.converged)
-        self.assertNotEqual(start, mol.coordinates)
+        self.assertNotEqual(plain(start), plain(mol.coordinates))
         thermo = modes.thermochemistry
         self.assertIn("Epot", thermo)
         self.assertGreater(thermo["T=0"]["Zero point energy"]["value"], 10)
@@ -633,14 +648,14 @@ class MoleculeTest(unittest.TestCase):
         modes = act.Molecule.from_smiles("O", self.ff).normal_modes()
         frequencies, intensities = modes.spectrum()
         self.assertEqual(len(frequencies), len(intensities))
-        self.assertEqual(list(range(frequencies[0], frequencies[-1] + 1)), frequencies)
+        self.assertEqual(list(range(frequencies[0], frequencies[-1] + 1)), plain(frequencies))
         # From below the lowest to above the highest frequency
         self.assertLess(frequencies[0], modes.frequencies[0] - 100)
         self.assertGreater(frequencies[-1], modes.frequencies[-1] + 100)
         self.assertAlmostEqual(1.0, sum(intensities), places=6)
         # A maximum at the strongest vibration
-        strongest = modes.frequencies[modes.intensities.index(max(modes.intensities))]
-        top = frequencies[intensities.index(max(intensities))]
+        strongest = modes.frequencies[int(modes.intensities.argmax())]
+        top = frequencies[int(intensities.argmax())]
         self.assertLess(abs(top - strongest), 2)
         # Narrow lines are higher
         narrow = modes.spectrum(linewidth=4.0)
@@ -671,7 +686,7 @@ class MoleculeTest(unittest.TestCase):
             data["Thermochemistry"]["Alexandria"]["T=0"]["Zero point energy"]["value"],
             modes.thermochemistry["T=0"]["Zero point energy"]["value"], delta=0.01)
         frequencies, intensities = modes.spectrum()
-        self.assertEqual([int(row[0]) for row in spectrum], frequencies)
+        self.assertEqual([int(row[0]) for row in spectrum], plain(frequencies))
         for row, intensity in zip(spectrum, intensities):
             self.assertAlmostEqual(float(row[1]), intensity, delta=1e-7 + 1e-4 * intensity)
 
@@ -701,7 +716,7 @@ class MoleculeTest(unittest.TestCase):
         self.assertEqual(20, len(traj.energy_times))
         self.assertEqual(0.0, traj.energy_times[0])
         self.assertAlmostEqual(10 * 0.0002, traj.energy_times[1], places=9)
-        self.assertEqual(list(range(0, 200, 10)), traj.energy_steps)
+        self.assertEqual(list(range(0, 200, 10)), plain(traj.energy_steps))
         for name in ("EPOT", "EKIN", "ETOT", "BONDS"):
             self.assertEqual(20, len(traj.energies[name]), name)
         self.assertEqual(20, len(traj.temperature))
@@ -715,7 +730,7 @@ class MoleculeTest(unittest.TestCase):
         self.assertGreater(max(potential) - min(potential), 0.1)
         self.assertLess(max(total) - min(total), 0.2 * (max(potential) - min(potential)))
         self.assertEqual(10, len(traj.frames))
-        self.assertEqual(list(range(0, 200, 20)), traj.frame_steps)
+        self.assertEqual(list(range(0, 200, 20)), plain(traj.frame_steps))
         self.assertAlmostEqual(20 * 0.0002, traj.times[1], places=9)
         for frame in traj.frames:
             self.assertEqual(len(mol.atoms), len(frame))
@@ -723,8 +738,8 @@ class MoleculeTest(unittest.TestCase):
         for theirs, ours in zip(traj.frames[0], start):
             for dim in range(3):
                 self.assertAlmostEqual(ours[dim], theirs[dim], places=6)
-        self.assertNotEqual(traj.frames[0], traj.frames[-1])
-        self.assertEqual(start, mol.coordinates)
+        self.assertNotEqual(plain(traj.frames[0]), plain(traj.frames[-1]))
+        self.assertEqual(plain(start), plain(mol.coordinates))
         self.assertIn("200 steps", repr(traj))
 
     def test_simulation_is_reproducible(self):
@@ -736,8 +751,8 @@ class MoleculeTest(unittest.TestCase):
         first = mol.simulate(steps=50, temperature=300, seed=7, energy_interval=5)
         second = mol.simulate(steps=50, temperature=300, seed=7, energy_interval=5)
         other = mol.simulate(steps=50, temperature=300, seed=8, energy_interval=5)
-        self.assertEqual(first.energies["EPOT"], second.energies["EPOT"])
-        self.assertNotEqual(first.energies["EPOT"], other.energies["EPOT"])
+        self.assertEqual(plain(first.energies["EPOT"]), plain(second.energies["EPOT"]))
+        self.assertNotEqual(plain(first.energies["EPOT"]), plain(other.energies["EPOT"]))
         # Without a temperature the atoms start at rest, at the minimum
         still = mol.simulate(steps=20, energy_interval=5)
         self.assertLess(max(still.energies["EKIN"]), 1e-3)
@@ -753,15 +768,15 @@ class MoleculeTest(unittest.TestCase):
                             on_energies=seen.append)
         self.assertEqual(10, len(seen))
         self.assertEqual(list(range(0, 100, 10)), [item["step"] for item in seen])
-        self.assertEqual(traj.energies["EPOT"], [item["energies"]["EPOT"] for item in seen])
-        self.assertEqual(traj.temperature, [item["temperature"] for item in seen])
+        self.assertEqual(plain(traj.energies["EPOT"]), [item["energies"]["EPOT"] for item in seen])
+        self.assertEqual(plain(traj.temperature), [item["temperature"] for item in seen])
         self.assertAlmostEqual(seen[1]["time"], traj.energy_times[1], places=12)
 
         def three(item):
             return item["step"] < 20
         stopped = mol.simulate(steps=100000, temperature=300, seed=7, energy_interval=10,
                                on_energies=three)
-        self.assertEqual([0, 10, 20], stopped.energy_steps)
+        self.assertEqual([0, 10, 20], plain(stopped.energy_steps))
         # An error in the function ends the simulation and is raised
 
         def broken(item):
@@ -809,8 +824,8 @@ class MoleculeTest(unittest.TestCase):
         mol = act.Molecule.from_smiles("O", self.ff)
         traj = mol.simulate(steps=60, temperature=300, seed=1993, energy_interval=10,
                             frame_interval=0)
-        self.assertEqual([item["step"] for item in told], traj.energy_steps)
-        self.assertEqual([], traj.frames)
+        self.assertEqual([item["step"] for item in told], plain(traj.energy_steps))
+        self.assertEqual(0, len(traj.frames))
         for item, potential, temperature in zip(told, traj.energies["EPOT"], traj.temperature):
             self.assertAlmostEqual(item["energies"]["EPOT"], potential,
                                    delta=1e-6 * abs(potential) + 1e-6)
@@ -945,17 +960,17 @@ class MoleculeTest(unittest.TestCase):
         # By hand: a charge for each particle
         mine = [0.0] * len(mol.atoms)
         mol.set_charges(mine)
-        self.assertEqual(mine, mol.charges)
+        self.assertEqual(mine, plain(mol.charges))
         self.assertAlmostEqual(0.0, mol.energy()["COULOMB"], places=6)
         mine[0], mine[2] = 0.5, -0.5
         mol.set_charges(mine)
-        self.assertEqual(mine, mol.charges)
+        self.assertEqual(mine, plain(mol.charges))
         self.assertNotAlmostEqual(0.0, mol.energy()["COULOMB"], places=3)
-        self.assertEqual([a["charge"] for a in mol.atoms], mol.charges)
+        self.assertEqual([a["charge"] for a in mol.atoms], plain(mol.charges))
         for wrong in ([0.0], mine + [0.1], [float("nan")] * len(mine)):
             with self.assertRaises(act.ActInputError):
                 mol.set_charges(wrong)
-        self.assertEqual(mine, mol.charges)
+        self.assertEqual(mine, plain(mol.charges))
         for wrong in ("Mulliken", "sqe", "", "ESP", "Read", "Custom"):
             with self.assertRaises(act.ActInputError, msg=wrong):
                 mol.generate_charges(wrong)
@@ -1000,6 +1015,39 @@ class MoleculeTest(unittest.TestCase):
         with self.assertRaises(act.ActInputError) as caught:
             act.Molecule.from_smiles("CC(=O)C", self.ff).interaction_energy()
         self.assertIn("two compounds", str(caught.exception))
+
+    def test_numbers_are_numpy_arrays(self):
+        """!
+        @brief Coordinates, forces, charges, frequencies and trajectories are
+        numpy arrays of the shapes one expects, and copies.
+        """
+        import numpy  # pylint: disable=import-outside-toplevel
+        mol = act.Molecule.from_smiles("CC(=O)C", self.ff)
+        n = len(mol.atoms)
+        for name, value, shape in (("coordinates", mol.coordinates, (n, 3)),
+                                   ("forces", mol.forces(), (n, 3)),
+                                   ("charges", mol.charges, (n,))):
+            self.assertIsInstance(value, numpy.ndarray, name)
+            self.assertEqual(shape, value.shape, name)
+            self.assertEqual(numpy.float64, value.dtype, name)
+        # A copy: changing it changes nothing
+        coords = mol.coordinates
+        coords += 1.0
+        self.assertFalse(numpy.allclose(coords, mol.coordinates))
+        res = mol.minimize(update=False)
+        self.assertEqual((n, 3), res.coordinates.shape)
+        modes = mol.normal_modes()
+        self.assertEqual(modes.frequencies.shape, modes.intensities.shape)
+        self.assertEqual((n, 3), modes.modes[0]["displacements"].shape)
+        frequencies, intensities = modes.spectrum()
+        self.assertEqual(frequencies.shape, intensities.shape)
+        traj = mol.simulate(steps=20, energy_interval=10, frame_interval=10)
+        self.assertEqual((2, n, 3), traj.frames.shape)
+        self.assertEqual((2,), traj.energies["EPOT"].shape)
+        self.assertEqual(traj.times.shape, traj.frame_steps.shape)
+        # Numbers in, as arrays as well
+        mol.set_charges(numpy.zeros(n))
+        self.assertEqual(0.0, float(numpy.abs(mol.charges).max()))
 
     def test_messages_go_to_the_logger(self):
         """!
@@ -1138,7 +1186,7 @@ class MolPropsTest(unittest.TestCase):
         mps = act.read_molprop(self.mpdir / "molprop.xml")
         calculations = mps.calculations("water")
         self.assertEqual(mps["water"]["experiments"], len(calculations))
-        self.assertEqual(calculations, mps.calculations(2))
+        self.assertEqual(plain(calculations), plain(mps.calculations(2)))
         first = calculations[0]
         for key in ("reference", "conformation", "method", "basisset", "program", "jobtype",
                     "datafile", "atoms", "coordinates", "properties"):
@@ -1208,7 +1256,7 @@ class MolPropsTest(unittest.TestCase):
         again = act.read_molprop(out)
         self.assertEqual(mps.names, again.names)
         self.assertEqual(mps.summary, again.summary)
-        self.assertEqual(mps.calculations("water"), again.calculations("water"))
+        self.assertEqual(plain(mps.calculations("water")), plain(again.calculations("water")))
         packed = self.dir / "packed.xml"
         mps.write(packed, compress=True)
         self.assertLess(packed.stat().st_size, out.stat().st_size)

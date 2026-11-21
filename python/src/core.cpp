@@ -901,20 +901,32 @@ std::map<InteractionType, double> computeEnergy(const Molecule &molecule, std::v
     return energies;
 }
 
-//! \return The coordinates or forces of all particles as a list of lists of three numbers
-py::list listOfVectors(const std::vector<gmx::RVec> &vectors)
+//! \return The coordinates or forces of all particles as a numpy array of shape (n, 3), a copy
+py::array_t<double> arrayOfVectors(const std::vector<gmx::RVec> &vectors)
 {
-    py::list all;
-    for (const auto &vector : vectors)
+    py::array_t<double> all({ static_cast<py::ssize_t>(vectors.size()), static_cast<py::ssize_t>(3) });
+    auto                out = all.mutable_unchecked<2>();
+    for (size_t i = 0; i < vectors.size(); i++)
     {
-        py::list one;
         for (int dim = 0; dim < 3; dim++)
         {
-            one.append(static_cast<double>(vector[dim]));
+            out(i, dim) = vectors[i][dim];
         }
-        all.append(one);
     }
     return all;
+}
+
+//! \return Numbers as a numpy array, a copy
+template <typename T>
+py::array_t<T> arrayOf(const std::vector<T> &values)
+{
+    return py::array_t<T>(static_cast<py::ssize_t>(values.size()), values.data());
+}
+
+//! \return Something that numpy can make an array of, such as nested lists, as an array of doubles
+py::array_t<double> asArray(const py::handle &values)
+{
+    return py::array_t<double, py::array::c_style | py::array::forcecast>::ensure(values);
 }
 
 //! \return The energies by the names of their terms, for Python
@@ -972,7 +984,7 @@ struct Minimization
     //! The energy by term in kJ/mol before and after
     py::dict    energyBefore, energyAfter;
     //! The position of each particle in nm at the lowest energy found
-    py::list    coordinates;
+    py::object  coordinates;
 };
 
 /*! \brief Minimize the energy of a molecule, as alexandria minimize does
@@ -1070,7 +1082,7 @@ Minimization minimizeMolecule(Molecule *molecule, const std::optional<std::strin
     // On top of the structure it started from
     result.rmsd        = molhandler.coordinateRmsd(atoms, molecule->coords, &xmin);
     result.energyAfter = energyDict(energies);
-    result.coordinates = listOfVectors(xmin);
+    result.coordinates = arrayOfVectors(xmin);
     if (update)
     {
         molecule->coords = xmin;
@@ -1170,7 +1182,7 @@ NormalModes normalModes(Molecule *molecule, bool minimize, const std::optional<s
         one["frequency"]     = mode["frequency"]["value"];
         one["intensity"]     = mode["intensity"]["value"];
         one["reduced_mass"]  = mode["reduced_mass"]["value"];
-        one["displacements"] = mode["displacements"];
+        one["displacements"] = asArray(mode["displacements"]);
         result.modes.append(one);
         result.frequencies.push_back(mode["frequency"]["value"].cast<double>());
         result.intensities.push_back(mode["intensity"]["value"].cast<double>());
@@ -1221,22 +1233,22 @@ py::tuple spectrumOf(const NormalModes &modes, double linewidth)
             }
         }
     }
-    return py::make_tuple(frequencies, spectrum);
+    return py::make_tuple(arrayOf(frequencies), arrayOf(spectrum));
 }
 
 //! Tell Python about the vibrations of a molecule
 void defineNormalModes(py::module_ &module)
 {
     py::class_<NormalModes>(module, "NormalModes", "The result of Molecule.normal_modes.")
-        .def_readonly("frequencies", &NormalModes::frequencies,
-                      "The frequencies of the vibrations in cm^-1, from low to high.")
-        .def_readonly("intensities", &NormalModes::intensities,
-                      "The infrared intensity of each vibration, in intensity_unit.")
+        .def_property_readonly("frequencies", [](const NormalModes &modes) { return arrayOf(modes.frequencies); },
+                               "The frequencies of the vibrations in cm^-1, from low to high, a numpy array.")
+        .def_property_readonly("intensities", [](const NormalModes &modes) { return arrayOf(modes.intensities); },
+                               "The infrared intensity of each vibration, in intensity_unit, a numpy array.")
         .def_readonly("intensity_unit", &NormalModes::intensityUnit, "The unit of the intensities.")
         .def_readonly("modes", &NormalModes::modes,
                       "For each vibration its frequency, intensity, reduced_mass in g/mol and\n"
-                      "displacements: how each particle moves, as x, y and z, normalized as\n"
-                      "quantum chemistry programs print them.")
+                      "displacements: how each particle moves, a numpy array of x, y and z for\n"
+                      "each, normalized as quantum chemistry programs print them.")
         .def_readonly("thermochemistry", &NormalModes::thermochemistry,
                       "The zero point energy, entropy, heat capacity and so on, each with value\n"
                       "and unit, as alexandria nma reports them.")
@@ -1245,7 +1257,7 @@ void defineNormalModes(py::module_ &module)
         .def("spectrum", &spectrumOf, py::arg("linewidth") = 24.0,
              "The infrared spectrum: a line of the given width in cm^-1 at each frequency.\n\n"
              "Returns the frequencies, whole numbers of cm^-1, and the intensities, which\n"
-             "add up to one, as alexandria nma -ir writes them.")
+             "add up to one, as alexandria nma -ir writes them, both as numpy arrays.")
         .def("__repr__",
              [](const NormalModes &modes)
              {
@@ -1404,25 +1416,49 @@ void defineTrajectory(py::module_ &module)
     py::class_<Trajectory>(module, "Trajectory", "The result of Molecule.simulate.")
         .def_readonly("steps", &Trajectory::steps, "The number of steps that were asked for.")
         .def_readonly("timestep", &Trajectory::timestep, "The time step in ps.")
-        .def_readonly("energy_steps", &Trajectory::energySteps, "The steps of which there are energies.")
-        .def_readonly("energy_times", &Trajectory::energyTimes, "The times in ps of the energies.")
-        .def_readonly("temperature", &Trajectory::temperature, "The temperature in K at these times.")
-        .def_readonly("energies", &Trajectory::energies,
-                      "The energies in kJ/mol at these times: for each term of the force field, for\n"
-                      "the potential (EPOT), kinetic (EKIN) and total energy (ETOT) a list.")
-        .def_readonly("frame_steps", &Trajectory::frameSteps, "The steps of which there is a structure.")
-        .def_readonly("times", &Trajectory::times, "The times in ps of the structures.")
+        .def_property_readonly("energy_steps", [](const Trajectory &t) { return arrayOf(t.energySteps); },
+                               "The steps of which there are energies, a numpy array.")
+        .def_property_readonly("energy_times", [](const Trajectory &t) { return arrayOf(t.energyTimes); },
+                               "The times in ps of the energies, a numpy array.")
+        .def_property_readonly("temperature", [](const Trajectory &t) { return arrayOf(t.temperature); },
+                               "The temperature in K at these times, a numpy array.")
+        .def_property_readonly("energies",
+                               [](const Trajectory &t)
+                               {
+                                   py::dict energies;
+                                   for (const auto &term : t.energies)
+                                   {
+                                       energies[py::str(term.first)] = arrayOf(term.second);
+                                   }
+                                   return energies;
+                               },
+                               "The energies in kJ/mol at these times: for each term of the force field, for\n"
+                               "the potential (EPOT), kinetic (EKIN) and total energy (ETOT) a numpy array.")
+        .def_property_readonly("frame_steps", [](const Trajectory &t) { return arrayOf(t.frameSteps); },
+                               "The steps of which there is a structure, a numpy array.")
+        .def_property_readonly("times", [](const Trajectory &t) { return arrayOf(t.times); },
+                               "The times in ps of the structures, a numpy array.")
         .def_property_readonly("frames",
                                [](const Trajectory &trajectory)
                                {
-                                   py::list frames;
-                                   for (const auto &frame : trajectory.frames)
+                                   const size_t natoms = trajectory.frames.empty() ? 0 : trajectory.frames[0].size();
+                                   py::array_t<double> frames({ static_cast<py::ssize_t>(trajectory.frames.size()),
+                                                                static_cast<py::ssize_t>(natoms),
+                                                                static_cast<py::ssize_t>(3) });
+                                   auto out = frames.mutable_unchecked<3>();
+                                   for (size_t f = 0; f < trajectory.frames.size(); f++)
                                    {
-                                       frames.append(listOfVectors(frame));
+                                       for (size_t i = 0; i < natoms; i++)
+                                       {
+                                           for (int dim = 0; dim < 3; dim++)
+                                           {
+                                               out(f, i, dim) = trajectory.frames[f][i][dim];
+                                           }
+                                       }
                                    }
                                    return frames;
                                },
-                               "The structures: for each the position of every particle in nm.")
+                               "The structures, a numpy array of shape (structures, particles, 3), in nm.")
         .def("__repr__",
              [](const Trajectory &trajectory)
              {
@@ -1630,17 +1666,18 @@ void defineMolecule(py::module_ &module)
         .def_property_readonly("charges",
                                [](const Molecule &molecule)
                                {
-                                   py::list charges;
+                                   std::vector<double> charges;
                                    for (const auto &atom : molecule.mol().atomsConst())
                                    {
-                                       charges.append(static_cast<double>(atom.charge()));
+                                       charges.push_back(atom.charge());
                                    }
-                                   return charges;
+                                   return arrayOf(charges);
                                },
-                               "The charge of each particle in e.")
+                               "The charge of each particle in e, a numpy array.")
         .def_property_readonly("coordinates",
-                               [](const Molecule &molecule) { return listOfVectors(molecule.coords); },
-                               "The position of each particle in nm, as a list of x, y and z.")
+                               [](const Molecule &molecule) { return arrayOfVectors(molecule.coords); },
+                               "The position of each particle in nm, a numpy array of shape (particles, 3).\n"
+                               "It is a copy: changing it does not change the molecule.")
         .def("energy",
              [](const Molecule &molecule)
              {
@@ -1659,9 +1696,9 @@ void defineMolecule(py::module_ &module)
              {
                  std::vector<gmx::RVec> forces;
                  (void) computeEnergy(molecule, &forces);
-                 return listOfVectors(forces);
+                 return arrayOfVectors(forces);
              },
-             "The force on each particle in kJ/mol nm, as a list of x, y and z.")
+             "The force on each particle in kJ/mol nm, a numpy array of shape (particles, 3).")
         .def("minimize", &minimizeMolecule, py::kw_only(), py::arg("algorithm") = py::none(),
              py::arg("max_iter") = py::none(), py::arg("tolerance") = py::none(),
              py::arg("freeze") = std::vector<int>(), py::arg("update") = true,
@@ -1805,7 +1842,7 @@ py::list calculationsOf(const MolProp &mp)
             atoms.append(described);
         }
         one["atoms"]       = atoms;
-        one["coordinates"] = listOfVectors(experiment.getCoordinates());
+        one["coordinates"] = arrayOfVectors(experiment.getCoordinates());
         py::list properties;
         for (const auto &property : experiment.propertiesConst())
         {
