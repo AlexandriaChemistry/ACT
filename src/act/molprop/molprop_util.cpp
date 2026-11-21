@@ -262,10 +262,20 @@ MolPropValidation validateMolProps(MsgHandler           *msghandler,
     MolPropValidation result;
     for (auto &mp : *mps)
     {
-        if (!mp.validate(msghandler))
+        size_t duplicates = 0;
+        if (!mp.validate(msghandler, &duplicates))
         {
             result.nproblem += 1;
             result.invalid.insert(mp.getMolname());
+        }
+        if (duplicates > 0)
+        {
+            // Left out, as train_ff does, but the file has them
+            result.nduplicate += duplicates;
+            result.duplicated.insert(mp.getMolname());
+            msghandler->msg(ACTStatus::Warning, ACTMessage::DuplicateCalculation,
+                            gmx::formatString("Molecule %s: %zu calculation(s) are there twice, with the same results; they are used once.",
+                                              mp.getMolname().c_str(), duplicates));
         }
         // Without an InChI the compound of a fragment is unknown, and its
         // order and charges cannot be compared with other molecules

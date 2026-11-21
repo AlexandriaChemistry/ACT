@@ -268,7 +268,7 @@ static bool sameResults(const Experiment &a, const Experiment &b)
     return true;
 }
 
-void MolProp::removeDuplicates(MsgHandler *msghandler)
+size_t MolProp::removeDuplicates(MsgHandler *msghandler)
 {
     std::vector<bool> remove(exper_.size(), false);
     for (size_t i = 0; i < exper_.size(); i++)
@@ -298,9 +298,10 @@ void MolProp::removeDuplicates(MsgHandler *msghandler)
             }
         }
     }
-    if (std::none_of(remove.begin(), remove.end(), [](bool r) { return r; }))
+    const auto removed = static_cast<size_t>(std::count(remove.begin(), remove.end(), true));
+    if (removed == 0)
     {
-        return;
+        return 0;
     }
     std::vector<Experiment> kept;
     for (size_t i = 0; i < exper_.size(); i++)
@@ -316,10 +317,15 @@ void MolProp::removeDuplicates(MsgHandler *msghandler)
     {
         exper_[ei].setId(ei);
     }
+    return removed;
 }
 
-bool MolProp::validate(MsgHandler *msghandler)
+bool MolProp::validate(MsgHandler *msghandler, size_t *duplicates)
 {
+    if (duplicates)
+    {
+        *duplicates = 0;
+    }
     if (!msghandler)
     {
         return true;
@@ -437,7 +443,11 @@ bool MolProp::validate(MsgHandler *msghandler)
         }
     }
 
-    removeDuplicates(msghandler);
+    const auto removed = removeDuplicates(msghandler);
+    if (duplicates)
+    {
+        *duplicates = removed;
+    }
 
     // Check that the atoms of each fragment match its formula, such that a
     // dimer A#B with the atoms in the order of B#A is detected. The

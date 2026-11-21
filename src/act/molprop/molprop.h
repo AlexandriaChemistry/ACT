@@ -127,8 +127,9 @@ private:
      * message at Info level. With different results both are kept, with a
      * warning.
      * \param[in] msghandler For the messages
+     * \return the number of calculations that were removed
      */
-    void removeDuplicates(MsgHandler *msghandler);
+    size_t removeDuplicates(MsgHandler *msghandler);
 
 public:
     //! Constructor for a MolProp object
@@ -150,8 +151,10 @@ public:
      *
      * \param[in] msghandler Handler for logging and error reporting
      * \return whether the molecule is consistent
+     * \param[out] duplicates The number of calculations that were there twice
+     *                        and are removed, see removeDuplicates; may be nullptr
      */
-    bool validate(MsgHandler *msghandler);
+    bool validate(MsgHandler *msghandler, size_t *duplicates = nullptr);
 
     //! \return myself
     MolProp *self() { return this; }

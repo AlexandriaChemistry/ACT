@@ -464,6 +464,43 @@ TEST_F(EditMPTest, JsonValidationClean)
     EXPECT_TRUE(validation.at("messages").empty());
 }
 
+// Test: Calculations that are in the file twice, with the same results, are
+// reported by -validate, and the file that is written has them once, as
+// train_ff uses them
+TEST_F(EditMPTest, JsonValidationDuplicates)
+{
+    // The first calculation of water, twice
+    const auto original = fileManager().getInputFilePath("molprop/water-forces.xml");
+    const auto before   = read(original)[0].experimentConst().size();
+    const auto text  = fileText(original);
+    const auto begin = text.find("<experiment ");
+    const auto end   = text.find("</experiment>");
+    ASSERT_NE(std::string::npos, begin);
+    ASSERT_NE(std::string::npos, end);
+    const auto calculation = text.substr(begin, end + 13 - begin);
+    const auto input = fileManager().getTemporaryFilePath("twice.xml");
+    {
+        std::ofstream out(input);
+        out << text.substr(0, end + 13) << "\n    " << calculation << text.substr(end + 13);
+    }
+    ASSERT_EQ(before + 1, read(input)[0].experimentConst().size());
+    const auto jsonFile = fileManager().getTemporaryFilePath("twice.json");
+    const auto mps      = run({ input }, { { "-validate", "" }, { "-json", jsonFile }, { "-nomolinfo", "" } });
+    const auto validation = readJson(jsonFile).at("edit_mp").at("validation");
+    EXPECT_EQ(1, validation.at("duplicates").get<int>());
+    EXPECT_EQ(std::vector<std::string>({ "water" }), validation.at("with_duplicates").get<std::vector<std::string>>());
+    // Not a problem: train_ff leaves them out
+    EXPECT_EQ(0, validation.at("problems").get<int>());
+    bool told = false;
+    for (const auto &message : validation.at("messages"))
+    {
+        told = told || message.at("text").get<std::string>().find("twice") != std::string::npos;
+    }
+    EXPECT_TRUE(told) << validation.dump();
+    ASSERT_EQ(1u, mps.size());
+    EXPECT_EQ(before, mps[0].experimentConst().size());
+}
+
 /*! \brief A molecule with one experiment, made of fragments
  * \param[in] name  The name
  * \param[in] frags For each fragment its InChI, its name, its formula and
