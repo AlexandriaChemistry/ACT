@@ -31,13 +31,37 @@ import warnings
 from typing import Any
 
 from . import commands
-from .errors import (ActCancelledError, ActError, ActNotFoundError, ActOptionError,
-                     ActTimeoutError)
+from .errors import (ActCancelledError, ActError, ActFileError, ActInputError,
+                     ActInternalError, ActNotFoundError, ActOptionError, ActTimeoutError)
 from .options import CommandInfo, OptionInfo, ProgramInfo
 from .runner import Result, build_arguments, config, program_info, run
 
+# The classes use the code of ACT directly, see the module _core. They are
+# there when ACT was built with -DACT_PYTHON=ON, and the rest of the package
+# works without them.
+try:
+    from . import _core
+except ImportError:
+    _core = None  # type: ignore[assignment]
+
+## The classes that the module _core has
+_CLASSES = ("ForceField",)
+
+
+def classes_available() -> bool:
+    """!
+    @brief Whether this package has the classes of ACT, such as
+    act.ForceField, which use the code of ACT directly instead of running
+    the alexandria program.
+    @return True if ACT was built with them.
+    """
+    return _core is not None
+
+
 __all__ = [
-    "ActCancelledError", "ActError", "ActNotFoundError", "ActOptionError", "ActTimeoutError",
+    "ActCancelledError", "ActError", "ActFileError", "ActInputError", "ActInternalError",
+    "ActNotFoundError", "ActOptionError", "ActTimeoutError",
+    "classes_available",
     "CommandInfo", "OptionInfo", "ProgramInfo",
     "Result", "build_arguments", "commands", "config", "program_info", "run",
 ]
@@ -45,11 +69,18 @@ __all__ = [
 
 def __getattr__(name: str) -> Any:
     """!
-    @brief Give the class ACT of the earlier module act.py, with a warning.
+    @brief Give a class of ACT, such as act.ForceField, or the class ACT of
+    the earlier module act.py, with a warning.
     @param name The name that was asked for.
-    @return The class ACT, Alg or Target of act.legacy.
+    @return The class of the module _core, or ACT, Alg or Target of act.legacy.
+    @throws ImportError for a class of ACT when ACT was built without them.
     @throws AttributeError for any other name.
     """
+    if name in _CLASSES:
+        if _core is None:
+            raise ImportError("act.%s needs the Python classes of ACT, which this installation "
+                              "does not have: build ACT with -DACT_PYTHON=ON" % name)
+        return getattr(_core, name)
     if name in ("ACT", "Alg", "Target"):
         from . import legacy  # pylint: disable=import-outside-toplevel
         warnings.warn("act.%s has moved to act.legacy.%s and will be removed from act "

@@ -366,6 +366,21 @@ section 3), and connects `MsgHandler` to the Python `logging` module, so that
 messages appear where Python users expect them. The remaining `printf`
 calls on the paths of the API move to `MsgHandler` as they are met.
 
+*Status of A6.* The option `ACT_PYTHON` builds the module `act._core`
+(`python/src/core.cpp`) with pybind11, next to a copy of the package in
+`<build>/python`, and installs it in the package. It lets fatal errors
+throw when it is loaded, and turns the exceptions of ACT into
+`act.ActFileError`, `act.ActInputError`, `act.ActInternalError` or
+`act.ActError`, by their error code. `act.classes_available()` tells
+whether a package has the classes; without them the rest works as before.
+The module finds shared libraries of ACT from the build tree and from the
+installation. The test `PythonClassTests` runs with the module of the
+build tree. Not done yet: the data directory from the location of the
+package, `MsgHandler` to `logging`, and a build of the module in CI and in
+the conda package, which both need pybind11 in their environment. XML
+files are read without the messages that libxml2 prints; what the parser
+found is in the exception.
+
 **A7. The classes.** In this order, each with pytest tests and docstrings:
 
 | Python | On top of | Main methods |
@@ -378,6 +393,9 @@ calls on the paths of the API move to `MsgHandler` as they are met.
 | `mol.simulate()` | `MolHandler::simulate` | settings as keyword arguments, a callback per output step, returns trajectory and energies as numpy arrays |
 | `mol.write_openmm()` | `writeOpenMM` | the force field file for OpenMM |
 | `act.MolProp`, `act.read_molprop` | `MolPropRead`, `MolPropWrite`, `validateMolProps` | iterate over compounds, experiments and energies; `validate()` |
+
+*Status of A7.* `act.ForceField` reads and writes a file and tells its
+particle types and interactions; its parameters are next.
 
 This is the API of issue 59, with other names:
 

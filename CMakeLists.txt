@@ -199,6 +199,13 @@ option(ACT_DOUBLE "Use double precision (much slower, use only if you really nee
 include(actManageSuffixes)
 
 option(ACT_MPI    "Build a parallel (message-passing) version of ACT" ON)
+
+option(ACT_PYTHON "Build the Python module with the classes of ACT (act.ForceField and so on), needs pybind11" OFF)
+if(ACT_PYTHON)
+    # The module is a shared object that contains the ACT library, also
+    # when that is a static library
+    set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+endif()
 gmx_dependent_option(
     GMX_MPI_IN_PLACE
     "Enable MPI_IN_PLACE for MPIs that have it defined"

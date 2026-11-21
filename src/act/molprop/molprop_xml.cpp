@@ -893,10 +893,11 @@ void MolPropRead(MsgHandler           *msg_handler,
     {
         msg_handler->writeDebug(memory_usage());
     }
-    if ((doc = xmlParseFile(mpfile.c_str())) == nullptr)
+    std::string xmlError;
+    if ((doc = readXmlFile(mpfile, &xmlError)) == nullptr)
     {
-        GMX_THROW(gmx::FileIOError(gmx::formatString("Error reading XML file '%s'. Run a syntax checker such as nsgmls.",
-                                                     mpfile.c_str())));
+        GMX_THROW(gmx::FileIOError(gmx::formatString("Error reading compounds from XML file '%s': %s",
+                                                     mpfile.c_str(), xmlError.c_str())));
     }
     if (msg_handler)
     {

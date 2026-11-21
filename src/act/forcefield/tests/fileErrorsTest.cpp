@@ -115,6 +115,8 @@ TEST(ForceFieldFileErrorsTest, BrokenFile)
     }
     text = fileErrorOfReading(half);
     EXPECT_NE(std::string::npos, text.find("half.xml")) << text;
+    // What the parser found, and where
+    EXPECT_NE(std::string::npos, text.find("(line ")) << text;
     EXPECT_GT(particleTypesOfTestForceField(), 0U);
 }
 

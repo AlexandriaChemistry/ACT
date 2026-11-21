@@ -102,4 +102,16 @@ xmlNodePtr add_xml_comment(xmlDocPtr   doc,
                            xmlNodePtr  prev,
                            const char *comment);
 
+/*! \brief Read an XML file, without printing what the parser finds wrong
+ * The parser of libxml2 prints its errors, which is of no use to a program
+ * that uses ACT as a library. Here what it found goes to the caller, for
+ * the message of an exception.
+ * \param[in]  fileName The file, which may be compressed
+ * \param[out] error    What was wrong with the file and on which line, as
+ *                      the parser tells it, empty if the file was read
+ * \returns the document, to be freed with xmlFreeDoc, nullptr if the file
+ * is not there or is not XML
+ */
+xmlDocPtr readXmlFile(const std::string &fileName, std::string *error);
+
 #endif

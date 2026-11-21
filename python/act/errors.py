@@ -66,6 +66,27 @@ class ActNotFoundError(ActError, FileNotFoundError):
     """
 
 
+class ActFileError(ActError, OSError):
+    """!
+    @brief A file that the classes of ACT cannot read or write: it is not
+    there, it is not what it should be, or the place cannot be written.
+    """
+
+
+class ActInputError(ActError, ValueError):
+    """!
+    @brief Input that the classes of ACT do not accept, such as a force
+    field with a value that ACT does not know.
+    """
+
+
+class ActInternalError(ActError, RuntimeError):
+    """!
+    @brief Something that should not happen inside ACT, which is a bug to
+    report. The process is still alive.
+    """
+
+
 class ActCancelledError(ActError):
     """!
     @brief The program was stopped because the caller asked for it.
