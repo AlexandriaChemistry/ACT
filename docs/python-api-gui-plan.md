@@ -525,9 +525,14 @@ written. What came up on the way:
   of the command line. The option `-name` had no effect
   and was removed. B2(T) is plotted only with an explicit `-b2`; it is in
   the log file anyway, and in the json file with `-json`.
-- Still to do: the Python classes have their own versions of minimize,
-  nma, simulate and write_openmm, which work on a molecule in memory
-  instead of files; they use the same settings classes and checks.
+- The Python classes have their own versions of minimize, nma, simulate
+  and write_openmm, since they work on a molecule in memory instead of
+  files. They take the settings class of the programs
+  (`SimulationConfigHandler`) with its checks (`validate`), call the same
+  functions of `MolHandler`, and a test of each compares the result with
+  that of the program. The functions of the programs that combine the work
+  with what goes to the log file (such as `minimizeMolecule` in
+  `minimize.cpp`) are not shared, since the module reports in another way.
 
 **A9. Documentation and packaging.** A chapter "Using ACT from Python" in the
 manual with the examples above, an API reference generated from the
@@ -910,9 +915,7 @@ the package `act-gui` in the same step.
 
 *Release 1.95.* The rest of the plan and bug fixes go onto the branch
 `release-1-95`, no new features. The server (B11, B13) comes after 1.95.
-Still to do for 1.95: B12 with the item above; the Python classes
-`minimize`, `normal_modes`, `simulate` and `write_openmm` use the settings
-classes of A8 and their checks; a try of B10a on csb. The bugs found on
+Still to do for 1.95: B12 with the item above; a try of B10a on csb. The bugs found on
 the way are fixed on `release-1-95`: `edit_mp -ff` checks dimers and force
 fields without bond charge corrections, `train_ff` without a selection file
 stops at once and says why, and `edit_mp` writes a molprop file only with
