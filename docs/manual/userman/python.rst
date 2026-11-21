@@ -134,7 +134,7 @@ The options of the program as data
 ========================
 The classes of ACT
 ========================
-When ACT is built with *-DACT_PYTHON=ON*, which needs `pybind11`_, the package also has classes that use the code of ACT directly, without a program in between. *act.classes_available()* tells whether an installation has them; the conda package *alexandria-python* does. There are the force field, the molecule with its energy, its minimum, its vibrations and simulations of it, and the compounds of a molprop file.
+When ACT is built with *-DACT_PYTHON=ON*, which needs `pybind11`_, the package also has classes that use the code of ACT directly, without a program in between. *act.classes_available()* tells whether an installation has them; the conda package *alexandria-python* does. There are the force field, the molecule with its energy, its minimum, its vibrations and simulations of it, and the compounds of a molprop file. All functions and classes of the package are described in :ref:`sec-python-api`.
 
 .. code-block:: python
 

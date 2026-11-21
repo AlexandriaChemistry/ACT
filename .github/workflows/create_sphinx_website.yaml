@@ -47,11 +47,15 @@ jobs:
         run: |
           conda info
           conda config --add channels conda-forge
-          conda install librdkit-dev=2025.09.4 libboost-devel eigen=5.0.1 doxygen graphviz pygments nlohmann_json
+          conda install librdkit-dev=2025.09.4 libboost-devel eigen=5.0.1 doxygen graphviz pygments nlohmann_json pybind11
           # The location of the environment differs between runner images
           echo "ACT_CONDA_PREFIX=${CONDA_PREFIX}" >> ${GITHUB_ENV}
       - name: Install dependencies
-        run: pip install -r requirements.txt
+        # Into the Python of conda, for which the module with the classes
+        # of ACT is built, which the reference of the Python package in
+        # the manual imports
+        shell: bash -el {0}
+        run: python -m pip install -r requirements.txt
 
       - name: Check out ACT-utilities
         uses: actions/checkout@v6
@@ -65,13 +69,14 @@ jobs:
           cmake -S ACT-utilities -B ACT-utilities/build -DBUILD_TESTING=OFF -DCMAKE_PREFIX_PATH=${ACT_CONDA_PREFIX} -DCMAKE_INSTALL_PREFIX=${{ github.workspace }}/../tools
           cmake --install ACT-utilities/build
       - name: Install ACT
+        shell: bash -el {0}
         run: |
           cd ${{ github.workspace }}
           mkdir build; cd build
           export MPICXX=/usr/bin/g++
           export MPICC=/usr/bin/gcc
           export CXXFLAGS='-std=c++20'
-          cmake -DACT_DOUBLE=ON -DCMAKE_PREFIX_PATH=${ACT_CONDA_PREFIX} -DBUILD_SHARED_LIBS=OFF -DACT_OPENMP=OFF -DACT_MPI=ON -DCMAKE_INSTALL_PREFIX=${{ github.workspace }}/../tools -DCMAKE_BUILD_TYPE=Release -DACT_BUILD_MANUAL=ON -DCMAKE_CXX_COMPILER=${MPICXX} -DCMAKE_C_COMPILER=${MPICC} ..
+          cmake -DACT_DOUBLE=ON -DCMAKE_PREFIX_PATH=${ACT_CONDA_PREFIX} -DBUILD_SHARED_LIBS=OFF -DACT_OPENMP=OFF -DACT_MPI=ON -DCMAKE_INSTALL_PREFIX=${{ github.workspace }}/../tools -DCMAKE_BUILD_TYPE=Release -DACT_BUILD_MANUAL=ON -DACT_PYTHON=ON -DCMAKE_CXX_COMPILER=${MPICXX} -DCMAKE_C_COMPILER=${MPICC} ..
           make -j 4 doxygen-full website manual
           mkdir ../_build
           mv docs/html/doxygen/html-full ../_build/doxygen

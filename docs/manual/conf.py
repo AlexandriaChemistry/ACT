@@ -46,7 +46,10 @@ master_doc = 'index'
 # Add any Sphinx extension module names here, as strings. They can be
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
+# The reference of the Python package, see act_api.py in this directory
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 extensions = ["sphinx_lesson",
+    "act_api",
     "sphinx.ext.githubpages",
     "sphinx_rtd_theme_ext_color_contrast",
     'sphinx_copybutton',

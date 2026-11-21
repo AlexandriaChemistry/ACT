@@ -59,6 +59,14 @@ if(SPHINX_BUILD_POSSIBLE)
         set(Sphinx_pygments_FOUND 1)
     endif()
     
+    # The reference of the Python package (userman/python_api.rst, see
+    # act_api.py) is made from the package of the build tree, which has the
+    # classes with ACT_PYTHON, or else from that of the source tree
+    set(ACT_API_ENV)
+    if(ACT_PYTHON)
+        set(ACT_API_ENV "ACT_PYTHON_PATH=${CMAKE_BINARY_DIR}/python")
+    endif()
+
     # ============================================================================
     # HTML Website Generation
     # ============================================================================
@@ -66,6 +74,7 @@ if(SPHINX_BUILD_POSSIBLE)
         OUTPUT "${SPHINX_HTML_OUTPUT_DIR}/index.html"
         DEPENDS ${SPHINX_SOURCE_DIR}/conf.py ${SPHINX_SOURCE_DIR}/index.rst
         COMMAND
+            ${CMAKE_COMMAND} -E env ${ACT_API_ENV}
             ${SPHINX_EXECUTABLE}
             -q -b html
             -W --keep-going
@@ -83,6 +92,9 @@ if(SPHINX_BUILD_POSSIBLE)
         DEPENDS "${SPHINX_HTML_OUTPUT_DIR}/index.html"
         COMMENT "HTML website built in ${SPHINX_HTML_OUTPUT_DIR}"
     )
+    if(ACT_PYTHON)
+        add_dependencies(website act_python_core)
+    endif()
 
     # ============================================================================
     # LaTeX and PDF Manual Generation
@@ -91,6 +103,7 @@ if(SPHINX_BUILD_POSSIBLE)
         OUTPUT "${SPHINX_LATEX_OUTPUT_DIR}/act.tex"
         DEPENDS ${SPHINX_SOURCE_DIR}/conf.py ${SPHINX_SOURCE_DIR}/index.rst
         COMMAND
+            ${CMAKE_COMMAND} -E env ${ACT_API_ENV}
             ${SPHINX_EXECUTABLE}
             -q -b latex
             -W --keep-going
@@ -182,4 +195,9 @@ else()
         VERBATIM
     )
 
+endif()
+
+# The reference of the Python package needs the module with the classes
+if(ACT_PYTHON AND TARGET manual)
+    add_dependencies(manual act_python_core)
 endif()
