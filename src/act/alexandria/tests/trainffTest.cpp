@@ -777,6 +777,52 @@ TEST_F(TrainFFTest, ProgressFile)
 
 // Test: Without the option there is no progress file, and without training
 // there is none either
+// Test: Without a selection of compounds (-sel) no compound would be used,
+// so train_ff stops before reading the compounds and says why
+TEST_F(TrainFFTest, NeedsSelection)
+{
+    for (const bool emptySelection : { false, true })
+    {
+        const std::string label(emptySelection ? "emptysel" : "nosel");
+        const auto log = fileManager().getTemporaryFilePath(label + ".log");
+        gmx::test::CommandLine cmd;
+        cmd.append("train_ff");
+        cmd.addOption("-ff", fileManager().getInputFilePath("forcefields/halgren-PG.xml"));
+        cmd.addOption("-mp", fileManager().getInputFilePath("molprop/booze-mono.xml"));
+        if (emptySelection)
+        {
+            const auto sel = fileManager().getTemporaryFilePath("empty.dat");
+            std::ofstream(sel).close();
+            cmd.addOption("-sel", sel);
+        }
+        cmd.addOption("-o", fileManager().getTemporaryFilePath(label + "-ff.xml"));
+        cmd.addOption("-g", log);
+        for (const auto &opt : combine(mcmcOptions(1), intraOptions()))
+        {
+            if (opt.second.empty())
+            {
+                cmd.append(opt.first);
+            }
+            else
+            {
+                cmd.addOption(opt.first.c_str(), opt.second);
+            }
+        }
+        int status = 0;
+        {
+            const trainfftest::ScopedWorkingDirectory cwd(std::filesystem::path(log).parent_path());
+            status = train_ff(cmd.argc(), cmd.argv());
+        }
+        EXPECT_EQ(1, status) << label;
+        bool told = false;
+        for (const auto &line : trainfftest::readLines(log))
+        {
+            told = told || line.find("selection of compounds (-sel)") != std::string::npos;
+        }
+        EXPECT_TRUE(told) << label;
+    }
+}
+
 TEST_F(TrainFFTest, NoProgressFileByDefault)
 {
     const auto dir = std::filesystem::path(fileManager().getTemporaryFilePath("noprogress.log")).parent_path();
