@@ -3,6 +3,15 @@ mpi:
   - mpich
   - openmpi
 
+# The Python versions of the package alexandria-python. Not the key python
+# of conda-forge: the package alexandria, which has a Python in its build
+# only for a check of CMake, would be built for each version as well.
+act_python:
+  - "3.11"
+  - "3.12"
+  - "3.13"
+  - "3.14"
+
 gpu:
   - if: osx
     then: [none]

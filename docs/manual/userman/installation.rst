@@ -26,6 +26,10 @@ conda chooses the package for the platform of the computer. For a test build, us
 
   conda install -n act -c conda-forge openmm
 
+The Python package *act*, with which Python runs the programs and uses the classes of ACT, see :ref:`sec-python`, is in a package of its own, since it is compiled for a Python version. It installs *alexandria* with it::
+
+  conda install -n act -c alexandriachemistry -c conda-forge alexandria-python
+
 Programs that run on several processes are started with the *mpirun* of the environment, for instance::
 
   mpirun -n 4 alexandria train_ff ...

@@ -24,7 +24,7 @@ fi
 
 # The Python package act is not installed: it would go to the site-packages
 # of the Python of the build, while this package does not depend on a Python
-# version. It needs a package of its own (noarch), which is still to be made.
+# version. It is in the package alexandria-python, see build-python.sh.
 # Warnings are errors in the ACT build, which is good for development, but a
 # newer compiler or library should not stop the package from building.
 cmake ${CMAKE_ARGS} --compile-no-warning-as-error -S . -B build \
@@ -46,26 +46,7 @@ cmake --build build --parallel ${CPU_COUNT}
 if [[ "${target_platform}" == linux-* ]]; then
     # No library may need a newer glibc than that of the sysroot, which the
     # package requires (__glibc)
-    SYSROOT=$(${CXX} -print-sysroot)
-    # features.h separates the words with tabs
-    LIMIT=$(awk '$1 == "#define" && $2 == "__GLIBC__" {a=$3}
-                 $1 == "#define" && $2 == "__GLIBC_MINOR__" {b=$3}
-                 END {if (a != "" && b != "") print a "." b}' \
-            "${SYSROOT}/usr/include/features.h")
-    if [[ -z "${LIMIT}" ]]; then
-        echo "No glibc version in ${SYSROOT}/usr/include/features.h"
-        exit 1
-    fi
-    NEEDED=$(for f in build/lib/*.so* build/bin/alexandria; do ${OBJDUMP:-objdump} -T "$f"; done |
-             grep -oE 'GLIBC_[0-9]+\.[0-9]+' | sed 's/GLIBC_//' | sort -V -u | tail -1)
-    echo "glibc of the sysroot ${LIMIT}, newest needed ${NEEDED}"
-    if [[ "$(printf '%s\n%s\n' "${NEEDED}" "${LIMIT}" | sort -V | tail -1)" != "${LIMIT}" ]]; then
-        echo "A library needs glibc ${NEEDED}, newer than ${LIMIT} of the sysroot:"
-        for f in build/lib/*.so* build/bin/alexandria; do
-            ${OBJDUMP:-objdump} -T "$f" | grep -E "GLIBC_${NEEDED}" | sed "s|^|$f: |"
-        done
-        exit 1
-    fi
+    bash "${RECIPE_DIR}/glibc-check.sh" build/lib/*.so* build/bin/alexandria
 fi
 
 if [[ "${CONDA_BUILD_CROSS_COMPILATION:-0}" != "1" ]]; then
