@@ -1147,6 +1147,181 @@ void defineNormalModes(py::module_ &module)
              });
 }
 
+//! A simulation as Python sees it
+struct Trajectory
+{
+    //! The number of steps that were asked for and the time step in ps
+    int                                        steps = 0;
+    double                                     timestep = 0;
+    //! The steps and times in ps of the energies
+    std::vector<int>                           energySteps;
+    std::vector<double>                        energyTimes;
+    //! The temperature in K at these times
+    std::vector<double>                        temperature;
+    //! The energies in kJ/mol at these times, by term, with EKIN and ETOT
+    std::map<std::string, std::vector<double>> energies;
+    //! The steps and times in ps of the structures
+    std::vector<int>                           frameSteps;
+    std::vector<double>                        times;
+    //! The positions of all particles in nm at these times
+    std::vector<std::vector<gmx::RVec>>        frames;
+};
+
+/*! \brief Run a molecular dynamics simulation of a molecule, as alexandria simulate does
+ * \param[in] molecule       The molecule, of which the structure stays as it is
+ * \param[in] steps          The number of steps
+ * \param[in] timestep       The time step in ps
+ * \param[in] temperature    The temperature in K of the velocities at the start, zero to start at rest
+ * \param[in] seed           The seed for the velocities, zero to make one
+ * \param[in] energyInterval The number of steps between energies, zero for none
+ * \param[in] frameInterval  The number of steps between structures, zero for none
+ * \param[in] onEnergies     A function of Python that gets the energies when they are due
+ *                           and ends the simulation by returning False, or None
+ * \return The energies and structures along the way
+ * \throws gmx::InvalidInputError for settings that make no sense
+ */
+Trajectory simulateMolecule(Molecule &molecule, int steps, double timestep, double temperature, int seed,
+                            int energyInterval, int frameInterval, const py::object &onEnergies)
+{
+    if (steps < 1)
+    {
+        GMX_THROW(gmx::InvalidInputError("A simulation has at least one step"));
+    }
+    if (!std::isfinite(timestep) || timestep <= 0)
+    {
+        GMX_THROW(gmx::InvalidInputError("The time step of a simulation is a number above zero, in ps"));
+    }
+    if (!std::isfinite(temperature) || temperature < 0)
+    {
+        GMX_THROW(gmx::InvalidInputError("The temperature of a simulation cannot be negative"));
+    }
+    if (energyInterval < 0 || frameInterval < 0 || seed < 0)
+    {
+        GMX_THROW(gmx::InvalidInputError("The seed and the numbers of steps between energies and between structures cannot be negative"));
+    }
+    if (!onEnergies.is_none() && !PyCallable_Check(onEnergies.ptr()))
+    {
+        throw py::type_error("on_energies must be a function, or None");
+    }
+    SimulationConfigHandler sch;
+    sch.setSimulation(steps, timestep, temperature, seed, energyInterval, frameInterval);
+
+    Trajectory result;
+    result.steps    = steps;
+    result.timestep = timestep;
+    // An error of the function of Python, or Ctrl-C, ends the simulation
+    // and is raised when the simulation has returned
+    bool               failed = false;
+    SimulationObserver observer;
+    observer.energies = [&](int step, double time, double temp, double ekin,
+                            const std::map<InteractionType, double> &energies)
+    {
+        result.energySteps.push_back(step);
+        result.energyTimes.push_back(time);
+        result.temperature.push_back(temp);
+        double epot = 0;
+        for (const auto &term : energies)
+        {
+            result.energies[interactionTypeToString(term.first)].push_back(term.second);
+            if (InteractionType::EPOT == term.first)
+            {
+                epot = term.second;
+            }
+        }
+        result.energies["EKIN"].push_back(ekin);
+        result.energies["ETOT"].push_back(ekin + epot);
+        const py::gil_scoped_acquire python;
+        if (PyErr_CheckSignals() != 0)
+        {
+            failed = true;
+            return false;
+        }
+        if (onEnergies.is_none())
+        {
+            return true;
+        }
+        try
+        {
+            py::dict item;
+            item["step"]        = step;
+            item["time"]        = time;
+            item["temperature"] = temp;
+            py::dict values;
+            for (const auto &term : result.energies)
+            {
+                values[py::str(term.first)] = term.second.back();
+            }
+            item["energies"] = values;
+            const py::object answer = onEnergies(item);
+            // Only False ends the simulation: a function that returns nothing lets it run
+            return !(py::isinstance<py::bool_>(answer) && !answer.cast<bool>());
+        }
+        catch (py::error_already_set &error)
+        {
+            error.restore();
+            failed = true;
+            return false;
+        }
+    };
+    observer.coordinates = [&](int step, double time, const std::vector<gmx::RVec> &coords)
+    {
+        result.frameSteps.push_back(step);
+        result.times.push_back(time);
+        result.frames.push_back(coords);
+        return true;
+    };
+    QuietMessages    messages;
+    const MolHandler molhandler;
+    {
+        // Other threads of Python run while this one computes. The
+        // simulation starts from the coordinates that are given and keeps
+        // its own, so the structure of the molecule is not changed.
+        const py::gil_scoped_release release;
+        molhandler.simulate(messages.handler(), molecule.pd, &molecule.mol, molecule.coords,
+                            molecule.forceComp.get(), sch, nullptr, nullptr, nullptr, nullptr, &observer);
+    }
+    if (failed)
+    {
+        throw py::error_already_set();
+    }
+    messages.check("The simulation failed");
+    return result;
+}
+
+//! Tell Python about the result of a simulation
+void defineTrajectory(py::module_ &module)
+{
+    py::class_<Trajectory>(module, "Trajectory", "The result of Molecule.simulate.")
+        .def_readonly("steps", &Trajectory::steps, "The number of steps that were asked for.")
+        .def_readonly("timestep", &Trajectory::timestep, "The time step in ps.")
+        .def_readonly("energy_steps", &Trajectory::energySteps, "The steps of which there are energies.")
+        .def_readonly("energy_times", &Trajectory::energyTimes, "The times in ps of the energies.")
+        .def_readonly("temperature", &Trajectory::temperature, "The temperature in K at these times.")
+        .def_readonly("energies", &Trajectory::energies,
+                      "The energies in kJ/mol at these times: for each term of the force field, for\n"
+                      "the potential (EPOT), kinetic (EKIN) and total energy (ETOT) a list.")
+        .def_readonly("frame_steps", &Trajectory::frameSteps, "The steps of which there is a structure.")
+        .def_readonly("times", &Trajectory::times, "The times in ps of the structures.")
+        .def_property_readonly("frames",
+                               [](const Trajectory &trajectory)
+                               {
+                                   py::list frames;
+                                   for (const auto &frame : trajectory.frames)
+                                   {
+                                       frames.append(listOfVectors(frame));
+                                   }
+                                   return frames;
+                               },
+                               "The structures: for each the position of every particle in nm.")
+        .def("__repr__",
+             [](const Trajectory &trajectory)
+             {
+                 return gmx::formatString("<act.Trajectory %d steps of %g ps, %zu energies, %zu structures>",
+                                          trajectory.steps, trajectory.timestep, trajectory.energySteps.size(),
+                                          trajectory.frames.size());
+             });
+}
+
 /*! \brief Tell Python about the class Molecule
  * A lambda that returns one item of what toPython gives has to say that it
  * returns an object: an item of a temporary is otherwise looked up after
@@ -1268,6 +1443,18 @@ void defineMolecule(py::module_ &module)
              "minimize, and the molecule keeps that structure; give minimize=False for a\n"
              "molecule that is at its minimum already. Raises ActError if the minimization\n"
              "does not converge. Returns a NormalModes.")
+        .def("simulate", &simulateMolecule, py::kw_only(), py::arg("steps"), py::arg("timestep") = 0.0002,
+             py::arg("temperature") = 0.0, py::arg("seed") = 0, py::arg("energy_interval") = 1,
+             py::arg("frame_interval") = 1, py::arg("on_energies") = py::none(),
+             "Run a molecular dynamics simulation, as alexandria simulate does, from the\n"
+             "structure of the molecule, which stays as it is.\n\n"
+             "steps is the number of steps of timestep ps. With a temperature in K the atoms\n"
+             "get velocities for it, drawn with the seed (0 for another one each time);\n"
+             "without, they start at rest. The energies are kept every energy_interval steps\n"
+             "and the structure every frame_interval steps, 0 for never. on_energies is a\n"
+             "function that gets a dict with step, time, temperature and energies each time\n"
+             "the energies are due; if it returns False the simulation ends there. Returns a\n"
+             "Trajectory. Ctrl-C ends the simulation at the next energies.")
         .def("__repr__",
              [](const Molecule &molecule)
              {
@@ -1297,5 +1484,6 @@ PYBIND11_MODULE(_core, module)
     alexandria::defineForceField(module);
     alexandria::defineMinimization(module);
     alexandria::defineNormalModes(module);
+    alexandria::defineTrajectory(module);
     alexandria::defineMolecule(module);
 }

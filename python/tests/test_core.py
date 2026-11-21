@@ -13,8 +13,11 @@ directly instead of running the alexandria program. They need ACT built
 with -DACT_PYTHON=ON and are skipped otherwise.
 """
 import os
+import signal
 import sys
 import tempfile
+import threading
+import time
 import unittest
 from pathlib import Path
 
@@ -676,6 +679,157 @@ class MoleculeTest(unittest.TestCase):
         self.assertIn("minim", str(caught.exception))
         # The molecule is still good for a minimization that does
         self.assertEqual(24, len(mol.normal_modes().frequencies))
+
+    def test_simulate(self):
+        """!
+        @brief A molecular dynamics simulation gives the energies and the
+        structure along the way, and leaves the molecule as it is.
+        """
+        mol = act.Molecule.from_smiles("O", self.ff)
+        mol.minimize()
+        start = mol.coordinates
+        traj = mol.simulate(steps=200, temperature=300, seed=7, energy_interval=10,
+                            frame_interval=20)
+        # The energies every ten steps, the structure every twenty
+        self.assertEqual(20, len(traj.energy_times))
+        self.assertEqual(0.0, traj.energy_times[0])
+        self.assertAlmostEqual(10 * 0.0002, traj.energy_times[1], places=9)
+        self.assertEqual(list(range(0, 200, 10)), traj.energy_steps)
+        for name in ("EPOT", "EKIN", "ETOT", "BONDS"):
+            self.assertEqual(20, len(traj.energies[name]), name)
+        self.assertEqual(20, len(traj.temperature))
+        # The velocities are drawn for the temperature that was asked for
+        self.assertAlmostEqual(300, traj.temperature[0], delta=1)
+        for k in range(20):
+            self.assertAlmostEqual(traj.energies["ETOT"][k],
+                                   traj.energies["EPOT"][k] + traj.energies["EKIN"][k], places=6)
+        # The total energy stays, while the potential energy moves
+        total, potential = traj.energies["ETOT"], traj.energies["EPOT"]
+        self.assertGreater(max(potential) - min(potential), 0.1)
+        self.assertLess(max(total) - min(total), 0.2 * (max(potential) - min(potential)))
+        self.assertEqual(10, len(traj.frames))
+        self.assertEqual(list(range(0, 200, 20)), traj.frame_steps)
+        self.assertAlmostEqual(20 * 0.0002, traj.times[1], places=9)
+        for frame in traj.frames:
+            self.assertEqual(len(mol.atoms), len(frame))
+        # It starts where the molecule is, and moves
+        for theirs, ours in zip(traj.frames[0], start):
+            for dim in range(3):
+                self.assertAlmostEqual(ours[dim], theirs[dim], places=6)
+        self.assertNotEqual(traj.frames[0], traj.frames[-1])
+        self.assertEqual(start, mol.coordinates)
+        self.assertIn("200 steps", repr(traj))
+
+    def test_simulation_is_reproducible(self):
+        """!
+        @brief The same seed gives the same simulation, another seed another one.
+        """
+        mol = act.Molecule.from_smiles("O", self.ff)
+        mol.minimize()
+        first = mol.simulate(steps=50, temperature=300, seed=7, energy_interval=5)
+        second = mol.simulate(steps=50, temperature=300, seed=7, energy_interval=5)
+        other = mol.simulate(steps=50, temperature=300, seed=8, energy_interval=5)
+        self.assertEqual(first.energies["EPOT"], second.energies["EPOT"])
+        self.assertNotEqual(first.energies["EPOT"], other.energies["EPOT"])
+        # Without a temperature the atoms start at rest, at the minimum
+        still = mol.simulate(steps=20, energy_interval=5)
+        self.assertLess(max(still.energies["EKIN"]), 1e-3)
+
+    def test_follow_and_stop_a_simulation(self):
+        """!
+        @brief A function is called with the energies while the simulation
+        runs, and stops it by returning False.
+        """
+        mol = act.Molecule.from_smiles("O", self.ff)
+        seen = []
+        traj = mol.simulate(steps=100, temperature=300, seed=7, energy_interval=10,
+                            on_energies=seen.append)
+        self.assertEqual(10, len(seen))
+        self.assertEqual(list(range(0, 100, 10)), [item["step"] for item in seen])
+        self.assertEqual(traj.energies["EPOT"], [item["energies"]["EPOT"] for item in seen])
+        self.assertEqual(traj.temperature, [item["temperature"] for item in seen])
+        self.assertAlmostEqual(seen[1]["time"], traj.energy_times[1], places=12)
+
+        def three(item):
+            return item["step"] < 20
+        stopped = mol.simulate(steps=100000, temperature=300, seed=7, energy_interval=10,
+                               on_energies=three)
+        self.assertEqual([0, 10, 20], stopped.energy_steps)
+        # An error in the function ends the simulation and is raised
+
+        def broken(item):
+            raise KeyError("no such thing")
+        with self.assertRaises(KeyError):
+            mol.simulate(steps=100000, temperature=300, on_energies=broken)
+        # The molecule is still good
+        self.assertEqual(5, len(mol.simulate(steps=5, energy_interval=1).energy_steps))
+
+    @unittest.skipUnless(signal.getsignal(signal.SIGINT) is signal.default_int_handler,
+                         "Python does not handle the interrupt signal here")
+    def test_interrupt_ends_a_simulation(self):
+        """!
+        @brief Ctrl-C ends a simulation soon, also for a molecule that was
+        made from a SMILES string, which used to take the signal away from
+        Python for good.
+        """
+        mol = act.Molecule.from_smiles("CC(=O)C", self.ff)
+        mol.minimize()
+        for follow in (None, lambda item: None):
+            # Half a minute of simulation, if nothing ends it
+            timer = threading.Timer(0.3, lambda: signal.raise_signal(signal.SIGINT))
+            began = time.monotonic()
+            timer.start()
+            try:
+                with self.assertRaises(KeyboardInterrupt):
+                    mol.simulate(steps=1000000, temperature=100, seed=3, energy_interval=10,
+                                 frame_interval=0, on_energies=follow)
+            finally:
+                timer.cancel()
+                timer.join()
+            self.assertLess(time.monotonic() - began, 10)
+        # And the molecule is as good as before
+        self.assertEqual(4, len(mol.simulate(steps=4).energy_steps))
+
+    @unittest.skipUnless(os.environ.get("ACT_ALEXANDRIA"), "ACT_ALEXANDRIA is not set")
+    def test_simulation_same_as_the_program(self):
+        """!
+        @brief The simulation is that of alexandria simulate with the same seed.
+        """
+        told = []
+        with act.commands.simulate(ff=self.ffname, smiles="O", nsteps=60, temp=300, seed=1993,
+                                   nstener=10, nstxout=0, on_progress=told.append):
+            pass
+        mol = act.Molecule.from_smiles("O", self.ff)
+        traj = mol.simulate(steps=60, temperature=300, seed=1993, energy_interval=10,
+                            frame_interval=0)
+        self.assertEqual([item["step"] for item in told], traj.energy_steps)
+        self.assertEqual([], traj.frames)
+        for item, potential, temperature in zip(told, traj.energies["EPOT"], traj.temperature):
+            self.assertAlmostEqual(item["energies"]["EPOT"], potential,
+                                   delta=1e-6 * abs(potential) + 1e-6)
+            self.assertAlmostEqual(item["temperature"]["value"], temperature, delta=1e-4)
+
+    def test_simulation_settings(self):
+        """!
+        @brief Settings that make no sense are refused.
+        """
+        mol = act.Molecule.from_smiles("O", self.ff)
+        wrong = [dict(steps=0), dict(steps=-10), dict(steps=10, timestep=0.0),
+                 dict(steps=10, timestep=-0.001), dict(steps=10, timestep=float("nan")),
+                 dict(steps=10, temperature=-1.0), dict(steps=10, energy_interval=-1),
+                 dict(steps=10, frame_interval=-5), dict(steps=10, seed=-3)]
+        for settings in wrong:
+            with self.assertRaises(act.ActInputError, msg=repr(settings)):
+                mol.simulate(**settings)
+        with self.assertRaises(TypeError):
+            mol.simulate()  # pylint: disable=missing-kwoa
+        with self.assertRaises(TypeError):
+            mol.simulate(100)  # pylint: disable=too-many-function-args,missing-kwoa
+        with self.assertRaises(TypeError):
+            mol.simulate(steps=10, on_energies="print")
+        # A larger time step is taken as it is
+        self.assertAlmostEqual(0.0005, mol.simulate(steps=3, timestep=0.0005).energy_times[1],
+                               places=9)
 
     def test_molecule_from_file(self):
         """!

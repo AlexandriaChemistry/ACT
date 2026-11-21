@@ -134,7 +134,7 @@ The options of the program as data
 ========================
 The classes of ACT
 ========================
-When ACT is built with *-DACT_PYTHON=ON*, which needs `pybind11`_, the package also has classes that use the code of ACT directly, without a program in between. *act.classes_available()* tells whether an installation has them. So far there are the force field and the molecule with its energy, its minimum and its vibrations; simulation is next.
+When ACT is built with *-DACT_PYTHON=ON*, which needs `pybind11`_, the package also has classes that use the code of ACT directly, without a program in between. *act.classes_available()* tells whether an installation has them. So far there are the force field and the molecule with its energy, its minimum, its vibrations and simulations of it.
 
 .. code-block:: python
 
@@ -183,6 +183,21 @@ The energy is minimized and the vibrations are computed as *alexandria minimize*
    print(modes.modes[0]["reduced_mass"], modes.modes[0]["displacements"][0])
    print(modes.thermochemistry["T=298.15"]["Standard entropy"]["Total"])
    x, y = modes.spectrum(linewidth=24)
+
+A molecular dynamics simulation, as *alexandria simulate* does it, starts from the structure of the molecule and leaves it as it is:
+
+.. code-block:: python
+
+   def follow(item):
+       print(item["step"], item["time"], item["temperature"], item["energies"]["EPOT"])
+       return item["temperature"] < 2000      # False ends the simulation
+
+   traj = mol.simulate(steps=10000, timestep=0.0002, temperature=300, seed=1993,
+                       energy_interval=100, frame_interval=500, on_energies=follow)
+   print(traj.energy_times, traj.energies["ETOT"], traj.temperature)
+   print(traj.times, traj.frames[-1][0])      # the structures, in nm
+
+The times are in ps. Without a temperature the atoms start at rest; with one they get velocities for it, the same each time for the same seed. Other threads of Python run while the simulation does, and Ctrl-C ends it the next time the energies are due.
 
 A minimization that does not converge is told in the result, with the structure of the lowest energy that was found; *update=False* leaves the structure of the molecule as it is. Normal modes of a structure that is no minimum make no sense, so there a minimization that does not converge raises an error.
 

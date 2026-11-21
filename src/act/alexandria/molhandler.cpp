@@ -2353,16 +2353,18 @@ void MolHandler::simulate(MsgHandler                    *msghandler,
                           const char                    *trajectoryFile,
                           const char                    *energyFile,
                           const gmx_output_env_t        *oenv,
-                          const char                    *progressFile) const
+                          const char                    *progressFile,
+                          const SimulationObserver      *observer) const
 {
     if (simConfig.nsteps() <= 0)
     {
         // No simulation to be done!
         return;
     }
-    FILE                              *traj = gmx_ffopen(trajectoryFile, "w");
-    FILE                              *exvg = xvgropen(energyFile, "ACT Energies",
-                                                       "Time (ps)", "Energy (kJ/mol)", oenv);
+    // A program that observes the simulation may do without files
+    FILE                              *traj = trajectoryFile ? gmx_ffopen(trajectoryFile, "w") : nullptr;
+    FILE                              *exvg = energyFile ? xvgropen(energyFile, "ACT Energies",
+                                                                    "Time (ps)", "Energy (kJ/mol)", oenv) : nullptr;
     FILE                              *progress = progressFile ? gmx_ffopen(progressFile, "w") : nullptr;
     OutputFlusher                      flusher({ traj, exvg, progress });
     // The coordinates are integers, such that the steps are exact, see
@@ -2510,7 +2512,9 @@ void MolHandler::simulate(MsgHandler                    *msghandler,
     // The shell positions relative to their parents in this and the previous step
     std::vector<gmx::RVec> shellOffset(shellParent.size()), shellOffsetPrev(shellParent.size());
     bool                   haveOffsetPrev = false;
-    for (int step = 0; step < simConfig.nsteps(); step++)
+    // An observer can end the simulation
+    bool                   keepGoing      = true;
+    for (int step = 0; keepGoing && step < simConfig.nsteps(); step++)
     {
         for (size_t k = 0; k < shellParent.size(); k++)
         {
@@ -2526,10 +2530,19 @@ void MolHandler::simulate(MsgHandler                    *msghandler,
             {
                 ekin += mass_2[i]*rvecNormSquared(velocities[i]);
             }
-            printEnergies(exvg, step, deltat, energies, ekin, nDOF, oenv);
+            if (exvg)
+            {
+                printEnergies(exvg, step, deltat, energies, ekin, nDOF, oenv);
+            }
             if (progress)
             {
                 printProgress(progress, step, simConfig.nsteps(), deltat, energies, ekin, nDOF);
+            }
+            if (observer && observer->energies)
+            {
+                // The temperature as printProgress has it
+                keepGoing = observer->energies(step, step*deltat, nDOF > 0 ? 2*ekin/(nDOF*BOLTZ) : 0.0,
+                                               ekin, energies) && keepGoing;
             }
             flusher.flushIfDue();
         }
@@ -2537,13 +2550,25 @@ void MolHandler::simulate(MsgHandler                    *msghandler,
         if (simConfig.nstxout() > 0 && step % simConfig.nstxout() == 0)
         {
             const ScopedTimer timer(trajectoryTimer);
-            //! \todo rewrite without gromacs fluff.
-            pdbWriter(traj, title, mol->atomsConst(),
-                      coordinates.toRVec(), mol->topology()->residueNames(),
-                      epbcNONE,
-                      box, chain, step/simConfig.nstxout()+1, trajIndex,
-                      nullptr, true);
+            if (traj)
+            {
+                //! \todo rewrite without gromacs fluff.
+                pdbWriter(traj, title, mol->atomsConst(),
+                          coordinates.toRVec(), mol->topology()->residueNames(),
+                          epbcNONE,
+                          box, chain, step/simConfig.nstxout()+1, trajIndex,
+                          nullptr, true);
+            }
+            if (observer && observer->coordinates)
+            {
+                keepGoing = observer->coordinates(step, step*deltat, coordinates.toRVec()) && keepGoing;
+            }
             flusher.flushIfDue();
+        }
+        if (!keepGoing)
+        {
+            // What was due for this step is out, and no further step is taken
+            break;
         }
         // Integrate positions using velocity Verlet
         timings.start(integrationTimer);
@@ -2640,13 +2665,19 @@ void MolHandler::simulate(MsgHandler                    *msghandler,
         cur = prev;
     }
     
-    gmx_ffclose(traj);
-    xvgrclose(exvg);
+    if (traj)
+    {
+        gmx_ffclose(traj);
+    }
+    if (exvg)
+    {
+        xvgrclose(exvg);
+    }
     if (progress)
     {
         gmx_ffclose(progress);
     }
-    msghandler->write("Simulation finished correctly.");
+    msghandler->write(keepGoing ? "Simulation finished correctly." : "Simulation ended on request.");
 }
 
 } // namespace alexandria

@@ -46,7 +46,7 @@ except ImportError:
 
 ## The classes that the module _core has
 _CLASSES = ("ForceField", "Minimization", "Molecule", "NormalModes", "Parameter",
-            "ParticleType")
+            "ParticleType", "Trajectory")
 
 
 def classes_available() -> bool:
