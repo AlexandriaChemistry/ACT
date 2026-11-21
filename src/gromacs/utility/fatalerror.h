@@ -103,6 +103,57 @@ typedef void (*gmx_error_handler_t)(const char *title, const std::string &msg, c
  */
 void gmx_set_error_handler(gmx_error_handler_t func);
 
+/*! \brief
+ * Sets whether fatal errors throw an exception instead of ending the process.
+ *
+ * A command line program prints the message of a fatal error and ends.
+ * Code that is used as a library, such as the Python module of ACT, must
+ * leave its caller alive: with this switch on, gmx_fatal() throws
+ * gmx::FatalError, the routines for errors of a given kind (gmx_file(),
+ * gmx_incons() and so on) throw the exception that fits the kind, a failed
+ * assertion throws gmx::InternalError, and an exception that
+ * GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR catches is thrown again. Nothing
+ * is printed; the message is in the exception.
+ *
+ * The switch is for the whole process and is off by default. It is not
+ * meant for a parallel run, where the other ranks have to be stopped.
+ *
+ * \param[in] throws Whether to throw
+ * \see gmx::ThrowOnFatalError
+ */
+void gmx_set_fatal_error_throws(bool throws);
+
+/** Whether fatal errors throw, see gmx_set_fatal_error_throws(). */
+bool gmx_fatal_error_throws();
+
+namespace gmx
+{
+
+/*! \brief
+ * Lets fatal errors throw for as long as an object of this class lives,
+ * see gmx_set_fatal_error_throws(), and puts back what was before.
+ */
+class ThrowOnFatalError
+{
+    public:
+        ThrowOnFatalError() : before_(gmx_fatal_error_throws())
+        {
+            gmx_set_fatal_error_throws(true);
+        }
+        ~ThrowOnFatalError()
+        {
+            gmx_set_fatal_error_throws(before_);
+        }
+        ThrowOnFatalError(const ThrowOnFatalError &)            = delete;
+        ThrowOnFatalError &operator=(const ThrowOnFatalError &) = delete;
+
+    private:
+        //! Whether fatal errors threw before this object was made
+        bool before_;
+};
+
+}   // namespace gmx
+
 /** Identifies the state of the program on a fatal error. */
 enum ExitType
 {

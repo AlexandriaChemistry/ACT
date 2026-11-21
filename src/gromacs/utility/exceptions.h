@@ -521,6 +521,25 @@ class InternalError : public GromacsException
 };
 
 /*! \brief
+ * Exception class for a fatal error that has no more specific kind.
+ *
+ * Thrown by gmx_fatal() when fatal errors throw, see
+ * gmx_set_fatal_error_throws(), such that a program that uses this code as
+ * a library can catch what would end a command line program.
+ *
+ * \inpublicapi
+ */
+class FatalError : public GromacsException
+{
+    public:
+        //! \copydoc FileIOError::FileIOError()
+        explicit FatalError(const ExceptionInitializer &details)
+            : GromacsException(details) {}
+
+        int errorCode() const override;
+};
+
+/*! \brief
  * Exception class for incorrect use of an API.
  *
  * \inpublicapi

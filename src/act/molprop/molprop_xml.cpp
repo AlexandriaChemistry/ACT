@@ -852,7 +852,7 @@ static void mp_process_tree(MsgHandler                        *msg_handler,
                             }
                             else
                             {
-                                gmx_fatal(FARGS, "Experimental data without reference");
+                                GMX_THROW(gmx::InvalidInputError("Experimental data without reference in molprop file"));
                             }
                         }
                         mp_process_tree(msg_handler, tree->children, molprops, xbuf);
@@ -880,6 +880,11 @@ void MolPropRead(MsgHandler           *msg_handler,
     fillMaps();
     //xmlDoValidityCheckingDefaultValue = 0;
     mpfile = gmx::findLibraryFile(fn ? fn : db, true, false);
+    if (mpfile.empty())
+    {
+        GMX_THROW(gmx::FileIOError(gmx::formatString("Could not find the molprop file %s, also not in the library directories of ACT",
+                                                     fn ? fn : db)));
+    }
     if (msg_handler)
     {
         msg_handler->msg(ACTStatus::Verbose, gmx::formatString("Opening %s\n", mpfile.c_str()));
@@ -890,8 +895,8 @@ void MolPropRead(MsgHandler           *msg_handler,
     }
     if ((doc = xmlParseFile(mpfile.c_str())) == nullptr)
     {
-        gmx_fatal(FARGS, "Failed reading XML file %s. Run a syntax checker such as nsgmls.",
-                  mpfile.c_str());
+        GMX_THROW(gmx::FileIOError(gmx::formatString("Error reading XML file '%s'. Run a syntax checker such as nsgmls.",
+                                                     mpfile.c_str())));
     }
     if (msg_handler)
     {
@@ -1186,17 +1191,19 @@ void MolPropWrite(const char                 *fn,
     fillMaps();
     if ((doc = xmlNewDoc((xmlChar *)"1.0")) == nullptr)
     {
-        gmx_fatal(FARGS, "Creating XML document %s", fn);
+        GMX_THROW(gmx::InternalError(gmx::formatString("Cannot create an XML document for %s", fn)));
     }
 
     if ((dtd = xmlCreateIntSubset(doc, dtdname, libdtdname, dtdname)) == nullptr)
     {
-        gmx_fatal(FARGS, "Creating XML DTD %s", fn);
+        xmlFreeDoc(doc);
+        GMX_THROW(gmx::InternalError(gmx::formatString("Cannot create the XML DTD for %s", fn)));
     }
 
     if ((myroot = xmlNewDocNode(doc, nullptr, gmx, nullptr)) == nullptr)
     {
-        gmx_fatal(FARGS, "Creating root element for %s", fn);
+        xmlFreeDoc(doc);
+        GMX_THROW(gmx::InternalError(gmx::formatString("Cannot create the root element for %s", fn)));
     }
     dtd->next    = myroot;
     myroot->prev = (xmlNodePtr) dtd;
@@ -1207,11 +1214,13 @@ void MolPropWrite(const char                 *fn,
         add_xml_molprop(myroot, mp);
     }
     xmlSetDocCompressMode(doc, (int)bCompress);
-    if (xmlSaveFormatFileEnc(fn, doc, "ISO-8859-1", 1) == 0)
-    {
-        gmx_fatal(FARGS, "Saving file %s", fn);
-    }
+    // The number of bytes written, -1 if the file cannot be written
+    const int written = xmlSaveFormatFileEnc(fn, doc, "ISO-8859-1", 1);
     xmlFreeDoc(doc);
+    if (written <= 0)
+    {
+        GMX_THROW(gmx::FileIOError(gmx::formatString("Cannot write the molprop file %s", fn)));
+    }
 }
 
 } // namespace alexandria
