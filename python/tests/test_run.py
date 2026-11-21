@@ -270,6 +270,36 @@ class RunTest(unittest.TestCase):
             act.program_info()
         self.assertIn("older", str(caught.exception))
 
+    def test_program_that_is_replaced_is_asked_again(self):
+        """!
+        @brief A newer program at the same path gives its own options, also
+        to a Python that already asked the older one.
+        """
+        script = self.dir / "program.py"
+
+        def install(option):
+            """!
+            @brief Write a program that knows one command with one option.
+            @param option The name of the option.
+            """
+            description = {"program": "alexandria", "format": 1, "commands": {"work": {
+                "description": "Work.", "help": "Work.", "options": [
+                    {"name": option, "type": "int", "description": "A number",
+                     "hidden": False, "default": 1}]}}}
+            script.write_text("import json\n"
+                              "with open('alexandria-options.json', 'w') as out:\n"
+                              "    json.dump(%r, out)\n" % (description,))
+
+        install("first")
+        act.config.executable = [sys.executable, str(script)]
+        self.assertIn("first", act.program_info().find_command("work").options)
+        # The same program is not asked twice
+        self.assertIs(act.program_info(), act.program_info())
+        install("second_option")
+        options = act.program_info().find_command("work").options
+        self.assertIn("second_option", options)
+        self.assertNotIn("first", options)
+
     def test_launcher_for_several_processes(self):
         """!
         @brief Several processes put the launcher in front of the command.
