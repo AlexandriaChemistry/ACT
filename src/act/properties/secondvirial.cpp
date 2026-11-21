@@ -185,9 +185,10 @@ void ReRunner::finishOptions(const std::vector<t_filenm> &filenm)
     {
         const char *mayer = opt2fn_null("-eh", filenm.size(), filenm.data());
         mayerFile_        = mayer ? mayer : "";
-        // The second virial as a function of the temperature is written
-        // also without -b2, to the default name
-        b2File_           = opt2fn("-b2", filenm.size(), filenm.data());
+        // The second virial as a function of the temperature is in the log
+        // and the json file; it is plotted only when -b2 is given
+        const char *b2    = opt2fn_null("-b2", filenm.size(), filenm.data());
+        b2File_           = b2 ? b2 : "";
     }
     gendimers_.finishOptions(filenm);
     validate();
@@ -1177,9 +1178,9 @@ int b2(int argc, char *argv[])
         "corresponding charges (molprop) file, used for generating the topology",
         "needs to contain information about",
         "the compounds in the dimer. Based on dimer energies the second",
-        "virial coefficient will be estimated. Mayer curves can optionally",
-        "be plotted and the second virial can be plotted as a function",
-        "of temperature.[PAR]",
+        "virial coefficient will be estimated, and printed in the log file",
+        "for each temperature. With [TT]-eh[tt] the Mayer curves are plotted",
+        "and with [TT]-b2[tt] the second virial as a function of temperature.[PAR]",
         "To run the program you need to provide a pdb file with two monomeric",
         "compounds that have support in the force field and that are present",
         "in the charges file.[PAR]",
