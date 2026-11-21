@@ -912,9 +912,11 @@ the package `act-gui` in the same step.
 `release-1-95`, no new features. The server (B11, B13) comes after 1.95.
 Still to do for 1.95: B12 with the item above; the Python classes
 `minimize`, `normal_modes`, `simulate` and `write_openmm` use the settings
-classes of A8 and their checks; the bugs found on the way (`edit_mp -ff`
-with dimers, `train_ff` without a selection file, `edit_mp` that always
-writes its output file); a try of B10a on csb.
+classes of A8 and their checks; a try of B10a on csb. The bugs found on
+the way are fixed on `release-1-95`: `edit_mp -ff` checks dimers and force
+fields without bond charge corrections, `train_ff` without a selection file
+stops at once and says why, and `edit_mp` writes a molprop file only with
+`-o`. The page may now give `edit_mp` a force field for files with dimers.
 
 **B13. Server, stage 2.** The public service (section 8).
 

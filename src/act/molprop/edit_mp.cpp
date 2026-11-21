@@ -493,10 +493,6 @@ void EditMPOptions::check() const
     {
         GMX_THROW(gmx::InvalidInputError("There is no molprop file to read (-mp)"));
     }
-    if (outputFile.empty())
-    {
-        GMX_THROW(gmx::InvalidInputError("There is no molprop file to write (-o)"));
-    }
     if (!std::isfinite(temperature) || temperature <= 0)
     {
         GMX_THROW(gmx::InvalidInputError(gmx::formatString("The value %g of -temperature should be more than zero",
@@ -538,7 +534,6 @@ void runEditMP(MsgHandler *msghandler, const EditMPOptions &options, gmx_output_
     {
         updateMolInfo(msghandler, &mpt);
     }
-    const char *molpropout = options.outputFile.c_str();
     if (ffname)
     {
         printf("Since you provided a force field file and a log file name, I will now check the compounds.\n");
@@ -577,8 +572,11 @@ void runEditMP(MsgHandler *msghandler, const EditMPOptions &options, gmx_output_
     {
         printf("Please check %s for analyses.\n", msghandler->filename().c_str());
     }
-    printf("Will store %zu molprops in output file %s\n", mpt.size(), molpropout);
-    MolPropWrite(molpropout, mpt, options.compress);
+    if (!options.outputFile.empty())
+    {
+        printf("Will store %zu molprops in output file %s\n", mpt.size(), options.outputFile.c_str());
+        MolPropWrite(options.outputFile.c_str(), mpt, options.compress);
+    }
     if (!options.jsonFile.empty())
     {
         // What was written, for programs that show it
@@ -600,7 +598,8 @@ int edit_mp(int argc, char *argv[])
     static const char               *desc[] =
     {
         "edit_mp manipulates molprop files. It can read multiple molprop files and merges",
-        "the molecule descriptions into a single new file. By specifying the [TT]-db[TT]", 
+        "the molecule descriptions into a single new file, which is written with [TT]-o[tt].",
+        "Without [TT]-o[tt] the compounds are only checked and described. By specifying the [TT]-db[TT]",
         "option additional experimental information will be read from a SQLite3 database.[PAR]",
         "The program can run in paralllel to read a file on one processer, then send it over",
         "an MPI connection to one or more other processors to write. In this manner the MPI transfer",
@@ -624,7 +623,7 @@ int edit_mp(int argc, char *argv[])
     std::vector<t_filenm> fnm =
     {
         { efXML, "-mp",  "data",    ffOPTRDMULT },
-        { efXML, "-o",   "allmols", ffWRITE     },
+        { efXML, "-o",   "allmols", ffOPTWR     },
         { efXML, "-ff",  "aff",     ffOPTRD     },
         { efDAT, "-db",  "sqlite",  ffOPTRD     },
         { efJSON, "-json", "edit_mp", ffOPTWR    }
@@ -677,12 +676,12 @@ int edit_mp(int argc, char *argv[])
         EditMPOptions options;
         const auto    fns = opt2fns("-mp", fnm.size(), fnm.data());
         options.inputFiles.assign(fns.begin(), fns.end());
-        options.outputFile  = opt2fn("-o", fnm.size(), fnm.data());
         const auto optional = [&fnm](const char *option)
         {
             const char *name = opt2fn_null(option, fnm.size(), fnm.data());
             return std::string(name ? name : "");
         };
+        options.outputFile      = optional("-o");
         options.forceFieldFile  = optional("-ff");
         options.databaseFile    = optional("-db");
         options.jsonFile        = optional("-json");

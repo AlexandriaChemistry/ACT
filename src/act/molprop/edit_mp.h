@@ -52,7 +52,7 @@ struct EditMPOptions
 {
     //! The molprop files to merge (-mp)
     std::vector<std::string> inputFiles;
-    //! The molprop file to write (-o)
+    //! The molprop file to write (-o), none if empty
     std::string              outputFile;
     //! A force field to check the compounds with, which leaves out those that fail (-ff), none if empty
     std::string              forceFieldFile;

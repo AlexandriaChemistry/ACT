@@ -32,6 +32,7 @@
 
 #include "actpre.h"
 
+#include <algorithm>
 #include <cmath>
 #include <cstddef>
 #include <filesystem>
@@ -218,11 +219,6 @@ TEST_F(EditMPTest, WithoutCommandLineWrongOptions)
         auto o = valid();
         o.inputFiles.clear();
         wrong.emplace_back(o, "-mp");
-    }
-    {
-        auto o = valid();
-        o.outputFile.clear();
-        wrong.emplace_back(o, "-o");
     }
     {
         auto o = valid();
@@ -532,6 +528,45 @@ TEST_F(EditMPTest, JsonValidationProblem)
         named = named || message.at("text").get<std::string>().find("water#methanol") != std::string::npos;
     }
     EXPECT_TRUE(named);
+}
+
+// Test: Without -o the compounds are checked and described, but no molprop
+// file is written, also not one with the default name
+TEST_F(EditMPTest, NoOutputWithoutTheOption)
+{
+    const std::filesystem::path dir(fileManager().getTemporaryFilePath("withoutOutput"));
+    std::filesystem::remove_all(dir);
+    std::filesystem::create_directories(dir);
+    gmx::test::CommandLine cmd;
+    cmd.append("edit_mp");
+    cmd.addOption("-mp", fileManager().getInputFilePath("molprop/ion-water.xml"));
+    cmd.addOption("-g", (dir / "edit_mp.log").string());
+    cmd.addOption("-json", (dir / "described.json").string());
+    cmd.append("-validate");
+    const auto old = std::filesystem::current_path();
+    std::filesystem::current_path(dir);
+    const int status = edit_mp(cmd.argc(), cmd.argv());
+    std::filesystem::current_path(old);
+    ASSERT_EQ(0, status);
+    EXPECT_TRUE(std::filesystem::exists(dir / "described.json"));
+    EXPECT_FALSE(std::filesystem::exists(dir / "allmols.xml"));
+    std::vector<std::string> left;
+    for (const auto &entry : std::filesystem::directory_iterator(dir))
+    {
+        left.push_back(entry.path().filename().string());
+    }
+    std::sort(left.begin(), left.end());
+    EXPECT_EQ((std::vector<std::string>{ "described.json", "edit_mp.log" }), left);
+
+    // The same without a command line
+    EditMPOptions options;
+    options.inputFiles = { fileManager().getInputFilePath("molprop/ion-water.xml") };
+    options.jsonFile   = (dir / "direct.json").string();
+    options.validate   = true;
+    MsgHandler msghandler;
+    msghandler.setPrintLevel(ACTStatus::Fatal);
+    runEditMP(&msghandler, options);
+    EXPECT_EQ(fileContents((dir / "described.json").string()), fileContents(options.jsonFile));
 }
 
 // Test: Without the option no JSON file is written
