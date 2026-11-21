@@ -1817,6 +1817,31 @@ TEST(MolPropDuplicateTest, DifferentResultsKept)
     EXPECT_EQ(ACTStatus::Warning, msghandler.status());
 }
 
+// Test: The validation of a set of molecules counts the calculations that
+// were there twice, and names the molecules, without calling them problems
+TEST(MolPropDuplicateTest, ValidationCountsThem)
+{
+    std::vector<Experiment> calcs;
+    calcs.push_back(makeCalculation("sapt", "a.log", 0, -12.5));
+    calcs.push_back(makeCalculation("sapt", "b.log", 0, -12.5));
+    calcs.push_back(makeCalculation("sapt", "c.log", 0, -12.5));
+    calcs.push_back(makeCalculation("sapt", "d.log", 1, -10.0));
+    std::vector<MolProp> mps;
+    mps.push_back(moleculeWith(std::move(calcs)));
+    std::vector<Experiment> other;
+    other.push_back(makeCalculation("sapt", "e.log", 0, -1.0));
+    mps.push_back(moleculeWith(std::move(other)));
+    mps.back().SetMolname("other");
+    MsgHandler msghandler;
+    msghandler.setPrintLevel(ACTStatus::Fatal);
+    const auto validation = validateMolProps(&msghandler, &mps);
+    EXPECT_EQ(0u, validation.nproblem);
+    EXPECT_EQ(2u, validation.nduplicate);
+    EXPECT_EQ(std::set<std::string>({ "mol" }), validation.duplicated);
+    EXPECT_EQ(2u, mps[0].experimentConst().size());
+    EXPECT_EQ(1u, mps[1].experimentConst().size());
+}
+
 // Test: Other coordinates or another method are other calculations
 TEST(MolPropDuplicateTest, OtherInputIsNoDuplicate)
 {

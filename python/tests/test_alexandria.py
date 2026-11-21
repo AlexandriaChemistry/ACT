@@ -227,7 +227,8 @@ class AlexandriaTest(unittest.TestCase):
             self.assertEqual(2, len(first["fragments"]))
             self.assertIn("InteractionEnergy", first["properties"])
             self.assertEqual({"checked": True, "ok": True, "problems": 0, "invalid": [],
-                              "messages": []}, res.data["validation"])
+                              "duplicates": 0, "with_duplicates": [], "messages": []},
+                             res.data["validation"])
             self.assertTrue(res.file("o").is_file())
 
     def test_simulation_reports_progress(self):
