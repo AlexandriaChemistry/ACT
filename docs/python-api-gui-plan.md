@@ -689,10 +689,21 @@ there, in the modules `cluster_jobs.py`, `cluster_queue.py` and
   fixed, each property has a weight, and the compounds for testing are
   those of the table or a part that is drawn.
 
+- A training continues one that is done (`training.continue` in the
+  request, with the trained force field of that job as the force field):
+  the server gives `train_ff -gpin` the gene pool that the earlier job
+  wrote, when the optimizer has a population and as many processes as the
+  pool has individuals. `train_ff` reads no gene pool for MCMC alone, which
+  continues from the trained force field without random values. The
+  genetic algorithm needs an even number of individuals, which the server
+  and the page now check; before that the program stopped on an assertion.
+  Not done: continuing a training that was stopped or ran out of time,
+  which leaves a gene pool or a force field in its directory but counts as
+  failed.
+
 Still to do: a try on csb itself (so far only the stand-ins of the tests
-were used); results that are larger than fits in memory, since the
-archives are built and read in memory; and continuing a training from the
-population of an earlier one. A training on the
+were used); and results that are larger than fits in memory, since the
+archives are built and read in memory. A training on the
 desktop ends at the time limit of a calculation. The command is made with
 the options that the `alexandria` of the desktop knows, so the program on
 the cluster must not be older than that: for a training it needs
