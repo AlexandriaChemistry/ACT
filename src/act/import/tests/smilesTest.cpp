@@ -35,6 +35,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <csignal>
 #include <gtest/gtest.h>
 #include <map>
 #include <string>
@@ -280,6 +281,40 @@ TEST_F(SmilesTest, WrongStringsGiveErrors)
         EXPECT_FALSE(ok) << "'" << smiles << "'";
         EXPECT_TRUE(mps.empty()) << "'" << smiles << "'";
     }
+}
+
+//! Set when the handler of the test for the interrupt signal is called
+volatile std::sig_atomic_t interruptSeen = 0;
+
+//! A handler for the interrupt signal, as a program or Python has one
+void rememberInterrupt(int /*signalNumber*/)
+{
+    interruptSeen = 1;
+}
+
+// Test: Making a molecule from a SMILES string leaves the handler of the
+// program for the interrupt signal (Ctrl-C) in place. The library that
+// makes the structure installs its own while it works, and does not always
+// put the one of the program back.
+TEST_F(SmilesTest, InterruptHandlerIsKept)
+{
+    const auto before = std::signal(SIGINT, rememberInterrupt);
+    ASSERT_NE(SIG_ERR, before);
+    for (const char *smiles : { "CC(=O)C", "O", "c1ccccc1", "not a molecule" })
+    {
+        SCOPED_TRACE(smiles);
+        std::vector<MolProp> mps;
+        MsgHandler           msghandler;
+        msghandler.setPrintLevel(ACTStatus::Fatal);
+        importSmiles(&msghandler, pd_, smiles, &mps, false);
+        // Still ours, and it is called
+        interruptSeen = 0;
+        ASSERT_EQ(0, std::raise(SIGINT));
+        EXPECT_EQ(1, interruptSeen);
+        const auto now = std::signal(SIGINT, rememberInterrupt);
+        EXPECT_TRUE(now == rememberInterrupt);
+    }
+    std::signal(SIGINT, before);
 }
 
 TEST_F(SmilesTest, VeryLongStringIsRefused)
