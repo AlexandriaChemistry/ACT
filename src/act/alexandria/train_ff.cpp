@@ -1287,6 +1287,14 @@ int train_ff(int argc, char *argv[])
 
     // Check charge reader options
     compR.optionsFinished(opt.msgHandler(), filenms);
+    // The compounds for training and testing are those of the selection;
+    // without one none would be used
+    if (opt.msgHandler()->ok() && compR.molselect().nMol() == 0)
+    {
+        opt.msgHandler()->msg(ACTStatus::Error,
+                              gmx::formatString("train_ff needs a selection of compounds (-sel) that says which compounds of the molprop file are for training and testing; %s.",
+                                                opt2fn_null("-sel", filenms.size(), filenms.data()) ? "the selection file has no compounds" : "none was given"));
+    }
     if (!opt.msgHandler()->ok())
     {
         opt.msgHandler()->msg(ACTStatus::Error, "Please fix errors written above.");
