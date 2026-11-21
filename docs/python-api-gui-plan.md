@@ -496,7 +496,11 @@ and every data point; the server keeps only the statistics, the compounds
 and a few outliers for the page. The table of compounds says what each
 compound is used for, training, testing or nothing, by a click or for all
 compounds that are found; the request names those for testing and those
-that are not used, and the server checks the names against the file. For
+that are not used, and the server checks the names against the file. The
+same choices are saved as a selection file (`POST /api/selection`):
+compounds are ticked one by one, by property, or by the monomers that the
+dimers consist of (with A#B, A#C and B#C, ticking A gives A#B and A#C), and
+a part of them is drawn at random for testing. For
 a compound with several structures a histogram shows the energies of the
 reference and of the force field for each term; the server reads them
 from the file with the whole result when a compound is asked for. Found
