@@ -35,6 +35,7 @@
 
 #include <fstream>
 #include <gtest/gtest.h>
+#include <libxml/xmlversion.h>
 #include <string>
 #include <vector>
 
@@ -75,6 +76,18 @@ std::vector<MolProp> testCompounds()
     std::vector<MolProp> mps;
     MolPropRead(nullptr, gmx::test::TestFileManager::getInputFilePath("molprop/molprop.xml").c_str(), &mps);
     return mps;
+}
+
+/*! \brief Tell whether a file is compressed
+ * \param[in] fileName The file
+ * \return Whether the file starts as a gzip file does
+ */
+bool isCompressed(const std::string &fileName)
+{
+    std::ifstream in(fileName, std::ios::binary);
+    const int     first  = in.get();
+    const int     second = in.get();
+    return first == 0x1f && second == 0x8b;
 }
 
 // Test: A molprop file that does not exist, in a program and in a library
@@ -146,6 +159,25 @@ TEST(MolpropFileErrorsTest, CannotWrite)
     std::vector<MolProp> again;
     MolPropRead(nullptr, good.c_str(), &again);
     EXPECT_EQ(mps.size(), again.size());
+}
+
+// Test: A compressed molprop file is read as one that is not, with any version of libxml2
+TEST(MolpropFileErrorsTest, CompressedFile)
+{
+    const auto                 mps = testCompounds();
+    gmx::test::TestFileManager fileManager;
+    const std::string          packed = fileManager.getTemporaryFilePath("packed.xml");
+    MolPropWrite(packed.c_str(), mps, true);
+#ifdef LIBXML_ZLIB_ENABLED
+    EXPECT_TRUE(isCompressed(packed));
+#endif
+    const std::string plain = fileManager.getTemporaryFilePath("plain.xml");
+    MolPropWrite(plain.c_str(), mps, false);
+    EXPECT_FALSE(isCompressed(plain));
+    std::vector<MolProp> again;
+    MolPropRead(nullptr, packed.c_str(), &again);
+    EXPECT_EQ(mps.size(), again.size());
+    EXPECT_GT(again.size(), 0U);
 }
 
 } // namespace

@@ -35,6 +35,7 @@
 
 #include <fstream>
 #include <gtest/gtest.h>
+#include <libxml/xmlversion.h>
 #include <string>
 
 #include "act/forcefield/forcefield.h"
@@ -74,6 +75,18 @@ size_t particleTypesOfTestForceField()
     ForceField pd;
     readForceField(gmx::test::TestFileManager::getInputFilePath("forcefields/ACM-g1.xml"), &pd);
     return pd.particleTypesConst().size();
+}
+
+/*! \brief Tell whether a file is compressed
+ * \param[in] fileName The file
+ * \return Whether the file starts as a gzip file does
+ */
+bool isCompressed(const std::string &fileName)
+{
+    std::ifstream in(fileName, std::ios::binary);
+    const int     first  = in.get();
+    const int     second = in.get();
+    return first == 0x1f && second == 0x8b;
 }
 
 // Test: A force field file that does not exist, in a program and in a library
@@ -147,6 +160,26 @@ TEST(ForceFieldFileErrorsTest, CannotWrite)
     ForceField again;
     readForceField(good, &again);
     EXPECT_EQ(pd.particleTypesConst().size(), again.particleTypesConst().size());
+}
+
+// Test: A compressed force field file is read as one that is not, with any version of libxml2
+TEST(ForceFieldFileErrorsTest, CompressedFile)
+{
+    ForceField pd;
+    readForceField(gmx::test::TestFileManager::getInputFilePath("forcefields/ACM-g1.xml"), &pd);
+    gmx::test::TestFileManager fileManager;
+    const std::string          packed = fileManager.getTemporaryFilePath("packed.xml");
+    writeForceField(packed, &pd, true);
+#ifdef LIBXML_ZLIB_ENABLED
+    EXPECT_TRUE(isCompressed(packed));
+#endif
+    const std::string plain = fileManager.getTemporaryFilePath("plain.xml");
+    writeForceField(plain, &pd, false);
+    EXPECT_FALSE(isCompressed(plain));
+    ForceField again;
+    readForceField(packed, &again);
+    EXPECT_EQ(pd.particleTypesConst().size(), again.particleTypesConst().size());
+    EXPECT_GT(again.particleTypesConst().size(), 0U);
 }
 
 } // namespace
