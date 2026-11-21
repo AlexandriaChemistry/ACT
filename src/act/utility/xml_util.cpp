@@ -33,7 +33,9 @@
  */
 
 #include <cstring>
+#include <libxml/parser.h>
 #include <libxml/tree.h>
+#include <libxml/xmlerror.h>
 #include <libxml/xmlstring.h>
 #include <string>
 #include <vector>
@@ -147,4 +149,35 @@ xmlNodePtr add_xml_comment(xmlDocPtr   doc,
     comm->doc    = doc;
 
     return comm;
+}
+
+xmlDocPtr readXmlFile(const std::string &fileName, std::string *error)
+{
+    error->clear();
+    xmlResetLastError();
+    // As xmlParseFile, but silent
+    xmlDocPtr doc = xmlReadFile(fileName.c_str(), nullptr, XML_PARSE_NOERROR | XML_PARSE_NOWARNING);
+    if (doc == nullptr)
+    {
+        const auto *last = xmlGetLastError();
+        if (last != nullptr && last->message != nullptr)
+        {
+            // The message of the parser ends with a new line
+            std::string text(last->message);
+            while (!text.empty() && (text.back() == '\n' || text.back() == '\r' || text.back() == ' '))
+            {
+                text.pop_back();
+            }
+            *error = text;
+            if (last->line > 0)
+            {
+                *error += gmx::formatString(" (line %d)", last->line);
+            }
+        }
+        else
+        {
+            *error = "the file is not XML";
+        }
+    }
+    return doc;
 }

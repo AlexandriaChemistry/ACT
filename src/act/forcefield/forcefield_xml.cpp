@@ -610,14 +610,12 @@ void readForceField(const std::string &fileName,
         msgHandler->writeDebug(gmx::formatString("Opening library file %s\n", fn2.c_str()));
     }
     //xmlDoValidityCheckingDefaultValue = 0;
-    doc = xmlParseFile(fn2.c_str());
+    std::string xmlError;
+    doc = readXmlFile(fn2, &xmlError);
     if (doc == nullptr)
     {
-        char buf[256];
-        snprintf(buf, sizeof(buf),
-                 "Error reading XML file '%s'. Run a syntax checker such as nsgmls.",
-                 fn2.c_str());
-        GMX_THROW(gmx::FileIOError(buf));
+        GMX_THROW(gmx::FileIOError(gmx::formatString("Error reading the force field from XML file '%s': %s",
+                                                     fn2.c_str(), xmlError.c_str())));
     }
 
     pd->setFilename(fn2);
