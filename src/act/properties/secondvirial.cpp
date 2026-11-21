@@ -64,6 +64,7 @@
 #include "act/topology/actmol.h"
 #include "act/utility/jsontree.h"
 #include "act/utility/memory_check.h"
+#include "act/utility/output_environment.h"
 #include "act/utility/stringutil.h"
 #include "act/utility/timings.h"
 #include "gromacs/commandline/filenm.h"
@@ -176,6 +177,49 @@ void ReRunner::addOptions(std::vector<t_pargs>      *pargs,
         }
     }
     gendimers_.addOptions(pargs, filenm, desc);
+}
+
+void ReRunner::finishOptions(const std::vector<t_filenm> &filenm)
+{
+    if (computeB2_)
+    {
+        const char *mayer = opt2fn_null("-eh", filenm.size(), filenm.data());
+        mayerFile_        = mayer ? mayer : "";
+        // The second virial as a function of the temperature is written
+        // also without -b2, to the default name
+        b2File_           = opt2fn("-b2", filenm.size(), filenm.data());
+    }
+    gendimers_.finishOptions(filenm);
+    validate();
+}
+
+void ReRunner::validate() const
+{
+    if (!computeB2_)
+    {
+        return;
+    }
+    if (!std::isfinite(T1_) || T1_ <= 0)
+    {
+        GMX_THROW(gmx::InvalidInputError(gmx::formatString("The value %g of -T1 should be more than zero", T1_)));
+    }
+    if (!std::isfinite(T2_) || T2_ < T1_)
+    {
+        GMX_THROW(gmx::InvalidInputError(gmx::formatString("The value %g of -T2 should not be less than %g of -T1", T2_, T1_)));
+    }
+    // A step that is not above zero gives the two temperatures only
+    if (!std::isfinite(deltaT_))
+    {
+        GMX_THROW(gmx::InvalidInputError("The value of -dT is not a number"));
+    }
+    if (blockSize_ < 0)
+    {
+        GMX_THROW(gmx::InvalidInputError(gmx::formatString("The value %d of -block should be zero or more", blockSize_)));
+    }
+    if (!std::isfinite(eMin_))
+    {
+        GMX_THROW(gmx::InvalidInputError("The value of -emin is not a number"));
+    }
 }
 
 const std::vector<double> &ReRunner::temperatures()
@@ -399,12 +443,11 @@ void ReRunner::rerun(MsgHandler       *msghandler,
     }
 }
 
-void ReRunner::runB2(CommunicationRecord         *cr,
-                     MsgHandler                  *msghandler,
-                     const ForceField            *pd,
-                     ACTMol                      *actmol,
-                     int                          maxdimer,
-                     const std::vector<t_filenm> &fnm)
+void ReRunner::runB2(CommunicationRecord *cr,
+                     MsgHandler          *msghandler,
+                     const ForceField    *pd,
+                     ACTMol              *actmol,
+                     int                  maxdimer)
 {
     // Compute the relative masses
     const std::vector<double> masses = {
@@ -994,12 +1037,15 @@ void ReRunner::runB2(CommunicationRecord         *cr,
             }
             msghandler->write(out);
         }
-        if (!fnm.empty())
+        // Store Mayer functions if requested.
+        if (!mayerFile_.empty())
         {
-            // Store Mayer functions if requested.
-            b2total.plotMayer(opt2fn_null("-eh", fnm.size(), fnm.data()), oenv_);
-            // Print B2(T) if requested
-            plotB2temp(opt2fn("-b2", fnm.size(), fnm.data()));
+            b2total.plotMayer(mayerFile_.c_str(), oenv_);
+        }
+        // Print B2(T) if requested
+        if (!b2File_.empty())
+        {
+            plotB2temp(b2File_.c_str());
         }
     }
     // The orientations that were used, with -dbgGD
@@ -1011,10 +1057,121 @@ void ReRunner::runB2(CommunicationRecord         *cr,
  * \param[in] argv The actual arguments
  * \return 0 if ok, 1 otherwise
  */
-int b2(int argc, char *argv[])
+void B2Options::check() const
 {
+    if (forceFieldFile.empty())
+    {
+        GMX_THROW(gmx::InvalidInputError("There is no force field file (-ff)"));
+    }
+    if (std::string(compounds.fileName()).empty() && std::string(compounds.smiles()).empty() &&
+        std::string(compounds.dbName()).empty())
+    {
+        GMX_THROW(gmx::InvalidInputError("There is no dimer: give a structure file (-f) or a compound of the charge file (-db)"));
+    }
+    if (maxDimers < 1)
+    {
+        GMX_THROW(gmx::InvalidInputError(gmx::formatString("The value %d of -maxdimer should be one or more", maxDimers)));
+    }
+    if (!std::isfinite(shellTolerance) || shellTolerance <= 0)
+    {
+        GMX_THROW(gmx::InvalidInputError(gmx::formatString("The value %g of -shelltoler should be more than zero",
+                                                           shellTolerance)));
+    }
+    if (shellMaxIter < 1)
+    {
+        GMX_THROW(gmx::InvalidInputError(gmx::formatString("The value %d of -shellMaxIter should be one or more",
+                                                           shellMaxIter)));
+    }
+    rerun.validate();
+}
+
+int runSecondVirial(CommunicationRecord *cr,
+                    MsgHandler          *msghandler,
+                    const B2Options     &options,
+                    gmx_output_env_t    *oenv)
+{
+    options.check();
     // Time the phases of the program, see printTimings.
     PhaseTimer phase("Startup");
+    int        status = 0;
+    const bool json   = !options.jsonFile.empty();
+    // A program without a command line has no output environment for the
+    // xvg files
+    const OutputEnvironment output(oenv);
+    // The rerunner keeps the force computer and the results
+    auto       rerun = options.rerun;
+    ForceField        pd;
+    readForceField(options.forceFieldFile, &pd, msghandler);
+
+    (void) pd.verifyCheckSum(msghandler);
+    double epsilonr = 1;
+    epsilonr = pd.epsilonr();
+
+    ForceComputer forceComp(options.shellTolerance, options.shellMaxIter, epsilonr);
+
+    JsonTree jtree("SecondVirialCoefficient");
+    if (msghandler->info())
+    {
+        forceFieldSummary(&jtree, &pd);
+    }
+
+    std::vector<ACTMol> actmols;
+    // Reading changes the reader
+    auto                compR = options.compounds;
+    compR.read(msghandler, pd, &forceComp, &actmols);
+    if (actmols.empty())
+    {
+        fprintf(stderr, "Could not read or process molecules. Please check the log file for more information.\n");
+        return 1;
+    }
+    auto &actmol = actmols[0];
+
+    if (msghandler->ok() && status == 0)
+    {
+        if (msghandler->debug())
+        {
+            actmol.topology()->dump(msghandler->twDebug());
+        }
+        phase.next("Second virial");
+        rerun.setFunctions(&forceComp, output.get());
+        rerun.runB2(cr, msghandler, &pd, &actmol, options.maxDimers);
+        if (json && cr->isMaster())
+        {
+            rerun.addB2(&jtree);
+        }
+    }
+    if (pd.polarizable())
+    {
+        // The number of shell iterations per force calculation, summed
+        // over the processes
+        ForceComputerStatistics fcStats;
+        const auto stats = fcStats.statistics(cr, &forceComp, 0, true);
+        if (cr->isMaster())
+        {
+            msghandler->write(stats);
+        }
+    }
+    phase.next("Output");
+    bool writeJson = json && cr->isMaster();
+    if (!writeJson)
+    {
+        int indent = 0;
+        msghandler->write(jtree.writeString(json, &indent));
+    }
+    phase.stop();
+    // The timings go into the json file, or else only into the log file
+    const auto peak = theoreticalPeakPerCore();
+    printTimings(cr, cr->isMaster() ? msghandler->tw() : nullptr, phase.wallTime(),
+                 writeJson ? &jtree : nullptr, &peak);
+    if (writeJson)
+    {
+        jtree.write(options.jsonFile, json);
+    }
+    return status;
+}
+
+int b2(int argc, char *argv[])
+{
     std::vector<const char *> desc = {
         "alexandria b2 will generate conformations of dimers. The",
         "corresponding charges (molprop) file, used for generating the topology",
@@ -1036,13 +1193,11 @@ int b2(int argc, char *argv[])
         { efJSON, "-json",   "b2",      ffOPTWR }
     };
     gmx_output_env_t         *oenv;
-    char                     *molnm            = (char *)"";
-    real                      shellToler       = 1e-6;
-    int                       maxdimers        = 1024;
-    int                       shellMaxIter     = 25;
+    B2Options                 options;
+    real                      shellToler       = options.shellTolerance;
+    int                       maxdimers        = options.maxDimers;
+    int                       shellMaxIter     = options.shellMaxIter;
     std::vector<t_pargs>      pa = {
-        { "-name",   FALSE, etSTR,  {&molnm},
-          "Name of your molecule." },
         { "-maxdimer", FALSE, etINT, {&maxdimers},
           "Number of dimer orientations to generate if you do not provide a trajectory. For each of these a distance scan will be performed." },
         { "-shelltoler", FALSE, etREAL, {&shellToler},
@@ -1052,105 +1207,42 @@ int b2(int argc, char *argv[])
     };
     CommunicationRecord cr;
     cr.init(cr.size());
-    ReRunner            rerun(true);
-    rerun.addOptions(&pa, &fnm, &desc);
-    CompoundReader      compR;
-    compR.addOptions(&pa, &fnm, &desc);
+    options.rerun.addOptions(&pa, &fnm, &desc);
+    options.compounds.addOptions(&pa, &fnm, &desc);
     MsgHandler          msghandler;
     msghandler.addOptions(&pa, &fnm, "b2");
-    int status = 0;
-    if (!parse_common_args(&argc, argv, 0, 
+    if (!parse_common_args(&argc, argv, 0,
                            fnm.size(), fnm.data(), pa.size(), pa.data(),
                            desc.size(), desc.data(), 0, nullptr, &oenv))
     {
-        status = 1;
-        return status;
+        return 1;
     }
     msghandler.optionsFinished(fnm, &cr);
-    // Part of the output in json format, including the second virial
-    // coefficients with all digits, in the file of -json if it is given
-    const char *jsonFile = opt2fn_null("-json", fnm.size(), fnm.data());
-    bool        json     = jsonFile != nullptr;
     if (cr.isMaster())
     {
         print_header(msghandler.tw(), pa, fnm);
     }
-    rerun.gendimers()->finishOptions(fnm);
-    compR.optionsFinished(&msghandler, fnm);
-    if (!msghandler.ok())
-    {
-        return 1;
-    }
-    ForceField        pd;
     try
     {
-        readForceField(opt2fn("-ff", fnm.size(), fnm.data()), &pd, &msghandler);
+        options.rerun.finishOptions(fnm);
+        options.compounds.optionsFinished(&msghandler, fnm);
+        if (!msghandler.ok())
+        {
+            return 1;
+        }
+        options.forceFieldFile = opt2fn("-ff", fnm.size(), fnm.data());
+        const char *jsonFile   = opt2fn_null("-json", fnm.size(), fnm.data());
+        options.jsonFile       = jsonFile ? jsonFile : "";
+        options.maxDimers      = maxdimers;
+        options.shellTolerance = shellToler;
+        options.shellMaxIter   = shellMaxIter;
+        return runSecondVirial(&cr, &msghandler, options, oenv);
     }
-    GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
-    
-    (void) pd.verifyCheckSum(&msghandler);
-    double epsilonr = 1;
-    epsilonr = pd.epsilonr();
-
-    ForceComputer forceComp(shellToler, shellMaxIter, epsilonr);
-    
-    JsonTree jtree("SecondVirialCoefficient");
-    if (msghandler.info())
+    catch (const gmx::InvalidInputError &ex)
     {
-        forceFieldSummary(&jtree, &pd);
-    }
-
-    std::vector<ACTMol> actmols;
-    compR.read(&msghandler, pd, &forceComp, &actmols);
-    if (actmols.empty())
-    {
-        fprintf(stderr, "Could not read or process molecules. Please check the log file for more information.\n");
+        fprintf(stderr, "%s\n", ex.what());
         return 1;
     }
-    auto &actmol = actmols[0];
-
-    if (msghandler.ok() && status == 0)
-    {
-        if (msghandler.debug())
-        {
-            actmol.topology()->dump(msghandler.twDebug());
-        }
-        phase.next("Second virial");
-        rerun.setFunctions(&forceComp, oenv);
-        rerun.runB2(&cr, &msghandler, &pd, &actmol, maxdimers, fnm);
-        if (json && cr.isMaster())
-        {
-            rerun.addB2(&jtree);
-        }
-    }
-    if (pd.polarizable())
-    {
-        // The number of shell iterations per force calculation, summed
-        // over the processes
-        ForceComputerStatistics fcStats;
-        const auto stats = fcStats.statistics(&cr, &forceComp, 0, true);
-        if (cr.isMaster())
-        {
-            msghandler.write(stats);
-        }
-    }
-    phase.next("Output");
-    bool writeJson = json && cr.isMaster();
-    if (!writeJson)
-    {
-        int indent = 0;
-        msghandler.write(jtree.writeString(json, &indent));
-    }
-    phase.stop();
-    // The timings go into the json file, or else only into the log file
-    const auto peak = theoreticalPeakPerCore();
-    printTimings(&cr, cr.isMaster() ? msghandler.tw() : nullptr, phase.wallTime(),
-                 writeJson ? &jtree : nullptr, &peak);
-    if (writeJson)
-    {
-        jtree.write(jsonFile, json);
-    }
-    return status;
 }
 
 } // namespace alexandria

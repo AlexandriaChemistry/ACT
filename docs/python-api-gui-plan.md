@@ -508,11 +508,17 @@ written. What came up on the way:
   prints the statistics of the orientations (`-dbgGD`) when asked instead
   of in its destructor. `ReRunner` can be copied with it, and
   `SimulateOptions` has one that a program can set up as well.
-- Still to do: `b2` itself is not split yet, since `ReRunner::runB2` takes
-  its output files from the command line. The Python classes still have
-  their own versions of minimize, nma, simulate and write_openmm, which work
-  on a molecule in memory instead of files; they use the same settings
-  classes and checks.
+- `b2` is split as well: `B2Options` with the force field, the dimer, the
+  number of orientations, the settings of the shells and a `ReRunner` with
+  the temperatures, the dimers and the output files; `runSecondVirial`
+  does the work on the processes it is given. `ReRunner` checks its
+  settings (`validate`) and takes its output files from setters instead
+  of the command line. The option `-name` had no effect
+  and was removed. B2(T) is written also without `-b2`, to `B2T.xvg`, as
+  before.
+- Still to do: the Python classes have their own versions of minimize,
+  nma, simulate and write_openmm, which work on a molecule in memory
+  instead of files; they use the same settings classes and checks.
 
 **A9. Documentation and packaging.** A chapter "Using ACT from Python" in the
 manual with the examples above, an API reference generated from the
