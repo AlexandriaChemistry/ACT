@@ -415,29 +415,29 @@
     <String Name="unit">nm</String>
   </Object>
   <String Name="confout"><![CDATA[
-TITLE      processed by ACT - The Alexandria Chemistry Toolkit
-REMARK    THIS IS A SIMULATION BOX
-CRYST1   20.000   20.000   20.000  90.00  90.00  90.00 P 1           1
-MODEL        1
-ATOM      1  O1          1      -0.206  -0.039   1.418  1.00  0.00           O
-ATOM      2  C2          1      -0.106  -0.005   0.219  1.00  0.00           C
-ATOM      3  C3          1      -1.293   0.034  -0.708  1.00  0.00           C
-ATOM      4  C4          1       1.217   0.003  -0.500  1.00  0.00           C
-ATOM      5  H5          1      -2.216  -0.150  -0.157  1.00  0.00           H
-ATOM      6  H6          1      -1.375   1.008  -1.191  1.00  0.00           H
-ATOM      7  H7          1      -1.204  -0.726  -1.485  1.00  0.00           H
-ATOM      8  H8          1       2.036   0.151   0.205  1.00  0.00           H
-ATOM      9  H9          1       1.383  -0.943  -1.017  1.00  0.00           H
-ATOM     10  H10         1       1.254   0.806  -1.237  1.00  0.00           H
-CONECT    2    1
-CONECT    3    5
-CONECT    3    2
-CONECT    4    8
-CONECT    4    2
-CONECT    6    3
-CONECT    7    3
-CONECT    9    4
-CONECT   10    4
+TITLE processed by ACT - The Alexandria Chemistry Toolkit
+REMARK THIS IS A SIMULATION BOX
+CRYST1 20.000 20.000 20.000 90.00 90.00 90.00 P 1 1
+MODEL 1
+ATOM 1 O1 1 -0.206 -0.039 1.418 1.00 0.00 O
+ATOM 2 C2 1 -0.106 -0.005 0.219 1.00 0.00 C
+ATOM 3 C3 1 -1.293 0.034 -0.708 1.00 0.00 C
+ATOM 4 C4 1 1.217 0.003 -0.500 1.00 0.00 C
+ATOM 5 H5 1 -2.216 -0.150 -0.157 1.00 0.00 H
+ATOM 6 H6 1 -1.375 1.008 -1.191 1.00 0.00 H
+ATOM 7 H7 1 -1.204 -0.726 -1.485 1.00 0.00 H
+ATOM 8 H8 1 2.036 0.151 0.205 1.00 0.00 H
+ATOM 9 H9 1 1.383 -0.943 -1.017 1.00 0.00 H
+ATOM 10 H10 1 1.254 0.806 -1.237 1.00 0.00 H
+CONECT 2 1
+CONECT 3 5
+CONECT 3 2
+CONECT 4 8
+CONECT 4 2
+CONECT 6 3
+CONECT 7 3
+CONECT 9 4
+CONECT 10 4
 ENDMDL
 TER
 ]]></String>

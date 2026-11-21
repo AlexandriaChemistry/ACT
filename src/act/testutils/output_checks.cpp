@@ -117,6 +117,8 @@ void checkTextFile(gmx::test::TestReferenceChecker *checker,
     std::string        line;
     // A minus before a number that is zero, such as -0 or -0.000
     const std::regex   negativeZero("(^|[^0-9.eE])-(0*\\.?0+)(?![0-9.eE])");
+    // Spaces and tabs
+    const std::regex   spaces("[ \\t]+");
     while (std::getline(in, line))
     {
         bool leaveOut = false;
@@ -128,8 +130,11 @@ void checkTextFile(gmx::test::TestReferenceChecker *checker,
         {
             // A zero is written as -0.000 on one platform and as 0.000 on
             // another, which the comparison of the numbers takes for
-            // different texts
-            kept << std::regex_replace(line, negativeZero, "$1$2") << '\n';
+            // different texts. Every space is a token of its own, so that
+            // the width of a column would count as well: runs of spaces
+            // are one space.
+            const auto zero = std::regex_replace(line, negativeZero, "$1$2");
+            kept << std::regex_replace(zero, spaces, " ") << '\n';
         }
     }
     checker->checkTextBlockWithNumbers(kept.str(), id);
