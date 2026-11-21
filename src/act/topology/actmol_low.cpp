@@ -260,21 +260,29 @@ void analyse_multipoles(MsgHandler                                *msg_handler,
             const char *unit   = mpo_unit2(mpo);
             double      factor = convertFromGromacs(1, unit);
             std::vector<double> Telec;
+            // Without a log, as in a program without a command line, only
+            // the statistics are collected
             if (qelec.hasMultipole(mpo))
             {
-                tw->writeStringFormatted("Electronic %s (%s):\n", name, unit);
                 Telec = qelec.getMultipole(msg_handler, mpo);
-                for(const auto &pm : formatMultipole(mpo, Telec))
+                if (tw)
                 {
-                    tw->writeLine(pm);
+                    tw->writeStringFormatted("Electronic %s (%s):\n", name, unit);
+                    for(const auto &pm : formatMultipole(mpo, Telec))
+                    {
+                        tw->writeLine(pm);
+                    }
                 }
             }
             real delta = 0;
             auto Tcalc = qcalc->getMultipole(msg_handler, mpo);
-            tw->writeStringFormatted("Calc %s (%s):\n", name, unit);
-            for(const auto &pm : formatMultipole(mpo, Tcalc))
+            if (tw)
             {
-                tw->writeLine(pm);
+                tw->writeStringFormatted("Calc %s (%s):\n", name, unit);
+                for(const auto &pm : formatMultipole(mpo, Tcalc))
+                {
+                    tw->writeLine(pm);
+                }
             }
 
             std::vector<double> diff;
@@ -298,12 +306,15 @@ void analyse_multipoles(MsgHandler                                *msg_handler,
                 {
                     flag = " MULTI";
                 }
-                tw->writeStringFormatted("%s-Electronic Norm %g RMS = %g (%s)%s:\n",
-                                         qPropertyTypeName(qt).c_str(),
-                                         factor*std::sqrt(delta), factor*rms, unit, flag.c_str());
-                for(const auto &pm : formatMultipole(mpo, diff))
+                if (tw)
                 {
-                    tw->writeLine(pm);
+                    tw->writeStringFormatted("%s-Electronic Norm %g RMS = %g (%s)%s:\n",
+                                             qPropertyTypeName(qt).c_str(),
+                                             factor*std::sqrt(delta), factor*rms, unit, flag.c_str());
+                    for(const auto &pm : formatMultipole(mpo, diff))
+                    {
+                        tw->writeLine(pm);
+                    }
                 }
             }
         }
