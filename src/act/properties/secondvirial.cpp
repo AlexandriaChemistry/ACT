@@ -1002,6 +1002,8 @@ void ReRunner::runB2(CommunicationRecord         *cr,
             plotB2temp(opt2fn("-b2", fnm.size(), fnm.data()));
         }
     }
+    // The orientations that were used, with -dbgGD
+    gendimers_.printStatistics(msghandler);
 }
 
 /*! \brief Tool to compute second virial

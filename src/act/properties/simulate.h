@@ -33,11 +33,12 @@
 #ifndef ACT_SIMULATE_H
 #define ACT_SIMULATE_H
 
-#include <memory>
+#include <optional>
 #include <string>
 
 #include "act/alexandria/confighandler.h"
 #include "act/import/compound_reader.h"
+#include "act/properties/secondvirial.h"
 
 struct gmx_output_env_t;
 
@@ -46,7 +47,6 @@ namespace alexandria
 
 class CommunicationRecord;
 class MsgHandler;
-class ReRunner;
 
 /*! \brief What alexandria simulate does, as its command line gives it
  *
@@ -80,11 +80,12 @@ struct SimulateOptions
     /*! \brief The energies of the structures of a trajectory instead of a
      * simulation (-traj and the options for dimers)
      *
-     * Only the program sets it, from its command line, since the
-     * generator of dimers cannot be set up otherwise yet. Without it, or
-     * without a trajectory in it, the molecule is simulated.
+     * Without it, or without a trajectory in its generator of dimers, the
+     * molecule is simulated. A program without a command line sets the
+     * trajectory with DimerGenerator::setTrajectory and calls
+     * DimerGenerator::finishSettings.
      */
-    std::shared_ptr<ReRunner> rerun;
+    std::optional<ReRunner>   rerun;
 
     /*! \brief Check that the options make sense
      * \throws gmx::InvalidInputError that says which option is wrong
