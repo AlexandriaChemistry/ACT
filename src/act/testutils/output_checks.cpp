@@ -361,6 +361,20 @@ nlohmann::json forceFieldChanges(const ForceField &before,
     return changes;
 }
 
+std::string textWithoutComments(const std::string &fileName)
+{
+    std::ifstream in(fileName);
+    std::string   text;
+    for (std::string line; std::getline(in, line); )
+    {
+        if (line.empty() || line[0] != '#')
+        {
+            text += line + "\n";
+        }
+    }
+    return text;
+}
+
 nlohmann::json readJsonOutput(const std::string &fileName)
 {
     std::ifstream in(fileName);

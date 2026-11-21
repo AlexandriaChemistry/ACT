@@ -56,6 +56,7 @@
 #include "act/topology/actmol_json.h"
 #include "act/utility/communicationrecord.h"
 #include "act/utility/jsontree.h"
+#include "act/utility/output_environment.h"
 #include "act/utility/stringutil.h"
 #include "gromacs/commandline/filenm.h"
 #include "gromacs/commandline/pargs.h"
@@ -65,7 +66,6 @@
 #include "gromacs/math/vectypes.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/exceptions.h"
-#include "gromacs/utility/programcontext.h"
 #include "gromacs/utility/real.h"
 #include "gromacs/utility/stringutil.h"
 #include "normalmodes.h"
@@ -185,21 +185,11 @@ int runNma(MsgHandler *msghandler, const NmaOptions &options, gmx_output_env_t *
         atomenergy.read(msghandler);
         // A program without a command line has no output environment for
         // the spectrum
-        gmx_output_env_t *defaultOenv = nullptr;
-        if (nullptr == oenv && !options.spectrumFile.empty())
-        {
-            // As the defaults of the command line, -xvg xmgrace
-            output_env_init(&defaultOenv, gmx::getProgramContext(), time_ps, FALSE, exvgXMGRACE, 0);
-            oenv = defaultOenv;
-        }
+        const OutputEnvironment output(oenv);
         doFrequencyAnalysis(msghandler, &pd, &actmol, molhandler, &forceComp, &xmin,
                             atomenergy, nullptr, &jtree,
                             options.spectrumFile.empty() ? nullptr : options.spectrumFile.c_str(),
-                            options.lineWidth, oenv, msghandler->verbose(), json);
-        if (defaultOenv)
-        {
-            output_env_done(defaultOenv);
-        }
+                            options.lineWidth, output.get(), msghandler->verbose(), json);
         if (json)
         {
             // The molecule and the structure the normal modes belong to

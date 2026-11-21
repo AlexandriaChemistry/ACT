@@ -763,21 +763,6 @@ TEST_F(NmaTest, ResultsNoMinimize)
 
 // The normal modes without a command line, as a program that uses ACT computes them
 
-//! \return the contents of a text file without the lines that start with #
-static std::string textWithoutComments(const std::string &fileName)
-{
-    std::ifstream     in(fileName);
-    std::string       text;
-    for (std::string line; std::getline(in, line); )
-    {
-        if (line.empty() || line[0] != '#')
-        {
-            text += line + "\n";
-        }
-    }
-    return text;
-}
-
 TEST_F(NmaTest, WithoutCommandLineSameAsTheProgram)
 {
     // The defaults, with the spectrum, and without minimization
