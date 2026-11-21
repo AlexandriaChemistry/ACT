@@ -142,6 +142,15 @@ if(BUILD_TESTING AND Python3_Interpreter_FOUND)
             ENVIRONMENT "ACT_PYTHON_PATH=${CMAKE_BINARY_DIR}/python;ACT_ALEXANDRIA=$<TARGET_FILE:alexandria>;ACT_TESTDATA=${CMAKE_SOURCE_DIR}/src/act/testdata;ACT_REQUIRE_CLASSES=1"
             LABELS "PythonTest"
             TIMEOUT 300)
+        # The reference of the package in the manual describes the classes
+        add_test(NAME PythonApiReferenceTests
+                 COMMAND ${Python3_EXECUTABLE}
+                         ${CMAKE_CURRENT_SOURCE_DIR}/tests/test_api_reference.py -v
+                 WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/python)
+        set_tests_properties(PythonApiReferenceTests PROPERTIES
+            ENVIRONMENT "ACT_PYTHON_PATH=${CMAKE_BINARY_DIR}/python"
+            LABELS "PythonTest"
+            TIMEOUT 120)
     endif()
     if(ACT_INSTALL_PYTHON_PACKAGE)
         # Installs the package in a directory of the build tree and imports

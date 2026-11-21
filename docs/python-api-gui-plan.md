@@ -525,6 +525,19 @@ manual with the examples above, an API reference generated from the
 docstrings, and the option `ACT_PYTHON=ON` in the conda recipe with an import
 test and one small calculation as package test.
 
+*Status of A9.* The chapter is `userman/python.rst`, the conda package is
+`alexandria-python`. The reference is `userman/python_api.rst`: its
+directive `act-api` (`docs/manual/act_api.py`, an extension of Sphinx)
+imports the package when the manual is built, the classes from the module
+of the build tree, and describes every public function, class, method and
+property with the documentation in the code, converting the docstrings in
+the style of Doxygen. Nothing is generated into the source tree, so the
+reference cannot be out of date. `test_api_reference.py` checks that every
+public name is described and that every description has a text, with and
+without the classes. The workflow of the website builds the classes and
+runs Sphinx with the same Python; if Sphinx cannot load the classes of the
+build tree, the build of the manual stops.
+
 ## 6. Part B: the user interface
 
 ### How it is built

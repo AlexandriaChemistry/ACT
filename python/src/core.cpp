@@ -1744,7 +1744,8 @@ void defineMolProps(py::module_ &module)
                          "Read them with act.read_molprop(file). A compound is found by its place or\n"
                          "by its name: molprops[0] or molprops[\"water\"].")
         .def_readonly("filename", &MolProps::filename, "The file the compounds were read from.")
-        .def("__len__", [](const MolProps &molprops) { return molprops.mps.size(); })
+        .def("__len__", [](const MolProps &molprops) { return molprops.mps.size(); },
+             "The number of compounds.")
         .def_property_readonly("names",
                                [](const MolProps &molprops)
                                {

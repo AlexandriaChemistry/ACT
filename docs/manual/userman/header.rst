@@ -12,4 +12,5 @@ User Manual
    simulation
    properties
    python
+   python_api
    gui
