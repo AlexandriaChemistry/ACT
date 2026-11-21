@@ -31,6 +31,7 @@
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
 #include <cctype>
+#include <cmath>
 #include <cstdio>
 #include <cstdlib>
 #include <exception>
@@ -64,11 +65,170 @@
 #include "gromacs/math/vectypes.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/exceptions.h"
+#include "gromacs/utility/programcontext.h"
 #include "gromacs/utility/real.h"
 #include "gromacs/utility/stringutil.h"
+#include "normalmodes.h"
 
 namespace alexandria
 {
+
+void NmaOptions::check() const
+{
+    if (forceFieldFile.empty())
+    {
+        GMX_THROW(gmx::InvalidInputError("There is no force field file (-ff)"));
+    }
+    if (std::string(compounds.fileName()).empty() && std::string(compounds.smiles()).empty() &&
+        std::string(compounds.dbName()).empty())
+    {
+        GMX_THROW(gmx::InvalidInputError("There is no molecule: give a structure file (-f), a SMILES string (-smiles) or a compound of the charge file (-db)"));
+    }
+    if (!std::isfinite(lineWidth) || lineWidth <= 0)
+    {
+        GMX_THROW(gmx::InvalidInputError(gmx::formatString("The value %g of -linewidth should be more than zero",
+                                                           lineWidth)));
+    }
+    if (!std::isfinite(shellTolerance) || shellTolerance <= 0)
+    {
+        GMX_THROW(gmx::InvalidInputError(gmx::formatString("The value %g of -shelltoler should be more than zero",
+                                                           shellTolerance)));
+    }
+    simulation.validate();
+}
+
+int runNma(MsgHandler *msghandler, const NmaOptions &options, gmx_output_env_t *oenv)
+{
+    options.check();
+    const auto &sch  = options.simulation;
+    const bool  json = !options.jsonFile.empty();
+    ForceField  pd;
+    readForceField(options.forceFieldFile, &pd, msghandler);
+    (void) pd.verifyCheckSum(msghandler);
+    const double  shellToler = sch.shellTolerance(options.shellTolerance, msghandler);
+    ForceComputer forceComp;
+    forceComp.init(shellToler, sch.shellMaxIter(), pd.epsilonr());
+
+    JsonTree jtree("nma");
+    if (msghandler->verbose())
+    {
+        forceFieldSummary(&jtree, &pd);
+    }
+
+    std::vector<ACTMol> actmols;
+    // Reading changes the reader
+    auto                compR = options.compounds;
+    try
+    {
+        compR.read(msghandler, pd, &forceComp, &actmols);
+    }
+    catch (const std::exception &ex)
+    {
+        // E.g. a file that does not exist
+        msghandler->msg(ACTStatus::Error,
+                        gmx::formatString("Could not read molecules: %s", ex.what()));
+        actmols.clear();
+    }
+    if (actmols.empty())
+    {
+        return 1;
+    }
+    auto &actmol = actmols[0];
+
+    if (msghandler->debug())
+    {
+        actmol.topology()->dump(msghandler->twDebug());
+    }
+    auto eMin = eMinimizeStatus::OK;
+    const MolHandler molhandler;
+    const std::vector<gmx::RVec> coords = actmol.xOriginal();
+    std::vector<gmx::RVec> xmin   = coords;
+    if (sch.minimize())
+    {
+        std::map<InteractionType, double> energies;
+        eMin = molhandler.minimizeCoordinates(msghandler, &pd, actmol.topology(), &forceComp, sch,
+                                              &xmin, &energies, {});
+        // The status of the minimization for programs that read the output
+        jtree.addObject("status", eMinimizeStatusToString(eMin));
+        jtree.addBool("converged", eMinimizeStatus::OK == eMin);
+        if (eMinimizeStatus::OK == eMin)
+        {
+            auto rmsd = molhandler.coordinateRmsd(actmol.atomsConst(), coords, &xmin);
+            msghandler->msg(ACTStatus::Info,
+                            gmx::formatString("Final energy: %g. RMSD wrt original structure %g nm.",
+                                              energies[InteractionType::EPOT], rmsd));
+            jtree.addValueUnit("rmsd", rmsd, "nm");
+            JsonTree jtener("Energies");
+            const std::string unit("kJ/mol");
+            for (const auto &ener : energies)
+            {
+                jtener.addValueUnit(interactionTypeToString(ener.first),
+                                    ener.second, unit);
+            }
+            jtree.addObject(jtener);
+
+            if (!options.confout.empty())
+            {
+                matrix box = { { 2, 0, 0 }, { 0, 2, 0 }, { 0, 0, 2 } };
+                actmol.PrintConformation(options.confout.c_str(), xmin, false, box);
+            }
+        }
+    }
+    else
+    {
+        fprintf(stderr, "Running NMA without prior minimization, check your output!\n");
+    }
+    int status = 0;
+    if (eMinimizeStatus::OK == eMin)
+    {
+        AtomizationEnergy atomenergy;
+        atomenergy.read(msghandler);
+        // A program without a command line has no output environment for
+        // the spectrum
+        gmx_output_env_t *defaultOenv = nullptr;
+        if (nullptr == oenv && !options.spectrumFile.empty())
+        {
+            // As the defaults of the command line, -xvg xmgrace
+            output_env_init(&defaultOenv, gmx::getProgramContext(), time_ps, FALSE, exvgXMGRACE, 0);
+            oenv = defaultOenv;
+        }
+        doFrequencyAnalysis(msghandler, &pd, &actmol, molhandler, &forceComp, &xmin,
+                            atomenergy, nullptr, &jtree,
+                            options.spectrumFile.empty() ? nullptr : options.spectrumFile.c_str(),
+                            options.lineWidth, oenv, msghandler->verbose(), json);
+        if (defaultOenv)
+        {
+            output_env_done(defaultOenv);
+        }
+        if (json)
+        {
+            // The molecule and the structure the normal modes belong to
+            jtree.addObject(moleculeToJson(&actmol));
+            JsonTree jcoords("coordinates");
+            jcoords.addObject("unit", "nm");
+            jcoords.addObject(coordinatesToJson("minimized", xmin));
+            jtree.addObject(jcoords);
+        }
+    }
+
+    if (eMinimizeStatus::OK != eMin)
+    {
+        msghandler->msg(ACTStatus::Error, ACTMessage::MinimizationFailed,
+                        gmx::formatString("check log file %s", msghandler->filename().c_str()));
+        status = 1;
+    }
+
+    if (json)
+    {
+        jtree.write(options.jsonFile, json);
+    }
+    else
+    {
+        int indent = 0;
+        msghandler->write(jtree.writeString(false, &indent));
+    }
+    return status;
+}
 
 int nma(int argc, char *argv[])
 {
@@ -95,23 +255,20 @@ int nma(int argc, char *argv[])
         { efJSON, "-json",   "nma",        ffOPTWR }
     };
     gmx_output_env_t         *oenv;
-    real                      shellToler = 1e-6;
+    NmaOptions                options;
+    real                      shellToler = options.shellTolerance;
     //! Line width (cm^-1) for a Lorentzian when computing infrared intensities and plotting an IR spectrum
-    real                      linewidth  = 24;
+    real                      linewidth  = options.lineWidth;
     std::vector<t_pargs>      pa = {
         { "-linewidth", FALSE, etREAL, {&linewidth},
           "Line width (cm^-1) for a Lorentzian when computing infrared intensities and plotting an IR spectrum" },
         { "-shelltoler", FALSE, etREAL, {&shellToler},
           "Tolerance for shell force optimization (mean square force)" }
     };
-    SimulationConfigHandler  sch;
-    sch.setMinimize(true);
-    sch.add_options(&pa, &fnm);
+    options.simulation.add_options(&pa, &fnm);
     MsgHandler msghandler;
-    CompoundReader compR;
-    compR.addOptions(&pa, &fnm, &desc);
+    options.compounds.addOptions(&pa, &fnm, &desc);
     msghandler.addOptions(&pa, &fnm, "nma");
-    int status = 0;
     if (!parse_common_args(&argc, argv, 0, 
                            fnm.size(), fnm.data(), pa.size(), pa.data(),
                            desc.size(), desc.data(), 0, nullptr, &oenv))
@@ -121,137 +278,34 @@ int nma(int argc, char *argv[])
     CommunicationRecord cr;
     cr.init(cr.size());
     msghandler.optionsFinished(fnm, &cr);
-    // The results in json format, in the file of -json if it is given
-    const char *jsonFile = opt2fn_null("-json", fnm.size(), fnm.data());
-    const bool  json     = jsonFile != nullptr;
-
-    sch.check_pargs(&msghandler);
-    compR.optionsFinished(&msghandler, fnm);
-    if (!msghandler.ok())
-    {
-        return 1;
-    }
-
-    ForceField        pd;
     try
     {
-        readForceField(opt2fn("-ff", fnm.size(), fnm.data()), &pd, &msghandler);
+        // What the command line asks for
+        options.simulation.check_pargs(&msghandler);
+        options.compounds.optionsFinished(&msghandler, fnm);
+        if (!msghandler.ok())
+        {
+            return 1;
+        }
+        print_header(msghandler.tw(), pa, fnm);
+        options.shellTolerance = shellToler;
+        options.lineWidth      = linewidth;
+        options.forceFieldFile = opt2fn("-ff", fnm.size(), fnm.data());
+        const auto optional    = [&fnm](const char *option)
+        {
+            const char *name = opt2fn_null(option, fnm.size(), fnm.data());
+            return std::string(name ? name : "");
+        };
+        options.confout      = optional("-c");
+        options.spectrumFile = optional("-ir");
+        options.jsonFile     = optional("-json");
+        return runNma(&msghandler, options, oenv);
     }
-    GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
-    
-    (void) pd.verifyCheckSum(&msghandler);
-    shellToler = sch.shellTolerance(shellToler, &msghandler);
-    ForceComputer forceComp;
-    double epsilonr;
-    epsilonr = pd.epsilonr();
-    forceComp.init(shellToler, sch.shellMaxIter(), epsilonr);
-    print_header(msghandler.tw(), pa, fnm);
-    
-    JsonTree jtree("nma");
-    if (msghandler.verbose())
+    catch (const gmx::InvalidInputError &ex)
     {
-        forceFieldSummary(&jtree, &pd);
-    }
-
-    std::vector<ACTMol> actmols;
-    try
-    {
-        compR.read(&msghandler, pd, &forceComp, &actmols);
-    }
-    catch (const std::exception &ex)
-    {
-        // E.g. a file that does not exist
-        msghandler.msg(ACTStatus::Error,
-                       gmx::formatString("Could not read molecules: %s", ex.what()));
-        actmols.clear();
-    }
-    if (actmols.empty())
-    {
+        fprintf(stderr, "%s\n", ex.what());
         return 1;
     }
-    auto &actmol = actmols[0];
-
-    if (msghandler.debug())
-    {
-        actmol.topology()->dump(msghandler.twDebug());
-    }
-    auto eMin = eMinimizeStatus::OK;
-    /* Generate output file for debugging if requested */
-    const MolHandler molhandler;
-    const std::vector<gmx::RVec> coords = actmol.xOriginal();
-    std::vector<gmx::RVec> xmin   = coords;
-    if (sch.minimize())
-    {
-        std::map<InteractionType, double> energies;
-        eMin = molhandler.minimizeCoordinates(&msghandler, &pd, actmol.topology(), &forceComp, sch,
-                                              &xmin, &energies, {});
-        // The status of the minimization for programs that read the output
-        jtree.addObject("status", eMinimizeStatusToString(eMin));
-        jtree.addBool("converged", eMinimizeStatus::OK == eMin);
-        if (eMinimizeStatus::OK == eMin)
-        {
-            auto rmsd = molhandler.coordinateRmsd(actmol.atomsConst(), coords, &xmin);
-            msghandler.msg(ACTStatus::Info,
-                           gmx::formatString("Final energy: %g. RMSD wrt original structure %g nm.",
-                                             energies[InteractionType::EPOT], rmsd));
-            jtree.addValueUnit("rmsd", rmsd, "nm");
-            JsonTree jtener("Energies");
-            const std::string unit("kJ/mol");
-            for (const auto &ener : energies)
-            {
-                jtener.addValueUnit(interactionTypeToString(ener.first),
-                                    ener.second, unit);
-            }
-            jtree.addObject(jtener);
-
-            auto confout = opt2fn_null("-c", fnm.size(),fnm.data());
-            if (confout)
-            {
-                matrix box = { { 2, 0, 0 }, { 0, 2, 0 }, { 0, 0, 2 } };
-                actmol.PrintConformation(confout, xmin, false, box);
-            }
-        }
-    }
-    else
-    {
-        fprintf(stderr, "Running NMA without prior minimization, check your output!\n");
-    }
-    if (eMinimizeStatus::OK == eMin)
-    {
-        AtomizationEnergy atomenergy;
-        atomenergy.read(&msghandler);
-        doFrequencyAnalysis(&msghandler, &pd, &actmol, molhandler, &forceComp, &xmin,
-                            atomenergy, nullptr, &jtree,
-                            opt2fn_null("-ir", fnm.size(), fnm.data()),
-                            linewidth, oenv, msghandler.verbose(), json);
-        if (json)
-        {
-            // The molecule and the structure the normal modes belong to
-            jtree.addObject(moleculeToJson(&actmol));
-            JsonTree jcoords("coordinates");
-            jcoords.addObject("unit", "nm");
-            jcoords.addObject(coordinatesToJson("minimized", xmin));
-            jtree.addObject(jcoords);
-        }
-    }
-
-    if (eMinimizeStatus::OK != eMin)
-    {
-        msghandler.msg(ACTStatus::Error, ACTMessage::MinimizationFailed,
-                       gmx::formatString("check log file %s", msghandler.filename().c_str()));
-        status = 1;
-    }
-
-    if (json)
-    {
-        jtree.write(jsonFile, json);
-    }
-    else
-    {
-        int indent = 0;
-        msghandler.write(jtree.writeString(false, &indent));
-    }
-    return status;
 }
 
 } // namespace alexandria

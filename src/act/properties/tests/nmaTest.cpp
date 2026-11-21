@@ -46,6 +46,7 @@
 #include "act/basics/msg_handler.h"
 #include "act/molprop/molprop.h"
 #include "act/molprop/molprop_xml.h"
+#include "act/properties/normalmodes.h"
 #include "act/properties/thermochemistry.h"
 #include "act/testutils/forcefield_utils.h"
 #include "act/testutils/output_checks.h"
@@ -53,6 +54,7 @@
 #include "act/topology/actmol_low.h"
 #include "act/utility/units.h"
 #include "gromacs/math/units.h"
+#include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/stringutil.h"
 #include "testutils/cmdlinetest.h"
 #include "testutils/refdata.h"
@@ -757,6 +759,123 @@ TEST_F(NmaTest, ResultsNoMinimize)
     // The structure is that of the file
     checker.setDefaultTolerance(buildTolerance(1e-6, 1e-8, 1e-6));
     checkJson(&checker, js.at("coordinates"), "coordinates");
+}
+
+// The normal modes without a command line, as a program that uses ACT computes them
+
+//! \return the contents of a text file without the lines that start with #
+static std::string textWithoutComments(const std::string &fileName)
+{
+    std::ifstream     in(fileName);
+    std::string       text;
+    for (std::string line; std::getline(in, line); )
+    {
+        if (line.empty() || line[0] != '#')
+        {
+            text += line + "\n";
+        }
+    }
+    return text;
+}
+
+TEST_F(NmaTest, WithoutCommandLineSameAsTheProgram)
+{
+    // The defaults, with the spectrum, and without minimization
+    const std::vector<std::pair<std::string, std::vector<std::string>>> cases = {
+        { "acetone.sdf", { "-linewidth", "6" } },
+        { "water-3-oep.log.pdb", { "-nominimize" } }
+    };
+    int n = 0;
+    for (const auto &c : cases)
+    {
+        const auto label = "direct" + std::to_string(n++);
+        NmaOutput  tool;
+        const int  status = runNma(c.first, label + "-tool", c.second, &tool);
+
+        NmaOptions options;
+        options.forceFieldFile = alexandriaFile("forcefields/" + ffFile_);
+        options.compounds.setFileName(alexandriaFile("molecules/" + c.first));
+        options.jsonFile     = fileManager().getTemporaryFilePath(label + "-direct.json");
+        options.spectrumFile = fileManager().getTemporaryFilePath(label + "-direct-ir.xvg");
+        options.confout      = fileManager().getTemporaryFilePath(label + "-direct.pdb");
+        if (c.second[0] == "-linewidth")
+        {
+            options.lineWidth = 6;
+        }
+        else
+        {
+            options.simulation.setMinimize(false);
+        }
+        MsgHandler msghandler;
+        msghandler.setPrintLevel(ACTStatus::Fatal);
+        // Without an output environment for the spectrum
+        EXPECT_EQ(status, alexandria::runNma(&msghandler, options)) << label;
+        const auto direct = readJsonOutput(options.jsonFile);
+        ASSERT_TRUE(tool.json.is_object() && direct.is_object()) << label;
+        for (const auto &key : { "status", "converged", "rmsd", "Energies", "Frequencies", "Intensities",
+                                 "modes", "Thermochemistry", "molecule", "coordinates" })
+        {
+            // As text: gtest cannot print a JSON value
+            EXPECT_EQ(tool.json["nma"].value(key, nlohmann::json()).dump(),
+                      direct["nma"].value(key, nlohmann::json()).dump()) << label << " " << key;
+        }
+        EXPECT_EQ(textWithoutComments(tool.spectrum), textWithoutComments(options.spectrumFile)) << label;
+    }
+}
+
+TEST_F(NmaTest, WithoutCommandLineWrongOptions)
+{
+    const auto valid = [this]()
+    {
+        NmaOptions options;
+        options.forceFieldFile = alexandriaFile("forcefields/" + ffFile_);
+        options.compounds.setFileName(alexandriaFile("molecules/acetone.sdf"));
+        return options;
+    };
+    std::vector<std::pair<NmaOptions, std::string>> wrong;
+    {
+        auto o = valid();
+        o.forceFieldFile.clear();
+        wrong.emplace_back(o, "-ff");
+    }
+    {
+        NmaOptions o;
+        o.forceFieldFile = alexandriaFile("forcefields/" + ffFile_);
+        wrong.emplace_back(o, "-f");
+    }
+    {
+        auto o = valid();
+        o.lineWidth = 0;
+        wrong.emplace_back(o, "-linewidth");
+    }
+    {
+        auto o = valid();
+        o.shellTolerance = -1;
+        wrong.emplace_back(o, "-shelltoler");
+    }
+    {
+        auto o = valid();
+        o.simulation.setForceTolerance(0);
+        wrong.emplace_back(o, "-toler");
+    }
+    for (const auto &w : wrong)
+    {
+        MsgHandler msghandler;
+        msghandler.setPrintLevel(ACTStatus::Fatal);
+        try
+        {
+            alexandria::runNma(&msghandler, w.first);
+            ADD_FAILURE() << "Accepted options with a wrong " << w.second;
+        }
+        catch (const gmx::InvalidInputError &ex)
+        {
+            EXPECT_NE(std::string::npos, std::string(ex.what()).find(w.second)) << ex.what();
+        }
+    }
+    // The program says the same and stops
+    NmaOutput out;
+    EXPECT_EQ(1, runNma("acetone.sdf", "wronglinewidth", { "-linewidth", "-3" }, &out));
+    EXPECT_TRUE(out.json.empty());
 }
 
 TEST_F(NmaTest, NoMinimize)
