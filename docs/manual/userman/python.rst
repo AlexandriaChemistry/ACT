@@ -236,6 +236,17 @@ The compounds of a molprop file, see :ref:`sec-files`, with their reference data
    print(mps.validate())                      # the check of edit_mp -validate
    mps.write("copy.xml")
 
+New sets are made from others, which stay as they are:
+
+.. code-block:: python
+
+   alcohols = mps.select(["methanol", "ethanol"])   # these compounds, in this order
+   others = mps.exclude(["water"])                   # all but these
+   both = alcohols.merge(act.read_molprop("water-butanol.xml"))
+   both.write("merged.xml")                          # as alexandria edit_mp -mp alcohols.xml water-butanol.xml
+
+A merge sorts the compounds by name and joins the calculations of a compound that both sets have, as *alexandria edit_mp* does with files.
+
 The coordinates are in nm and the values in the units that ACT computes with, which each property names. A property is a number (*value*) or a vector or tensor (*vector*); what it is not, is *None*.
 
 Errors are exceptions, and Python lives on: *act.ActFileError* (also an *OSError*) for a file that is missing, is not what it should be or cannot be written, *act.ActInputError* (also a *ValueError*) for input that is not accepted, such as a parameter that does not exist, a SMILES string that is no molecule or a molecule that the force field has no types for, and *act.ActInternalError* for what should not happen inside ACT. All are subclasses of *act.ActError*.

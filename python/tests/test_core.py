@@ -1144,6 +1144,42 @@ class MolPropsTest(unittest.TestCase):
         """
         self._tmp.cleanup()
 
+    def test_select_and_exclude(self):
+        """!
+        @brief New sets with some of the compounds, by name or place.
+        """
+        mps = act.read_molprop(self.mpdir / "molprop.xml")
+        names = mps.names
+        chosen = mps.select([names[2], 0])
+        self.assertEqual([names[2], names[0]], chosen.names)
+        self.assertEqual(plain(mps.calculations(2)), plain(chosen.calculations(0)))
+        rest = mps.exclude([names[1]])
+        self.assertEqual([names[0], names[2]], rest.names)
+        # The original is as it was
+        self.assertEqual(names, mps.names)
+        with self.assertRaises(KeyError):
+            mps.select(["no such compound"])
+        with self.assertRaises(IndexError):
+            mps.exclude([7])
+
+    @unittest.skipUnless(os.environ.get("ACT_ALEXANDRIA"), "ACT_ALEXANDRIA is not set")
+    def test_merge_same_as_the_program(self):
+        """!
+        @brief Two sets are merged as alexandria edit_mp merges files.
+        """
+        first = self.mpdir / "booze-mono.xml"
+        second = self.mpdir / "water-butanol.xml"
+        merged = act.read_molprop(first).merge(act.read_molprop(second))
+        mine = self.dir / "merged.xml"
+        merged.write(mine)
+        theirs = self.dir / "edit_mp.xml"
+        act.run("edit_mp", mp=[first, second], o=theirs, molinfo=False)
+        self.assertEqual(theirs.read_text(), mine.read_text())
+        # A compound that both have is there once, with the calculations of both
+        both = act.read_molprop(first).merge(act.read_molprop(first))
+        self.assertEqual(len(act.read_molprop(first)), len(both))
+        self.assertEqual(2 * len(act.read_molprop(first).calculations(0)), len(both.calculations(0)))
+
     def test_read_a_molprop_file(self):
         """!
         @brief The compounds of a file, what each is and what data it has.

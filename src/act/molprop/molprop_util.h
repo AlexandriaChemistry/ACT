@@ -51,6 +51,15 @@ namespace alexandria
  */
 void generate_index(std::vector<MolProp> *mp);
 
+/*! \brief Merge the compounds that are there more than once
+ * The compounds are sorted by name, and those with the same name are
+ * merged into one with all their calculations, as for merge_xml.
+ * \param[in]    msg_handler For warnings, may be nullptr
+ * \param[inout] mp          The compounds
+ */
+void mergeMolProps(MsgHandler                       *msg_handler,
+                   std::vector<alexandria::MolProp> *mp);
+
 /*! \brief Will merge multiple molprop files.
  * \param[in] msg_handler For info and debugging
  * \param[in] infiles     MolProp filenames

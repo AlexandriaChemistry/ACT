@@ -446,8 +446,12 @@ structure and the values of the properties of each calculation,
 a first version. `Molecule.interaction_energy()` gives the interaction
 energy of a dimer by term, as `simulate -sp` reports it. Coordinates,
 forces, charges, frequencies, spectra and the series of a trajectory are
-numpy arrays (copies); the conda package requires numpy. Not done: making
-or changing the compounds of a molprop.
+numpy arrays (copies); the conda package requires numpy. `MolProps` has
+`select`, `exclude` and `merge`, which make new sets, merged as `edit_mp`
+merges files (`mergeMolProps`); for that the compounds can be copied, with
+the properties of their calculations (`GenericProperty::clone`). Not done:
+making compounds or calculations from scratch, which the scripts of
+ACT-utilities do.
 
 This is the API of issue 59, with other names:
 
