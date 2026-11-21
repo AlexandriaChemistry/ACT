@@ -56,7 +56,9 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 # conda environment, rather than the framework Python of macOS (Xcode); the
 # same as ACT-utilities, such that both use the same Python
 set(Python3_FIND_FRAMEWORK LAST)
-find_package (Python3 COMPONENTS Interpreter Development)
+# The headers for the module of the classes (ACT_PYTHON), not the library to
+# embed Python, which the Python of conda on Linux does not have
+find_package (Python3 COMPONENTS Interpreter Development.Module)
 if (NOT CMAKE_INSTALL_PYTHON_LIBDIR)
   set(CMAKE_INSTALL_PYTHON_LIBDIR
     "lib/python${Python3_VERSION_MAJOR}.${Python3_VERSION_MINOR}/site-packages")
