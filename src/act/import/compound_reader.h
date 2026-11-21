@@ -57,32 +57,51 @@ namespace alexandria
     class CompoundReader
     {
     private:
+        /*! \brief The text options as the command line parser sets them
+         *
+         * They point into the command line, and are only read by
+         * optionsFinished, which copies them. All other code uses the
+         * strings that the reader owns, such that it can be copied.
+         */
+        struct ParsedText
+        {
+            //! -qqm
+            const char *qqm        = "";
+            //! -qcustom
+            const char *qcustom    = "";
+            //! -qalg
+            const char *qalgorithm = "";
+            //! -f
+            const char *filename   = "";
+            //! -smiles
+            const char *smiles     = "";
+            //! -db
+            const char *dbname     = "";
+        };
+        //! What the parser set, see ParsedText
+        ParsedText  parsed_;
         //! Total charge of all compounds
-        real    qtot_       = 0;
+        real        qtot_       = 0;
         //! Charge method to select from QM methods available in the molprop file
-        char   *qqm_        = (char *)"";
+        std::string qqm_;
         //! String of custom charges
-        char   *qcustom_    = (char *)"";
-        //! String for charge algorithm
-        char   *qalgorithm_ = (char *)"";
+        std::string qcustom_;
         //! How to generate charges, either from the force field, by reading, or fitting ESP
         ChargeGenerationAlgorithm qAlgorithm_ = ChargeGenerationAlgorithm::SQE;
         //! File name for reading structures from
-        char   *filename_  = (char *)"";
+        std::string filename_;
         //! SMILES string to make a structure from
-        char   *smiles_    = (char *)"";
+        std::string smiles_;
         //! List of compounds/dimers to extract from charges files
-        char   *dbname_     = (char *)"";
+        std::string dbname_;
         //! Map back hydrogen atoms to one type
-        bool    oneH_       = false;
+        bool        oneH_       = false;
         //! Name of the molprop file that contains charges or reference structures for generating charges
         std::string qmapfn_;
         //! Data structure for charges
         ChargeMap   qmap_;
         //! MolSelect structre if data was provided by the user
         MolSelect   molselect_;
-        //! The file name and the SMILES string that a program gave, see setFileName and setSmiles
-        std::string ownFilename_, ownSmiles_;
 
     public:
         //! Constructor
@@ -106,14 +125,14 @@ namespace alexandria
 
         /*! \brief Read the structure from a file, as the option -f does
          * For a program that uses this class without a command line. The
-         * SMILES string, if any, is forgotten. Do not copy the reader afterwards.
+         * SMILES string, if any, is forgotten.
          * \param[in] fileName The file
          */
         void setFileName(const std::string &fileName);
 
         /*! \brief Make the structure from a SMILES string, as the option -smiles does
          * For a program that uses this class without a command line. The
-         * file name, if any, is forgotten. Do not copy the reader afterwards.
+         * file name, if any, is forgotten.
          * \param[in] smiles The SMILES string
          */
         void setSmiles(const std::string &smiles);
@@ -130,7 +149,7 @@ namespace alexandria
         void setOneH(bool oneH) { oneH_ = oneH; }
 
         //! \return the charge to read
-        const char *qread() const { return qqm_; }
+        const char *qread() const { return qqm_.c_str(); }
 
         //! \return the charge algorithm
         ChargeGenerationAlgorithm algorithm() const { return qAlgorithm_; }
@@ -150,16 +169,16 @@ namespace alexandria
         ChargeMap *chargeMap() { return &qmap_; }
 
         //! \return the SMILES string to make a molecule from (-smiles), empty if none
-        const char *smiles() const { return smiles_; }
+        const char *smiles() const { return smiles_.c_str(); }
 
         //! \return the file to read the structure from (-f), empty if none
-        const char *fileName() const { return filename_; }
+        const char *fileName() const { return filename_.c_str(); }
 
         //! \return the compound to take from the charge file (-db), empty if none
-        const char *dbName() const { return dbname_; }
+        const char *dbName() const { return dbname_.c_str(); }
 
         //! \return the custom charges (-qcustom), empty if none
-        const char *customCharges() const { return qcustom_; }
+        const char *customCharges() const { return qcustom_.c_str(); }
 
         //! \return the total charge of the compounds (-qtot)
         double totalCharge() const { return qtot_; }
@@ -199,7 +218,7 @@ namespace alexandria
         const MolSelect &molselect() const { return molselect_; }
 
         //! \return true if user provided charges
-        bool userQtot() const { return strlen(qcustom_) > 0; }
+        bool userQtot() const { return !qcustom_.empty(); }
     };
     
 }

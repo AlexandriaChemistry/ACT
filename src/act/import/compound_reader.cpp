@@ -102,21 +102,21 @@ void CompoundReader::addOptions(std::vector<t_pargs>      *pargs,
     }
 
     const std::vector<t_pargs> mypargs = {
-              { "-f",      FALSE, etSTR,  {&filename_},
+              { "-f",      FALSE, etSTR,  {&parsed_.filename},
                 "Molecular structure file in e.g. pdb format. Is ignored with train_ff." },
-              { "-smiles", FALSE, etSTR,  {&smiles_},
+              { "-smiles", FALSE, etSTR,  {&parsed_.smiles},
                 "Make the molecule from a SMILES string instead of reading it from a file, for instance [TT]-smiles 'CC(=O)C'[tt] for acetone. Hydrogen atoms are added and coordinates are generated, which are a rough starting point that should be minimized. Is ignored with train_ff." },
-              { "-db",     FALSE, etSTR,  {&dbname_},
+              { "-db",     FALSE, etSTR,  {&parsed_.dbname},
                 "Read one or more molecules from the database rather than from a file. To specify multiple molecules please use quotes, e.g. [TT]-db[tt] 'water methane ammonia'. Is ignored with train_ff." },
               { "-oneH", FALSE, etBOOL, {&oneH_},
                 "Map all different hydrogen atom types back to H, mainly for debugging." },
               { "-qtot",   FALSE, etREAL, {&qtot_},
                 "Combined charge of the molecule(s). This will be taken from the input file by default, but that is not always reliable. If the -qcustom flag is supplied, that will be used instead." },
-              { "-qalg",   FALSE, etSTR,  {&qalgorithm_},
+              { "-qalg",   FALSE, etSTR,  {&parsed_.qalgorithm},
                 "Algorithm to generate charges. Can be either of None (read from force field), EEM or SQE (depending on force field parameter availability), ESP (fit to electrostatic potential which then must be present in the molprop file, -charges option). Flag can be Custom (see flag -qcustom below) or Read (see flag -qqm below). When fitting parameters to the ESP, do not provide this flag and not the charges file either. Sorry for the confusion." },
-              { "-qqm",    FALSE, etSTR,  {&qqm_},
+              { "-qqm",    FALSE, etSTR,  {&parsed_.qqm},
                 "Use a method from quantum mechanics that needs to be present in the input file. For instance, qESP, qHirshfeld, qCM5 or qMulliken may be available but check your input." },
-              { "-qcustom", FALSE, etSTR, {&qcustom_}, 
+              { "-qcustom", FALSE, etSTR, {&parsed_.qcustom}, 
                 "Here a quoted string of custom charges can be provided such that a third party source can be used. It is then possible to generate multipoles and compare the ESP to a quantum chemistry result. The number of charges provided must match the number of particles (including shells if present in the force field used)." }
           };
     for(const auto &mp : mypargs)
@@ -128,11 +128,18 @@ void CompoundReader::addOptions(std::vector<t_pargs>      *pargs,
 void CompoundReader::optionsFinished(MsgHandler                  *msghandler,
                                      const std::vector<t_filenm> &filenm)
 {
+    // The reader keeps its own copies, the parser's point into the command line
+    filename_ = parsed_.filename;
+    smiles_   = parsed_.smiles;
+    dbname_   = parsed_.dbname;
+    qqm_      = parsed_.qqm;
+    qcustom_  = parsed_.qcustom;
+    const std::string qalgorithm(parsed_.qalgorithm);
     // molselect?
     auto mfn = opt2fn_null("-sel", filenm.size(), filenm.data());
     if (mfn != nullptr)
     {
-        if (strlen(filename_) != 0 || strlen(dbname_) != 0 || strlen(smiles_) != 0)
+        if (!filename_.empty() || !dbname_.empty() || !smiles_.empty())
         {
             msghandler->msg(ACTStatus::Error,
                             "Please provide just one of the flags -f, -smiles, -db and -sel.");
@@ -140,7 +147,7 @@ void CompoundReader::optionsFinished(MsgHandler                  *msghandler,
         }
         molselect_.read(mfn);
     }
-    else if ((strlen(filename_) != 0) + (strlen(dbname_) != 0) + (strlen(smiles_) != 0) > 1)
+    else if ((!filename_.empty()) + (!dbname_.empty()) + (!smiles_.empty()) > 1)
     {
         msghandler->msg(ACTStatus::Error,
                         "Please provide just one of the flags -f, -smiles and -db.");
@@ -151,34 +158,34 @@ void CompoundReader::optionsFinished(MsgHandler                  *msghandler,
     {
         qmapfn_.assign(qfn);
     }
-    if (strlen(qalgorithm_) > 0)
+    if (!qalgorithm.empty())
     {
-        qAlgorithm_ = nameToChargeGenerationAlgorithm(qalgorithm_);
+        qAlgorithm_ = nameToChargeGenerationAlgorithm(qalgorithm);
     }
     else
     {
-        if (strlen(qcustom_) > 0)
+        if (!qcustom_.empty())
         {
             qAlgorithm_ = ChargeGenerationAlgorithm::Custom;
         }
-        else if (strlen(qqm_) > 0)
+        else if (!qqm_.empty())
         {
             qAlgorithm_ = ChargeGenerationAlgorithm::Read;
         }
     }
-    if (strlen(dbname_) > 0 && qmapfn_.empty())
+    if (!dbname_.empty() && qmapfn_.empty())
     {
         msghandler->msg(ACTStatus::Error,
                         "Please provide -charges flag in conjunction with -db.");
     }
-    else if (strlen(qcustom_) > 0 && strlen(qqm_) > 0)
+    else if (!qcustom_.empty() && !qqm_.empty())
     {
         msghandler->msg(ACTStatus::Error,
                         "Please do not provide both the custom charges and the QM charge type to read.");
     }
-    else if (strlen(qalgorithm_) > 0 && 
-             ((strlen(qcustom_) > 0 && qAlgorithm_ != ChargeGenerationAlgorithm::Custom) || 
-              (strlen(qqm_) > 0 && qAlgorithm_ != ChargeGenerationAlgorithm::Read)))
+    else if (!qalgorithm.empty() && 
+             ((!qcustom_.empty() && qAlgorithm_ != ChargeGenerationAlgorithm::Custom) || 
+              (!qqm_.empty() && qAlgorithm_ != ChargeGenerationAlgorithm::Read)))
     {
         msghandler->msg(ACTStatus::Warning,
                         "Please do not provide both a charge algorithm and either custom charges or the QM charge type to read.");
@@ -226,7 +233,7 @@ void CompoundReader::setCharges(MsgHandler          *msghandler,
         {
             mol->setCharges(msghandler, &pd);
         }
-        else if ((strlen(filename_) > 0 || strlen(smiles_) > 0) && qmap_.empty())
+        else if ((!filename_.empty() || !smiles_.empty()) && qmap_.empty())
         {
             mol->generateCharges(msghandler, &pd, forceComp, qAlgorithm_, &coords, &forces,
                                  msghandler->verbose());
@@ -251,18 +258,14 @@ void CompoundReader::setCharges(MsgHandler          *msghandler,
 
 void CompoundReader::setFileName(const std::string &fileName)
 {
-    ownFilename_ = fileName;
-    ownSmiles_.clear();
-    filename_    = ownFilename_.data();
-    smiles_      = ownSmiles_.data();
+    filename_ = fileName;
+    smiles_.clear();
 }
 
 void CompoundReader::setSmiles(const std::string &smiles)
 {
-    ownSmiles_ = smiles;
-    ownFilename_.clear();
-    smiles_    = ownSmiles_.data();
-    filename_  = ownFilename_.data();
+    smiles_ = smiles;
+    filename_.clear();
 }
 
 void CompoundReader::readFile(MsgHandler          *msghandler,
@@ -272,19 +275,19 @@ void CompoundReader::readFile(MsgHandler          *msghandler,
     matrix box;
     clear_mat(box);
     std::vector<MolProp> mps;
-    if (strlen(smiles_) > 0)
+    if (!smiles_.empty())
     {
         importSmiles(msghandler, &pd, smiles_, &mps, oneH_);
         if (!msghandler->ok() || mps.empty())
         {
             msghandler->msg(ACTStatus::Error,
-                            gmx::formatString("Making a molecule from the SMILES string '%s' failed.\n", smiles_));
+                            gmx::formatString("Making a molecule from the SMILES string '%s' failed.\n", smiles_.c_str()));
             return;
         }
     }
     else
     {
-        if (strlen(filename_) == 0)
+        if (filename_.empty())
         {
             msghandler->msg(ACTStatus::Error, "Empty filename");
             return;
@@ -296,13 +299,13 @@ void CompoundReader::readFile(MsgHandler          *msghandler,
         if (!msghandler->ok())
         {
             msghandler->msg(ACTStatus::Error,
-                            gmx::formatString("Reading %s failed.\n", filename_));
+                            gmx::formatString("Reading %s failed.\n", filename_.c_str()));
             return;
         }
         if (mps.empty())
         {
             msghandler->msg(ACTStatus::Error,
-                            gmx::formatString("Failed to import coordinate file %s using OpenBabel", filename_));
+                            gmx::formatString("Failed to import coordinate file %s using OpenBabel", filename_.c_str()));
             return;
         }
     }
@@ -320,7 +323,7 @@ void CompoundReader::read(MsgHandler          *msghandler,
                           std::vector<ACTMol> *mols)
 {
     // From a file or made from a SMILES string
-    bool                  readCoordinates = strlen(filename_) > 0 || strlen(smiles_) > 0;
+    bool                  readCoordinates = !filename_.empty() || !smiles_.empty();
     std::set<std::string> lookup;
     std::string           lookupSource;
     if (qmapfn_.empty() && !readCoordinates)
@@ -372,7 +375,7 @@ void CompoundReader::read(MsgHandler          *msghandler,
                 }
             }
             // For printing further down
-            if (strlen(smiles_) > 0)
+            if (!smiles_.empty())
             {
                 lookupSource.assign(" from SMILES ");
                 lookupSource += smiles_;
@@ -383,7 +386,7 @@ void CompoundReader::read(MsgHandler          *msghandler,
                 lookupSource += filename_;
             }
         }
-        else if (strlen(dbname_) > 0)
+        else if (!dbname_.empty())
         {
             // Determine what compounds the usesr selected
             for(const auto &mymol : split(dbname_, ' '))
@@ -424,12 +427,12 @@ void CompoundReader::read(MsgHandler          *msghandler,
             // If we read molecules from an input file, we do not want to overwrite them
             std::vector<ACTMol> temp_mols;
             qmap_ = fetchChargeMap(msghandler, &pd, forceComp, qmapfn_.c_str(),
-                                   &temp_mols, lookup, qAlgorithm_, qqm_);
+                                   &temp_mols, lookup, qAlgorithm_, qqm_.c_str());
         }
         else
         {
             qmap_ = fetchChargeMap(msghandler, &pd, forceComp, qmapfn_.c_str(),
-                                   mols, lookup, qAlgorithm_, qqm_);
+                                   mols, lookup, qAlgorithm_, qqm_.c_str());
         }
         msghandler->msg(ACTStatus::Info,
                         gmx::formatString("CompoundReader read %lu out of %lu entries into charge map from %s\n",
@@ -465,7 +468,7 @@ void CompoundReader::read(MsgHandler          *msghandler,
                 msghandler->msg(ACTStatus::Warning,
                                 gmx::formatString("CompoundReader could not determine charges for '%s' from '%s'\n",
                                                   mol->getMolname().c_str(),
-                                                  strlen(smiles_) > 0 ? smiles_ : filename_));
+                                                  !smiles_.empty() ? smiles_.c_str() : filename_.c_str()));
                 // Prevent false positives, delete compound and reset status
                 msghandler->resetStatus();
                 mol = mols->erase(mol);
