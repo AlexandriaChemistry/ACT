@@ -902,6 +902,20 @@ The public server of stage 2 does not send jobs to Slurm.
 **B12. Release.** Conda package `act-gui`, a manual chapter with screenshots,
 removal of `actgui` from ACT-utilities.
 
+*To do before `actgui` is removed:* the force field workspace must read the
+file of the user with fixed parameters that `actgui` could read (still open
+in B7 and B8); without it, retiring `actgui` loses a function. The atom
+types and predefined virtual sites move from `share` of ACT-utilities into
+the package `act-gui` in the same step.
+
+*Release 1.95.* The rest of the plan and bug fixes go onto the branch
+`release-1-95`, no new features. The server (B11, B13) comes after 1.95.
+Still to do for 1.95: B12 with the item above; the Python classes
+`minimize`, `normal_modes`, `simulate` and `write_openmm` use the settings
+classes of A8 and their checks; the bugs found on the way (`edit_mp -ff`
+with dimers, `train_ff` without a selection file, `edit_mp` that always
+writes its output file); a try of B10a on csb.
+
 **B13. Server, stage 2.** The public service (section 8).
 
 ## 7. Design
