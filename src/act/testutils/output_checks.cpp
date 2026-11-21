@@ -36,6 +36,7 @@
 #include <cstdint>
 #include <fstream>
 #include <map>
+#include <regex>
 #include <sstream>
 
 #include "act/basics/interactiontype.h"
@@ -114,6 +115,8 @@ void checkTextFile(gmx::test::TestReferenceChecker *checker,
     }
     std::ostringstream kept;
     std::string        line;
+    // A minus before a number that is zero, such as -0 or -0.000
+    const std::regex   negativeZero("(^|[^0-9.eE])-(0*\\.?0+)(?![0-9.eE])");
     while (std::getline(in, line))
     {
         bool leaveOut = false;
@@ -123,7 +126,10 @@ void checkTextFile(gmx::test::TestReferenceChecker *checker,
         }
         if (!leaveOut)
         {
-            kept << line << '\n';
+            // A zero is written as -0.000 on one platform and as 0.000 on
+            // another, which the comparison of the numbers takes for
+            // different texts
+            kept << std::regex_replace(line, negativeZero, "$1$2") << '\n';
         }
     }
     checker->checkTextBlockWithNumbers(kept.str(), id);

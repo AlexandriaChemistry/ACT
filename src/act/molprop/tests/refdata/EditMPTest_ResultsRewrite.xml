@@ -49,15 +49,15 @@
         <x>0</x>
         <y>0</y>
         <z>-0.0510304</z>
-        <fx>-0</fx>
-        <fy>-0</fy>
+        <fx>0</fx>
+        <fy>0</fy>
         <fz>0.078697</fz>
       </atom>
       <atom name="H" obtype="hf" atomid="1" coord_unit="Angstrom" force_unit="Hartree/Bohr">
         <x>0</x>
         <y>0</y>
         <z>0.96197</z>
-        <fx>-0</fx>
+        <fx>0</fx>
         <fy>0</fy>
         <fz>-0.078697</fz>
       </atom>
@@ -71,8 +71,8 @@
         <x>0</x>
         <y>0</y>
         <z>-0.0515342</z>
-        <fx>-0</fx>
-        <fy>-0</fy>
+        <fx>0</fx>
+        <fy>0</fy>
         <fz>0.0842939</fz>
       </atom>
       <atom name="H" obtype="hf" atomid="1" coord_unit="Angstrom" force_unit="Hartree/Bohr">
@@ -80,7 +80,7 @@
         <y>0</y>
         <z>0.971466</z>
         <fx>0</fx>
-        <fy>-0</fy>
+        <fy>0</fy>
         <fz>-0.0842939</fz>
       </atom>
     </experiment>
@@ -93,8 +93,8 @@
         <x>0</x>
         <y>0</y>
         <z>-0.054053</z>
-        <fx>-0</fx>
-        <fy>-0</fy>
+        <fx>0</fx>
+        <fy>0</fy>
         <fz>0.106275</fz>
       </atom>
       <atom name="H" obtype="hf" atomid="1" coord_unit="Angstrom" force_unit="Hartree/Bohr">
@@ -102,7 +102,7 @@
         <y>0</y>
         <z>1.01895</z>
         <fx>0</fx>
-        <fy>-0</fy>
+        <fy>0</fy>
         <fz>-0.106275</fz>
       </atom>
     </experiment>
@@ -115,7 +115,7 @@
         <x>0</x>
         <y>0</y>
         <z>-0.0379328</z>
-        <fx>-0</fx>
+        <fx>0</fx>
         <fy>0</fy>
         <fz>-0.374726</fz>
       </atom>
@@ -124,7 +124,7 @@
         <y>0</y>
         <z>0.715067</z>
         <fx>0</fx>
-        <fy>-0</fy>
+        <fy>0</fy>
         <fz>0.374726</fz>
       </atom>
     </experiment>
@@ -137,7 +137,7 @@
         <x>0</x>
         <y>0</y>
         <z>-0.0439779</z>
-        <fx>-0</fx>
+        <fx>0</fx>
         <fy>0</fy>
         <fz>-0.065644</fz>
       </atom>
@@ -145,8 +145,8 @@
         <x>0</x>
         <y>0</y>
         <z>0.829022</z>
-        <fx>-0</fx>
-        <fy>-0</fy>
+        <fx>0</fx>
+        <fy>0</fy>
         <fz>0.065644</fz>
       </atom>
     </experiment>
@@ -159,8 +159,8 @@
         <x>0</x>
         <y>0</y>
         <z>-0.0449854</z>
-        <fx>-0</fx>
-        <fy>-0</fy>
+        <fx>0</fx>
+        <fy>0</fy>
         <fz>-0.0350699</fz>
       </atom>
       <atom name="H" obtype="hf" atomid="1" coord_unit="Angstrom" force_unit="Hartree/Bohr">
@@ -181,15 +181,15 @@
         <x>0</x>
         <y>0</y>
         <z>-0.0490154</z>
-        <fx>-0</fx>
-        <fy>-0</fy>
+        <fx>0</fx>
+        <fy>0</fy>
         <fz>0.0513645</fz>
       </atom>
       <atom name="H" obtype="hf" atomid="1" coord_unit="Angstrom" force_unit="Hartree/Bohr">
         <x>0</x>
         <y>0</y>
         <z>0.923985</z>
-        <fx>-0</fx>
+        <fx>0</fx>
         <fy>0</fy>
         <fz>-0.0513645</fz>
       </atom>
@@ -204,15 +204,15 @@
         <y>0</y>
         <z>-0.0525417</z>
         <fx>0</fx>
-        <fy>-0</fy>
+        <fy>0</fy>
         <fz>0.0942116</fz>
       </atom>
       <atom name="H" obtype="hf" atomid="1" coord_unit="Angstrom" force_unit="Hartree/Bohr">
         <x>0</x>
         <y>0</y>
         <z>0.990458</z>
-        <fx>-0</fx>
-        <fy>-0</fy>
+        <fx>0</fx>
+        <fy>0</fy>
         <fz>-0.0942116</fz>
       </atom>
     </experiment>
@@ -226,14 +226,14 @@
         <y>0</y>
         <z>-0.0399478</z>
         <fx>0</fx>
-        <fy>-0</fy>
+        <fy>0</fy>
         <fz>-0.241797</fz>
       </atom>
       <atom name="H" obtype="hf" atomid="1" coord_unit="Angstrom" force_unit="Hartree/Bohr">
         <x>0</x>
         <y>0</y>
         <z>0.753052</z>
-        <fx>-0</fx>
+        <fx>0</fx>
         <fy>0</fy>
         <fz>0.241797</fz>
       </atom>
