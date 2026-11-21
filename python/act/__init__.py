@@ -59,10 +59,21 @@ def classes_available() -> bool:
     return _core is not None
 
 
+def data_directory() -> str:
+    """!
+    @brief The directory of the installation in which the classes of ACT
+    look for the data files of ACT, such as the properties of the elements.
+    The directory in the environment variable ACTDATA, if set, comes first.
+    @return The directory, empty if this installation has none or was
+    built without the classes.
+    """
+    return _core.data_directory() if _core is not None else ""
+
+
 __all__ = [
     "ActCancelledError", "ActError", "ActFileError", "ActInputError", "ActInternalError",
     "ActNotFoundError", "ActOptionError", "ActTimeoutError",
-    "classes_available",
+    "classes_available", "data_directory",
     "CommandInfo", "OptionInfo", "ProgramInfo",
     "Result", "build_arguments", "commands", "config", "program_info", "run",
 ]

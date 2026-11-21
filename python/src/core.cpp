@@ -45,6 +45,8 @@
 // Before the headers of ACT, see there
 #include "act_pybind.h"
 
+#include <dlfcn.h>
+
 #include <algorithm>
 #include <cmath>
 #include <exception>
@@ -76,8 +78,10 @@
 #include "act/utility/jsontree.h"
 #include "gromacs/utility/errorcodes.h"
 #include "gromacs/utility/exceptions.h"
+#include "buildinfo.h"
 #include "gromacs/math/functions.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/programcontext.h"
 #include "gromacs/utility/stringutil.h"
 
 namespace py = pybind11;
@@ -87,6 +91,67 @@ namespace alexandria
 
 namespace
 {
+
+/*! \brief Where ACT is installed, for the code that looks for its data files
+ *
+ * A program of ACT finds the data directory from where the program is. In
+ * Python the program is the interpreter, which is somewhere else, so this
+ * module tells where it is itself: in the package, a fixed number of
+ * directories below the installation prefix. For a module in a build tree
+ * it is the prefix that ACT was configured with.
+ */
+class ModuleContext : public gmx::IProgramContext
+{
+public:
+    ModuleContext()
+    {
+        Dl_info info;
+        // The file that this very function was loaded from
+        if (dladdr(reinterpret_cast<const void *>(&anchor), &info) != 0 && info.dli_fname != nullptr)
+        {
+            std::error_code ignored;
+            path_ = info.dli_fname;
+            const auto installed = std::filesystem::weakly_canonical(std::filesystem::path(path_).parent_path() /
+                                                                     ACT_PYTHON_TO_PREFIX, ignored);
+            if (!ignored && std::filesystem::is_directory(installed / ACT_INSTALL_ACTDATADIR, ignored))
+            {
+                prefix_ = installed.string();
+            }
+        }
+        std::error_code ignored;
+        if (prefix_.empty() &&
+            std::filesystem::is_directory(std::filesystem::path(CMAKE_INSTALL_PREFIX) / ACT_INSTALL_ACTDATADIR, ignored))
+        {
+            prefix_ = CMAKE_INSTALL_PREFIX;
+        }
+    }
+    const char *programName() const override { return "act"; }
+    const char *displayName() const override { return "The Python module of ACT"; }
+    const char *fullBinaryPath() const override { return path_.c_str(); }
+    gmx::InstallationPrefixInfo installationPrefix() const override
+    {
+        return gmx::InstallationPrefixInfo(prefix_.c_str(), false);
+    }
+    const char *commandLine() const override { return ""; }
+    //! \return The data directory of the installation, empty if it was not found
+    std::string dataDirectory() const
+    {
+        return prefix_.empty() ? std::string() : (std::filesystem::path(prefix_) / ACT_INSTALL_ACTDATADIR).string();
+    }
+
+private:
+    //! A function of this module, to find the file it is in
+    static void anchor() {}
+    //! The file of this module and the installation prefix, empty if not found
+    std::string path_, prefix_;
+};
+
+//! \return The context of this module, which lives as long as the process
+const ModuleContext &moduleContext()
+{
+    static const ModuleContext context;
+    return context;
+}
 
 /*! \brief Raise an exception of the Python package act
  * \param[in] name    The name of the class in act.errors
@@ -1221,6 +1286,12 @@ PYBIND11_MODULE(_core, module)
     module.doc() = "The classes of ACT in Python. Use them through the package act.";
     // A library must leave its caller alive: errors are exceptions from here on
     gmx_set_fatal_error_throws(true);
+    // The data files of ACT are where this module is installed
+    gmx::setProgramContext(&alexandria::moduleContext());
+    module.def("data_directory", []() { return alexandria::moduleContext().dataDirectory(); },
+               "The directory of the installation in which ACT looks for its data files, such as\n"
+               "the properties of the elements, after the directory in the environment variable\n"
+               "ACTDATA. Empty if the installation has none.");
     py::register_exception_translator(&alexandria::translateException);
     alexandria::defineParameters(module);
     alexandria::defineForceField(module);

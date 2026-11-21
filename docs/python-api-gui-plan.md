@@ -375,9 +375,9 @@ throw when it is loaded, and turns the exceptions of ACT into
 whether a package has the classes; without them the rest works as before.
 The module finds shared libraries of ACT from the build tree and from the
 installation. The test `PythonClassTests` runs with the module of the
-build tree. Not done yet: the data directory from the location of the
-package, `MsgHandler` to `logging`, and a build of the module in CI and in
-the conda package, which both need pybind11 in their environment. XML
+build tree. Not done yet: `MsgHandler` to `logging`, and a build of the
+module in CI and in the conda package, which both need pybind11 in their
+environment. XML
 files are read without the messages that libxml2 prints; what the parser
 found is in the exception.
 
@@ -411,8 +411,16 @@ function reports to its `MsgHandler` is recorded instead of printed and
 becomes the message of the exception (item 3 of A5, for this path).
 Coordinates and forces are lists, not numpy arrays, so that the package
 still needs nothing but the standard library; that can change when
-trajectories come. Next: `minimize()`, `normal_modes()`, `simulate()`,
-`write_openmm()`, and `generate_charges(algorithm)`.
+trajectories come. `mol.minimize()` returns an `act.Minimization` and
+moves the molecule to the minimum; `mol.normal_modes()` returns an
+`act.NormalModes` with frequencies, intensities, the motion of the
+particles (which `MolHandler::nma` already gives), the thermochemistry and
+`spectrum(linewidth)`. Both are compared with the programs in the tests.
+The module sets the program context of the library (`ModuleContext`), with
+the installation prefix found from where the module itself is, so that the
+data files are found as by a program; `act.data_directory()` tells where.
+Next: `simulate()`, `write_openmm()`, `generate_charges(algorithm)`, and
+`act.MolProp`.
 
 This is the API of issue 59, with other names:
 

@@ -51,6 +51,18 @@ class WithoutClassesTest(unittest.TestCase):
         self.assertTrue(act.classes_available())
         self.assertTrue(os.path.isdir(TESTDATA), "ACT_TESTDATA is not set")
 
+    def test_data_directory(self):
+        """!
+        @brief The package tells where the classes look for the data files of
+        ACT: a directory that exists, or nothing.
+        """
+        where = act.data_directory()
+        self.assertIsInstance(where, str)
+        if where:
+            self.assertTrue(os.path.isdir(where), where)
+        if not act.classes_available():
+            self.assertEqual("", where)
+
     @unittest.skipIf(act.classes_available(), "ACT was built with its Python classes")
     def test_asking_for_a_class_says_how_to_get_it(self):
         """!
