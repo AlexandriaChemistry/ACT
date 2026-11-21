@@ -151,6 +151,19 @@ namespace alexandria
 
         //! \return the SMILES string to make a molecule from (-smiles), empty if none
         const char *smiles() const { return smiles_; }
+
+        //! \return the file to read the structure from (-f), empty if none
+        const char *fileName() const { return filename_; }
+
+        //! \return the compound to take from the charge file (-db), empty if none
+        const char *dbName() const { return dbname_; }
+
+        //! \return the custom charges (-qcustom), empty if none
+        const char *customCharges() const { return qcustom_; }
+
+        //! \return the total charge of the compounds (-qtot)
+        double totalCharge() const { return qtot_; }
+
         /*! Read molecule(s) from a single file, or make one from the SMILES string
          * \param[in]  msghandler Error and message handler, check whether ok after returning
          * \param[in]  pd         The force field

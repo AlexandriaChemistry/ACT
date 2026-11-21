@@ -47,6 +47,8 @@
 #include "act/topology/actmol.h"
 #include "gromacs/commandline/filenm.h"
 #include "gromacs/commandline/pargs.h"
+#include "gromacs/fileio/oenv.h"
+#include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/stringutil.h"
 #include "testutils/cmdlinetest.h"
 #include "testutils/refdata.h"
@@ -205,6 +207,189 @@ TEST_F (CompoundReaderTest, Dimer_Charges){
 
 TEST_F (CompoundReaderTest, Fluorane_Charges){
     testCompoundReaderFile("fluorane.sdf", true);
+}
+
+// ---- The options of the compound reader from the command line ----
+//
+// What the command lines of gentop, minimize, nma and simulate give, such
+// that a change in how the options are turned into settings shows.
+
+/*! \brief Parse a command line into a compound reader as the tools do
+ * \param[in] compR      The reader
+ * \param[in] args       The arguments
+ * \param[in] msghandler Gets what is wrong with the options
+ * \param[in] cmd        The command line, which the reader refers to and
+ *                       which must exist as long as the reader is used
+ */
+static void parseCompoundOptions(CompoundReader                  *compR,
+                                 const std::vector<std::string>  &args,
+                                 MsgHandler                      *msghandler,
+                                 gmx::test::CommandLine          *cmd)
+{
+    std::vector<t_pargs>      pargs;
+    std::vector<t_filenm>     fnms;
+    std::vector<const char *> desc;
+    compR->addOptions(&pargs, &fnms, &desc);
+    cmd->append("test");
+    for (const auto &a : args)
+    {
+        cmd->append(a);
+    }
+    gmx_output_env_t *oenv = nullptr;
+    ASSERT_TRUE(parse_common_args(&cmd->argc(), cmd->argv(), 0, fnms.size(), fnms.data(),
+                                  pargs.size(), pargs.data(), 0, nullptr, 0, nullptr, &oenv));
+    output_env_done(oenv);
+    compR->optionsFinished(msghandler, fnms);
+}
+
+TEST(CompoundReaderOptionsTest, Defaults)
+{
+    CompoundReader         compR;
+    MsgHandler             msghandler;
+    gmx::test::CommandLine cmd;
+    parseCompoundOptions(&compR, {}, &msghandler, &cmd);
+    EXPECT_TRUE(msghandler.ok());
+    EXPECT_EQ(ChargeGenerationAlgorithm::SQE, compR.algorithm());
+    EXPECT_STREQ("", compR.qread());
+    EXPECT_STREQ("", compR.customCharges());
+    EXPECT_FALSE(compR.userQtot());
+    EXPECT_STREQ("", compR.fileName());
+    EXPECT_STREQ("", compR.smiles());
+    EXPECT_STREQ("", compR.dbName());
+    EXPECT_TRUE(compR.chargeFile().empty());
+    EXPECT_FALSE(compR.oneH());
+    EXPECT_EQ(0, compR.totalCharge());
+    EXPECT_EQ(0U, compR.molselect().nMol());
+}
+
+TEST(CompoundReaderOptionsTest, Input)
+{
+    const auto molprop = gmx::test::TestFileManager::getInputFilePath("molprop/molprop.xml");
+    {
+        CompoundReader         compR;
+        MsgHandler             msghandler;
+        gmx::test::CommandLine cmd;
+        parseCompoundOptions(&compR, { "-f", "acetone.sdf", "-qtot", "-1", "-oneH" }, &msghandler, &cmd);
+        EXPECT_TRUE(msghandler.ok());
+        EXPECT_STREQ("acetone.sdf", compR.fileName());
+        EXPECT_DOUBLE_EQ(-1, compR.totalCharge());
+        EXPECT_TRUE(compR.oneH());
+    }
+    {
+        CompoundReader         compR;
+        MsgHandler             msghandler;
+        gmx::test::CommandLine cmd;
+        parseCompoundOptions(&compR, { "-smiles", "CC(=O)C" }, &msghandler, &cmd);
+        EXPECT_TRUE(msghandler.ok());
+        EXPECT_STREQ("CC(=O)C", compR.smiles());
+        EXPECT_STREQ("", compR.fileName());
+    }
+    {
+        CompoundReader         compR;
+        MsgHandler             msghandler;
+        gmx::test::CommandLine cmd;
+        parseCompoundOptions(&compR, { "-db", "water", "-charges", molprop }, &msghandler, &cmd);
+        EXPECT_TRUE(msghandler.ok());
+        EXPECT_STREQ("water", compR.dbName());
+        EXPECT_EQ(molprop, compR.chargeFile());
+    }
+    {
+        // A selection of compounds from the charge file
+        CompoundReader         compR;
+        MsgHandler             msghandler;
+        gmx::test::CommandLine cmd;
+        parseCompoundOptions(&compR, { "-sel", gmx::test::TestFileManager::getInputFilePath("molprop/booze-mono.dat"),
+                                       "-charges", molprop }, &msghandler, &cmd);
+        EXPECT_TRUE(msghandler.ok());
+        EXPECT_EQ(2U, compR.molselect().nMol());
+    }
+}
+
+TEST(CompoundReaderOptionsTest, ChargeAlgorithm)
+{
+    for (auto alg : { ChargeGenerationAlgorithm::NONE, ChargeGenerationAlgorithm::EEM, ChargeGenerationAlgorithm::SQE,
+                      ChargeGenerationAlgorithm::ESP, ChargeGenerationAlgorithm::Custom,
+                      ChargeGenerationAlgorithm::Read })
+    {
+        const auto             name = chargeGenerationAlgorithmName(alg);
+        CompoundReader         compR;
+        MsgHandler             msghandler;
+        gmx::test::CommandLine cmd;
+        parseCompoundOptions(&compR, { "-qalg", name }, &msghandler, &cmd);
+        EXPECT_TRUE(msghandler.ok()) << name;
+        EXPECT_EQ(alg, compR.algorithm()) << name;
+    }
+}
+
+TEST(CompoundReaderOptionsTest, ChargesWithoutAlgorithm)
+{
+    // Charges to read or custom charges choose the algorithm
+    {
+        CompoundReader         compR;
+        MsgHandler             msghandler;
+        gmx::test::CommandLine cmd;
+        parseCompoundOptions(&compR, { "-qqm", "qMulliken" }, &msghandler, &cmd);
+        EXPECT_TRUE(msghandler.ok());
+        EXPECT_EQ(ChargeGenerationAlgorithm::Read, compR.algorithm());
+        EXPECT_STREQ("qMulliken", compR.qread());
+    }
+    {
+        CompoundReader         compR;
+        MsgHandler             msghandler;
+        gmx::test::CommandLine cmd;
+        // A leading space, such that the value is not taken for an option
+        parseCompoundOptions(&compR, { "-qcustom", " -0.8 0.4 0.4" }, &msghandler, &cmd);
+        EXPECT_TRUE(msghandler.ok());
+        EXPECT_EQ(ChargeGenerationAlgorithm::Custom, compR.algorithm());
+        EXPECT_STREQ(" -0.8 0.4 0.4", compR.customCharges());
+        EXPECT_TRUE(compR.userQtot());
+    }
+    {
+        // An algorithm that is given goes first, with a warning
+        CompoundReader         compR;
+        MsgHandler             msghandler;
+        gmx::test::CommandLine cmd;
+        parseCompoundOptions(&compR, { "-qalg", "EEM", "-qqm", "qMulliken" }, &msghandler, &cmd);
+        EXPECT_TRUE(msghandler.ok());
+        EXPECT_EQ(ChargeGenerationAlgorithm::EEM, compR.algorithm());
+    }
+}
+
+TEST(CompoundReaderOptionsTest, ConflictingOptions)
+{
+    const auto molprop   = gmx::test::TestFileManager::getInputFilePath("molprop/molprop.xml");
+    const auto selection = gmx::test::TestFileManager::getInputFilePath("molprop/booze-mono.dat");
+    const std::vector<std::vector<std::string>> wrong = {
+        { "-f", "acetone.sdf", "-smiles", "CC(=O)C" },
+        { "-f", "acetone.sdf", "-db", "water", "-charges", molprop },
+        { "-smiles", "O", "-db", "water", "-charges", molprop },
+        { "-sel", selection, "-f", "acetone.sdf" },
+        { "-sel", selection, "-smiles", "O" },
+        { "-db", "water" },
+        { "-qcustom", " -0.8 0.4 0.4", "-qqm", "qMulliken" }
+    };
+    for (const auto &args : wrong)
+    {
+        CompoundReader         compR;
+        MsgHandler             msghandler;
+        msghandler.setPrintLevel(ACTStatus::Fatal);
+        gmx::test::CommandLine cmd;
+        parseCompoundOptions(&compR, args, &msghandler, &cmd);
+        std::string all;
+        for (const auto &a : args)
+        {
+            all += a + " ";
+        }
+        EXPECT_FALSE(msghandler.ok()) << all;
+    }
+}
+
+TEST(CompoundReaderOptionsTest, UnknownChargeAlgorithm)
+{
+    CompoundReader         compR;
+    MsgHandler             msghandler;
+    gmx::test::CommandLine cmd;
+    EXPECT_THROW(parseCompoundOptions(&compR, { "-qalg", "Magic" }, &msghandler, &cmd), gmx::InvalidInputError);
 }
 
 } // namespace alexandria
