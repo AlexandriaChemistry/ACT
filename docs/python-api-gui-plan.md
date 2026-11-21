@@ -428,8 +428,11 @@ The Python lock is released while the simulation runs, and Ctrl-C or an
 error in the function of the user ends it at the next energies. Making a
 molecule from a SMILES string took the interrupt signal away from the
 program for good, because of how RDKit keeps the handler it replaces; that
-is repaired in `importSmiles`. Next: `write_openmm()`,
-`generate_charges(algorithm)`, and `act.MolProp`.
+is repaired in `importSmiles`. `mol.write_openmm(file, structure=)` writes
+the files of `gentop -openmm`, `mol.generate_charges(algorithm)` makes the
+charges again for the structure of that moment (EEM, SQE or NONE; ESP and
+Read need data that a molecule in Python does not have) and
+`mol.set_charges(list)` sets them. Next: `act.MolProp`.
 
 This is the API of issue 59, with other names:
 
