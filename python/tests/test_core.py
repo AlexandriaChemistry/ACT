@@ -348,5 +348,174 @@ class ForceFieldTest(unittest.TestCase):
             act.ForceField.read()  # pylint: disable=no-value-for-parameter
 
 
+@unittest.skipUnless(act.classes_available(), "ACT was built without its Python classes")
+@unittest.skipUnless(os.path.isdir(TESTDATA), "ACT_TESTDATA is not set")
+class MoleculeTest(unittest.TestCase):
+    """!
+    @brief A molecule in Python: what it is made of and its energy.
+    """
+
+    def setUp(self):
+        """!
+        @brief Read the force fields of the tests.
+        """
+        self.data = Path(TESTDATA)
+        self.ffname = self.data / "forcefields" / "ACS-pg1.xml"
+        self.ff = act.ForceField.read(self.ffname)
+        self._tmp = tempfile.TemporaryDirectory()
+        self.dir = Path(self._tmp.name)
+
+    def tearDown(self):
+        """!
+        @brief Remove the files.
+        """
+        self._tmp.cleanup()
+
+    def test_molecule_from_smiles(self):
+        """!
+        @brief A molecule is made from a SMILES string, with a structure, a
+        topology and charges for the force field.
+        """
+        mol = act.Molecule.from_smiles("CC(=O)C", self.ff)
+        self.assertEqual("C3H6O", mol.formula)
+        self.assertEqual(0, mol.charge)
+        self.assertAlmostEqual(58.08, mol.mass, places=2)
+        # Ten atoms, each with a shell in this polarizable force field
+        atoms = mol.atoms
+        self.assertEqual(20, len(atoms))
+        self.assertEqual(10, len([a for a in atoms if a["particletype"] == "Atom"]))
+        self.assertEqual(10, len([a for a in atoms if a["particletype"] == "Shell"]))
+        self.assertEqual(["C", "C", "C", "H", "H", "H", "H", "H", "H", "O"],
+                         sorted(a["element"] for a in atoms if a["particletype"] == "Atom"))
+        self.assertTrue(all(a["type"] in self.ff.particle_types for a in atoms))
+        # The charges are those of the particles, and add up to the charge
+        charges = mol.charges
+        self.assertEqual([a["charge"] for a in atoms], charges)
+        self.assertAlmostEqual(0.0, sum(charges), places=6)
+        self.assertGreater(max(abs(q) for q in charges), 0.1)
+        # Nine bonds, of which one is double, between atoms
+        bonds = mol.bonds
+        self.assertEqual(9, len(bonds))
+        self.assertEqual([2], [b["order"] for b in bonds if b["order"] != 1])
+        for bond in bonds:
+            self.assertTrue(all(atoms[i]["particletype"] == "Atom" for i in bond["atoms"]))
+        # A coordinate for each particle, in nm, of a molecule of that size
+        coordinates = mol.coordinates
+        self.assertEqual(20, len(coordinates))
+        self.assertTrue(all(len(x) == 3 for x in coordinates))
+        spread = max(x[0] for x in coordinates) - min(x[0] for x in coordinates)
+        self.assertGreater(spread, 0.05)
+        self.assertLess(spread, 1.0)
+        self.assertIn("C3H6O", repr(mol))
+
+    def test_energy_and_forces(self):
+        """!
+        @brief The energy by term in kJ/mol and the force on each particle.
+        """
+        mol = act.Molecule.from_smiles("CC(=O)C", self.ff)
+        energy = mol.energy()
+        self.assertIn("EPOT", energy)
+        self.assertIn("BONDS", energy)
+        self.assertIn("COULOMB", energy)
+        self.assertTrue(all(isinstance(value, float) for value in energy.values()))
+        # The terms add up to the potential energy
+        parts = sum(value for name, value in energy.items()
+                    if name not in ("EPOT", "ALLELEC", "EXCHIND", "EXCHDISP"))
+        self.assertLess(energy["EPOT"], 0)
+        self.assertAlmostEqual(energy["EPOT"], parts, delta=1e-3 * abs(energy["EPOT"]))
+        forces = mol.forces()
+        self.assertEqual(len(mol.atoms), len(forces))
+        self.assertTrue(all(len(f) == 3 for f in forces))
+        # No net force on the molecule
+        for dim in range(3):
+            self.assertAlmostEqual(0.0, sum(f[dim] for f in forces), delta=1e-2)
+        # The same again: asking changes nothing
+        self.assertEqual(energy, mol.energy())
+
+    @unittest.skipUnless(os.environ.get("ACT_ALEXANDRIA"), "ACT_ALEXANDRIA is not set")
+    def test_same_as_the_program(self):
+        """!
+        @brief The class gives what the alexandria program gives for the
+        same molecule and force field: the particles with their charges,
+        the structure and the energies.
+        """
+        mol = act.Molecule.from_smiles("CC(=O)C", self.ff)
+        with act.commands.gentop(ff=self.ffname, smiles="CC(=O)C") as res:
+            told = res.data["molecules"][0]
+        self.assertEqual(told["molecule"]["formula"], mol.formula)
+        self.assertEqual([p["type"] for p in told["molecule"]["particles"]],
+                         [a["type"] for a in mol.atoms])
+        for theirs, ours in zip(told["molecule"]["particles"], mol.charges):
+            self.assertAlmostEqual(theirs["charge"], ours, places=5)
+        self.assertEqual(told["molecule"]["bonds"], mol.bonds)
+        for theirs, ours in zip(told["coordinates"]["positions"], mol.coordinates):
+            for dim in range(3):
+                self.assertAlmostEqual(theirs[dim], ours[dim], places=5)
+        with act.commands.minimize(ff=self.ffname, smiles="CC(=O)C") as res:
+            before = res.data["Energies before"]
+        energy = mol.energy()
+        self.assertEqual(set(before), set(energy))
+        for name, value in before.items():
+            self.assertAlmostEqual(value["value"], energy[name],
+                                   delta=1e-3 + 1e-5 * abs(value["value"]), msg=name)
+
+    def test_molecule_from_file(self):
+        """!
+        @brief A molecule is read from a structure file.
+        """
+        mol = act.Molecule.from_file(self.data / "molecules" / "acetone.sdf", self.ff)
+        self.assertEqual("C3H6O", mol.formula)
+        self.assertEqual(20, len(mol.atoms))
+        self.assertLess(mol.energy()["EPOT"], 0)
+        # Another force field, without shells: another molecule
+        plain = act.Molecule.from_file(str(self.data / "molecules" / "acetone.sdf"),
+                                       act.ForceField.read(self.data / "forcefields" / "ACS-g1.xml"))
+        self.assertEqual(10, len(plain.atoms))
+        self.assertEqual(20, len(mol.atoms))
+
+    def test_molecule_keeps_its_force_field(self):
+        """!
+        @brief A molecule works after the last name for its force field is gone.
+        """
+        import gc  # pylint: disable=import-outside-toplevel
+        mol = act.Molecule.from_smiles("O", act.ForceField.read(self.ffname))
+        gc.collect()
+        self.assertEqual("H2O", mol.formula)
+        self.assertIn("EPOT", mol.energy())
+        self.assertIsInstance(mol.forcefield, act.ForceField)
+        self.assertEqual(str(self.ffname), mol.forcefield.filename)
+
+    def test_molecules_that_cannot_be_made(self):
+        """!
+        @brief What is no molecule, or one that the force field has no types
+        for, raises an error that tells why, and Python lives on.
+        """
+        with self.assertRaises(act.ActInputError) as caught:
+            act.Molecule.from_smiles("this is no molecule", self.ff)
+        self.assertIn("SMILES", str(caught.exception))
+        with self.assertRaises(act.ActError) as caught:
+            act.Molecule.from_file(self.dir / "no-such-molecule.sdf", self.ff)
+        self.assertIn("no-such-molecule.sdf", str(caught.exception))
+        broken = self.dir / "broken.sdf"
+        broken.write_text("not a structure\n")
+        with self.assertRaises(act.ActInputError) as caught:
+            act.Molecule.from_file(broken, self.ff)
+        self.assertIn("broken.sdf", str(caught.exception))
+        # A force field for water has no types for the atoms of ethanol
+        water = act.ForceField.read(self.data / "forcefields" / "TIP5P.xml")
+        with self.assertRaises(act.ActInputError) as caught:
+            act.Molecule.from_smiles("CCO", water)
+        self.assertTrue(str(caught.exception))
+        # Still alive
+        self.assertEqual("H2O", act.Molecule.from_smiles("O", self.ff).formula)
+        for wrong in (None, 3):
+            with self.assertRaises(TypeError):
+                act.Molecule.from_smiles(wrong, self.ff)
+        with self.assertRaises(TypeError):
+            act.Molecule.from_smiles("O", "ACS-pg1.xml")
+        with self.assertRaises(TypeError):
+            act.Molecule.from_smiles("O")  # pylint: disable=no-value-for-parameter
+
+
 if __name__ == "__main__":
     unittest.main()

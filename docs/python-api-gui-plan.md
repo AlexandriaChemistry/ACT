@@ -400,8 +400,19 @@ identifier, name)`, `particle_type(name)`, `set_parameter` and
 `set_particle_parameter` with value, bounds and mutability by keyword, and
 `validate()`. A parameter that Python gets is a copy (`act.Parameter`), not
 a reference into the force field; a change goes through the force field,
-is checked first, and changes nothing when it is refused. `act.Molecule`
-is next.
+is checked first, and changes nothing when it is refused.
+`act.Molecule` has `from_smiles`, `from_file`, `formula`, `name`,
+`charge`, `mass`, `atoms`, `bonds`, `charges`, `coordinates`, `energy()`
+and `forces()`. It is made with `CompoundReader`, which got setters for
+the file name, the SMILES string and the total charge, so the molecule is
+the one of the programs: a test compares the particles, charges,
+structure and energies with `alexandria gentop` and `minimize`. What a
+function reports to its `MsgHandler` is recorded instead of printed and
+becomes the message of the exception (item 3 of A5, for this path).
+Coordinates and forces are lists, not numpy arrays, so that the package
+still needs nothing but the standard library; that can change when
+trajectories come. Next: `minimize()`, `normal_modes()`, `simulate()`,
+`write_openmm()`, and `generate_charges(algorithm)`.
 
 This is the API of issue 59, with other names:
 
