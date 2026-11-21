@@ -1071,7 +1071,7 @@ NormalModes normalModes(Molecule *molecule, bool minimize, const std::optional<s
         GMX_THROW(gmx::InternalError("The normal mode analysis gave no modes"));
     }
     result.modes = py::list();
-    for (const auto &item : told["modes"])
+    for (const py::handle item : told["modes"])
     {
         const auto mode = py::reinterpret_borrow<py::dict>(item);
         py::dict   one;
