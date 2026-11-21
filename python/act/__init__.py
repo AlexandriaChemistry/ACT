@@ -45,7 +45,8 @@ except ImportError:
     _core = None  # type: ignore[assignment]
 
 ## The classes that the module _core has
-_CLASSES = ("ForceField", "Minimization", "Molecule", "Parameter", "ParticleType")
+_CLASSES = ("ForceField", "Minimization", "Molecule", "NormalModes", "Parameter",
+            "ParticleType")
 
 
 def classes_available() -> bool:

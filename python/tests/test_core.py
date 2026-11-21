@@ -565,6 +565,106 @@ class MoleculeTest(unittest.TestCase):
         with self.assertRaises(TypeError):
             mol.minimize(max_iter="many")
 
+    def test_normal_modes(self):
+        """!
+        @brief The vibrations of a molecule at its minimum: frequencies,
+        intensities, the motion of the particles and the thermochemistry.
+        """
+        mol = act.Molecule.from_smiles("O", self.ff)
+        start = mol.coordinates
+        modes = mol.normal_modes()
+        # Water has three vibrations: a bend and two stretches
+        self.assertEqual(3, len(modes.frequencies))
+        self.assertEqual(sorted(modes.frequencies), modes.frequencies)
+        self.assertGreater(modes.frequencies[0], 500)
+        self.assertLess(modes.frequencies[0], 2500)
+        self.assertGreater(modes.frequencies[1], 2500)
+        self.assertLess(modes.frequencies[2], 5000)
+        self.assertEqual(3, len(modes.intensities))
+        self.assertTrue(all(value >= 0 for value in modes.intensities))
+        # For each vibration how the particles move
+        self.assertEqual(3, len(modes.modes))
+        for k, mode in enumerate(modes.modes):
+            self.assertEqual(modes.frequencies[k], mode["frequency"])
+            self.assertEqual(modes.intensities[k], mode["intensity"])
+            self.assertGreater(mode["reduced_mass"], 0.5)
+            self.assertEqual(len(mol.atoms), len(mode["displacements"]))
+            self.assertTrue(all(len(d) == 3 for d in mode["displacements"]))
+        # The molecule was minimized first, and has that structure now
+        self.assertTrue(modes.minimization.converged)
+        self.assertNotEqual(start, mol.coordinates)
+        thermo = modes.thermochemistry
+        self.assertIn("Epot", thermo)
+        self.assertGreater(thermo["T=0"]["Zero point energy"]["value"], 10)
+        self.assertEqual("kJ/mol", thermo["T=0"]["Zero point energy"]["unit"])
+        self.assertIn("3 modes", repr(modes))
+        # At the minimum already: the same without minimizing again
+        again = mol.normal_modes(minimize=False)
+        self.assertIsNone(again.minimization)
+        for first, second in zip(modes.frequencies, again.frequencies):
+            self.assertAlmostEqual(first, second, delta=0.5)
+
+    def test_spectrum(self):
+        """!
+        @brief The infrared spectrum: a line of a given width at each frequency.
+        """
+        modes = act.Molecule.from_smiles("O", self.ff).normal_modes()
+        frequencies, intensities = modes.spectrum()
+        self.assertEqual(len(frequencies), len(intensities))
+        self.assertEqual(list(range(frequencies[0], frequencies[-1] + 1)), frequencies)
+        # From below the lowest to above the highest frequency
+        self.assertLess(frequencies[0], modes.frequencies[0] - 100)
+        self.assertGreater(frequencies[-1], modes.frequencies[-1] + 100)
+        self.assertAlmostEqual(1.0, sum(intensities), places=6)
+        # A maximum at the strongest vibration
+        strongest = modes.frequencies[modes.intensities.index(max(modes.intensities))]
+        top = frequencies[intensities.index(max(intensities))]
+        self.assertLess(abs(top - strongest), 2)
+        # Narrow lines are higher
+        narrow = modes.spectrum(linewidth=4.0)
+        self.assertGreater(max(narrow[1]), max(intensities))
+        for wrong in (0.0, -1.0, float("nan")):
+            with self.assertRaises(act.ActInputError):
+                modes.spectrum(linewidth=wrong)
+
+    @unittest.skipUnless(os.environ.get("ACT_ALEXANDRIA"), "ACT_ALEXANDRIA is not set")
+    def test_normal_modes_same_as_the_program(self):
+        """!
+        @brief The frequencies, intensities and thermochemistry are those of
+        alexandria nma, and the spectrum is the one it writes.
+        """
+        modes = act.Molecule.from_smiles("CC(=O)C", self.ff).normal_modes()
+        with act.commands.nma(ff=self.ffname, smiles="CC(=O)C", ir=True) as told:
+            data = told.data
+            spectrum = [line.split() for line in told.file("ir").read_text().splitlines()
+                        if line and line[0] not in "#@&"]
+        theirs = [mode["frequency"]["value"] for mode in data["modes"]]
+        self.assertEqual(len(theirs), len(modes.frequencies))
+        for first, second in zip(theirs, modes.frequencies):
+            self.assertAlmostEqual(first, second, delta=0.05)
+        for mode, intensity in zip(data["modes"], modes.intensities):
+            self.assertAlmostEqual(mode["intensity"]["value"], intensity,
+                                   delta=1e-6 + 1e-3 * abs(intensity))
+        self.assertAlmostEqual(
+            data["Thermochemistry"]["Alexandria"]["T=0"]["Zero point energy"]["value"],
+            modes.thermochemistry["T=0"]["Zero point energy"]["value"], delta=0.01)
+        frequencies, intensities = modes.spectrum()
+        self.assertEqual([int(row[0]) for row in spectrum], frequencies)
+        for row, intensity in zip(spectrum, intensities):
+            self.assertAlmostEqual(float(row[1]), intensity, delta=1e-7 + 1e-4 * intensity)
+
+    def test_normal_modes_need_a_minimum(self):
+        """!
+        @brief Vibrations of a structure that is no minimum make no sense:
+        a minimization that does not get there raises an error.
+        """
+        mol = act.Molecule.from_smiles("CC(=O)C", self.ff)
+        with self.assertRaises(act.ActError) as caught:
+            mol.normal_modes(max_iter=1, algorithm="Steep")
+        self.assertIn("minim", str(caught.exception))
+        # The molecule is still good for a minimization that does
+        self.assertEqual(24, len(mol.normal_modes().frequencies))
+
     def test_molecule_from_file(self):
         """!
         @brief A molecule is read from a structure file.

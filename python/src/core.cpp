@@ -45,6 +45,7 @@
 // Before the headers of ACT, see there
 #include "act_pybind.h"
 
+#include <algorithm>
 #include <cmath>
 #include <exception>
 #include <filesystem>
@@ -56,6 +57,8 @@
 
 #include "act/alexandria/confighandler.h"
 #include "act/alexandria/molhandler.h"
+#include "act/alexandria/train_utility.h"
+#include "act/basics/atomization_energy.h"
 #include "act/basics/act_particle.h"
 #include "act/basics/interactiontype.h"
 #include "act/basics/msg_handler.h"
@@ -73,6 +76,7 @@
 #include "act/utility/jsontree.h"
 #include "gromacs/utility/errorcodes.h"
 #include "gromacs/utility/exceptions.h"
+#include "gromacs/math/functions.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/stringutil.h"
 
@@ -928,6 +932,156 @@ void defineMinimization(py::module_ &module)
              });
 }
 
+//! The vibrations of a molecule as Python sees them
+struct NormalModes
+{
+    //! The frequencies in cm^-1, from low to high, and the infrared intensities
+    std::vector<double> frequencies, intensities;
+    //! The unit of the intensities
+    std::string         intensityUnit;
+    //! For each mode its frequency, intensity, reduced mass and the displacement of each particle
+    py::list            modes;
+    //! Zero point energy, entropy, heat capacity and so on, as alexandria nma reports them
+    py::object          thermochemistry;
+    //! The minimization that was done first, None if there was none
+    py::object          minimization;
+};
+
+/*! \brief The normal modes of a molecule, as alexandria nma computes them
+ * \param[in] molecule  The molecule
+ * \param[in] minimize  Whether to minimize the energy first, which the molecule keeps
+ * \param[in] algorithm For the minimization, see minimizeMolecule
+ * \param[in] maxIter   For the minimization
+ * \param[in] tolerance For the minimization
+ * \return The vibrations
+ * \throws gmx::ToleranceError if the minimization does not converge,
+ * gmx::InvalidInputError if the analysis fails
+ */
+NormalModes normalModes(Molecule *molecule, bool minimize, const std::optional<std::string> &algorithm,
+                        std::optional<int> maxIter, std::optional<double> tolerance)
+{
+    NormalModes result;
+    result.minimization = py::none();
+    if (minimize)
+    {
+        const auto minimum = minimizeMolecule(molecule, algorithm, maxIter, tolerance, {}, true);
+        if (!minimum.converged)
+        {
+            GMX_THROW(gmx::ToleranceError("The minimization before the normal modes did not converge (" + minimum.status +
+                                          "), and vibrations of a structure that is no minimum make no sense. "
+                                          "Allow more iterations, or minimize the molecule first"));
+        }
+        result.minimization = py::cast(minimum);
+    }
+    QuietMessages     messages;
+    AtomizationEnergy atomenergy;
+    atomenergy.read(messages.handler());
+    messages.check("The atomization energies of ACT could not be read");
+    JsonTree         jtree("nma");
+    auto             coords = molecule->coords;
+    const MolHandler molhandler;
+    // Without a file for the spectrum, and with the motion of the particles
+    doFrequencyAnalysis(messages.handler(), molecule->pd, &molecule->mol, molhandler, molecule->forceComp.get(),
+                        &coords, atomenergy, nullptr, &jtree, nullptr, 24, nullptr, false, true);
+    messages.check("The normal modes could not be computed");
+    const py::dict told = toPython(jtree);
+    if (!told.contains("modes"))
+    {
+        GMX_THROW(gmx::InternalError("The normal mode analysis gave no modes"));
+    }
+    result.modes = py::list();
+    for (const auto &item : told["modes"])
+    {
+        const auto mode = py::reinterpret_borrow<py::dict>(item);
+        py::dict   one;
+        one["frequency"]     = mode["frequency"]["value"];
+        one["intensity"]     = mode["intensity"]["value"];
+        one["reduced_mass"]  = mode["reduced_mass"]["value"];
+        one["displacements"] = mode["displacements"];
+        result.modes.append(one);
+        result.frequencies.push_back(mode["frequency"]["value"].cast<double>());
+        result.intensities.push_back(mode["intensity"]["value"].cast<double>());
+        result.intensityUnit = mode["intensity"]["unit"].cast<std::string>();
+    }
+    result.thermochemistry = told["Thermochemistry"]["Alexandria"];
+    return result;
+}
+
+/*! \brief The infrared spectrum of the vibrations, as alexandria nma -ir writes it
+ * A Lorentzian at each frequency, for whole numbers of cm^-1 from five line
+ * widths below the lowest to five above the highest frequency, and
+ * normalized such that the intensities add up to one.
+ * \param[in] modes     The vibrations
+ * \param[in] linewidth The width of the lines in cm^-1
+ * \return The frequencies in cm^-1 and the intensities
+ * \throws gmx::InvalidInputError if the line width is not above zero
+ */
+py::tuple spectrumOf(const NormalModes &modes, double linewidth)
+{
+    if (!std::isfinite(linewidth) || linewidth <= 0)
+    {
+        GMX_THROW(gmx::InvalidInputError("The line width of a spectrum is a number above zero"));
+    }
+    std::vector<int>    frequencies;
+    std::vector<double> spectrum;
+    if (!modes.frequencies.empty())
+    {
+        const int minf = *std::min_element(modes.frequencies.begin(), modes.frequencies.end()) - 5*linewidth;
+        const int maxf = *std::max_element(modes.frequencies.begin(), modes.frequencies.end()) + 5*linewidth;
+        spectrum.assign(maxf - minf + 1, 0.0);
+        double total = 0;
+        for (int f = minf; f <= maxf; f++)
+        {
+            frequencies.push_back(f);
+            for (size_t peak = 0; peak < modes.frequencies.size(); peak++)
+            {
+                spectrum[f - minf] += modes.intensities[peak]*linewidth/
+                    (2*M_PI*(gmx::square(f - modes.frequencies[peak]) + gmx::square(linewidth/2)));
+            }
+            total += spectrum[f - minf];
+        }
+        if (total > 0)
+        {
+            for (auto &value : spectrum)
+            {
+                value /= total;
+            }
+        }
+    }
+    return py::make_tuple(frequencies, spectrum);
+}
+
+//! Tell Python about the vibrations of a molecule
+void defineNormalModes(py::module_ &module)
+{
+    py::class_<NormalModes>(module, "NormalModes", "The result of Molecule.normal_modes.")
+        .def_readonly("frequencies", &NormalModes::frequencies,
+                      "The frequencies of the vibrations in cm^-1, from low to high.")
+        .def_readonly("intensities", &NormalModes::intensities,
+                      "The infrared intensity of each vibration, in intensity_unit.")
+        .def_readonly("intensity_unit", &NormalModes::intensityUnit, "The unit of the intensities.")
+        .def_readonly("modes", &NormalModes::modes,
+                      "For each vibration its frequency, intensity, reduced_mass in g/mol and\n"
+                      "displacements: how each particle moves, as x, y and z, normalized as\n"
+                      "quantum chemistry programs print them.")
+        .def_readonly("thermochemistry", &NormalModes::thermochemistry,
+                      "The zero point energy, entropy, heat capacity and so on, each with value\n"
+                      "and unit, as alexandria nma reports them.")
+        .def_readonly("minimization", &NormalModes::minimization,
+                      "The Minimization that was done first, None if there was none.")
+        .def("spectrum", &spectrumOf, py::arg("linewidth") = 24.0,
+             "The infrared spectrum: a line of the given width in cm^-1 at each frequency.\n\n"
+             "Returns the frequencies, whole numbers of cm^-1, and the intensities, which\n"
+             "add up to one, as alexandria nma -ir writes them.")
+        .def("__repr__",
+             [](const NormalModes &modes)
+             {
+                 return gmx::formatString("<act.NormalModes %zu modes, %g to %g cm^-1>", modes.frequencies.size(),
+                                          modes.frequencies.empty() ? 0.0 : modes.frequencies.front(),
+                                          modes.frequencies.empty() ? 0.0 : modes.frequencies.back());
+             });
+}
+
 /*! \brief Tell Python about the class Molecule
  * A lambda that returns one item of what toPython gives has to say that it
  * returns an object: an item of a temporary is otherwise looked up after
@@ -1040,6 +1194,15 @@ void defineMolecule(py::module_ &module)
              "are. With update=False the molecule keeps its structure. Returns a Minimization\n"
              "with whether it converged, the energies before and after, the RMSD and the\n"
              "structure. A minimization that does not converge is told there, not raised.")
+        .def("normal_modes", &normalModes, py::kw_only(), py::arg("minimize") = true,
+             py::arg("algorithm") = py::none(), py::arg("max_iter") = py::none(),
+             py::arg("tolerance") = py::none(),
+             "The vibrations of the molecule, as alexandria nma computes them: frequencies,\n"
+             "infrared intensities, the motion of the particles and the thermochemistry.\n\n"
+             "The energy is minimized first, with algorithm, max_iter and tolerance as in\n"
+             "minimize, and the molecule keeps that structure; give minimize=False for a\n"
+             "molecule that is at its minimum already. Raises ActError if the minimization\n"
+             "does not converge. Returns a NormalModes.")
         .def("__repr__",
              [](const Molecule &molecule)
              {
@@ -1062,5 +1225,6 @@ PYBIND11_MODULE(_core, module)
     alexandria::defineParameters(module);
     alexandria::defineForceField(module);
     alexandria::defineMinimization(module);
+    alexandria::defineNormalModes(module);
     alexandria::defineMolecule(module);
 }
