@@ -23,6 +23,7 @@ import json
 import os
 import shutil
 import signal
+import stat
 import subprocess
 import tempfile
 import time
@@ -192,8 +193,28 @@ def _as_words(choice: Union[PathLike, Sequence[str]]) -> List[str]:
 ## The settings of the Python interface
 config = Config()
 
-## The descriptions of the options that were read, by command line of the program
-_program_cache: Dict[Tuple[str, ...], ProgramInfo] = {}
+## The descriptions of the options that were read, by command line of the
+## program, each with the state of the program files it was read from
+_program_cache: Dict[Tuple[str, ...], Tuple[Tuple[Tuple[int, int], ...], ProgramInfo]] = {}
+
+
+def _program_state(words: Sequence[str]) -> Tuple[Tuple[int, int], ...]:
+    """!
+    @brief What tells that a program was replaced by another one at the
+    same path, as happens when ACT is built or installed again.
+    @param words The command that starts the program.
+    @return The time of the last change and the size of each word that is
+    a file: the program, or an interpreter and its script.
+    """
+    state = []
+    for word in words:
+        try:
+            status = os.stat(word)
+        except OSError:
+            continue
+        if stat.S_ISREG(status.st_mode):
+            state.append((status.st_mtime_ns, status.st_size))
+    return tuple(state)
 
 
 def program_info(refresh: bool = False) -> ProgramInfo:
@@ -201,9 +222,12 @@ def program_info(refresh: bool = False) -> ProgramInfo:
     @brief The commands of alexandria and their options.
 
     The program is asked for the description the first time; after that the
-    answer is kept for as long as Python runs.
-    @param refresh Ask the program again, for instance after
-    act.config.executable was changed to a program at the same path.
+    answer is kept for as long as Python runs and the program file stays
+    the same. A program that is replaced by a newer one at the same path is
+    asked again, such that a process that runs for a long time, like the
+    server of a user interface, does not go on with the options of the
+    program it started with.
+    @param refresh Ask the program again in any case.
     @return The description.
     @throws ActNotFoundError if the program cannot be found.
     @throws ActError if the program does not give a description, which
@@ -211,8 +235,9 @@ def program_info(refresh: bool = False) -> ProgramInfo:
     """
     words = config.executable_words()
     key = tuple(words)
-    if not refresh and key in _program_cache:
-        return _program_cache[key]
+    state = _program_state(words)
+    if not refresh and key in _program_cache and _program_cache[key][0] == state:
+        return _program_cache[key][1]
     with tempfile.TemporaryDirectory(prefix="act-options-") as tmp:
         args = words + ["help", "-export", "json"]
         try:
@@ -229,7 +254,7 @@ def program_info(refresh: bool = False) -> ProgramInfo:
                 % words[0], args=args, returncode=done.returncode,
                 stdout=done.stdout, stderr=done.stderr)
         info = ProgramInfo.from_file(path)
-    _program_cache[key] = info
+    _program_cache[key] = (state, info)
     return info
 
 
