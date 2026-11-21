@@ -965,6 +965,42 @@ class MoleculeTest(unittest.TestCase):
         mol.generate_charges()
         self.assertGreater(max(abs(q) for q in mol.charges), 0.1)
 
+    @unittest.skipUnless(os.environ.get("ACT_ALEXANDRIA"), "ACT_ALEXANDRIA is not set")
+    def test_interaction_energy_same_as_the_program(self):
+        """!
+        @brief The interaction energy of a dimer is that of alexandria
+        simulate -sp, also with shells.
+        """
+        dimer = str(self.data / "molecules" / "water_dimer.pdb")
+        for ffname in ("ACS-g1.xml", "ACS-pg1.xml"):
+            ffile = self.data / "forcefields" / ffname
+            mol   = act.Molecule.from_file(dimer, act.ForceField.read(ffile))
+            before = mol.energy()
+            mine  = mol.interaction_energy()
+            self.assertEqual(before, mol.energy(), ffname)
+            with act.commands.simulate(ff=ffile, f=dimer, sp=True) as res:
+                log = res.log
+            theirs = {}
+            for line in log.splitlines():
+                if "Interaction energy" in line:
+                    name, value = line.split("Interaction energy")[1].split(":")
+                    theirs[name.strip()] = float(value)
+            self.assertTrue(theirs, ffname)
+            self.assertEqual(set(theirs), set(mine), ffname)
+            for name, value in theirs.items():
+                # The program writes six significant digits
+                self.assertAlmostEqual(value, mine[name], delta=1e-5 * max(1.0, abs(value)), msg=ffname + " " + name)
+        # The energy does not change the molecule, and asking again gives the same
+        self.assertEqual(mine, mol.interaction_energy())
+
+    def test_interaction_energy_needs_two_compounds(self):
+        """!
+        @brief A molecule of one compound has no interaction energy.
+        """
+        with self.assertRaises(act.ActInputError) as caught:
+            act.Molecule.from_smiles("CC(=O)C", self.ff).interaction_energy()
+        self.assertIn("two compounds", str(caught.exception))
+
     def test_messages_go_to_the_logger(self):
         """!
         @brief The warnings and the information of ACT go to the logger act,
