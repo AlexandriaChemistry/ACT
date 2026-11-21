@@ -51,6 +51,7 @@
 #include <cmath>
 #include <exception>
 #include <filesystem>
+#include <functional>
 #include <map>
 #include <memory>
 #include <optional>
@@ -75,6 +76,12 @@
 #include "act/forcefield/particletype.h"
 #include "act/forces/forcecomputer.h"
 #include "act/import/compound_reader.h"
+#include "act/molprop/experiment.h"
+#include "act/molprop/molprop.h"
+#include "act/molprop/molprop_json.h"
+#include "act/molprop/molprop_util.h"
+#include "act/molprop/molprop_xml.h"
+#include "act/molprop/molpropobservable.h"
 #include "act/topology/actmol.h"
 #include "act/topology/actmol_json.h"
 #include "act/utility/jsontree.h"
@@ -687,6 +694,8 @@ public:
     }
     //! \return The message handler to give to a function of ACT
     MsgHandler *handler() { return &handler_; }
+    //! \return What the functions reported, warnings and errors
+    const std::vector<ACTRecordedMessage> &messages() const { return messages_; }
     /*! \brief Throw if a function reported an error
      * \param[in] what What was being done, for the message
      * \throws gmx::InvalidInputError with the errors that were reported
@@ -1613,6 +1622,199 @@ void defineMolecule(py::module_ &module)
              });
 }
 
+//! The compounds of a molprop file as Python has them
+struct MolProps
+{
+    //! The file they were read from
+    std::string          filename;
+    //! The compounds with their reference data
+    std::vector<MolProp> mps;
+};
+
+/*! \brief Read the compounds of a molprop file
+ * \param[in] fileName The file
+ * \return The compounds
+ * \throws gmx::FileIOError if the file cannot be read
+ */
+std::unique_ptr<MolProps> readMolProps(const std::filesystem::path &fileName)
+{
+    auto read      = std::make_unique<MolProps>();
+    read->filename = fileName.string();
+    QuietMessages messages;
+    MolPropRead(messages.handler(), read->filename.c_str(), &read->mps);
+    messages.check("The compounds of " + read->filename + " could not be read");
+    return read;
+}
+
+/*! \brief Find a compound by its place or by its name
+ * \param[in] molprops The compounds
+ * \param[in] which    A number, counted from zero and from the end if negative, or a name
+ * \return The compound
+ * \throws py::index_error, py::key_error or py::type_error if there is no such compound
+ */
+const MolProp &compoundOf(const MolProps &molprops, const py::object &which)
+{
+    if (py::isinstance<py::int_>(which) && !py::isinstance<py::bool_>(which))
+    {
+        const auto count = static_cast<long>(molprops.mps.size());
+        long       index = which.cast<long>();
+        if (index < 0)
+        {
+            index += count;
+        }
+        if (index < 0 || index >= count)
+        {
+            throw py::index_error("The molprop file has " + std::to_string(count) + " compounds");
+        }
+        return molprops.mps[index];
+    }
+    if (py::isinstance<py::str>(which))
+    {
+        const auto name = which.cast<std::string>();
+        for (const auto &mp : molprops.mps)
+        {
+            if (mp.getMolname() == name || mp.getIupac() == name)
+            {
+                return mp;
+            }
+        }
+        throw py::key_error(name);
+    }
+    throw py::type_error("A compound is given by its place or by its name");
+}
+
+//! \return The calculations of a compound, each with its structure and the values of its properties
+py::list calculationsOf(const MolProp &mp)
+{
+    py::list all;
+    for (const auto &experiment : mp.experimentConst())
+    {
+        py::dict one;
+        one["reference"]    = experiment.getReference();
+        one["conformation"] = experiment.getConformation();
+        one["method"]       = experiment.getMethod();
+        one["basisset"]     = experiment.getBasisset();
+        one["program"]      = experiment.getProgram();
+        one["jobtype"]      = jobType2string(experiment.getJobtype());
+        one["datafile"]     = experiment.datafile();
+        py::list atoms;
+        for (const auto &atom : experiment.calcAtomConst())
+        {
+            py::dict described;
+            described["name"] = atom.getName();
+            described["type"] = atom.getObtype();
+            atoms.append(described);
+        }
+        one["atoms"]       = atoms;
+        one["coordinates"] = listOfVectors(experiment.getCoordinates());
+        py::list properties;
+        for (const auto &property : experiment.propertiesConst())
+        {
+            for (const auto &value : property.second)
+            {
+                // A property is a number, a vector or tensor, or both; what it
+                // is not, it refuses to give
+                auto ifAny = [](const std::function<py::object()> &get) -> py::object
+                {
+                    try
+                    {
+                        return get();
+                    }
+                    catch (const gmx::GromacsException &)
+                    {
+                        return py::none();
+                    }
+                };
+                py::dict described;
+                described["observable"]  = mpo_name(property.first);
+                described["type"]        = value->getType();
+                described["value"]       = ifAny([&value]() { return py::cast(value->getValue()); });
+                described["error"]       = ifAny([&value]() { return py::cast(value->getError()); });
+                described["unit"]        = value->getUnit();
+                described["temperature"] = value->getTemperature();
+                described["vector"]      = ifAny([&value]() { return py::cast(value->getVector()); });
+                properties.append(described);
+            }
+        }
+        one["properties"] = properties;
+        all.append(one);
+    }
+    return all;
+}
+
+//! Tell Python about the compounds of a molprop file
+void defineMolProps(py::module_ &module)
+{
+    py::class_<MolProps>(module, "MolProps",
+                         "The compounds of a molprop file with their reference data.\n\n"
+                         "Read them with act.read_molprop(file). A compound is found by its place or\n"
+                         "by its name: molprops[0] or molprops[\"water\"].")
+        .def_readonly("filename", &MolProps::filename, "The file the compounds were read from.")
+        .def("__len__", [](const MolProps &molprops) { return molprops.mps.size(); })
+        .def_property_readonly("names",
+                               [](const MolProps &molprops)
+                               {
+                                   std::vector<std::string> names;
+                                   for (const auto &mp : molprops.mps)
+                                   {
+                                       names.push_back(mp.getMolname());
+                                   }
+                                   return names;
+                               },
+                               "The names of the compounds, in the order of the file.")
+        .def_property_readonly("summary",
+                               [](const MolProps &molprops) { return toPython(molPropSummaryToJson(molprops.mps)); },
+                               "The numbers of compounds, monomers, dimers and calculations, and the number\n"
+                               "of values of each property, as alexandria edit_mp reports them.")
+        .def("__getitem__",
+             [](const MolProps &molprops, const py::object &which)
+             {
+                 return toPython(molPropToJson(compoundOf(molprops, which)));
+             },
+             py::arg("compound"),
+             "A compound, by its place or its name: its name, formula, charge, the compounds\n"
+             "it consists of (fragments), and the number of calculations and of values of\n"
+             "each property.")
+        .def("calculations",
+             [](const MolProps &molprops, const py::object &which)
+             {
+                 return calculationsOf(compoundOf(molprops, which));
+             },
+             py::arg("compound"),
+             "The calculations or experiments of a compound, by its place or its name. For\n"
+             "each: reference, conformation, method, basisset, program, jobtype, datafile,\n"
+             "the atoms, their coordinates in nm, and the properties, each with observable,\n"
+             "type, value, error, unit, temperature and, for a vector or tensor, vector.")
+        .def("validate",
+             [](MolProps &molprops)
+             {
+                 QuietMessages messages;
+                 const auto    result = validateMolProps(messages.handler(), &molprops.mps);
+                 return toPython(molPropValidationToJson(result, messages.messages()));
+             },
+             "The check of alexandria edit_mp -validate: every calculation of a compound has\n"
+             "the same atoms in the same order, and the compounds of a dimer are in the same\n"
+             "order everywhere. Returns ok, the number of problems, the names of the\n"
+             "compounds that have them (invalid) and the messages.")
+        .def("write",
+             [](const MolProps &molprops, const std::filesystem::path &fileName, bool compress)
+             {
+                 MolPropWrite(fileName.string().c_str(), molprops.mps, compress);
+             },
+             py::arg("file"), py::arg("compress") = false,
+             "Write the compounds to a molprop file, compressed if asked.\n\n"
+             "Raises ActFileError if the file cannot be written.")
+        .def("__repr__",
+             [](const MolProps &molprops)
+             {
+                 return gmx::formatString("<act.MolProps %s: %zu compounds>", molprops.filename.c_str(),
+                                          molprops.mps.size());
+             });
+    module.def("read_molprop", &readMolProps, py::arg("file"),
+               "Read the compounds of a molprop file with their reference data.\n\n"
+               "Raises ActFileError if the file cannot be read.");
+}
+
 } // namespace
 
 } // namespace alexandria
@@ -1635,4 +1837,5 @@ PYBIND11_MODULE(_core, module)
     alexandria::defineNormalModes(module);
     alexandria::defineTrajectory(module);
     alexandria::defineMolecule(module);
+    alexandria::defineMolProps(module);
 }
