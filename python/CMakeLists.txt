@@ -83,8 +83,9 @@ if(ACT_PYTHON)
         set_property(TARGET act_python_core APPEND PROPERTY INSTALL_RPATH
                      "${ACT_PYTHON_ORIGIN}/../../${CMAKE_INSTALL_LIBDIR}"
                      "${ACT_PYTHON_ORIGIN}/${ACT_PYTHON_TO_LIBDIR}")
+        # The build tree always has its libraries in lib
         set_property(TARGET act_python_core APPEND PROPERTY BUILD_RPATH
-                     "${ACT_PYTHON_ORIGIN}/../../${CMAKE_INSTALL_LIBDIR}")
+                     "${ACT_PYTHON_ORIGIN}/../../lib")
         if(APPLE)
             # The libraries of ACT are named after where the programs find
             # them, see CMAKE_INSTALL_NAME_DIR; the module looks them up

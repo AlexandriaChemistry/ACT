@@ -534,9 +534,15 @@ class MoleculeTest(unittest.TestCase):
         self.assertEqual(data["converged"], res.converged)
         self.assertEqual(data["status"], res.status)
         self.assertAlmostEqual(data["rmsd"]["value"], res.rmsd, places=6)
+        # The program may be another build than the module, as in the conda
+        # packages. In single precision the two then find minima that differ
+        # by the precision of the largest term, here the bonds, and the
+        # smaller terms differ by as much.
+        largest = max(abs(value["value"]) for value in data["Energies after"].values())
         for name, value in data["Energies after"].items():
             self.assertAlmostEqual(value["value"], res.energy_after[name],
-                                   delta=1e-3 + 1e-5 * abs(value["value"]), msg=name)
+                                   delta=1e-3 + 1e-5 * abs(value["value"]) + 2e-6 * largest,
+                                   msg=name)
 
     def test_minimize_settings(self):
         """!
