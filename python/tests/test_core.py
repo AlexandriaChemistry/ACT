@@ -602,6 +602,70 @@ class MoleculeTest(unittest.TestCase):
         with self.assertRaises(TypeError):
             mol.minimize(max_iter="many")
 
+    def test_settings_are_checked_as_the_programs_check_them(self):
+        """!
+        @brief Settings that a program refuses are refused with its message,
+        which names its option; the rules of Python come on top of them.
+        """
+        mol = act.Molecule.from_smiles("CC(=O)C", self.ff)
+        told = {
+            "-toler": lambda: mol.minimize(tolerance=0.0),
+            "Unknown minimization algorithm": lambda: mol.minimize(algorithm="Simplex"),
+            "-maxiter": lambda: mol.minimize(max_iter=0),
+            "There is no particle": lambda: mol.minimize(freeze=[999]),
+            "-deltat": lambda: mol.simulate(steps=10, timestep=0.0),
+            "-temp": lambda: mol.simulate(steps=10, temperature=-1.0),
+            "-nstener": lambda: mol.simulate(steps=10, energy_interval=-1),
+            "-nstxout": lambda: mol.simulate(steps=10, frame_interval=-1),
+            "-nsteps": lambda: mol.simulate(steps=0),
+            "-mDrude": lambda: mol.write_openmm(self.dir / "o.xml", drude_mass=-1.0),
+            "-ntrain": lambda: mol.write_openmm(self.dir / "o.xml", min_training=-1),
+        }
+        for words, call in told.items():
+            with self.assertRaises(act.ActInputError, msg=words) as caught:
+                call()
+            self.assertIn(words, str(caught.exception))
+        with self.assertRaises(act.ActInputError) as caught:
+            act.Molecule.from_smiles("O", self.ff).normal_modes(tolerance=-1.0)
+        self.assertIn("-toler", str(caught.exception))
+
+    def test_minimize_a_dimer(self):
+        """!
+        @brief The minimization of a dimer gives its interaction energy as
+        well, that of the minimized structure; a molecule of one compound
+        has none.
+        """
+        self.assertIsNone(act.Molecule.from_smiles("O", self.ff).minimize().interaction_energy)
+        mol = act.Molecule.from_file(self.data / "molecules" / "water_dimer.pdb", self.ff)
+        res = mol.minimize()
+        self.assertTrue(res.converged)
+        self.assertLess(res.interaction_energy["EPOT"], 0)
+        # The same total as for the minimized structure that the molecule
+        # has now. As alexandria minimize the minimization gives the
+        # correction of the induction energy as a term of its own, which
+        # interaction_energy adds to the induction energy, as simulate -sp.
+        now = mol.interaction_energy()
+        self.assertIn("INDUCTIONCORRECTION", res.interaction_energy)
+        self.assertAlmostEqual(now["EPOT"], res.interaction_energy["EPOT"],
+                               delta=1e-4 * max(1.0, abs(now["EPOT"])))
+
+    @unittest.skipUnless(os.environ.get("ACT_ALEXANDRIA"), "ACT_ALEXANDRIA is not set")
+    def test_minimize_a_dimer_same_as_the_program(self):
+        """!
+        @brief The interaction energy after a minimization is that of
+        alexandria minimize.
+        """
+        dimer = self.data / "molecules" / "water_dimer.pdb"
+        res = act.Molecule.from_file(dimer, self.ff).minimize()
+        with act.commands.minimize(ff=self.ffname, f=dimer) as told:
+            theirs = told.data["Interaction energies"]
+        self.assertEqual(set(theirs), set(res.interaction_energy))
+        for name, value in theirs.items():
+            # The program writes four decimals; two builds may differ by
+            # the precision of the minimum, see test_minimize_same_as_the_program
+            self.assertAlmostEqual(float(value["value"]), res.interaction_energy[name],
+                                   delta=2e-3 + 1e-4 * abs(float(value["value"])), msg=name)
+
     def test_normal_modes(self):
         """!
         @brief The vibrations of a molecule at its minimum: frequencies,
@@ -895,6 +959,23 @@ class MoleculeTest(unittest.TestCase):
                              structure=self.dir / "no" / "such" / "directory" / "c.pdb")
         with self.assertRaises(TypeError):
             mol.write_openmm()  # pylint: disable=no-value-for-parameter
+
+    def test_write_openmm_residue_names(self):
+        """!
+        @brief The residue names are given as gentop -resnames takes them,
+        and are the same in both files.
+        """
+        mol = act.Molecule.from_smiles("CC(=O)C", self.ff)
+        xml = self.dir / "named.xml"
+        pdb = self.dir / "named.pdb"
+        mol.write_openmm(xml, structure=pdb, residue_names="ACT")
+        atoms = [line for line in pdb.read_text().splitlines() if line.startswith("ATOM")]
+        self.assertEqual({"ACT"}, {line[17:20].strip() for line in atoms})
+        self.assertIn('<Residue name="ACT"', xml.read_text())
+        # A name that OpenMM has already, and one that is too long
+        for wrong in ("HOH", "TOOLONG"):
+            with self.assertRaises(act.ActInputError, msg=wrong):
+                mol.write_openmm(self.dir / "wrong.xml", residue_names=wrong)
 
     @unittest.skipUnless(os.environ.get("ACT_ALEXANDRIA"), "ACT_ALEXANDRIA is not set")
     def test_write_openmm_same_as_the_program(self):
