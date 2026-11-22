@@ -464,7 +464,7 @@ depend on Python, and it cannot be `noarch`.
 |-------|--------|--------|
 | Output | `alexandria-python` in the same recipe, built by `build-python.sh` | One version and one source for the program and its Python package. |
 | Contents | The whole package `act`: the modules that run the program and the module `_core` | One package to install; `alexandria` stays free of Python files. |
-| Python versions | The key `act_python` in `variants.yaml`, now 3.11 to 3.14 | The key `python` of conda-forge would also multiply `alexandria`, which has a Python in its build for a check of CMake only. The feedstock of conda-forge has to map its `python` key to this. |
+| Python versions | The key `act_python` in `variants.yaml`, now 3.11 to 3.15 | The key `python` of conda-forge would also multiply `alexandria`, which has a Python in its build for a check of CMake only. The feedstock of conda-forge has to map its `python` key to this. |
 | Libraries of ACT | Static, inside the module, without GPU support | Importing the module loads nothing of AdaptiveCpp or CUDA, and the module does not depend on how the libraries of `alexandria` were built. The price: ACT is compiled once for each Python version, and the classes do not use a GPU. Linking the module to the shared libraries of `alexandria` is the alternative when the classes should use the GPU. |
 | MPI | The same variants as `alexandria` | The libraries of ACT call MPI, so the module links to the MPI library of the environment. |
 | Dependency | The exact build of `alexandria` of the same recipe | The package runs its program and reads its data files in `share/act`. |
