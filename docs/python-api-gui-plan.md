@@ -1,16 +1,16 @@
 # Plan: a Python API and an HTML5 user interface for ACT
 
-Status: in progress. The decisions of 2026-11-19 and 2026-11-20 on the
-package name, where it is installed, the repository, the default force
-field, Slurm and the login are in section 1. Implemented so far, on the
-branch `python-api` of ACT: steps A1 and A3, step A2 for `minimize`, `nma`,
-`simulate`, `gentop`, `edit_ff` and `edit_mp`, and step A4 with the installation of the package
-(section 5). In the repository ACT-GUI: the server with the job engine
-(steps B0 and B1) and the whole molecule workspace (steps B2 to B6), which
-is the milestone "Desktop alpha"; see the status under the steps in
-section 6. ACT-utilities has a branch `act-utilities-dir` that goes with
-it: the modules move to `site-packages/act_utilities`, and its OpenMM
-interface accepts a force field without exclusions.
+Status of 2026-11-22: the desktop version is complete for release 1.95.
+The decisions on the package name, where it is installed, the repository,
+the default force field, Slurm and the login are in section 1. In ACT
+(branches `main` and `release-1-95`): steps A1 to A4, A6 and A9, step A8
+for all tools, steps A5 and A7 in part (section 5). In the repository
+ACT-GUI: steps B0 to B10a and the parts of B12 that do not need a release
+(section 6): the molecule, force field and molprop workspaces, jobs on a
+Slurm cluster from the desktop, a tab Settings with the cluster and the
+screen mode, and the recipe of the conda package `act-gui`. The program
+`actgui` of ACT-utilities is retired. Still to do for 1.95 is in step
+B12; the server (B11, B13) comes after 1.95.
 
 This plan answers [issue 59](https://github.com/AlexandriaChemistry/ACT/issues/59)
 ("Python binder for ACT") and the specification for a new user interface. It
@@ -592,8 +592,9 @@ made there or opened from a file. Every step (`gen_ff`, `geometry_ff`,
 molecule workspace, refers to it by the job that wrote it. The table of
 particle types that `gen_ff` reads is made by the module `ffgen.py`, a port
 of the logic of `actgui` without its windows; the atom types and the
-predefined virtual sites are copied from the directory `share` of
-ACT-utilities into the package, and move there for good in step B12. A
+predefined virtual sites are in the package; since `actgui` was removed
+from ACT-utilities the atom types are only there, and the virtual sites
+also in `share` of ACT-utilities, as examples for `gen_ff -vs`. A
 description of a particle type in that table is now in the column `comment`,
 which `gen_ff` reads; `actgui` wrote `Comment`, which it ignores. The step
 of `actgui` that fixes the electronegativity of atoms with one bond after
@@ -613,8 +614,12 @@ Of a particle type the parameters of its charge (`charge`, `zeta`,
 does not change the mass or the reference enthalpy.
 A file with virtual sites of the user, in the form of `gen_ff -vs`, is
 read into the list of sites; they can be saved in the same form.
-Still open in B7 and B8: the file of the user with fixed parameters that
-`actgui` could read.
+The file of the user with fixed parameters that `actgui` could read
+(lines `interaction|potential|atom type|parameter|value|unit`) is read by
+*Generate*, which fixes those parameters at their value. The tab Geometry
+shows the histograms of the bond lengths, angles and dihedral angles that
+`geometry_ff -json -samples` writes, and a click on a bar lists the
+compounds, calculations and atoms of its values.
 
 Virtual sites by point and click (B9) are done, without layer 2: the page
 computes the position of a site itself, with the formulas of
@@ -666,10 +671,30 @@ does not give it a force field; `edit_mp` always writes its output file
 of the job; and `train_ff` without a selection file uses no compound at
 all and stops with "No molecules to train on".
 
-Each step ends with tests of the routes (pytest), of the JavaScript modules
-(the test runner built into Node.js, which needs no build step) and one
-end-to-end test in a real browser (Playwright) that does what a user would
-do.
+Added for 1.95, after the steps above. Molecule workspace: the spectrum
+is saved as an xvg file as well; a tab *Dimer scan* does what the script
+`dimer_scan` of ACT-utilities does, with `minimize -freeze` at each
+distance (an atom of each compound is frozen, optionally with constrained
+bonds), plots the interaction energy against the distance while it runs
+and shows the minimized dimer of a point that is clicked, from the
+interaction energies that `minimize -json` writes for a dimer; a tab
+*Second virial* computes B2(T) with `b2`, here or on the cluster.
+Molprop workspace: calculations that are in a file twice with the same
+results, which `train_ff` uses once, are counted by `edit_mp -validate`
+and can be removed (`edit_mp -o`); the validation and the properties in
+the file are shown under its name, the properties as buttons that show
+only the compounds that have them, and the details of a compound under
+the table. The whole page: a tab *Settings* with the cluster and the
+screen mode (light, dark, or hippy: yellow on dark purple with orange
+borders), which is kept in the file with the settings of the user and
+which the server puts on the page.
+
+Each step ends with tests of the routes and modules of the server
+(unittest, run by the CI of ACT-GUI) and tests in a real browser (Firefox
+through selenium) that do what a user would do, with the real program;
+those run on the developer's machine, since the CI has no build of ACT.
+The JavaScript has no unit tests of its own: the tests in the browser
+cover it, and its syntax is checked with Node.js.
 
 **B0. Skeleton and design system.** The server, the page with the three
 workspaces, the tabs, the buttons, the tables and the plot and viewer
@@ -854,8 +879,17 @@ there, in the modules `cluster_jobs.py`, `cluster_queue.py` and
   or of the job on the cluster, less a tenth (two minutes at least, half
   an hour at most), when the `alexandria` of the desktop has the option.
 
-Still to do: a try on csb itself (so far only the stand-ins of the tests
-were used); and results that are larger than fits in memory, since the
+Since then the second virial coefficient (`b2`) and a simulation with
+OpenMM (`python3 run.py` of the archive of step B6, with OpenMM and
+ACT-utilities in the environment that the settings load) go to the
+cluster as well, and all output files of a job come back, also those that
+the program writes under their default names, such as the log of
+`train_ff`; the tab Cluster lists them and saves each. The settings of the
+cluster are in the tab Settings.
+
+A training on csb through the interface worked (2026-11-22, by hand). Still
+to do: a job that fails is hard to put right from the page, which is to be
+improved; and results that are larger than fits in memory, since the
 archives are built and read in memory. A training on the
 desktop ends at the time limit of a calculation. The command is made with
 the options that the `alexandria` of the desktop knows, so the program on
@@ -902,17 +936,27 @@ The public server of stage 2 does not send jobs to Slurm.
 **B12. Release.** Conda package `act-gui`, a manual chapter with screenshots,
 removal of `actgui` from ACT-utilities.
 
-*To do before `actgui` is removed:* the force field workspace must read the
-file of the user with fixed parameters that `actgui` could read (still open
-in B7 and B8); without it, retiring `actgui` loses a function. The atom
-types and predefined virtual sites move from `share` of ACT-utilities into
-the package `act-gui` in the same step.
+*Status of B12.* `actgui` is removed from ACT-utilities, with the atom
+types that only it used (`atomtypes_gui.csv`), which are in ACT-GUI; the
+virtual sites stay in `share` as examples for `gen_ff`. The function it
+had that the interface lacked, the file with fixed parameters, was added
+first. An installed ACT-GUI has the program `actgui` next to `act-gui`, and
+the script `actgui` in its repository starts it from the source. The
+recipe of the noarch conda package `act-gui` is in `conda/` of ACT-GUI,
+with the workflow `conda.yml`: it depends on `alexandria-python` 1.95b or
+newer, FastAPI, uvicorn and plotXVG, and its test starts the server and
+computes the charges of water with the `alexandria` of the environment.
+The chapter `userman/gui.rst` of the manual describes the interface of
+1.95 with pictures from the tests in the browser.
 
 *Release 1.95.* The rest of the plan and bug fixes go onto the branch
 `release-1-95`, no new features. The server (B11, B13) comes after 1.95.
-Still to do for 1.95: B12 with the item above; the Python classes
-`minimize`, `normal_modes`, `simulate` and `write_openmm` use the settings
-classes of A8 and their checks; a try of B10a on csb. The bugs found on
+Still to do for 1.95: the packages `alexandria` and `alexandria-python`
+1.95b on the channel, after which the package `act-gui` can be tested by
+its workflow and uploaded (its version, now `0.1.0.dev0`, is to be
+chosen); the Python classes `minimize`, `normal_modes`, `simulate` and
+`write_openmm` use the settings classes of A8 and their checks; jobs on
+the cluster that fail are easier to put right. The bugs found on
 the way are fixed on `release-1-95`: `edit_mp -ff` checks dimers and force
 fields without bond charge corrections, `train_ff` without a selection file
 stops at once and says why, and `edit_mp` writes a molprop file only with
@@ -1074,9 +1118,12 @@ section 1. What remains:
    second factor is asked for and how many connections an account may make
    decide if the shared connection of step B10a is needed and how often the
    interface may ask for the state of a job.
-3. **Precision.** The conda packages are single precision. Proposal: the
-   Python module follows the build it belongs to, and the first release is
-   single precision only.
+3. **Precision.** Answered: the conda packages `alexandria` and
+   `alexandria-python` are built in single precision (with the GPU on
+   Linux) and in double precision (for the processor only); conda takes
+   single precision unless double is asked for, with
+   `alexandria=*=*double*`. The Python module follows the build it belongs
+   to.
 4. **GPU.** Small molecules do not gain from the GPU. Proposal: the
    interactive calculations run on the CPU; `train_ff -nooptimize` on large
    molprop files may use the GPU as the program does now, also on csb.
