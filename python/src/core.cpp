@@ -999,7 +999,7 @@ struct Minimization
  * \param[in]  maxIter   The largest number of iterations (-maxiter), the default if not given
  * \param[in]  tolerance The mean square force at which to stop (-toler), the default if not given
  * \param[out] sch       The settings
- * \throws gmx::InvalidInputError for an algorithm that is not known, or fewer than one iteration
+ * \throws gmx::InvalidInputError for an algorithm that is not known
  */
 void setMinimization(const std::optional<std::string> &algorithm, std::optional<int> maxIter,
                      std::optional<double> tolerance, SimulationConfigHandler *sch)
@@ -1011,11 +1011,7 @@ void setMinimization(const std::optional<std::string> &algorithm, std::optional<
     }
     if (maxIter)
     {
-        // A rule of Python only: the program takes -maxiter 0
-        if (*maxIter < 1)
-        {
-            GMX_THROW(gmx::InvalidInputError("The number of iterations of a minimization (-maxiter) is at least one"));
-        }
+        // 0 is until convergence, as -maxiter 0
         sch->setMaxIter(*maxIter);
     }
     if (tolerance)
@@ -1337,16 +1333,6 @@ struct Trajectory
 Trajectory simulateMolecule(Molecule &molecule, int steps, double timestep, double temperature, int seed,
                             int energyInterval, int frameInterval, const py::object &onEnergies)
 {
-    // Rules of Python only: the program takes -nsteps 0, for a minimization
-    // alone, and makes a seed of a negative one
-    if (steps < 1)
-    {
-        GMX_THROW(gmx::InvalidInputError("A simulation has at least one step (-nsteps)"));
-    }
-    if (seed < 0)
-    {
-        GMX_THROW(gmx::InvalidInputError("The seed of a simulation (-seed) cannot be negative, 0 makes one"));
-    }
     if (!onEnergies.is_none() && !PyCallable_Check(onEnergies.ptr()))
     {
         throw py::type_error("on_energies must be a function, or None");
@@ -1725,7 +1711,8 @@ void defineMolecule(py::module_ &module)
              "Minimize the energy with respect to the positions of the atoms, as alexandria\n"
              "minimize does, and give the molecule the structure that is found.\n\n"
              "algorithm is LBFGS, Steep or Newton (-minalg), max_iter the largest number of\n"
-             "iterations (-maxiter) and tolerance the mean square force at which to stop\n"
+             "iterations (-maxiter, 0 until convergence) and tolerance the mean square force\n"
+             "at which to stop\n"
              "(-toler); what is not given is as in the program, which checks the settings in\n"
              "the same way. The particles in freeze, numbered as in atoms, stay where they\n"
              "are. With update=False the molecule keeps its structure. Returns a Minimization\n"
@@ -1770,9 +1757,9 @@ void defineMolecule(py::module_ &module)
              py::arg("frame_interval") = 1, py::arg("on_energies") = py::none(),
              "Run a molecular dynamics simulation, as alexandria simulate does, from the\n"
              "structure of the molecule, which stays as it is.\n\n"
-             "steps is the number of steps (-nsteps) of timestep ps (-deltat). With a\n"
-             "temperature in K (-temp) the atoms\n"
-             "get velocities for it, drawn with the seed (0 for another one each time);\n"
+             "steps is the number of steps (-nsteps; 0 is none, an empty Trajectory)\n"
+             "of timestep ps (-deltat). With a temperature in K (-temp) the atoms\n"
+             "get velocities for it, drawn with the seed (-seed, 0 for another one each time);\n"
              "without, they start at rest. The energies are kept every energy_interval steps\n"
              "and the structure every frame_interval steps, 0 for never. on_energies is a\n"
              "function that gets a dict with step, time, temperature and energies each time\n"

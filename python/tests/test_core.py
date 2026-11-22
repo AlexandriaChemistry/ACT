@@ -574,6 +574,9 @@ class MoleculeTest(unittest.TestCase):
             self.assertTrue(mol.minimize(algorithm=algorithm, update=False).converged, algorithm)
         # A looser tolerance is reached as well
         self.assertTrue(mol.minimize(tolerance=1e-3, update=False).converged)
+        # As -maxiter 0: until convergence
+        self.assertTrue(mol.minimize(algorithm="Steep", max_iter=0, tolerance=1e-2,
+                                     update=False).converged)
         # Frozen atoms keep their place: the two that make the C=O bond
         double = [b for b in mol.bonds if b["order"] == 2][0]["atoms"]
         start = mol.coordinates
@@ -587,7 +590,7 @@ class MoleculeTest(unittest.TestCase):
                                places=7)
         self.assertNotAlmostEqual(distance(start, *double), distance(free.coordinates, *double),
                                   places=7)
-        wrong = [dict(algorithm="Simplex"), dict(algorithm=""), dict(max_iter=0),
+        wrong = [dict(algorithm="Simplex"), dict(algorithm=""),
                  dict(max_iter=-5), dict(tolerance=0.0), dict(tolerance=-1e-6),
                  dict(tolerance=float("nan")), dict(freeze=[999]), dict(freeze=[-1]),
                  # A shell cannot be frozen, it follows its atom
@@ -611,13 +614,14 @@ class MoleculeTest(unittest.TestCase):
         told = {
             "-toler": lambda: mol.minimize(tolerance=0.0),
             "Unknown minimization algorithm": lambda: mol.minimize(algorithm="Simplex"),
-            "-maxiter": lambda: mol.minimize(max_iter=0),
+            "-maxiter": lambda: mol.minimize(max_iter=-1),
             "There is no particle": lambda: mol.minimize(freeze=[999]),
             "-deltat": lambda: mol.simulate(steps=10, timestep=0.0),
             "-temp": lambda: mol.simulate(steps=10, temperature=-1.0),
             "-nstener": lambda: mol.simulate(steps=10, energy_interval=-1),
             "-nstxout": lambda: mol.simulate(steps=10, frame_interval=-1),
-            "-nsteps": lambda: mol.simulate(steps=0),
+            "-nsteps": lambda: mol.simulate(steps=-1),
+            "-seed": lambda: mol.simulate(steps=10, seed=-1),
             "-mDrude": lambda: mol.write_openmm(self.dir / "o.xml", drude_mass=-1.0),
             "-ntrain": lambda: mol.write_openmm(self.dir / "o.xml", min_training=-1),
         }
@@ -900,7 +904,7 @@ class MoleculeTest(unittest.TestCase):
         @brief Settings that make no sense are refused.
         """
         mol = act.Molecule.from_smiles("O", self.ff)
-        wrong = [dict(steps=0), dict(steps=-10), dict(steps=10, timestep=0.0),
+        wrong = [dict(steps=-10), dict(steps=10, timestep=0.0),
                  dict(steps=10, timestep=-0.001), dict(steps=10, timestep=float("nan")),
                  dict(steps=10, temperature=-1.0), dict(steps=10, energy_interval=-1),
                  dict(steps=10, frame_interval=-5), dict(steps=10, seed=-3)]
@@ -916,6 +920,12 @@ class MoleculeTest(unittest.TestCase):
         # A larger time step is taken as it is
         self.assertAlmostEqual(0.0005, mol.simulate(steps=3, timestep=0.0005).energy_times[1],
                                places=9)
+        # As -nsteps 0: no dynamics. A simulation reports the energies
+        # before each step, so without steps there is nothing.
+        nothing = mol.simulate(steps=0)
+        self.assertEqual(0, nothing.steps)
+        self.assertEqual([], list(nothing.energy_steps))
+        self.assertEqual([], list(nothing.frame_steps))
 
     def test_write_openmm(self):
         """!
