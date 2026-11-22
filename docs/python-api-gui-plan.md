@@ -537,7 +537,8 @@ written. What came up on the way:
   and refuses atoms to freeze that are not there. The residue names for
   OpenMM are given by `nameResidues`, which `gentop` and Python share, and
   Python takes them as `gentop -resnames` does (`residue_names`). Python
-  and the programs take the same values: zero steps (no dynamics), zero
+  and the programs take the same values: zero steps (no dynamics; Python
+  then gives the energies of the structure as `simulate -sp`), zero
   iterations (until convergence), and a seed that is not negative, zero
   for a new one each time; the programs refuse a negative seed since
   2026-11-22, which the generator of velocities took as a large number.
