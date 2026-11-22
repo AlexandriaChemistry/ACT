@@ -517,6 +517,36 @@ static void addMolProp(MsgHandler                           *msg_handler,
     }
 }
 
+/*! \brief Whether the bonds of a molecule from a PDB file lack their orders
+ * CONECT records give the bonds, and a double bond by listing it twice.
+ * Programs that list each bond once, as ACT does, leave all bonds
+ * single, and RDKit then gives the atoms that have fewer bonds than their
+ * valence implicit hydrogens, which makes pyridine piperidine and the
+ * oxygen of acetone a hydroxyl. A file with hydrogens has them all, so
+ * an implicit hydrogen means that bond orders are missing.
+ * \param[in] mol The molecule as read, sanitized
+ * \return true if the file has hydrogens, all bonds are single and an
+ *         atom got implicit hydrogens
+ */
+static bool lacksBondOrders(const RDKit::RWMol &mol)
+{
+    bool hasHydrogen = false;
+    bool implicitH   = false;
+    for (const auto atom : mol.atoms())
+    {
+        hasHydrogen = hasHydrogen || atom->getAtomicNum() == 1;
+        implicitH   = implicitH || atom->getNumImplicitHs() > 0;
+    }
+    for (const auto bond : mol.bonds())
+    {
+        if (bond->getBondType() != RDKit::Bond::SINGLE)
+        {
+            return false;
+        }
+    }
+    return hasHydrogen && implicitH;
+}
+
 /*! \brief Read an sdf, pdb or xyz file using RDKit and add the molecule to a vector
  * For xyz files, and pdb files without bonds, the bonds are determined
  * by RDKit. Atom types are assigned from the atom and bond type database.
@@ -562,22 +592,38 @@ static void importFile(MsgHandler                           *msg_handler,
             // PDB files may include CONECT records. If present, assign bond orders
             // from the connectivity; otherwise infer connectivity and bond orders.
             mol2->updatePropertyCache();
+            // The total charge for the bond orders
+            const auto totalCharge = [&]()
+            {
+                if (userqtot || *qtot != 0)
+                {
+                    return static_cast<int>(*qtot);
+                }
+                return RDKit::MolOps::getFormalCharge(*mol2);
+            };
             if (mol2->getNumBonds() == 0)
             {
                 if (msg_handler->debug())
                 {
                     msg_handler->writeDebug("PDB has no bonds; inferring connectivity and bond orders.");
                 }
-                int iqtot = 0;
-                if (userqtot || *qtot != 0)
+                determineBonds(*mol2, false, totalCharge());
+            }
+            else if (lacksBondOrders(*mol2))
+            {
+                if (msg_handler->debug())
                 {
-                    iqtot = int(*qtot);
+                    msg_handler->writeDebug(gmx::formatString("PDB has %u bonds without their orders; inferring the bond orders.",
+                                                              mol2->getNumBonds()));
                 }
-                else
+                // The file has all hydrogens: none are added
+                for (auto atom : mol2->atoms())
                 {
-                    iqtot = RDKit::MolOps::getFormalCharge(*mol2);
+                    atom->setNoImplicit(true);
+                    atom->setNumExplicitHs(0);
                 }
-                determineBonds(*mol2, false, iqtot);
+                mol2->updatePropertyCache(false);
+                determineBondOrders(*mol2, totalCharge());
             }
             else
             {

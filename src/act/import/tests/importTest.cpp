@@ -32,6 +32,7 @@
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
 
+#include <algorithm>
 #include <cstddef>
 #include <fstream>
 #include <gtest/gtest.h>
@@ -290,6 +291,62 @@ static std::vector<std::string> importTypes(const ForceField *pd, const std::str
         }
     }
     return atypes;
+}
+
+/*! \brief The atom types and the bond orders of a molecule, each sorted
+ * \param[in] molprops The molecule
+ * \return the atom types, and the bond orders as text
+ */
+static std::pair<std::vector<std::string>, std::vector<std::string>>
+typesAndBondOrders(const std::vector<MolProp> &molprops)
+{
+    std::vector<std::string> atypes, orders;
+    EXPECT_EQ(1u, molprops.size());
+    for (const auto &mp : molprops)
+    {
+        for (const auto &ca : mp.experimentConst()[0].calcAtomConst())
+        {
+            atypes.push_back(ca.getObtype());
+        }
+        for (const auto &bond : mp.bondsConst())
+        {
+            orders.push_back(gmx::formatString("%g", bond.bondOrder()));
+        }
+    }
+    std::sort(atypes.begin(), atypes.end());
+    std::sort(orders.begin(), orders.end());
+    return { atypes, orders };
+}
+
+// Test: A PDB file as ACT writes it, with each bond once in the CONECT
+// records and so without bond orders, gives the same molecule as its
+// SMILES string: the bond orders are inferred. Before, RDKit gave the
+// atoms implicit hydrogens, which made pyridine piperidine and the oxygen
+// of acetone a hydroxyl.
+TEST(ImportPdbTest, BondOrdersOfConectWithoutThem)
+{
+    auto pd = getForceField("gaff_hydrogen_types");
+    for (const auto &[file, smiles] : std::vector<std::pair<std::string, std::string>>{
+             { "pyridine-act.pdb", "c1ccncc1" }, { "acetone-act.pdb", "CC(=O)C" } })
+    {
+        SCOPED_TRACE(file);
+        MsgHandler msghandler;
+        msghandler.setPrintLevel(ACTStatus::Warning);
+        std::vector<MolProp> fromFile, fromSmiles;
+        double               qtot = 0;
+        importFile(&msghandler, pd, gmx::test::TestFileManager::getInputFilePath("molecules/" + file),
+                   &fromFile, "minimum", JobType::OPT, false, &qtot, false);
+        importSmiles(&msghandler, pd, smiles, &fromSmiles, false);
+        EXPECT_TRUE(msghandler.ok());
+        const auto read = typesAndBondOrders(fromFile);
+        const auto made = typesAndBondOrders(fromSmiles);
+        EXPECT_EQ(made.first, read.first);
+        EXPECT_EQ(made.second, read.second);
+        // No hydrogens were added
+        ASSERT_EQ(1u, fromFile.size());
+        EXPECT_EQ(fromSmiles[0].experimentConst()[0].calcAtomConst().size(),
+                  fromFile[0].experimentConst()[0].calcAtomConst().size());
+    }
 }
 
 // Test: In a box with many copies of a compound, a pattern can match more

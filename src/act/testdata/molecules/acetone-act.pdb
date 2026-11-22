@@ -1,0 +1,25 @@
+TITLE      processed by ACT - The Alexandria Chemistry Toolkit
+REMARK    THIS IS A SIMULATION BOX
+CRYST1   20.000   20.000   20.000  90.00  90.00  90.00 P 1           1
+MODEL        1
+ATOM      1  C1          1      -1.239  -0.328  -0.028  1.00  0.00           C
+ATOM      2  C2          1      -0.063   0.583  -0.234  1.00  0.00           C
+ATOM      3  O3          1      -0.184   1.696  -0.681  1.00  0.00           O
+ATOM      4  C4          1       1.273   0.017   0.153  1.00  0.00           C
+ATOM      5  H5          1      -1.322  -0.591   1.046  1.00  0.00           H
+ATOM      6  H6          1      -1.112  -1.245  -0.638  1.00  0.00           H
+ATOM      7  H7          1      -2.156   0.209  -0.351  1.00  0.00           H
+ATOM      8  H8          1       1.483  -0.889  -0.452  1.00  0.00           H
+ATOM      9  H9          1       1.272  -0.235   1.233  1.00  0.00           H
+ATOM     10  H10         1       2.048   0.786  -0.049  1.00  0.00           H
+CONECT    1    2
+CONECT    2    3
+CONECT    2    4
+CONECT    1    5
+CONECT    1    6
+CONECT    1    7
+CONECT    4    8
+CONECT    4    9
+CONECT    4   10
+ENDMDL
+TER
