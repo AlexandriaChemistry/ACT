@@ -551,6 +551,27 @@ TEST_F(SimulateTest, SettingsAreCheckedWithoutFiles)
             EXPECT_NE(std::string::npos, std::string(ex.what()).find("-temp")) << ex.what();
         }
     }
+    {
+        // The generator of velocities takes the seed as unsigned
+        SimulateOptions o;
+        o.simulation.setSimulation(10, 0.001, 0, -1, 1, 1);
+        try
+        {
+            o.checkSettings();
+            ADD_FAILURE() << "Accepted a wrong -seed";
+        }
+        catch (const gmx::InvalidInputError &ex)
+        {
+            EXPECT_NE(std::string::npos, std::string(ex.what()).find("-seed")) << ex.what();
+        }
+    }
+    // Zero steps (no dynamics), zero iterations (until convergence) and a seed of zero (a new one) are fine
+    {
+        SimulateOptions o;
+        o.simulation.setSimulation(0, 0.001, 0, 0, 1, 1);
+        o.simulation.setMaxIter(0);
+        EXPECT_NO_THROW(o.checkSettings());
+    }
 }
 
 TEST_F(SimulateTest, WithoutCommandLineWrongOptions)

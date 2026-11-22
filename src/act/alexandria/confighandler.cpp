@@ -524,7 +524,7 @@ void SimulationConfigHandler::add_MD_options(std::vector<t_pargs> *pargs)
         { "-temp",    FALSE, etREAL, {&temperature_},
           "Initial simulation temperature (K). If larger than zero, initial velocites will be generated from a Maxwellian distribution at the given temperature." },
         { "-seed",    FALSE, etINT, {&seed_},
-          "Random number seed for generating velocities." },
+          "Random number seed for generating velocities, 0 to make a new one each time." },
         { "-nstxout", FALSE, etINT, {&nstxout_},
           "Number of steps between writing coordinates." },
         { "-nstvout", FALSE, etINT, {&nstvout_},
@@ -571,6 +571,7 @@ void SimulationConfigHandler::validate() const
     };
     const std::vector<Limit> limits = {
         { "-nsteps", static_cast<double>(nsteps_), true },
+        { "-seed", static_cast<double>(seed_), true },
         { "-deltat", deltat_, false },
         { "-temp", temperature_, true },
         { "-nstxout", static_cast<double>(nstxout_), true },
