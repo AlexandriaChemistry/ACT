@@ -537,9 +537,10 @@ written. What came up on the way:
   and refuses atoms to freeze that are not there. The residue names for
   OpenMM are given by `nameResidues`, which `gentop` and Python share, and
   Python takes them as `gentop -resnames` does (`residue_names`). Python
-  asks for at least one step of a simulation and one iteration of a
-  minimization, and a seed that is not negative, on top of the checks of
-  the programs.
+  and the programs take the same values: zero steps (no dynamics), zero
+  iterations (until convergence), and a seed that is not negative, zero
+  for a new one each time; the programs refuse a negative seed since
+  2026-11-22, which the generator of velocities took as a large number.
 
 **A9. Documentation and packaging.** A chapter "Using ACT from Python" in the
 manual with the examples above, an API reference generated from the
