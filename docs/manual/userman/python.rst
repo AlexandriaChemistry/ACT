@@ -183,6 +183,7 @@ The energy is minimized and the vibrations are computed as *alexandria minimize*
    res = mol.minimize()           # the molecule gets the structure of the minimum
    print(res.converged, res.status, res.rmsd, res.energy_after["EPOT"])
    res = mol.minimize(algorithm="Newton", max_iter=500, tolerance=1e-8, freeze=[0, 2])
+   print(dimer.minimize().interaction_energy)  # of the minimized dimer, as minimize -json
 
    modes = mol.normal_modes()     # minimizes first, unless minimize=False
    print(modes.frequencies)       # in 1/cm
@@ -215,7 +216,9 @@ The charges of ACT depend on the structure. They are made when the molecule is m
    mol.set_charges([0.0] * len(mol.atoms))    # or one charge for each particle
    mol.generate_charges("SQE")
 
-   mol.write_openmm("acetone-openmm.xml", structure="acetone.pdb")
+   mol.write_openmm("acetone-openmm.xml", structure="acetone.pdb", residue_names="ACE")
+
+The settings are those of the programs, with their defaults and their checks: each method fills the settings of its program (*MinimizeOptions*, *NmaOptions*, *SimulateOptions* or *GentopOptions* in the code of ACT) and runs the same code on the molecule in memory. A setting that the program refuses raises *act.ActInputError* with the message of the program, which names its option, such as *-toler* for *tolerance*; the documentation of each method says which option a keyword is. Python asks for at least one step of a simulation and one iteration of a minimization, and for a seed that is not negative, where the programs take zero and make a seed of a negative one.
 
 A minimization that does not converge is told in the result, with the structure of the lowest energy that was found; *update=False* leaves the structure of the molecule as it is. Normal modes of a structure that is no minimum make no sense, so there a minimization that does not converge raises an error.
 
