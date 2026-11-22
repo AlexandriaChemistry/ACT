@@ -920,12 +920,24 @@ class MoleculeTest(unittest.TestCase):
         # A larger time step is taken as it is
         self.assertAlmostEqual(0.0005, mol.simulate(steps=3, timestep=0.0005).energy_times[1],
                                places=9)
-        # As -nsteps 0: no dynamics. A simulation reports the energies
-        # before each step, so without steps there is nothing.
-        nothing = mol.simulate(steps=0)
-        self.assertEqual(0, nothing.steps)
-        self.assertEqual([], list(nothing.energy_steps))
-        self.assertEqual([], list(nothing.frame_steps))
+        # Without steps no dynamics: the energies of the structure as it is,
+        # as simulate -sp, at rest, are those of step 0
+        seen = []
+        single = mol.simulate(steps=0, temperature=300, on_energies=seen.append)
+        self.assertEqual(0, single.steps)
+        self.assertEqual([0], list(single.energy_steps))
+        self.assertEqual([0.0], list(single.energy_times))
+        self.assertEqual([0.0], list(single.temperature))
+        self.assertEqual([], list(single.frame_steps))
+        energy = mol.energy()
+        self.assertEqual(set(energy) | {"EKIN", "ETOT"}, set(single.energies))
+        for name, value in energy.items():
+            self.assertEqual(value, single.energies[name][0], name)
+        self.assertEqual(0.0, single.energies["EKIN"][0])
+        self.assertEqual(energy["EPOT"], single.energies["ETOT"][0])
+        self.assertEqual(1, len(seen))
+        self.assertEqual(0, seen[0]["step"])
+        self.assertEqual([], list(mol.simulate(steps=0, energy_interval=0).energy_steps))
 
     def test_write_openmm(self):
         """!

@@ -1412,6 +1412,17 @@ Trajectory simulateMolecule(Molecule &molecule, int steps, double timestep, doub
     };
     QuietMessages    messages;
     const MolHandler molhandler;
+    if (0 == steps)
+    {
+        // As simulate -sp: the energies of the structure as it is, at
+        // rest, as the energies of step 0
+        if (energyInterval > 0)
+        {
+            std::vector<gmx::RVec> forces;
+            (void) observer.energies(0, 0.0, 0.0, 0.0, computeEnergy(molecule, &forces));
+        }
+    }
+    else
     {
         // Other threads of Python run while this one computes. The
         // simulation starts from the coordinates that are given and keeps
@@ -1757,7 +1768,8 @@ void defineMolecule(py::module_ &module)
              py::arg("frame_interval") = 1, py::arg("on_energies") = py::none(),
              "Run a molecular dynamics simulation, as alexandria simulate does, from the\n"
              "structure of the molecule, which stays as it is.\n\n"
-             "steps is the number of steps (-nsteps; 0 is none, an empty Trajectory)\n"
+             "steps is the number of steps (-nsteps); with 0 there is no dynamics, and the\n"
+             "energies of the structure as it is are those of step 0, as simulate -sp gives them\n"
              "of timestep ps (-deltat). With a temperature in K (-temp) the atoms\n"
              "get velocities for it, drawn with the seed (-seed, 0 for another one each time);\n"
              "without, they start at rest. The energies are kept every energy_interval steps\n"
