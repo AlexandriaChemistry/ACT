@@ -60,6 +60,7 @@
 #include <vector>
 
 #include "act/alexandria/confighandler.h"
+#include "act/alexandria/gentop.h"
 #include "act/alexandria/molhandler.h"
 #include "act/alexandria/openmm_xml.h"
 #include "act/alexandria/train_utility.h"
@@ -83,6 +84,9 @@
 #include "act/molprop/molprop_util.h"
 #include "act/molprop/molprop_xml.h"
 #include "act/molprop/molpropobservable.h"
+#include "act/properties/minimize.h"
+#include "act/properties/normalmodes.h"
+#include "act/properties/simulate.h"
 #include "act/topology/actmol.h"
 #include "act/topology/actmol_json.h"
 #include "act/utility/jsontree.h"
@@ -984,61 +988,57 @@ struct Minimization
     double      rmsd = 0;
     //! The energy by term in kJ/mol before and after
     py::dict    energyBefore, energyAfter;
+    //! For a molecule of two compounds the interaction energy by term in kJ/mol after, None otherwise
+    py::object  interactionEnergy;
     //! The position of each particle in nm at the lowest energy found
     py::object  coordinates;
 };
 
-/*! \brief Minimize the energy of a molecule, as alexandria minimize does
- * \param[in] molecule  The molecule
- * \param[in] algorithm LBFGS, Steep or Newton, the default of the program if not given
- * \param[in] maxIter   The largest number of iterations, the default of the program if not given
- * \param[in] tolerance The mean square force at which to stop, the default of the program if not given
- * \param[in] freeze    The particles, as in the list of atoms, that stay where they are
- * \param[in] update    Whether the molecule gets the structure that is found
- * \return How it went and the structure
- * \throws gmx::InvalidInputError for settings that make no sense, gmx::ToleranceError
- * if the minimizer failed
+/*! \brief Set the settings of a minimization as the options of the programs do
+ * \param[in]  algorithm LBFGS, Steep or Newton (-minalg), the default of the program if not given
+ * \param[in]  maxIter   The largest number of iterations (-maxiter), the default if not given
+ * \param[in]  tolerance The mean square force at which to stop (-toler), the default if not given
+ * \param[out] sch       The settings
+ * \throws gmx::InvalidInputError for an algorithm that is not known, or fewer than one iteration
  */
-Minimization minimizeMolecule(Molecule *molecule, const std::optional<std::string> &algorithm,
-                              std::optional<int> maxIter, std::optional<double> tolerance,
-                              const std::vector<int> &freeze, bool update)
+void setMinimization(const std::optional<std::string> &algorithm, std::optional<int> maxIter,
+                     std::optional<double> tolerance, SimulationConfigHandler *sch)
 {
-    SimulationConfigHandler sch;
     if (algorithm)
     {
-        bool known = false;
-        for (auto minAlg : { eMinimizeAlgorithm::LBFGS, eMinimizeAlgorithm::Steep, eMinimizeAlgorithm::Newton })
-        {
-            if (eMinimizeAlgorithmToString(minAlg) == *algorithm)
-            {
-                sch.setMinimizeAlgorithm(minAlg);
-                known = true;
-            }
-        }
-        if (!known)
-        {
-            GMX_THROW(gmx::InvalidInputError(gmx::formatString("Unknown algorithm '%s' to minimize with: use LBFGS, Steep or Newton", algorithm->c_str())));
-        }
+        // As the command line reads it
+        sch->setMinimizeAlgorithm(stringToEMinimizeAlgorithm(*algorithm));
     }
     if (maxIter)
     {
+        // A rule of Python only: the program takes -maxiter 0
         if (*maxIter < 1)
         {
-            GMX_THROW(gmx::InvalidInputError("The number of iterations of a minimization is at least one"));
+            GMX_THROW(gmx::InvalidInputError("The number of iterations of a minimization (-maxiter) is at least one"));
         }
-        sch.setMaxIter(*maxIter);
+        sch->setMaxIter(*maxIter);
     }
     if (tolerance)
     {
-        if (!std::isfinite(*tolerance) || *tolerance <= 0)
-        {
-            GMX_THROW(gmx::InvalidInputError("The tolerance of a minimization is a number above zero"));
-        }
-        sch.setForceTolerance(*tolerance);
+        sch->setForceTolerance(*tolerance);
     }
-    // The checks of the programs as well
-    sch.validate();
-    // The minimizer counts the atoms without shells and virtual sites
+}
+
+/*! \brief Minimize the energy of a molecule as alexandria minimize does
+ * \param[in] molecule       The molecule
+ * \param[in] sch            The settings of the minimization, checked
+ * \param[in] shellTolerance The tolerance for the shells, see MinimizeOptions
+ * \param[in] freeze         The particles, as in the list of atoms, that stay where they are
+ * \param[in] update         Whether the molecule gets the structure that is found
+ * \return How it went and the structure
+ * \throws gmx::InvalidInputError for particles that cannot be frozen,
+ * gmx::ToleranceError if the minimizer failed
+ */
+Minimization minimizeWith(Molecule *molecule, const SimulationConfigHandler &sch, double shellTolerance,
+                          const std::vector<int> &freeze, bool update)
+{
+    // The minimizer counts the atoms without shells and virtual sites,
+    // Python the particles in the list of atoms
     const auto      &atoms = molecule->mol().atomsConst();
     std::vector<int> frozen;
     for (int index : freeze)
@@ -1059,36 +1059,58 @@ Minimization minimizeMolecule(Molecule *molecule, const std::optional<std::strin
         }
         frozen.push_back(number);
     }
-    // The shells more precisely than the atoms, as the program has it
-    molecule->forceComp->init(sch.shellTolerance(1e-6, nullptr), sch.shellMaxIter(), molecule->pd->epsilonr());
+    // The shells as the program relaxes them
+    molecule->forceComp->init(sch.shellTolerance(shellTolerance, nullptr), sch.shellMaxIter(),
+                              molecule->pd->epsilonr());
 
-    Minimization           result;
-    std::vector<gmx::RVec> forces;
-    result.energyBefore = energyDict(computeEnergy(*molecule, &forces));
-
-    QuietMessages                     messages;
-    std::map<InteractionType, double> energies;
-    auto                              xmin = molecule->coords;
-    const MolHandler                  molhandler;
-    const auto status = molhandler.minimizeCoordinates(messages.handler(), molecule->pd, molecule->mol().topology(),
-                                                       molecule->forceComp.get(), sch, &xmin, &energies, frozen);
+    QuietMessages messages;
+    auto          xmin  = molecule->coords;
+    const auto    found = minimizeStructure(messages.handler(), molecule->pd, molecule->forceComp.get(), sch,
+                                            frozen, &molecule->mol(), &xmin);
     messages.check("The minimization failed");
-    if (eMinimizeStatus::OK != status && !minimizationDidNotConverge(status))
+    if (!found.usable)
     {
+        auto energies = found.energiesAfter;
         GMX_THROW(gmx::ToleranceError("The minimization failed: " +
-                                      minimizeStatusMessage(status, energies[InteractionType::EPOT])));
+                                      minimizeStatusMessage(found.status, energies[InteractionType::EPOT])));
     }
-    result.converged   = (eMinimizeStatus::OK == status);
-    result.status      = eMinimizeStatusToString(status);
-    // On top of the structure it started from
-    result.rmsd        = molhandler.coordinateRmsd(atoms, molecule->coords, &xmin);
-    result.energyAfter = energyDict(energies);
-    result.coordinates = arrayOfVectors(xmin);
+    Minimization result;
+    result.converged         = (eMinimizeStatus::OK == found.status);
+    result.status            = eMinimizeStatusToString(found.status);
+    result.rmsd              = found.rmsd;
+    result.energyBefore      = energyDict(found.energiesBefore);
+    result.energyAfter       = energyDict(found.energiesAfter);
+    result.interactionEnergy = found.interactionEnergies.empty() ? py::none() :
+        py::object(energyDict(found.interactionEnergies));
+    result.coordinates       = arrayOfVectors(xmin);
     if (update)
     {
         molecule->coords = xmin;
     }
     return result;
+}
+
+/*! \brief Minimize the energy of a molecule, as alexandria minimize does
+ * \param[in] molecule  The molecule
+ * \param[in] algorithm LBFGS, Steep or Newton, the default of the program if not given
+ * \param[in] maxIter   The largest number of iterations, the default of the program if not given
+ * \param[in] tolerance The mean square force at which to stop, the default of the program if not given
+ * \param[in] freeze    The particles, as in the list of atoms, that stay where they are
+ * \param[in] update    Whether the molecule gets the structure that is found
+ * \return How it went and the structure
+ * \throws gmx::InvalidInputError for settings that make no sense, gmx::ToleranceError
+ * if the minimizer failed
+ */
+Minimization minimizeMolecule(Molecule *molecule, const std::optional<std::string> &algorithm,
+                              std::optional<int> maxIter, std::optional<double> tolerance,
+                              const std::vector<int> &freeze, bool update)
+{
+    // The settings of alexandria minimize, with its checks
+    MinimizeOptions options;
+    setMinimization(algorithm, maxIter, tolerance, &options.simulation);
+    options.simulation.setMinimize(true);
+    options.checkSettings();
+    return minimizeWith(molecule, options.simulation, options.shellTolerance, freeze, update);
 }
 
 //! Tell Python about the result of a minimization
@@ -1107,6 +1129,11 @@ void defineMinimization(py::module_ &module)
                       "The energy by term in kJ/mol of the structure it started from.")
         .def_readonly("energy_after", &Minimization::energyAfter,
                       "The energy by term in kJ/mol of the structure that was found.")
+        .def_readonly("interaction_energy", &Minimization::interactionEnergy,
+                      "For a molecule of two compounds the interaction energy by term in kJ/mol of\n"
+                      "the structure that was found, as alexandria minimize gives it, with the\n"
+                      "correction of the induction energy as a term of its own (Molecule.\n"
+                      "interaction_energy adds it to the induction energy); None otherwise.")
         .def_readonly("coordinates", &Minimization::coordinates,
                       "The position of each particle in nm in the structure that was found.")
         .def("__repr__",
@@ -1146,11 +1173,17 @@ struct NormalModes
 NormalModes normalModes(Molecule *molecule, bool minimize, const std::optional<std::string> &algorithm,
                         std::optional<int> maxIter, std::optional<double> tolerance)
 {
+    // The settings of alexandria nma, with its checks
+    NmaOptions options;
+    setMinimization(algorithm, maxIter, tolerance, &options.simulation);
+    options.simulation.setMinimize(minimize);
+    options.checkSettings();
+
     NormalModes result;
     result.minimization = py::none();
     if (minimize)
     {
-        const auto minimum = minimizeMolecule(molecule, algorithm, maxIter, tolerance, {}, true);
+        const auto minimum = minimizeWith(molecule, options.simulation, options.shellTolerance, {}, true);
         if (!minimum.converged)
         {
             GMX_THROW(gmx::ToleranceError("The minimization before the normal modes did not converge (" + minimum.status +
@@ -1168,7 +1201,7 @@ NormalModes normalModes(Molecule *molecule, bool minimize, const std::optional<s
     const MolHandler molhandler;
     // Without a file for the spectrum, and with the motion of the particles
     doFrequencyAnalysis(messages.handler(), molecule->pd, &molecule->mol(), molhandler, molecule->forceComp.get(),
-                        &coords, atomenergy, nullptr, &jtree, nullptr, 24, nullptr, false, true);
+                        &coords, atomenergy, nullptr, &jtree, nullptr, options.lineWidth, nullptr, false, true);
     messages.check("The normal modes could not be computed");
     const py::dict told = toPython(jtree);
     if (!told.contains("modes"))
@@ -1304,30 +1337,28 @@ struct Trajectory
 Trajectory simulateMolecule(Molecule &molecule, int steps, double timestep, double temperature, int seed,
                             int energyInterval, int frameInterval, const py::object &onEnergies)
 {
+    // Rules of Python only: the program takes -nsteps 0, for a minimization
+    // alone, and makes a seed of a negative one
     if (steps < 1)
     {
-        GMX_THROW(gmx::InvalidInputError("A simulation has at least one step"));
+        GMX_THROW(gmx::InvalidInputError("A simulation has at least one step (-nsteps)"));
     }
-    if (!std::isfinite(timestep) || timestep <= 0)
+    if (seed < 0)
     {
-        GMX_THROW(gmx::InvalidInputError("The time step of a simulation is a number above zero, in ps"));
-    }
-    if (!std::isfinite(temperature) || temperature < 0)
-    {
-        GMX_THROW(gmx::InvalidInputError("The temperature of a simulation cannot be negative"));
-    }
-    if (energyInterval < 0 || frameInterval < 0 || seed < 0)
-    {
-        GMX_THROW(gmx::InvalidInputError("The seed and the numbers of steps between energies and between structures cannot be negative"));
+        GMX_THROW(gmx::InvalidInputError("The seed of a simulation (-seed) cannot be negative, 0 makes one"));
     }
     if (!onEnergies.is_none() && !PyCallable_Check(onEnergies.ptr()))
     {
         throw py::type_error("on_energies must be a function, or None");
     }
-    SimulationConfigHandler sch;
-    sch.setSimulation(steps, timestep, temperature, seed, energyInterval, frameInterval);
-    // The checks of the programs as well
-    sch.validate();
+    // The settings of alexandria simulate, with its checks
+    SimulateOptions options;
+    options.simulation.setSimulation(steps, timestep, temperature, seed, energyInterval, frameInterval);
+    options.checkSettings();
+    const auto &sch = options.simulation;
+    // The shells as the program relaxes them
+    molecule.forceComp->init(sch.shellTolerance(options.shellTolerance, nullptr), sch.shellMaxIter(),
+                             molecule.pd->epsilonr());
 
     Trajectory result;
     result.steps    = steps;
@@ -1479,21 +1510,22 @@ void defineTrajectory(py::module_ &module)
  *                         trained on to be written, see alexandria gentop -ntrain
  * \param[in] numberTypes  Whether each atom gets a type of its own, see gentop -numberAtypes
  * \param[in] shells       Whether the structure file has the shells
+ * \param[in] residueNames The residue names of the compounds, as gentop -resnames takes them
  * \throws gmx::InvalidInputError for settings that make no sense, gmx::FileIOError if a
  * file cannot be written
  */
 void writeOpenMMFiles(Molecule &molecule, const std::filesystem::path &fileName,
                       const std::optional<std::filesystem::path> &structure, double drudeMass, int minTraining,
-                      bool numberTypes, bool shells)
+                      bool numberTypes, bool shells, const std::string &residueNames)
 {
-    if (!std::isfinite(drudeMass) || drudeMass < 0)
-    {
-        GMX_THROW(gmx::InvalidInputError("The mass of a shell for OpenMM cannot be negative"));
-    }
-    if (minTraining < 0)
-    {
-        GMX_THROW(gmx::InvalidInputError("The least number of data points of a parameter for OpenMM cannot be negative"));
-    }
+    // The settings of alexandria gentop, with its checks
+    GentopOptions options;
+    options.drudeMass    = drudeMass;
+    options.minTraining  = minTraining;
+    options.numberTypes  = numberTypes;
+    options.writeShells  = shells;
+    options.residueNames = residueNames;
+    options.checkSettings();
     // The files are opened by code that ends the program if it cannot
     for (const auto &file : { std::optional<std::filesystem::path>(fileName), structure })
     {
@@ -1505,29 +1537,16 @@ void writeOpenMMFiles(Molecule &molecule, const std::filesystem::path &fileName,
         }
     }
     QuietMessages messages;
-    // The same residue names in both files
-    auto          residueNames = openMMResidueNames(messages.handler(), molecule.mols, "");
+    // The same residue names in both files, as gentop gives them
+    const auto    names = nameResidues(messages.handler(), &molecule.mols, options.residueNames);
     messages.check("The residue names for OpenMM could not be made");
-    auto       &mol        = molecule.mol();
-    const auto &fragIds    = mol.fragmentHandler()->ids();
-    const auto &topologies = mol.fragmentHandler()->topologies();
-    for (size_t fragment = 0; fragment < topologies.size(); fragment++)
-    {
-        for (const auto &atom : topologies[fragment].atoms())
-        {
-            if (atom.residueNumber() >= 0)
-            {
-                mol.topologyPtr()->setResidueName(atom.residueNumber(), residueNames[fragIds[fragment]]);
-            }
-        }
-    }
     if (structure)
     {
         matrix box = { { 5, 0, 0 }, { 0, 5, 0 }, { 0, 0, 5 } };
-        mol.PrintConformation(structure->string().c_str(), molecule.coords, shells, box);
+        molecule.mol().PrintConformation(structure->string().c_str(), molecule.coords, options.writeShells, box);
     }
-    writeOpenMM(messages.handler(), fileName.string(), molecule.pd, molecule.mols, drudeMass, minTraining,
-                numberTypes, residueNames);
+    writeOpenMM(messages.handler(), fileName.string(), molecule.pd, molecule.mols, options.drudeMass,
+                options.minTraining, options.numberTypes, names);
     messages.check("The force field file for OpenMM could not be written");
 }
 
@@ -1705,19 +1724,22 @@ void defineMolecule(py::module_ &module)
              py::arg("freeze") = std::vector<int>(), py::arg("update") = true,
              "Minimize the energy with respect to the positions of the atoms, as alexandria\n"
              "minimize does, and give the molecule the structure that is found.\n\n"
-             "algorithm is LBFGS, Steep or Newton, max_iter the largest number of iterations\n"
-             "and tolerance the mean square force at which to stop; what is not given is as\n"
-             "in the program. The particles in freeze, numbered as in atoms, stay where they\n"
+             "algorithm is LBFGS, Steep or Newton (-minalg), max_iter the largest number of\n"
+             "iterations (-maxiter) and tolerance the mean square force at which to stop\n"
+             "(-toler); what is not given is as in the program, which checks the settings in\n"
+             "the same way. The particles in freeze, numbered as in atoms, stay where they\n"
              "are. With update=False the molecule keeps its structure. Returns a Minimization\n"
-             "with whether it converged, the energies before and after, the RMSD and the\n"
-             "structure. A minimization that does not converge is told there, not raised.")
+             "with whether it converged, the energies before and after, for a dimer the\n"
+             "interaction energy, the RMSD and the structure. A minimization that does not\n"
+             "converge is told there, not raised.")
         .def("normal_modes", &normalModes, py::kw_only(), py::arg("minimize") = true,
              py::arg("algorithm") = py::none(), py::arg("max_iter") = py::none(),
              py::arg("tolerance") = py::none(),
              "The vibrations of the molecule, as alexandria nma computes them: frequencies,\n"
              "infrared intensities, the motion of the particles and the thermochemistry.\n\n"
              "The energy is minimized first, with algorithm, max_iter and tolerance as in\n"
-             "minimize, and the molecule keeps that structure; give minimize=False for a\n"
+             "minimize and the settings of alexandria nma, and the molecule keeps that\n"
+             "structure; give minimize=False for a\n"
              "molecule that is at its minimum already. Raises ActError if the minimization\n"
              "does not converge. Returns a NormalModes.")
         .def("generate_charges", &generateCharges, py::arg("algorithm") = py::none(),
@@ -1729,21 +1751,27 @@ void defineMolecule(py::module_ &module)
         .def("set_charges", &setCharges, py::arg("charges"),
              "Give each particle a charge in e, in the order of atoms.")
         .def("write_openmm", &writeOpenMMFiles, py::arg("file"), py::kw_only(),
-             py::arg("structure") = py::none(), py::arg("drude_mass") = 0.1, py::arg("min_training") = 1,
-             py::arg("number_types") = true, py::arg("shells") = false,
+             py::arg("structure") = py::none(), py::arg("drude_mass") = GentopOptions().drudeMass,
+             py::arg("min_training") = GentopOptions().minTraining,
+             py::arg("number_types") = GentopOptions().numberTypes, py::arg("shells") = false,
+             py::arg("residue_names") = std::string(),
              "Write the force field file with which OpenMM simulates this molecule, as\n"
              "alexandria gentop -openmm does.\n\n"
              "structure is a pdb file to write as well, with the structure the molecule has\n"
              "now and the names of the force field file, with the shells if shells is True.\n"
-             "drude_mass is the mass in g/mol of a shell, which is taken from its atom.\n"
-             "A parameter is written if it was trained on min_training data points at least.\n"
-             "With number_types each atom gets a type of its own.")
+             "drude_mass is the mass in g/mol of a shell, which is taken from its atom\n"
+             "(-mDrude). A parameter is written if it was trained on min_training data points\n"
+             "at least (-ntrain). With number_types each atom gets a type of its own\n"
+             "(-numberAtypes). residue_names names the residues of the compounds, as\n"
+             "-resnames does, for instance \"methanol=MOH\"; the others get a name from their\n"
+             "IUPAC name. The settings are checked as gentop checks them.")
         .def("simulate", &simulateMolecule, py::kw_only(), py::arg("steps"), py::arg("timestep") = 0.0002,
              py::arg("temperature") = 0.0, py::arg("seed") = 0, py::arg("energy_interval") = 1,
              py::arg("frame_interval") = 1, py::arg("on_energies") = py::none(),
              "Run a molecular dynamics simulation, as alexandria simulate does, from the\n"
              "structure of the molecule, which stays as it is.\n\n"
-             "steps is the number of steps of timestep ps. With a temperature in K the atoms\n"
+             "steps is the number of steps (-nsteps) of timestep ps (-deltat). With a\n"
+             "temperature in K (-temp) the atoms\n"
              "get velocities for it, drawn with the seed (0 for another one each time);\n"
              "without, they start at rest. The energies are kept every energy_interval steps\n"
              "and the structure every frame_interval steps, 0 for never. on_energies is a\n"

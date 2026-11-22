@@ -3,8 +3,8 @@
 Status of 2026-11-22: the desktop version is complete for release 1.95.
 The decisions on the package name, where it is installed, the repository,
 the default force field, Slurm and the login are in section 1. In ACT
-(branches `main` and `release-1-95`): steps A1 to A4, A6 and A9, step A8
-for all tools, steps A5 and A7 in part (section 5). In the repository
+(branches `main` and `release-1-95`): steps A1 to A4, A6, A8 and A9,
+steps A5 and A7 in part (section 5). In the repository
 ACT-GUI: steps B0 to B10a and the parts of B12 that do not need a release
 (section 6): the molecule, force field and molprop workspaces, jobs on a
 Slurm cluster from the desktop, a tab Settings with the cluster and the
@@ -525,9 +525,21 @@ written. What came up on the way:
   of the command line. The option `-name` had no effect
   and was removed. B2(T) is plotted only with an explicit `-b2`; it is in
   the log file anyway, and in the json file with `-json`.
-- Still to do: the Python classes have their own versions of minimize,
-  nma, simulate and write_openmm, which work on a molecule in memory
-  instead of files; they use the same settings classes and checks.
+- The Python classes `minimize`, `normal_modes`, `simulate` and
+  `write_openmm` work on a molecule in memory instead of files, with the
+  settings classes of the programs: each fills a `MinimizeOptions`,
+  `NmaOptions`, `SimulateOptions` or `GentopOptions` and checks it with
+  `checkSettings()`, the part of `check()` without the files, so that a
+  wrong setting gives the message of the program. The minimization is
+  `minimizeStructure`, which `minimize`, `simulate -minimize` and Python
+  share; it gives the energies before and after, the RMSD and for a dimer
+  the interaction energy (in Python `Minimization.interaction_energy`),
+  and refuses atoms to freeze that are not there. The residue names for
+  OpenMM are given by `nameResidues`, which `gentop` and Python share, and
+  Python takes them as `gentop -resnames` does (`residue_names`). Python
+  asks for at least one step of a simulation and one iteration of a
+  minimization, and a seed that is not negative, on top of the checks of
+  the programs.
 
 **A9. Documentation and packaging.** A chapter "Using ACT from Python" in the
 manual with the examples above, an API reference generated from the
@@ -954,9 +966,9 @@ The chapter `userman/gui.rst` of the manual describes the interface of
 Still to do for 1.95: the packages `alexandria` and `alexandria-python`
 1.95b on the channel, after which the package `act-gui` can be tested by
 its workflow and uploaded (its version, now `0.1.0.dev0`, is to be
-chosen); the Python classes `minimize`, `normal_modes`, `simulate` and
-`write_openmm` use the settings classes of A8 and their checks; jobs on
-the cluster that fail are easier to put right. The bugs found on
+chosen); jobs on the cluster that fail are easier to put right. The
+Python classes use the settings classes of A8 and their checks (done
+2026-11-22). The bugs found on
 the way are fixed on `release-1-95`: `edit_mp -ff` checks dimers and force
 fields without bond charge corrections, `train_ff` without a selection file
 stops at once and says why, and `edit_mp` writes a molprop file only with
