@@ -961,6 +961,53 @@ TEST_F(GentopTest, WithoutCommandLineSameAsTheProgram)
     }
 }
 
+TEST_F(GentopTest, SettingsAreCheckedWithoutFiles)
+{
+    // For a molecule in memory, as in Python: no files are needed, and
+    // wrong settings are refused with the message of the program
+    EXPECT_NO_THROW(GentopOptions().checkSettings());
+    EXPECT_THROW(GentopOptions().check(), gmx::InvalidInputError);
+    {
+        GentopOptions o;
+        o.drudeMass = -0.1;
+        try
+        {
+            o.checkSettings();
+            ADD_FAILURE() << "Accepted a wrong -mDrude";
+        }
+        catch (const gmx::InvalidInputError &ex)
+        {
+            EXPECT_NE(std::string::npos, std::string(ex.what()).find("-mDrude")) << ex.what();
+        }
+    }
+    {
+        GentopOptions o;
+        o.minTraining = -1;
+        try
+        {
+            o.checkSettings();
+            ADD_FAILURE() << "Accepted a wrong -ntrain";
+        }
+        catch (const gmx::InvalidInputError &ex)
+        {
+            EXPECT_NE(std::string::npos, std::string(ex.what()).find("-ntrain")) << ex.what();
+        }
+    }
+    {
+        GentopOptions o;
+        o.spacing = 0;
+        try
+        {
+            o.checkSettings();
+            ADD_FAILURE() << "Accepted a wrong -spacing";
+        }
+        catch (const gmx::InvalidInputError &ex)
+        {
+            EXPECT_NE(std::string::npos, std::string(ex.what()).find("-spacing")) << ex.what();
+        }
+    }
+}
+
 TEST_F(GentopTest, WithoutCommandLineWrongOptions)
 {
     const auto valid = [this]()

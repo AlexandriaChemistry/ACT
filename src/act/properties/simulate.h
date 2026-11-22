@@ -91,6 +91,14 @@ struct SimulateOptions
      * \throws gmx::InvalidInputError that says which option is wrong
      */
     void check() const;
+
+    /*! \brief Check the settings, without the files and the input
+     *
+     * For a molecule in memory, such as one of Python. check() does this
+     * as well.
+     * \throws gmx::InvalidInputError that says which option is wrong
+     */
+    void checkSettings() const;
 };
 
 /*! \brief Minimize and simulate a molecule, as alexandria simulate does

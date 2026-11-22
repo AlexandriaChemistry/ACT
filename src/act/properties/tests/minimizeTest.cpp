@@ -48,8 +48,12 @@
 
 #include "act/alexandria/alex_modules.h"
 #include "act/basics/msg_handler.h"
+#include "act/forcefield/forcefield.h"
+#include "act/forcefield/forcefield_xml.h"
+#include "act/forces/forcecomputer.h"
 #include "act/properties/minimize.h"
 #include "act/testutils/output_checks.h"
+#include "act/topology/actmol.h"
 #include "gromacs/utility/exceptions.h"
 #include "testutils/cmdlinetest.h"
 #include "testutils/refdata.h"
@@ -584,6 +588,112 @@ TEST_F(MinimizeTest, WithoutCommandLineWrongOptions)
     const auto jsonFile = fileManager().getTemporaryFilePath("wrongtoler.json");
     EXPECT_EQ(1, runMinimize("acetone.sdf", "ACS-g1.xml", "wrongtoler", { "-toler", "0" }, jsonFile));
     EXPECT_FALSE(std::filesystem::exists(jsonFile));
+}
+
+TEST_F(MinimizeTest, SettingsAreCheckedWithoutFiles)
+{
+    // For a molecule in memory, as in Python: no files are needed, and
+    // wrong settings are refused with the message of the program
+    EXPECT_NO_THROW(MinimizeOptions().checkSettings());
+    EXPECT_THROW(MinimizeOptions().check(), gmx::InvalidInputError);
+    {
+        MinimizeOptions o;
+        o.shellTolerance = 0;
+        try
+        {
+            o.checkSettings();
+            ADD_FAILURE() << "Accepted a wrong -shelltoler";
+        }
+        catch (const gmx::InvalidInputError &ex)
+        {
+            EXPECT_NE(std::string::npos, std::string(ex.what()).find("-shelltoler")) << ex.what();
+        }
+    }
+    {
+        MinimizeOptions o;
+        o.simulation.setForceTolerance(0);
+        try
+        {
+            o.checkSettings();
+            ADD_FAILURE() << "Accepted a wrong -toler";
+        }
+        catch (const gmx::InvalidInputError &ex)
+        {
+            EXPECT_NE(std::string::npos, std::string(ex.what()).find("-toler")) << ex.what();
+        }
+    }
+    {
+        MinimizeOptions o;
+        o.simulation.setMaxIter(-1);
+        try
+        {
+            o.checkSettings();
+            ADD_FAILURE() << "Accepted a wrong -maxiter";
+        }
+        catch (const gmx::InvalidInputError &ex)
+        {
+            EXPECT_NE(std::string::npos, std::string(ex.what()).find("-maxiter")) << ex.what();
+        }
+    }
+}
+
+TEST_F(MinimizeTest, MinimizeStructureInMemory)
+{
+    // What the class Molecule of Python does: a molecule in memory, the
+    // settings of the program, and the same results as the program
+    MsgHandler msghandler;
+    msghandler.setPrintLevel(ACTStatus::Fatal);
+    ForceField pd;
+    readForceField(alexandriaFile("forcefields/ACS-g1.xml"), &pd, &msghandler);
+    const MinimizeOptions options;
+    options.checkSettings();
+    const auto   &sch = options.simulation;
+    ForceComputer forceComp;
+    forceComp.init(sch.shellTolerance(options.shellTolerance, nullptr), sch.shellMaxIter(), pd.epsilonr());
+    auto reader = options.compounds;
+    reader.setFileName(alexandriaFile("molecules/acetone.sdf"));
+    std::vector<ACTMol> mols;
+    reader.read(&msghandler, pd, &forceComp, &mols);
+    ASSERT_EQ(1U, mols.size());
+    auto       xmin  = mols[0].xOriginal();
+    const auto found = minimizeStructure(&msghandler, &pd, &forceComp, sch, {}, &mols[0], &xmin);
+    EXPECT_TRUE(found.usable);
+    EXPECT_EQ(eMinimizeStatus::OK, found.status);
+    ASSERT_EQ(1U, found.energiesBefore.count(InteractionType::EPOT));
+    ASSERT_EQ(1U, found.energiesAfter.count(InteractionType::EPOT));
+    EXPECT_LT(found.energiesAfter.at(InteractionType::EPOT), found.energiesBefore.at(InteractionType::EPOT));
+    // One compound, no interaction energy
+    EXPECT_TRUE(found.interactionEnergies.empty());
+
+    nlohmann::json js;
+    minimizeToJson("acetone.sdf", "ACS-g1.xml", "inmemory", &js);
+    ASSERT_TRUE(js.is_object());
+    EXPECT_NEAR(js["rmsd"]["value"].get<double>(), found.rmsd, 1e-6);
+    // The program writes four decimals
+    for (const auto &term : found.energiesAfter)
+    {
+        const auto name = interactionTypeToString(term.first);
+        ASSERT_TRUE(js["Energies after"].contains(name)) << name;
+        EXPECT_NEAR(std::stod(js["Energies after"][name]["value"].dump()), term.second, 1e-4) << name;
+    }
+
+    // Atoms that are not there are refused, before anything moves
+    for (int atom : { -1, 10, 999 })
+    {
+        auto x = mols[0].xOriginal();
+        EXPECT_THROW(minimizeStructure(&msghandler, &pd, &forceComp, sch, { atom }, &mols[0], &x),
+                     gmx::InvalidInputError) << atom;
+        // gmx::RVec compares as a pointer, so each value
+        const auto &start = mols[0].xOriginal();
+        ASSERT_EQ(start.size(), x.size());
+        for (size_t i = 0; i < x.size(); i++)
+        {
+            for (int m = 0; m < DIM; m++)
+            {
+                EXPECT_EQ(start[i][m], x[i][m]) << atom << " " << i;
+            }
+        }
+    }
 }
 
 TEST_F(MinimizeTest, WrongSmilesFails)

@@ -87,6 +87,11 @@ void GentopOptions::check() const
     {
         GMX_THROW(gmx::InvalidInputError("There is no compound: give a structure file (-f), a SMILES string (-smiles), or compounds of the charge file (-db or -sel)"));
     }
+    checkSettings();
+}
+
+void GentopOptions::checkSettings() const
+{
     if (!std::isfinite(drudeMass) || drudeMass < 0)
     {
         GMX_THROW(gmx::InvalidInputError(gmx::formatString("The value %g of -mDrude should be zero or more", drudeMass)));
@@ -155,26 +160,10 @@ int runGentop(MsgHandler *msghandler, const GentopOptions &options, gmx_output_e
     }
 
     // The same residue names in the OpenMM and the PDB file
-    auto residueNames = openMMResidueNames(msghandler, actmols, options.residueNames);
+    const auto residueNames = nameResidues(msghandler, &actmols, options.residueNames);
     if (!msghandler->ok())
     {
         return 1;
-    }
-    for (auto &actmol : actmols)
-    {
-        const auto &fragIds    = actmol.fragmentHandler()->ids();
-        const auto &topologies = actmol.fragmentHandler()->topologies();
-        for (size_t fff = 0; fff < topologies.size(); fff++)
-        {
-            for (const auto &atom : topologies[fff].atoms())
-            {
-                if (atom.residueNumber() >= 0)
-                {
-                    actmol.topologyPtr()->setResidueName(atom.residueNumber(),
-                                                         residueNames[fragIds[fff]]);
-                }
-            }
-        }
     }
     // A program without a command line has no output environment for the
     // histograms of the potential

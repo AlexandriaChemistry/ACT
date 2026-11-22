@@ -84,6 +84,11 @@ void NmaOptions::check() const
     {
         GMX_THROW(gmx::InvalidInputError("There is no molecule: give a structure file (-f), a SMILES string (-smiles) or a compound of the charge file (-db)"));
     }
+    checkSettings();
+}
+
+void NmaOptions::checkSettings() const
+{
     if (!std::isfinite(lineWidth) || lineWidth <= 0)
     {
         GMX_THROW(gmx::InvalidInputError(gmx::formatString("The value %g of -linewidth should be more than zero",
