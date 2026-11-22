@@ -358,6 +358,44 @@ TEST_F (MolHandlerTest, MinimizersConvergeWithShells)
     }
 }
 
+/* Test: L-BFGS converges from a structure of acetone with shells as a
+ * structure file has it, as before a normal mode analysis: a minimum
+ * written to a PDB file with ACS-pg1, so with coordinates rounded to
+ * 0.001 Angstrom, and read again with the shells on their atoms. The
+ * shells are relaxed before the minimization starts. Otherwise the
+ * minimization depended on where they were, and here stopped with a mean
+ * square force of 45 without converging.
+ */
+TEST_F (MolHandlerTest, MinimizeFromStructureFileWithShells)
+{
+    auto pd = getForceField("ACS-pg1");
+    MsgHandler msghandler;
+    msghandler.setPrintLevel(ACTStatus::Warning);
+    // As alexandria nma: the shells within a tenth of the tolerance of the atoms
+    const ForceComputer    forceComp(1e-7, 100, 1);
+    ACTMol                 mol;
+    std::vector<gmx::RVec> x;
+    prepareMolecule(pd, "acetone-pg1-minimum.pdb", forceComp, &mol, &x);
+    // Where a reader puts the shells
+    size_t      nshell = 0;
+    const auto &atoms  = mol.topology()->atoms();
+    for (size_t i = 0; i < atoms.size(); i++)
+    {
+        for (int shell : atoms[i].shells())
+        {
+            copy_rvec(x[i], x[shell]);
+            nshell += 1;
+        }
+    }
+    ASSERT_EQ(10u, nshell);
+    const MolHandler        mh;
+    SimulationConfigHandler simConfig;
+    simConfig.setForceTolerance(1e-6);
+    std::map<InteractionType, double> energies;
+    EXPECT_EQ(eMinimizeStatus::OK, mh.minimizeCoordinates(&msghandler, pd, mol.topology(), &forceComp,
+                                                          simConfig, &x, &energies, {}));
+}
+
 /*! \brief The vibrations at a minimum are 3N - 6, or 3N - 5 for a linear
  * molecule, without the translations and rotations, independent of the
  * orientation and position of the molecule

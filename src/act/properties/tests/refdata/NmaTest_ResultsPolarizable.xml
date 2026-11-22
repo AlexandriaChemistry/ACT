@@ -3,62 +3,62 @@
 <ReferenceData>
   <Sequence Name="Frequencies">
     <Int Name="Length">24</Int>
-    <Real>57.104681026106242</Real>
-    <Real>107.9591381351363</Real>
-    <Real>176.99977518153742</Real>
-    <Real>304.22366262768082</Real>
-    <Real>377.06333123289892</Real>
-    <Real>746.76009834215029</Real>
-    <Real>839.15675007486345</Real>
-    <Real>843.22811787242381</Real>
-    <Real>850.14819690274248</Real>
-    <Real>908.85484770926803</Real>
-    <Real>1191.5719391255741</Real>
-    <Real>1287.7011397153908</Real>
-    <Real>1479.7617440156562</Real>
-    <Real>1484.8652615651774</Real>
-    <Real>1489.9052283590017</Real>
-    <Real>1490.6939657525447</Real>
-    <Real>1499.2844344715586</Real>
-    <Real>1538.7463828458506</Real>
-    <Real>3152.1378033722422</Real>
-    <Real>3153.5139985022138</Real>
-    <Real>3174.0228425666533</Real>
-    <Real>3175.8535087363302</Real>
-    <Real>3183.4779670339867</Real>
-    <Real>3184.9087278056568</Real>
+    <Real>57.101233395389976</Real>
+    <Real>107.95705156914609</Real>
+    <Real>176.99936627919371</Real>
+    <Real>304.22358172963021</Real>
+    <Real>377.06333371570452</Real>
+    <Real>746.76012773925299</Real>
+    <Real>839.15658549613295</Real>
+    <Real>843.22794255768713</Real>
+    <Real>850.14789150721072</Real>
+    <Real>908.85460934669504</Real>
+    <Real>1191.571922422663</Real>
+    <Real>1287.7008562679578</Real>
+    <Real>1479.7617581673012</Real>
+    <Real>1484.8652876124299</Real>
+    <Real>1489.905123353662</Real>
+    <Real>1490.6938723675437</Real>
+    <Real>1499.2842965812404</Real>
+    <Real>1538.7465710182084</Real>
+    <Real>3152.1382486771672</Real>
+    <Real>3153.5144161189337</Real>
+    <Real>3174.0233980005596</Real>
+    <Real>3175.8540544424668</Real>
+    <Real>3183.4787433597121</Real>
+    <Real>3184.9094658012655</Real>
   </Sequence>
   <Sequence Name="Intensities">
     <Int Name="Length">24</Int>
-    <Real>0.0092682878114046779</Real>
-    <Real>2.2855694571188417e-10</Real>
-    <Real>0.0045858288217215321</Real>
-    <Real>0.01814967891980249</Real>
-    <Real>0.002400606798777646</Real>
-    <Real>0.017499608344739188</Real>
-    <Real>0.015386619995110895</Real>
-    <Real>0.013507632862627135</Real>
-    <Real>1.1758262866175368e-08</Real>
-    <Real>0.011773826517081882</Real>
-    <Real>0.10235048324403714</Real>
-    <Real>0.022201505468223963</Real>
-    <Real>0.02300116133116499</Real>
-    <Real>0.049406460344106395</Real>
-    <Real>8.1009805989329443e-06</Real>
-    <Real>0.053065871373482669</Real>
-    <Real>0.0048966684972824911</Real>
-    <Real>0.027665296530055412</Real>
-    <Real>0.039496282746309619</Real>
-    <Real>0.0012392543904120312</Real>
-    <Real>0.015819302047142932</Real>
-    <Real>0.079571874775973703</Real>
-    <Real>1.7355964802078811e-05</Real>
-    <Real>0.096474537151855527</Real>
+    <Real>0.0092682255310676115</Real>
+    <Real>8.4087139370907942e-11</Real>
+    <Real>0.0045858944381590352</Real>
+    <Real>0.018149690202923559</Real>
+    <Real>0.0024006079732866864</Real>
+    <Real>0.017499581368624607</Real>
+    <Real>0.015386608893540286</Real>
+    <Real>0.013507646709646269</Real>
+    <Real>1.144793018203817e-08</Real>
+    <Real>0.011773811043801666</Real>
+    <Real>0.10235066224810742</Real>
+    <Real>0.0222014651746495</Real>
+    <Real>0.023001142321265908</Real>
+    <Real>0.04940652861126453</Real>
+    <Real>8.5368744960669463e-06</Real>
+    <Real>0.05306544928383735</Real>
+    <Real>0.0048966000036225182</Real>
+    <Real>0.02766519871905903</Real>
+    <Real>0.039497221418798641</Real>
+    <Real>0.0012387502111611997</Real>
+    <Real>0.015818219359725293</Real>
+    <Real>0.079572513423718932</Real>
+    <Real>1.6185885026852472e-05</Real>
+    <Real>0.096475704152366018</Real>
   </Sequence>
-  <Real Name="Epot">-3764.8359937217433</Real>
+  <Real Name="Epot">-3764.8359937232813</Real>
   <Thermochemistry Name="T=0">
-    <Real Name="Zero point energy">213.52110063034519</Real>
-    <Real Name="Delta H formation">125.24010690860086</Real>
+    <Real Name="Zero point energy">213.52107786872841</Real>
+    <Real Name="Delta H formation">125.24008414544596</Real>
     <Real Name="Standard entropy Translation">20.786156545383101</Real>
     <Real Name="Standard entropy Rotation">12.471693927229859</Real>
     <Real Name="Standard entropy Vibration">0</Real>
@@ -73,19 +73,19 @@
     <Real Name="Internal energy Total">0</Real>
   </Thermochemistry>
   <Thermochemistry Name="T=298.15">
-    <Real Name="Zero point energy">213.52110063034519</Real>
-    <Real Name="Delta H formation">291.32029137757075</Real>
+    <Real Name="Zero point energy">213.52107786872841</Real>
+    <Real Name="Delta H formation">291.32027750085615</Real>
     <Real Name="Standard entropy Translation">159.51286689767051</Real>
-    <Real Name="Standard entropy Rotation">95.084459646858818</Real>
-    <Real Name="Standard entropy Vibration">57.406557283905705</Real>
-    <Real Name="Standard entropy Total">312.00388382843505</Real>
+    <Real Name="Standard entropy Rotation">95.084458973687916</Real>
+    <Real Name="Standard entropy Vibration">57.407235561374911</Real>
+    <Real Name="Standard entropy Total">312.00456143273334</Real>
     <Real Name="Heat capacity cV Translation">12.471693927229859</Real>
     <Real Name="Heat capacity cV Rotation">12.471693927229859</Real>
-    <Real Name="Heat capacity cV Vibration">53.411169056091261</Real>
-    <Real Name="Heat capacity cV Total">78.354556910550983</Real>
+    <Real Name="Heat capacity cV Vibration">53.411191239075414</Real>
+    <Real Name="Heat capacity cV Total">78.354579093535136</Real>
     <Real Name="Internal energy Translation">3.7184355444035821</Real>
     <Real Name="Internal energy Rotation">3.7184355444035821</Real>
-    <Real Name="Internal energy Vibration">222.16081338016403</Real>
-    <Real Name="Internal energy Total">229.59768446897118</Real>
+    <Real Name="Internal energy Vibration">222.1608222666043</Real>
+    <Real Name="Internal energy Total">229.59769335541145</Real>
   </Thermochemistry>
 </ReferenceData>

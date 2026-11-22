@@ -1,19 +1,19 @@
 <?xml version="1.0"?>
 <?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
 <ReferenceData>
-  <Real Name="T = 300 K B2(Classical)">-1474.7332966404438</Real>
-  <Real Name="T = 300 K B2(Force)">34.650061978594728</Real>
-  <Real Name="T = 300 K B2(Torque1)">237.63080252440733</Real>
-  <Real Name="T = 300 K B2(Torque2)">304.21183031863376</Real>
-  <Real Name="T = 300 K B2(Total)">-1169.1619182403283</Real>
-  <Real Name="T = 400 K B2(Classical)">-314.76057196674435</Real>
-  <Real Name="T = 400 K B2(Force)">4.0779562160178502</Real>
-  <Real Name="T = 400 K B2(Torque1)">41.621865332694021</Real>
-  <Real Name="T = 400 K B2(Torque2)">47.841221418758337</Real>
-  <Real Name="T = 400 K B2(Total)">-265.95107237500036</Real>
-  <Real Name="T = 500 K B2(Classical)">-122.53722428847927</Real>
-  <Real Name="T = 500 K B2(Force)">1.1494905527947157</Real>
-  <Real Name="T = 500 K B2(Torque1)">13.844394268818075</Real>
-  <Real Name="T = 500 K B2(Torque2)">15.065556446361493</Real>
-  <Real Name="T = 500 K B2(Total)">-106.93275837809476</Real>
+  <Real Name="T = 300 K B2(Classical)">-1474.7329115869093</Real>
+  <Real Name="T = 300 K B2(Force)">34.650051557315614</Real>
+  <Real Name="T = 300 K B2(Torque1)">237.63078157718471</Real>
+  <Real Name="T = 300 K B2(Torque2)">304.21180609755123</Real>
+  <Real Name="T = 300 K B2(Total)">-1169.1615661922258</Real>
+  <Real Name="T = 400 K B2(Classical)">-314.76052259362115</Real>
+  <Real Name="T = 400 K B2(Force)">4.0779554719840139</Real>
+  <Real Name="T = 400 K B2(Torque1)">41.621863105825021</Real>
+  <Real Name="T = 400 K B2(Torque2)">47.841218103656828</Real>
+  <Real Name="T = 400 K B2(Total)">-265.95102651689621</Real>
+  <Real Name="T = 500 K B2(Classical)">-122.53720951017034</Real>
+  <Real Name="T = 500 K B2(Force)">1.1494904105408856</Real>
+  <Real Name="T = 500 K B2(Torque1)">13.844393728290997</Real>
+  <Real Name="T = 500 K B2(Torque2)">15.06555547513576</Real>
+  <Real Name="T = 500 K B2(Total)">-106.93274449791608</Real>
 </ReferenceData>

@@ -1480,6 +1480,17 @@ eMinimizeStatus MolHandler::minimizeCoordinates(MsgHandler                      
             return eMinimizeStatus::Constraints;
         }
     }
+    // The shells start at their minimum for the atoms as they are. A
+    // structure file has them on their atoms, or where they were for other
+    // coordinates, and the minimization depended on that: from a minimum
+    // written to a file it could stop with large forces, finding no lower
+    // energy within the precision. Computing the forces relaxes the shells.
+    if (pd->polarizable())
+    {
+        std::vector<gmx::RVec>            f(xstart.size());
+        std::map<InteractionType, double> e;
+        forceComp->compute(msghandler, pd, topology, &xstart, &f, &e);
+    }
     // Remove the force components along the constraints
     auto constrainForces = [&](const std::vector<gmx::RVec> &x,
                                std::vector<gmx::RVec>       *f)
