@@ -230,8 +230,8 @@ def program_info(refresh: bool = False) -> ProgramInfo:
     @param refresh Ask the program again in any case.
     @return The description.
     @throws ActNotFoundError if the program cannot be found.
-    @throws ActError if the program does not give a description, which
-    means that it is too old for this interface.
+    @throws ActError if the program does not give a description: it is too
+    old for this interface, or it fails, and then the message has the reason.
     """
     words = config.executable_words()
     key = tuple(words)
@@ -247,6 +247,16 @@ def program_info(refresh: bool = False) -> ProgramInfo:
         except (OSError, subprocess.SubprocessError) as exc:
             raise ActError("Cannot run %s: %s" % (words[0], exc), args=args) from exc
         path = os.path.join(tmp, _OPTIONS_FILE)
+        if done.returncode != 0 and "export" not in done.stderr:
+            # The program does not start at all, for instance because MPI
+            # cannot be initialized or a library is missing: what it says is
+            # the reason, not its age. An older program fails on -export.
+            raise ActError(
+                "%s cannot describe its options: %s"
+                % (words[0], _error_message("help -export json", done.returncode,
+                                            done.stdout, done.stderr)),
+                args=args, returncode=done.returncode,
+                stdout=done.stdout, stderr=done.stderr)
         if done.returncode != 0 or not os.path.exists(path):
             raise ActError(
                 "%s does not describe its options. It is probably older than this "

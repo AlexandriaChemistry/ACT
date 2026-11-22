@@ -270,6 +270,32 @@ class RunTest(unittest.TestCase):
             act.program_info()
         self.assertIn("older", str(caught.exception))
 
+    def test_program_that_rejects_export_is_too_old(self):
+        """!
+        @brief A program that does not know -export is reported as too old.
+        """
+        act.config.executable = [sys.executable, "-c",
+                                 "import sys; sys.stderr.write('Unknown option -export\\n');"
+                                 " sys.exit(1)"]
+        with self.assertRaises(act.ActError) as caught:
+            act.program_info()
+        self.assertIn("older", str(caught.exception))
+
+    def test_program_that_fails_gives_its_reason(self):
+        """!
+        @brief A program that cannot start, for instance because MPI_Init
+        fails, is not reported as too old, and its message is shown.
+        """
+        act.config.executable = [sys.executable, "-c",
+                                 "import sys; sys.stderr.write('Fatal error in MPI_Init: "
+                                 "other MPI error\\n'); sys.exit(15)"]
+        with self.assertRaises(act.ActError) as caught:
+            act.program_info()
+        message = str(caught.exception)
+        self.assertNotIn("older", message)
+        self.assertIn("MPI_Init", message)
+        self.assertIn("15", message)
+
     def test_program_that_is_replaced_is_asked_again(self):
         """!
         @brief A newer program at the same path gives its own options, also
