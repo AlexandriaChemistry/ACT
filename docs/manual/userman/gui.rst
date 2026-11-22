@@ -148,3 +148,27 @@ The program on the cluster has to know the options that the *alexandria* of your
    :align: center
 
    The jobs on the cluster, with how far a training was when the cluster was last asked.
+
+.. _sec-gui-failed-jobs:
+
+-----------
+Failed jobs
+-----------
+A job that failed says why, under its row in the tab *Cluster* (:numref:`fig-gui-cluster-failed`). The interface reads the output of Slurm and the log files that came back, and picks the lines that tell:
+
+* the message with which *alexandria* stopped, told once with the number of processes that printed it;
+* compounds that got no topology with the force field, and the atom types or parameters that it lacks for them;
+* *mpirun* that found fewer cores than the job has processes;
+* a program, module or conda environment that the job did not find;
+* the time limit, memory, the GPU, or a crash.
+
+With the reason comes what to change: fewer processes, more time, the settings of the cluster, or the input of the calculation. Each line that tells opens the file it is from at that line, and the output, the log and the script of the job can be read on the page, with these lines marked.
+
+*Send again* makes a new job of one that is done, with other processes, time or GPU, and the settings of the cluster as they are now. It is called after the old one, with *-r2*, *-r3* and so on, and the page shows it before it is sent. Its files are copied from the directory of the old job on the cluster, so nothing is sent from your computer, also when the interface was started again in between. The number of individuals of a training and the time at which it stops (*-maxh*) follow the new job. A job with other input, such as another force field or other compounds, is sent from its tab.
+
+.. figure:: ../images/gui-cluster-failed.png
+   :name: fig-gui-cluster-failed
+   :width: 100%
+   :align: center
+
+   A comparison on four processes that failed: the reason, what to change, and the lines of the output that tell it, which are marked in the output below.
