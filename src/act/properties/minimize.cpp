@@ -118,6 +118,98 @@ static std::vector<gmx::RVec> centeredCoordinates(const std::vector<ActAtom>   &
     return centered;
 }
 
+MinimizeResult minimizeStructure(MsgHandler                    *msghandler,
+                                 const ForceField              *pd,
+                                 const ForceComputer           *forceComp,
+                                 const SimulationConfigHandler &sch,
+                                 const std::vector<int>        &freeze,
+                                 ACTMol                        *actmol,
+                                 std::vector<gmx::RVec>        *xmin)
+{
+    // The minimizer counts the atoms only
+    int natom = 0;
+    for (const auto &atom : actmol->atomsConst())
+    {
+        natom += (atom.pType() == ActParticle::Atom) ? 1 : 0;
+    }
+    for (int index : freeze)
+    {
+        if (index < 0 || index >= natom)
+        {
+            GMX_THROW(gmx::InvalidInputError(gmx::formatString("There is no atom %d to freeze, the molecule has %d atoms, numbered from zero",
+                                                               index, natom)));
+        }
+    }
+    MinimizeResult result;
+    const auto coords = *xmin;
+    std::map<InteractionType, double> energies;
+    {
+        std::vector<gmx::RVec> forces(actmol->atomsConst().size());
+        forceComp->compute(msghandler, pd, actmol->topology(), xmin, &forces, &energies);
+        result.energiesBefore = energies;
+        // Multipoles
+        msghandler->write("Multipole before minimization");
+        analyse_multipoles(msghandler, actmol, {}, pd, forceComp, nullptr);
+    }
+    // Now do the minimization.
+    msghandler->write(gmx::formatString("Starting minimization of '%s' using %s algorithm.\n",
+                                        actmol->getMolname().c_str(),
+                                        eMinimizeAlgorithmToString(sch.minAlg()).c_str()));
+
+    const MolHandler molhandler;
+    auto eMin = molhandler.minimizeCoordinates(msghandler, pd, actmol->topology(), forceComp, sch,
+                                               xmin, &energies, freeze);
+    result.status        = eMin;
+    result.energiesAfter = energies;
+    if (minimizationDidNotConverge(eMin))
+    {
+        msghandler->msg(ACTStatus::Warning,
+                        gmx::formatString("Minimization did not converge: %s. The results are those of the structure with the lowest energy.",
+                                          minimizeStatusMessage(eMin, energies[InteractionType::EPOT]).c_str()));
+    }
+    if (eMinimizeStatus::OK == eMin || minimizationDidNotConverge(eMin))
+    {
+        result.usable = true;
+        auto rmsd = molhandler.coordinateRmsd(actmol->atomsConst(), coords, xmin);
+        result.rmsd = rmsd;
+        msghandler->msg(ACTStatus::Info,
+                        gmx::formatString("Final energy: %g RMSD wrt original structure %g nm.",
+                                          energies[InteractionType::EPOT], rmsd));
+        if (actmol->fragmentHandler()->topologies().size() == 2)
+        {
+            // Make a copy to keep the correct shell coordinates when saving the structure.
+            std::vector<std::vector<gmx::RVec>>            newxmin = { *xmin };
+            std::vector<std::map<InteractionType, double>> einter;
+            std::vector<double>                            epot;
+            std::vector<std::vector<gmx::RVec>>            interactionForces;
+            forceComp->computeInteraction(msghandler, pd, actmol, &newxmin, true,
+                                          &einter, &epot, &interactionForces);
+            for(const auto &ec : einter)
+            {
+                for(const auto &ei : ec)
+                {
+                    msghandler->msg(ACTStatus::Info,
+                                    gmx::formatString("Interaction energy %s: %g",
+                                                      interactionTypeToString(ei.first).c_str(), ei.second));
+                }
+            }
+            if (!einter.empty())
+            {
+                result.interactionEnergies = einter[0];
+            }
+        }
+        // Multipoles
+        msghandler->write("Multipole after minimization");
+        // This is a hack for printing.
+        for(auto &qp : (*actmol->qProps()))
+        {
+            qp.qPact()->setX(*xmin);
+        }
+        analyse_multipoles(msghandler, actmol, {}, pd, forceComp, nullptr);
+    }
+    return result;
+}
+
 eMinimizeStatus minimizeMolecule(MsgHandler                    *msghandler,
                                  const ForceField              *pd,
                                  const ForceComputer           *forceComp,
@@ -144,80 +236,27 @@ eMinimizeStatus minimizeMolecule(MsgHandler                    *msghandler,
             }
         }
     }
-
-    const auto coords = *xmin;
-    std::map<InteractionType, double> energies;
-    {
-        std::vector<gmx::RVec> forces(actmol->atomsConst().size());
-        forceComp->compute(msghandler, pd, actmol->topology(), xmin, &forces, &energies);
-        addEnergies(jtree, "Energies before", energies);
-        // Multipoles
-        msghandler->write("Multipole before minimization");
-        analyse_multipoles(msghandler, actmol, {}, pd, forceComp, nullptr);
-    }
-    // Now do the minimization.
-    msghandler->write(gmx::formatString("Starting minimization of '%s' using %s algorithm.\n",
-                                        actmol->getMolname().c_str(),
-                                        eMinimizeAlgorithmToString(sch.minAlg()).c_str()));
-
-    const MolHandler molhandler;
-    auto eMin = molhandler.minimizeCoordinates(msghandler, pd, actmol->topology(), forceComp, sch,
-                                               xmin, &energies, freeze);
+    const auto result = minimizeStructure(msghandler, pd, forceComp, sch, freeze, actmol, xmin);
     if (epot)
     {
-        *epot = energies[InteractionType::EPOT];
+        *epot = result.energiesAfter.count(InteractionType::EPOT) > 0 ?
+            result.energiesAfter.at(InteractionType::EPOT) : 0.0;
     }
+    addEnergies(jtree, "Energies before", result.energiesBefore);
     // The status for programs that read the output
-    jtree->addObject("status", eMinimizeStatusToString(eMin));
-    jtree->addBool("converged", eMinimizeStatus::OK == eMin);
-    if (minimizationDidNotConverge(eMin))
+    jtree->addObject("status", eMinimizeStatusToString(result.status));
+    jtree->addBool("converged", eMinimizeStatus::OK == result.status);
+    if (result.usable)
     {
-        msghandler->msg(ACTStatus::Warning,
-                        gmx::formatString("Minimization did not converge: %s. The results are those of the structure with the lowest energy.",
-                                          minimizeStatusMessage(eMin, energies[InteractionType::EPOT]).c_str()));
-    }
-    if (eMinimizeStatus::OK == eMin || minimizationDidNotConverge(eMin))
-    {
-        auto rmsd = molhandler.coordinateRmsd(actmol->atomsConst(), coords, xmin);
-        msghandler->msg(ACTStatus::Info,
-                        gmx::formatString("Final energy: %g RMSD wrt original structure %g nm.",
-                                          energies[InteractionType::EPOT], rmsd));
-        jtree->addValueUnit("rmsd", rmsd, "nm");
-        if (actmol->fragmentHandler()->topologies().size() == 2)
+        jtree->addValueUnit("rmsd", result.rmsd, "nm");
+        // For programs that read the output, such as a scan of the distance
+        if (!result.interactionEnergies.empty())
         {
-            // Make a copy to keep the correct shell coordinates when saving the structure.
-            std::vector<std::vector<gmx::RVec>>            newxmin = { *xmin };
-            std::vector<std::map<InteractionType, double>> einter;
-            std::vector<double>                            epot;
-            std::vector<std::vector<gmx::RVec>>            interactionForces;
-            forceComp->computeInteraction(msghandler, pd, actmol, &newxmin, true,
-                                          &einter, &epot, &interactionForces);
-            for(const auto &ec : einter)
-            {
-                for(const auto &ei : ec)
-                {
-                    msghandler->msg(ACTStatus::Info,
-                                    gmx::formatString("Interaction energy %s: %g",
-                                                      interactionTypeToString(ei.first).c_str(), ei.second));
-                }
-            }
-            // For programs that read the output, such as a scan of the distance
-            if (!einter.empty())
-            {
-                addEnergies(jtree, "Interaction energies", einter[0]);
-            }
+            addEnergies(jtree, "Interaction energies", result.interactionEnergies);
         }
-        // Multipoles
-        msghandler->write("Multipole after minimization");
-        // This is a hack for printing.
-        for(auto &qp : (*actmol->qProps()))
-        {
-            qp.qPact()->setX(*xmin);
-        }
-        analyse_multipoles(msghandler, actmol, {}, pd, forceComp, nullptr);
-        addEnergies(jtree, "Energies after", energies);
+        addEnergies(jtree, "Energies after", result.energiesAfter);
     }
-    return eMin;
+    return result.status;
 }
 
 void MinimizeOptions::check() const
@@ -231,6 +270,11 @@ void MinimizeOptions::check() const
     {
         GMX_THROW(gmx::InvalidInputError("There is no molecule: give a structure file (-f), a SMILES string (-smiles) or a compound of the charge file (-db)"));
     }
+    checkSettings();
+}
+
+void MinimizeOptions::checkSettings() const
+{
     if (!std::isfinite(shellTolerance) || shellTolerance <= 0)
     {
         GMX_THROW(gmx::InvalidInputError(gmx::formatString("The value %g of -shelltoler should be more than zero",

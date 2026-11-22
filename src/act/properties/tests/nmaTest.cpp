@@ -808,6 +808,53 @@ TEST_F(NmaTest, WithoutCommandLineSameAsTheProgram)
     }
 }
 
+TEST_F(NmaTest, SettingsAreCheckedWithoutFiles)
+{
+    // For a molecule in memory, as in Python: no files are needed, and
+    // wrong settings are refused with the message of the program
+    EXPECT_NO_THROW(NmaOptions().checkSettings());
+    EXPECT_THROW(NmaOptions().check(), gmx::InvalidInputError);
+    {
+        NmaOptions o;
+        o.lineWidth = 0;
+        try
+        {
+            o.checkSettings();
+            ADD_FAILURE() << "Accepted a wrong -linewidth";
+        }
+        catch (const gmx::InvalidInputError &ex)
+        {
+            EXPECT_NE(std::string::npos, std::string(ex.what()).find("-linewidth")) << ex.what();
+        }
+    }
+    {
+        NmaOptions o;
+        o.shellTolerance = -1;
+        try
+        {
+            o.checkSettings();
+            ADD_FAILURE() << "Accepted a wrong -shelltoler";
+        }
+        catch (const gmx::InvalidInputError &ex)
+        {
+            EXPECT_NE(std::string::npos, std::string(ex.what()).find("-shelltoler")) << ex.what();
+        }
+    }
+    {
+        NmaOptions o;
+        o.simulation.setForceTolerance(0);
+        try
+        {
+            o.checkSettings();
+            ADD_FAILURE() << "Accepted a wrong -toler";
+        }
+        catch (const gmx::InvalidInputError &ex)
+        {
+            EXPECT_NE(std::string::npos, std::string(ex.what()).find("-toler")) << ex.what();
+        }
+    }
+}
+
 TEST_F(NmaTest, WithoutCommandLineWrongOptions)
 {
     const auto valid = [this]()

@@ -1859,6 +1859,38 @@ std::map<std::string, std::string> openMMResidueNames(MsgHandler                
     return names;
 }
 
+std::map<std::string, std::string> nameResidues(MsgHandler          *msghandler,
+                                                std::vector<ACTMol> *actmols,
+                                                const std::string   &userNames)
+{
+    auto names = openMMResidueNames(msghandler, *actmols, userNames);
+    if (!msghandler->ok())
+    {
+        return {};
+    }
+    for (auto &actmol : *actmols)
+    {
+        const auto &fragIds    = actmol.fragmentHandler()->ids();
+        const auto &topologies = actmol.fragmentHandler()->topologies();
+        for (size_t fragment = 0; fragment < topologies.size(); fragment++)
+        {
+            const auto name = names.find(fragIds[fragment]);
+            if (name == names.end())
+            {
+                continue;
+            }
+            for (const auto &atom : topologies[fragment].atoms())
+            {
+                if (atom.residueNumber() >= 0)
+                {
+                    actmol.topologyPtr()->setResidueName(atom.residueNumber(), name->second);
+                }
+            }
+        }
+    }
+    return names;
+}
+
 void writeOpenMM(MsgHandler                               *msghandler,
                  const std::string                        &fileName,
                  const ForceField                         *pd,
