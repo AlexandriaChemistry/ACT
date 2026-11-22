@@ -34,6 +34,7 @@
 #ifndef ACT_MINIMIZE_H
 #define ACT_MINIMIZE_H
 
+#include <map>
 #include <string>
 #include <vector>
 
@@ -50,6 +51,53 @@ class ForceComputer;
 class ForceField;
 class JsonTree;
 class MsgHandler;
+
+/*! \brief What a minimization of a molecule gives, see minimizeStructure
+ */
+struct MinimizeResult
+{
+    //! How the minimizer ended
+    eMinimizeStatus                   status = eMinimizeStatus::OK;
+    //! Whether the results after the minimization are there: the minimum,
+    //! or the structure with the lowest energy that was found
+    bool                              usable = false;
+    //! The distance between the structures before and after in nm, after superposition
+    double                            rmsd   = 0;
+    //! The energy by term in kJ/mol before the minimization
+    std::map<InteractionType, double> energiesBefore;
+    //! The energy by term in kJ/mol after the minimization
+    std::map<InteractionType, double> energiesAfter;
+    //! For a molecule of two compounds the interaction energy by term in
+    //! kJ/mol after the minimization, empty otherwise
+    std::map<InteractionType, double> interactionEnergies;
+};
+
+/*! \brief Minimize the energy of a molecule in memory
+ *
+ * What alexandria minimize, alexandria simulate -minimize and the class
+ * Molecule of Python do: the energies before, the minimization, and after
+ * it the distance to the structure it started from, the energies and for a
+ * dimer the interaction energies. The multipoles before and after go to the
+ * messages.
+ * \param[in]    msghandler For output and errors
+ * \param[in]    pd         The force field
+ * \param[in]    forceComp  The force computer
+ * \param[in]    sch        The minimization settings
+ * \param[in]    freeze     The atoms that stay where they are, numbered from
+ *                          zero among the atoms only, without shells and
+ *                          virtual sites, as in an index file
+ * \param[inout] actmol     The molecule
+ * \param[inout] xmin       The starting coordinates, on return the minimized ones
+ * \return What the minimization gave
+ * \throws gmx::InvalidInputError if an atom to freeze is not there
+ */
+MinimizeResult minimizeStructure(MsgHandler                    *msghandler,
+                                 const ForceField              *pd,
+                                 const ForceComputer           *forceComp,
+                                 const SimulationConfigHandler &sch,
+                                 const std::vector<int>        &freeze,
+                                 ACTMol                        *actmol,
+                                 std::vector<gmx::RVec>        *xmin);
 
 /*! \brief Minimize the energy of a molecule and report the results
  *
@@ -106,6 +154,14 @@ struct MinimizeOptions
      * \throws gmx::InvalidInputError that says which option is wrong
      */
     void check() const;
+
+    /*! \brief Check the settings of the minimization, without the files
+     *
+     * For a molecule in memory, such as one of Python. check() does this
+     * as well.
+     * \throws gmx::InvalidInputError that says which option is wrong
+     */
+    void checkSettings() const;
 };
 
 /*! \brief Minimize the energy of a molecule as alexandria minimize does

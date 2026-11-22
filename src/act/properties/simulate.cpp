@@ -105,6 +105,11 @@ void SimulateOptions::check() const
     {
         GMX_THROW(gmx::InvalidInputError("There is no molecule: give a structure file (-f), a SMILES string (-smiles) or a compound of the charge file (-db)"));
     }
+    checkSettings();
+}
+
+void SimulateOptions::checkSettings() const
+{
     if (!std::isfinite(shellTolerance) || shellTolerance <= 0)
     {
         GMX_THROW(gmx::InvalidInputError(gmx::formatString("The value %g of -shelltoler should be more than zero",

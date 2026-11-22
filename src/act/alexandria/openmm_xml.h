@@ -68,6 +68,22 @@ namespace alexandria
                                                           const std::vector<ACTMol> &actmols,
                                                           const std::string         &userNames);
 
+    /*! \brief Give the residues of the compounds their names for OpenMM
+     *
+     * The names of openMMResidueNames, which the structure file then has as
+     * well, such that OpenMM finds the residues of the force field file in
+     * it. alexandria gentop and the class Molecule of Python do this.
+     * \param[in]    msghandler For errors in the user input
+     * \param[inout] actmols    The compounds, whose residues get the names
+     * \param[in]    userNames  Names from the user, see openMMResidueNames
+     * \return A map from the InChi of each compound to its residue name,
+     *         for writeOpenMM; empty if the names of the user are wrong,
+     *         which the message handler then says
+     */
+    std::map<std::string, std::string> nameResidues(MsgHandler          *msghandler,
+                                                    std::vector<ACTMol> *actmols,
+                                                    const std::string   &userNames);
+
     /*! \brief Store the ForceField force field to an OpenMM XML file
      *
      * \param[in] msghandler For status and messages

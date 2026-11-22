@@ -95,6 +95,14 @@ struct GentopOptions
      * \throws gmx::InvalidInputError that says which option is wrong
      */
     void check() const;
+
+    /*! \brief Check the settings, without the files and the input
+     *
+     * For a molecule in memory, such as one of Python. check() does this
+     * as well.
+     * \throws gmx::InvalidInputError that says which option is wrong
+     */
+    void checkSettings() const;
 };
 
 /*! \brief Make the topologies of compounds, as alexandria gentop does

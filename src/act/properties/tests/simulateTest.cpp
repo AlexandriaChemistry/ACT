@@ -506,6 +506,53 @@ TEST_F(SimulateTest, WithoutCommandLineSameAsTheProgram)
     EXPECT_EQ(0, alexandria::runSimulate(&msghandler, quiet));
 }
 
+TEST_F(SimulateTest, SettingsAreCheckedWithoutFiles)
+{
+    // For a molecule in memory, as in Python: no files are needed, and
+    // wrong settings are refused with the message of the program
+    EXPECT_NO_THROW(SimulateOptions().checkSettings());
+    EXPECT_THROW(SimulateOptions().check(), gmx::InvalidInputError);
+    {
+        SimulateOptions o;
+        o.shellTolerance = 0;
+        try
+        {
+            o.checkSettings();
+            ADD_FAILURE() << "Accepted a wrong -shelltoler";
+        }
+        catch (const gmx::InvalidInputError &ex)
+        {
+            EXPECT_NE(std::string::npos, std::string(ex.what()).find("-shelltoler")) << ex.what();
+        }
+    }
+    {
+        SimulateOptions o;
+        o.simulation.setSimulation(10, 0.0, 0, 1, 1, 1);
+        try
+        {
+            o.checkSettings();
+            ADD_FAILURE() << "Accepted a wrong -deltat";
+        }
+        catch (const gmx::InvalidInputError &ex)
+        {
+            EXPECT_NE(std::string::npos, std::string(ex.what()).find("-deltat")) << ex.what();
+        }
+    }
+    {
+        SimulateOptions o;
+        o.simulation.setSimulation(10, 0.001, -1, 1, 1, 1);
+        try
+        {
+            o.checkSettings();
+            ADD_FAILURE() << "Accepted a wrong -temp";
+        }
+        catch (const gmx::InvalidInputError &ex)
+        {
+            EXPECT_NE(std::string::npos, std::string(ex.what()).find("-temp")) << ex.what();
+        }
+    }
+}
+
 TEST_F(SimulateTest, WithoutCommandLineWrongOptions)
 {
     const auto valid = [this]()
