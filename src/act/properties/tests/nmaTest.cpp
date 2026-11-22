@@ -981,6 +981,29 @@ TEST_F(NmaTest, JsonRootKey)
     EXPECT_TRUE(out.json["nma"]["rmsd"]["value"].is_number());
 }
 
+// Test: A minimum that ACT wrote to a PDB file, of which the CONECT records
+// have no bond orders, is read as the same molecule, minimized again and
+// analysed, with shells. Before, the carbonyl oxygen of acetone was read
+// as a hydroxyl, and nma failed with "Minimization failed".
+TEST_F(NmaTest, StructureWrittenByAct)
+{
+    NmaOutput out;
+    ASSERT_EQ(0, runNmaFF("acetone-act.pdb", "ACS-pg1.xml", "written", &out));
+    ASSERT_FALSE(out.json.empty());
+    const auto &js = out.json.at("nma");
+    EXPECT_EQ("OK", js.value("status", ""));
+    EXPECT_TRUE(js["converged"].get<bool>());
+    std::vector<std::string> types;
+    for (const auto &particle : js.at("molecule").at("particles"))
+    {
+        types.push_back(particle.value("type", ""));
+    }
+    EXPECT_EQ(1, std::count(types.begin(), types.end(), "o2")) << nlohmann::json(types).dump();
+    EXPECT_EQ(0, std::count(types.begin(), types.end(), "o3")) << nlohmann::json(types).dump();
+    // Acetone has 10 atoms, 3N - 6 = 24 vibrations
+    EXPECT_EQ(24u, js.at("modes").size());
+}
+
 // Test: The motion of the atoms in each normal mode is in the JSON file
 TEST_F(NmaTest, ModesInJson)
 {
