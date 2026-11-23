@@ -61,21 +61,6 @@
 #include "gromacs/utility/stringutil.h"
 #include "pdbwriter.h"
 
-typedef struct {
-    //! Indices of the two atoms in a CONECT record
-    int ai, aj;
-} gmx_conection_t;
-
-//! \brief List of atom pairs to write as CONECT records to a pdb file
-typedef struct gmx_conect_t {
-    //! Number of connections
-    int              nconect;
-    //! Whether the connections are sorted
-    gmx_bool         bSorted;
-    //! Array of connections
-    gmx_conection_t *conect;
-} gmx_conect_t;
-
 /*! \brief Write the simulation box as a CRYST1 record to a pdb file,
  * nothing is written if there is no periodicity
  * \param[in] out  The file to write to
@@ -203,11 +188,9 @@ void pdbWriter(FILE                           *out,
                char                            chain,
                int                             model_nr,
                const std::vector<int>         &index,
-               gmx_conect                      conect,
+               const std::vector<PdbBond>     &bonds,
                bool                            renumberAtoms)
 {
-    gmx_conect_t     *gc = static_cast<gmx_conect_t *>(conect);
-    int               i;
     int               resind, resnr = -1;
     enum PDB_record   type;
     //unsigned char     ch;
@@ -309,20 +292,23 @@ void pdbWriter(FILE                           *out,
                                  qions[i].empty() ? nullptr : qions[i].c_str());
     }
 
-    if (nullptr != gc)
+    // A double bond is listed twice and a triple bond three times, as
+    // RDKit and Open Babel read them
+    for (const auto &bond : bonds)
     {
-        /* Write conect records */
-        for (i = 0; (i < gc->nconect); i++)
+        int ai = bond.ai;
+        int aj = bond.aj;
+        if (renumberAtoms)
         {
-            int ai = gc->conect[i].ai;
-            int aj = gc->conect[i].aj;
-            if (renumberAtoms)
-            {
-                ai = reverseIndex.find(ai)->second;
-                aj = reverseIndex.find(aj)->second;
-            }
-            fprintf(out, "CONECT%5d%5d\n", ai+1, aj+1);
+            ai = reverseIndex.find(ai)->second;
+            aj = reverseIndex.find(aj)->second;
         }
+        fprintf(out, "CONECT%5d", ai+1);
+        for (int k = 0; k < std::max(1, bond.order); k++)
+        {
+            fprintf(out, "%5d", aj+1);
+        }
+        fprintf(out, "\n");
     }
     fprintf(out, "ENDMDL\n");
     fprintf(out, "TER\n");

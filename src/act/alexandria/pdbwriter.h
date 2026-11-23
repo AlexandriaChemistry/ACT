@@ -59,8 +59,35 @@ std::vector<std::string> particleNames(const std::vector<ActAtom> &atoms);
  */
 std::vector<std::string> ionCharges(const std::vector<ActAtom> &atoms);
 
-//! Function to write a pdb file.
-void pdbWriter(FILE                           *out, 
+//! A bond as a PDB file has it, in its CONECT records
+struct PdbBond
+{
+    //! The indices of the two particles, from zero
+    int ai;
+    int aj;
+    //! The bond order, 1, 2 or 3: the number of times the bond is listed
+    int order;
+};
+
+/*! \brief Write a pdb file
+ * \param[in] out           The file
+ * \param[in] title         The title, nullptr for none
+ * \param[in] atoms         The particles
+ * \param[in] x             Their coordinates (nm)
+ * \param[in] residueNames  The names of the residues
+ * \param[in] ePBC          The periodic boundary conditions
+ * \param[in] box           The box, nullptr for none
+ * \param[in] chain         The chain identifier
+ * \param[in] model_nr      The number of the model
+ * \param[in] index         The particles to write, all if empty
+ * \param[in] bonds         The bonds, written as CONECT records with the
+ *                          second particle as many times as the bond
+ *                          order, as PDB files have double and triple
+ *                          bonds. Empty for no CONECT records.
+ * \param[in] renumberAtoms Whether the particles that are written are
+ *                          numbered from one without gaps
+ */
+void pdbWriter(FILE                           *out,
                const char                     *title,
                const std::vector<ActAtom>     &atoms,
                const std::vector<gmx::RVec>   &x,
@@ -70,7 +97,7 @@ void pdbWriter(FILE                           *out,
                char                            chain,
                int                             model_nr,
                const std::vector<int>         &index,
-               gmx_conect                      conect,
+               const std::vector<PdbBond>     &bonds,
                bool                            renumberAtoms=false);
 
 } // namespace
