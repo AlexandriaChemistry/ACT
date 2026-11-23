@@ -100,9 +100,11 @@ protected:
      * \param[in] ff      The force field to edit
      * \param[in] options The other options, an empty value for a flag
      * \param[in] output  Name of the output file, written with -o if not empty
+     * \param[in] status  The exit status that edit_ff should give
      * \return the path of the output file
      */
-    std::string run(const std::string &ff, const Options &options, const std::string &output = "edited.xml")
+    std::string run(const std::string &ff, const Options &options, const std::string &output = "edited.xml",
+                    int status = 0)
     {
         gmx::test::CommandLine cmd;
         cmd.append("edit_ff");
@@ -125,7 +127,7 @@ protected:
                 cmd.addOption(o.first.c_str(), o.second);
             }
         }
-        EXPECT_EQ(0, edit_ff(cmd.argc(), cmd.argv()));
+        EXPECT_EQ(status, edit_ff(cmd.argc(), cmd.argv()));
         return out;
     }
 
@@ -710,7 +712,8 @@ TEST_F(EditFFTest, ValidateWrites)
 {
     const auto broken = fileManager().getTemporaryFilePath("broken.xml");
     writeBrokenForceField(input_, broken);
-    auto pd     = read(run(broken, { { "-validate", "" } }, "validated.xml"));
+    // The problems are in the file that was read, also if writing removes them
+    auto pd     = read(run(broken, { { "-validate", "" } }, "validated.xml", 1));
     const auto issues = validateForceField(pd);
     EXPECT_EQ(2u, issues.size());
     EXPECT_EQ(1u, countIssues(issues, ForceFieldIssue::Kind::OutOfBounds));
@@ -939,7 +942,9 @@ TEST_F(EditFFTest, JsonValidation)
     const auto broken = fileManager().getTemporaryFilePath("broken.xml");
     writeBrokenForceField(input_, broken);
     const auto jsonFile = fileManager().getTemporaryFilePath("broken.json");
-    run(broken, { { "-validate", "" }, { "-json", jsonFile } }, "");
+    run(broken, { { "-validate", "" }, { "-json", jsonFile } }, "", 1);
+    // Reading changed values, so the checksum is not that of the contents
+    EXPECT_FALSE(readJson(jsonFile).at("edit_ff").at("checksum_ok").get<bool>());
     const auto validation = readJson(jsonFile).at("edit_ff").at("validation");
     EXPECT_FALSE(validation.at("ok").get<bool>());
     const auto &issues = validation.at("issues");
@@ -1009,6 +1014,24 @@ TEST_F(EditFFTest, ValidateNothingToWrite)
 {
     const auto out = run(input_, { { "-validate", "" } }, "unchanged.xml");
     EXPECT_FALSE(std::filesystem::exists(out));
+}
+
+// Test: -validate finds a checksum that does not match the contents, which
+// gives exit status 1, and writing the force field corrects it
+TEST_F(EditFFTest, ValidateCheckSum)
+{
+    const auto file = fileManager().getTemporaryFilePath("wrongsum.xml");
+    copyWithWrongCheckSum(input_, file);
+    const auto jsonFile = fileManager().getTemporaryFilePath("wrongsum.json");
+    const auto out = run(file, { { "-validate", "" }, { "-json", jsonFile } }, "rightsum.xml", 1);
+    EXPECT_FALSE(readJson(jsonFile).at("edit_ff").at("checksum_ok").get<bool>());
+    // The parameters have no problems
+    EXPECT_TRUE(readJson(jsonFile).at("edit_ff").at("validation").at("ok").get<bool>());
+    auto pd = read(out);
+    EXPECT_TRUE(pd.verifyCheckSum(nullptr));
+    // The written force field has no problems
+    run(out, { { "-validate", "" }, { "-json", jsonFile } }, "", 0);
+    EXPECT_TRUE(readJson(jsonFile).at("edit_ff").at("checksum_ok").get<bool>());
 }
 
 // Test: Parameters of a second force field that are missing in the first

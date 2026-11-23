@@ -850,16 +850,43 @@ static void compare_pd(ForceField *pd1,
     }
 }
 
-/*! \brief Print the problems with the parameters of a force field, see validateForceField
- * \param[in] pd       The force field
- * \param[in] fileName Its file
- * \param[in] writing  Whether the force field will be written
- * \return the number of problems that writing the force field removes
- */
-static size_t printValidation(const ForceField  *pd,
-                              const std::string &fileName,
-                              bool               writing)
+//! The result of validating a force field
+struct Validation
 {
+    //! The number of problems, a wrong checksum included
+    size_t nissues = 0;
+    //! The number of problems that writing the force field removes
+    size_t nfixed  = 0;
+};
+
+/*! \brief Print the problems with a force field
+ * These are a checksum that does not match the contents and the problems
+ * with the parameters, see validateForceField.
+ * \param[in] pd              The force field
+ * \param[in] fileName        Its file
+ * \param[in] contentCheckSum The checksum of the contents as read
+ * \param[in] writing         Whether the force field will be written
+ * \return the number of problems and of those that writing removes
+ */
+static Validation printValidation(const ForceField  *pd,
+                                  const std::string &fileName,
+                                  const std::string &contentCheckSum,
+                                  bool               writing)
+{
+    Validation result;
+    if (pd->checkSum() == contentCheckSum)
+    {
+        printf("Checksum of %s: %s, correct\n", fileName.c_str(), contentCheckSum.c_str());
+    }
+    else
+    {
+        // Writing gives the file the checksum of its contents
+        result.nissues += 1;
+        result.nfixed  += 1;
+        printf("Checksum of %s: the file has '%s', the contents as read give %s.\n"
+               "This is corrected by writing the force field with -o, or with edit_ff -sign.\n",
+               fileName.c_str(), pd->checkSum().c_str(), contentCheckSum.c_str());
+    }
     const auto issues = validateForceField(*pd);
     const std::vector<std::pair<ForceFieldIssue::Kind, const char *>> kinds =
     {
@@ -870,7 +897,7 @@ static size_t printValidation(const ForceField  *pd,
         { ForceFieldIssue::Kind::Negative,            "Negative values of parameters that may not be negative" }
     };
     size_t nfixed = 0;
-    printf("Validation of %s: %zu problem(s)\n", fileName.c_str(), issues.size());
+    printf("Validation of the parameters of %s: %zu problem(s)\n", fileName.c_str(), issues.size());
     for (const auto &kind : kinds)
     {
         size_t n = 0;
@@ -899,7 +926,9 @@ static size_t printValidation(const ForceField  *pd,
         printf("%zu problem(s) have to be corrected by hand, for instance with edit_ff -p -a -min -max -val -nonneg.\n",
                issues.size() - nfixed);
     }
-    return nfixed;
+    result.nissues += issues.size();
+    result.nfixed  += nfixed;
+    return result;
 }
 
 /*! \brief Tool to manipulate force field files
@@ -963,8 +992,9 @@ void EditFFOptions::check() const
     }
 }
 
-void runEditFF(MsgHandler *msghandler, const EditFFOptions &options)
+int runEditFF(MsgHandler *msghandler, const EditFFOptions &options)
 {
+    int status = 0;
     options.check();
     ForceField pd;
     // A force field that is repaired with parameters of a second one need
@@ -975,7 +1005,7 @@ void runEditFF(MsgHandler *msghandler, const EditFFOptions &options)
     // The checksum of the force field as it was read, which differs from
     // that in the file if it was converted, see ForceField::convertCoulomb
     const std::string readCheckSum = forcefieldCheckSum(&pd);
-    (void) pd.verifyCheckSum(msghandler, readCheckSum);
+    const bool checkSumOk = pd.verifyCheckSum(msghandler, readCheckSum);
     bool forceWrite = options.forceWrite;
     if (!options.secondForceFieldFile.empty())
     {
@@ -1011,9 +1041,12 @@ void runEditFF(MsgHandler *msghandler, const EditFFOptions &options)
     }
     else if (options.validate)
     {
-        auto nfixed = printValidation(&pd, options.forceFieldFile, !options.outputFile.empty());
+        const auto validation = printValidation(&pd, options.forceFieldFile, readCheckSum,
+                                                !options.outputFile.empty());
         // The corrections were made when reading, write them
-        forceWrite = forceWrite || nfixed > 0;
+        forceWrite = forceWrite || validation.nfixed > 0;
+        // Also if writing corrects the problems: they are in the file that was read
+        status     = validation.nissues > 0 ? 1 : 0;
     }
     else if (!options.analyze.empty())
     {
@@ -1133,10 +1166,13 @@ void runEditFF(MsgHandler *msghandler, const EditFFOptions &options)
         JsonTree jtree("edit_ff");
         jtree.addBool("changed", changed);
         jtree.addBool("written", written);
+        // Whether the checksum in the file is that of the contents as read
+        jtree.addBool("checksum_ok", checkSumOk);
         jtree.addObject(forceFieldToJson(pd));
         jtree.addObject(forceFieldIssuesToJson(validateForceField(pd)));
         jtree.write(options.jsonFile, true);
     }
+    return status;
 }
 
 int edit_ff(int argc, char*argv[])
@@ -1171,7 +1207,10 @@ int edit_ff(int argc, char*argv[])
         "parameters outside their bounds to the nearest bound and uses the first",
         "definition of a parameter that is defined more than once, so a force",
         "field written with [TT]-o[tt] no longer has these problems. The others",
-        "are listed to be corrected by hand.[PAR]",
+        "are listed to be corrected by hand. The checksum in the file is",
+        "compared with that of the contents as well; writing the force field",
+        "or [TT]-sign[tt] corrects it. If there is any problem, the exit status",
+        "is 1, also when the force field written with [TT]-o[tt] no longer has it.[PAR]",
         "With [TT]-sign[tt] the force field is written with a new checksum and",
         "time stamp, such that programs read it without the warning that the",
         "checksum does not match, for instance after editing the file by hand.",
@@ -1243,7 +1282,7 @@ int edit_ff(int argc, char*argv[])
         { "-bounds", FALSE, etBOOL, {&bounds},
           "Check whether any parameter is hitting the wall, i.e. is at one of the boundaries." },
         { "-validate", FALSE, etBOOL, {&validate},
-          "Check that the parameters are within their bounds and defined only once, and write the corrected force field with [TT]-o[tt], see above." },
+          "Check the checksum and that the parameters are within their bounds and defined only once, and write the corrected force field with [TT]-o[tt], see above. The exit status is 1 if there is a problem." },
         { "-copy_missing", FALSE, etSTR, {&missing},
           "Copy either the EEM, the BONDS or OTHER parameters from file two [TT]-f2[tt] that are missing from file one [TT]-f[tt] to another [TT]-o[tt]." },
         { "-replace", FALSE, etSTR, {&replace},
@@ -1337,14 +1376,13 @@ int edit_ff(int argc, char*argv[])
         options.replace          = replace;
         options.implant          = implant;
         options.combinationRules = crule.rules();
-        runEditFF(&msghandler, options);
+        return runEditFF(&msghandler, options);
     }
     catch (const gmx::InvalidInputError &ex)
     {
         fprintf(stderr, "%s\n", ex.what());
         return 1;
     }
-    return 0;
 }
 
 } // namespace alexandria

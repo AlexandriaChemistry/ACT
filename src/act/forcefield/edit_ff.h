@@ -88,7 +88,7 @@ struct EditFFOptions
     bool                  stretch    = false;
     //! Check which parameters are at their bounds (-bounds)
     bool                  bounds     = false;
-    //! Check the parameters (-validate)
+    //! Check the checksum and the parameters (-validate)
     bool                  validate   = false;
     //! Plot interactions (-plot), with analyze
     bool                  plot       = false;
@@ -123,8 +123,9 @@ struct EditFFOptions
  * \param[in] options    What to do
  * \throws gmx::InvalidInputError for options that make no sense, see
  * EditFFOptions::check, gmx::FileIOError if a file cannot be read or written
+ * \return 0, or 1 if validation (EditFFOptions::validate) found a problem
  */
-void runEditFF(MsgHandler *msghandler, const EditFFOptions &options);
+int runEditFF(MsgHandler *msghandler, const EditFFOptions &options);
 
 } // namespace alexandria
 
