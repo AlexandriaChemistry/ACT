@@ -931,6 +931,25 @@ void EditFFOptions::check() const
             GMX_THROW(gmx::InvalidInputError(gmx::formatString("Unknown mutability '%s' of -mut", mutability->c_str())));
         }
     }
+    // Signing writes the force field as it was read, nothing else
+    if (sign)
+    {
+        const std::vector<std::pair<const char *, bool>> others = {
+            { "-ff2", !secondForceFieldFile.empty() }, { "-min", minimum.has_value() },
+            { "-val", value.has_value() }, { "-max", maximum.has_value() },
+            { "-scale", scale.has_value() }, { "-mut", mutability.has_value() },
+            { "-nonneg", nonNegative.has_value() }, { "-limits", limits.has_value() },
+            { "-del", remove }, { "-stretch", stretch }, { "-bounds", bounds },
+            { "-validate", validate }, { "-ana", !analyze.empty() }
+        };
+        for (const auto &o : others)
+        {
+            if (o.second)
+            {
+                GMX_THROW(gmx::InvalidInputError(gmx::formatString("-sign cannot be combined with %s", o.first)));
+            }
+        }
+    }
     // These need the second force field, without it they would do nothing
     const std::vector<std::pair<std::string, std::string>> needSecond = {
         { "-copy_missing", copyMissing }, { "-replace", replace }, { "-implant", implant }
@@ -1012,6 +1031,10 @@ void runEditFF(MsgHandler *msghandler, const EditFFOptions &options)
     {
         removeParticles(&pd, options.particles);
     }
+    else if (options.sign)
+    {
+        // Nothing to change, only to write below
+    }
     else
     {
         bool   bLimits = options.limits.has_value();
@@ -1080,9 +1103,12 @@ void runEditFF(MsgHandler *msghandler, const EditFFOptions &options)
     const std::string checkSum = forcefieldCheckSum(&pd);
     const bool        changed  = (checkSum != readCheckSum || nRuleChanged > 0);
     bool              written  = false;
-    if (!options.outputFile.empty())
+    // Signing without -o writes over the file that was read
+    const std::string outputFile = (options.sign && options.outputFile.empty()) ? pd.filename()
+                                                                               : options.outputFile;
+    if (!outputFile.empty())
     {
-        if (!changed && !forceWrite)
+        if (!changed && !forceWrite && !options.sign)
         {
             printf("No changes to forcefield structure, not writing a new file.");
         }
@@ -1090,8 +1116,13 @@ void runEditFF(MsgHandler *msghandler, const EditFFOptions &options)
         {
             pd.updateTimeStamp();
             pd.setCheckSum(checkSum);
-            writeForceField(options.outputFile, &pd, false);
+            writeForceField(outputFile, &pd, false);
             written = true;
+            if (options.sign)
+            {
+                printf("Wrote %s with checksum %s and time stamp %s.\n", outputFile.c_str(),
+                       pd.checkSum().c_str(), pd.timeStamp().c_str());
+            }
         }
     }
     // After writing, such that the checksum is that of the new file
@@ -1140,7 +1171,14 @@ int edit_ff(int argc, char*argv[])
         "parameters outside their bounds to the nearest bound and uses the first",
         "definition of a parameter that is defined more than once, so a force",
         "field written with [TT]-o[tt] no longer has these problems. The others",
-        "are listed to be corrected by hand."
+        "are listed to be corrected by hand.[PAR]",
+        "With [TT]-sign[tt] the force field is written with a new checksum and",
+        "time stamp, such that programs read it without the warning that the",
+        "checksum does not match, for instance after editing the file by hand.",
+        "The file is written to [TT]-o[tt] or, without [TT]-o[tt], over the file",
+        "that was read. Older files are converted to the present format first.",
+        "Nothing else is done, so [TT]-sign[tt] cannot be combined with options",
+        "that change or analyze parameters."
     };
     CombRuleUtil crule;
     crule.addInfo(&desc);
@@ -1167,6 +1205,7 @@ int edit_ff(int argc, char*argv[])
     gmx_bool     forceWrite = false;
     gmx_bool     bounds     = false;
     gmx_bool     validate   = false;
+    gmx_bool     sign       = false;
     const char  *nonneg[]   = { nullptr, "unchanged", "yes", "no", nullptr };
     gmx_bool     remove     = false;
     char        *missing    = (char *)"";
@@ -1214,7 +1253,9 @@ int edit_ff(int argc, char*argv[])
         { "-plot",    FALSE, etBOOL, {&plot},
           "Plot many interactions as a function of distance or angle" },
         { "-write",   FALSE, etBOOL, {&forceWrite},
-          "Write out a force field file even if there were no changes" }
+          "Write out a force field file even if there were no changes" },
+        { "-sign",    FALSE, etBOOL, {&sign},
+          "Write the force field with a new checksum and time stamp, to [TT]-o[tt] or over the input file, see above." }
     };
     crule.addPargs(&pa);
     MsgHandler msghandler;
@@ -1290,6 +1331,7 @@ int edit_ff(int argc, char*argv[])
         options.validate         = validate;
         options.plot             = plot;
         options.forceWrite       = forceWrite;
+        options.sign             = sign;
         options.analyze          = analyze;
         options.copyMissing      = missing;
         options.replace          = replace;

@@ -47,8 +47,8 @@ class MsgHandler;
  * the members. runEditFF checks it, see check. One thing is done, the
  * first of: with a second force field, copying, replacing or implanting
  * its parameters, or else comparing the two; checking the bounds;
- * validating; analysing or plotting; removing particle types; changing
- * parameters. The combination rules are applied after any of these.
+ * validating; analysing or plotting; removing particle types; signing,
+ * see sign; changing parameters. The combination rules are applied after any of these.
  */
 struct EditFFOptions
 {
@@ -56,7 +56,7 @@ struct EditFFOptions
     std::string           forceFieldFile;
     //! A second force field, the source of parameters or for a comparison (-ff2), none if empty
     std::string           secondForceFieldFile;
-    //! The force field to write if it changed or if forceWrite (-o), none if empty
+    //! The force field to write if it changed or if forceWrite or sign (-o), none if empty
     std::string           outputFile;
     //! The file for the parameters of the particle types with -ana (-dump), none if empty
     std::string           dumpFile;
@@ -94,6 +94,13 @@ struct EditFFOptions
     bool                  plot       = false;
     //! Write the force field also without changes (-write)
     bool                  forceWrite = false;
+    /*! \brief Write the force field with a new checksum and time stamp (-sign)
+     *
+     * Nothing else is done. The file is outputFile, or the force field
+     * that was read if that is empty. It can then be read without the
+     * warning that the checksum does not match.
+     */
+    bool                  sign       = false;
     //! What to analyse: EEM, BONDS or OTHER (-ana), none if empty
     std::string           analyze;
     //! Copy the parameters of this kind that are missing from the second force field (-copy_missing)

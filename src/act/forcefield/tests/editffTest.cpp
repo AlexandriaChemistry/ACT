@@ -292,6 +292,12 @@ TEST_F(EditFFTest, WithoutCommandLineWrongOptions)
         o.copyMissing = "EEM";
         wrong.emplace_back(o, "-ff2");
     }
+    {
+        auto o = valid();
+        o.sign  = true;
+        o.value = 4.5;
+        wrong.emplace_back(o, "-val");
+    }
     for (const auto &w : wrong)
     {
         MsgHandler msghandler;
@@ -307,6 +313,49 @@ TEST_F(EditFFTest, WithoutCommandLineWrongOptions)
         }
         EXPECT_FALSE(std::filesystem::exists(w.first.outputFile)) << w.second;
     }
+}
+
+/*! \brief Copy a force field and give it a wrong checksum
+ * \param[in] input  The force field
+ * \param[in] output The copy
+ */
+static void copyWithWrongCheckSum(const std::string &input, const std::string &output)
+{
+    std::ifstream in(input);
+    std::string   text((std::istreambuf_iterator<char>(in)), std::istreambuf_iterator<char>());
+    const std::string key = "checksum=\"";
+    const auto        pos = text.find(key);
+    ASSERT_NE(std::string::npos, pos);
+    text.replace(pos + key.size(), 32, std::string(32, '0'));
+    std::ofstream out(output);
+    out << text;
+}
+
+// Test: -sign without -o writes a new checksum and time stamp into the file
+// that was read, which can then be read without a checksum mismatch
+TEST_F(EditFFTest, SignInPlace)
+{
+    const auto file = fileManager().getTemporaryFilePath("unsigned.xml");
+    copyWithWrongCheckSum(input_, file);
+    auto before = read(file);
+    EXPECT_FALSE(before.verifyCheckSum(nullptr));
+    run(file, { { "-sign", "" } }, "");
+    auto after = read(file);
+    EXPECT_TRUE(after.verifyCheckSum(nullptr));
+    EXPECT_NE(before.checkSum(), after.checkSum());
+    EXPECT_EQ("{}", forceFieldChanges(before, after).dump());
+}
+
+// Test: -sign with -o leaves the input alone
+TEST_F(EditFFTest, SignToOutput)
+{
+    const auto file = fileManager().getTemporaryFilePath("unsigned2.xml");
+    copyWithWrongCheckSum(input_, file);
+    const auto output = run(file, { { "-sign", "" } }, "signed.xml");
+    EXPECT_FALSE(read(file).verifyCheckSum(nullptr));
+    auto after = read(output);
+    EXPECT_TRUE(after.verifyCheckSum(nullptr));
+    EXPECT_EQ("{}", forceFieldChanges(read(file), after).dump());
 }
 
 TEST_F(EditFFTest, MutabilityOfSeveralIdentifiers)
