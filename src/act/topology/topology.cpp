@@ -624,6 +624,12 @@ std::map<InteractionType, size_t> Topology::makeVsite1s(MsgHandler       *msghan
             if (ptype1->id().id() == faa[0])
             {
                 // The vsite however, should have the same bond as atom type.
+                if (!pd->hasParticleType(faa[1]))
+                {
+                    msghandler->fatal(gmx::formatString("Force field inconsistency. Particle type %s of vsite %s is not in the force field",
+                                                        faa[1].c_str(), mm.first.id().c_str()));
+                    return {};
+                }
                 const auto ptype = pd->findParticleType(faa[1]);
                 // Check whether the particle is vsite
                 if (ptype->apType() != ActParticle::Vsite)
