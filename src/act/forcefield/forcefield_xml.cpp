@@ -391,6 +391,10 @@ static void processAttr(MsgHandler           *msgHandler,
             {
                 pd->setParticleTypesOption(xbufString(xmlEntry::KEY), xbufString(xmlEntry::VALUE));
             }
+            else if (xmlEntry::ACT == parentEntry)
+            {
+                pd->setForceFieldOption(xbufString(xmlEntry::KEY), xbufString(xmlEntry::VALUE));
+            }
         }
         break;
     case xmlEntry::COMBINATIONRULE:
@@ -711,6 +715,11 @@ static void addXmlForceField(xmlNodePtr parent, const ForceField *pd)
         acentral, attached, tau_unit, ahp_unit,
         epref, desc, params, tmp;
 
+    // The options of the whole force field, such as the reference
+    for (const auto &opt : pd->forceFieldOptions())
+    {
+        addOption(parent, opt.first, opt.second);
+    }
     auto child = add_xml_child(parent, exml_names(xmlEntry::VERSION));
     tmp   = pd->checkSum();
     if (!tmp.empty())

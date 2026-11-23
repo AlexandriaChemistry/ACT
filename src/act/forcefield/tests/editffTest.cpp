@@ -358,6 +358,60 @@ TEST_F(EditFFTest, SignToOutput)
     EXPECT_EQ("{}", forceFieldChanges(read(file), after).dump());
 }
 
+/*! \brief Copy a force field with an option of the whole force field
+ * \param[in] input  The force field
+ * \param[in] output The copy
+ * \param[in] key    The key of the option
+ * \param[in] value  The value of the option
+ */
+static void copyWithOption(const std::string &input, const std::string &output,
+                           const std::string &key, const std::string &value)
+{
+    std::ifstream in(input);
+    std::string   text((std::istreambuf_iterator<char>(in)), std::istreambuf_iterator<char>());
+    const std::string root = "<alexandria_chemistry>\n";
+    const auto        pos  = text.find(root);
+    ASSERT_NE(std::string::npos, pos);
+    text.insert(pos + root.size(), "  <option key=\"" + key + "\" value=\"" + value + "\"/>\n");
+    std::ofstream out(output);
+    out << text;
+}
+
+// Test: A reference given below alexandria_chemistry is read, kept when
+// the force field is signed and written in the same place
+TEST_F(EditFFTest, Reference)
+{
+    const std::string reference = "A. Author and B. Author, J. Chem. Phys. 1, 1 (2026)";
+    const auto        file      = fileManager().getTemporaryFilePath("reference.xml");
+    copyWithOption(input_, file, "reference", reference);
+    auto before = read(file);
+    EXPECT_EQ(reference, before.reference());
+    // Adding the reference changes the checksum
+    EXPECT_FALSE(before.verifyCheckSum(nullptr));
+    const auto output = run(file, { { "-sign", "" } }, "signed.xml");
+    auto       after  = read(output);
+    EXPECT_EQ(reference, after.reference());
+    EXPECT_TRUE(after.verifyCheckSum(nullptr));
+    EXPECT_EQ("{}", forceFieldChanges(before, after).dump());
+    // Directly below the top-level element
+    std::ifstream in(output);
+    const std::string text((std::istreambuf_iterator<char>(in)), std::istreambuf_iterator<char>());
+    EXPECT_NE(std::string::npos,
+              text.find("<alexandria_chemistry>\n  <option key=\"reference\" value=\"" + reference + "\"/>\n  <version"))
+        << text.substr(0, 400);
+    // Without a reference there is none
+    EXPECT_TRUE(read(input_).reference().empty());
+}
+
+// Test: An unknown option of the whole force field is an error
+TEST_F(EditFFTest, UnknownForceFieldOption)
+{
+    const auto file = fileManager().getTemporaryFilePath("unknown.xml");
+    copyWithOption(input_, file, "author", "A. Author");
+    ForceField pd;
+    EXPECT_THROW(readForceField(file, &pd), gmx::InvalidInputError);
+}
+
 TEST_F(EditFFTest, MutabilityOfSeveralIdentifiers)
 {
     const auto output = fileManager().getTemporaryFilePath("edited.xml");

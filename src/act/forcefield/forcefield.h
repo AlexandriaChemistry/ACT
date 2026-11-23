@@ -387,6 +387,22 @@ class ForceField
     //! \return the options of the particle types that are specified, with their values as written
     std::map<std::string, std::string> particleTypesOptions() const;
 
+    /*! \brief Set an option of the whole force field
+     * In a force field file these are the option elements directly
+     * below alexandria_chemistry, for instance
+     * <option key="reference" value="Author et al., J. Chem. Phys. 1, 1 (2026)"/>
+     * \param[in] key   The key, reference is the only one
+     * \param[in] value The value
+     * \throws gmx::InvalidInputError for an unknown key
+     */
+    void setForceFieldOption(const std::string &key, const std::string &value);
+
+    //! \return the options of the whole force field that are specified
+    const std::map<std::string, std::string> &forceFieldOptions() const { return forceFieldOptions_; }
+
+    //! \return the reference of the force field, empty if there is none
+    std::string reference() const;
+
     /*! \brief Take the charge distributions from the interaction COULOMB
      * In older force field files the width of the charge distribution of
      * a particle type, zeta, is a parameter of the interaction COULOMB, to
@@ -501,6 +517,8 @@ class ForceField
     void checkVsitePotentials() const;
     
 private:
+    //! The options of the whole force field, such as the reference
+    std::map<std::string, std::string>    forceFieldOptions_;
     //! The force field checksum
     std::string                           checkSum_;
     //! The time stamp of the force field
