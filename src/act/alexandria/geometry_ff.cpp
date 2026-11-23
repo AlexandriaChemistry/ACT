@@ -171,7 +171,18 @@ int geometry_ff(int argc, char *argv[])
         "edit_ff -validate, in the same form as edit_ff writes them, and the",
         "histograms of the bond lengths, angles and dihedrals. With",
         "[TT]-samples[tt] each bin of a histogram also lists some of its values",
-        "with the compound, the calculation and the atoms they come from."
+        "with the compound, the calculation and the atoms they come from.[PAR]",
+        "The log file lists each bond and angle type with its average, standard",
+        "deviation (sigma) and number of values, with a warning if sigma is",
+        "above [TT]-bond_tol[tt] or [TT]-angle_tol[tt]. With [TT]-analyse[tt]",
+        "the values of each bond and angle type are tested for a normal",
+        "distribution as well, with the Anderson-Darling test at the",
+        "significance level [TT]-alpha[tt]. A type that fails gets a warning",
+        "with the p-value, the skewness (not zero if there is a tail to one",
+        "side) and the excess kurtosis (positive with outliers, negative with",
+        "two peaks). The log file ends with the number of types that are not",
+        "normal, and the json file has the result for each type under the key",
+        "analysis."
     };
 
     std::vector<t_filenm> fnm = {
@@ -298,6 +309,10 @@ int geometry_ff(int argc, char *argv[])
     {
         msghandler.fatal("The number of values listed in a bin (-samples) cannot be negative.");
     }
+    if (bonds.analyse() && (bonds.alpha() <= 0 || bonds.alpha() >= 1))
+    {
+        msghandler.fatal("The significance level (-alpha) should be more than 0 and less than 1.");
+    }
     bonds.setKeepSamples(jsonFile && nSamples > 0);
     bonds.extractGeometries(&msghandler, &mp, &actmols, &pd, gms);
     
@@ -317,6 +332,11 @@ int geometry_ff(int argc, char *argv[])
     pd.updateCheckSum();
     writeForceField(opt2fn("-o", fnm.size(), fnm.data()), &pd, compress);
     bonds.writeSummary(tw);
+    if (bonds.analyse() && bonds.notNormal() > 0)
+    {
+        printf("Warning: the values of %zu bond or angle types are not normally distributed, see the log file.\n",
+               bonds.notNormal());
+    }
     if (jsonFile)
     {
         // What was done and the force field as it was written, for
@@ -332,6 +352,10 @@ int geometry_ff(int argc, char *argv[])
         jtree.addObject(forceFieldToJson(pd));
         jtree.addObject(forceFieldIssuesToJson(validateForceField(pd)));
         jtree.addObject(bonds.histogramsToJson(nSamples));
+        if (bonds.analyse())
+        {
+            jtree.addObject(bonds.analysisToJson());
+        }
         jtree.write(jsonFile, true);
     }
     msghandler.writeDebug(memory_usage());

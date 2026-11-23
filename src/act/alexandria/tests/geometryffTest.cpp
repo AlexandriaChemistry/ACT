@@ -39,6 +39,7 @@
 #include <nlohmann/json.hpp>
 #include <set>
 #include <string>
+#include <vector>
 
 #include "act/alexandria/alex_modules.h"
 #include "act/basics/interactiontype.h"
@@ -251,6 +252,147 @@ TEST_F(GeometryFFTest, Histograms)
     EXPECT_FALSE(molecules.empty());
     // The angles are in degrees
     EXPECT_EQ("degree", all.at("ANGLES")[0].at("unit").get<std::string>());
+}
+
+//! \return the lines of a file
+static std::vector<std::string> linesOf(const std::string &filename)
+{
+    std::vector<std::string> lines;
+    std::ifstream            in(filename);
+    std::string              line;
+    while (std::getline(in, line))
+    {
+        lines.push_back(line);
+    }
+    return lines;
+}
+
+// Test: With -analyse the bond lengths and the angles of each type are
+// tested for normality: the log file warns for the types that fail and
+// ends with their number, and the json file has the result for each type.
+// Without -analyse the log file and the json file have none of this.
+TEST_F(GeometryFFTest, Analyse)
+{
+    const auto jsonFile = fileManager().getTemporaryFilePath("analyse.json");
+    const auto logFile  = fileManager().getTemporaryFilePath("analyse.log");
+    gmx::test::CommandLine cmd;
+    cmd.append("geometry_ff");
+    cmd.addOption("-mp", fileManager().getInputFilePath("molprop/molprop.xml"));
+    cmd.addOption("-ff", fileManager().getInputFilePath("forcefields/ACS-g1.xml"));
+    cmd.addOption("-o", fileManager().getTemporaryFilePath("analyse.xml"));
+    cmd.addOption("-g", logFile);
+    cmd.addOption("-json", jsonFile);
+    const std::string notNormal("WARNING not normal");
+    {
+        gmx::test::CommandLine without(cmd);
+        ASSERT_EQ(0, geometry_ff(without.argc(), without.argv()));
+        std::ifstream in(jsonFile);
+        EXPECT_FALSE(nlohmann::json::parse(in).at("geometry_ff").contains("analysis"));
+        for (const auto &line : linesOf(logFile))
+        {
+            EXPECT_EQ(std::string::npos, line.find(notNormal)) << line;
+            EXPECT_EQ(std::string::npos, line.find("Normality")) << line;
+        }
+    }
+    // The number of types that are not normal in the json file and the
+    // number of warnings in the log file, for a significance level
+    const auto run = [&](const char *alpha, nlohmann::json *analysis)
+    {
+        gmx::test::CommandLine with(cmd);
+        with.append("-analyse");
+        if (alpha)
+        {
+            with.addOption("-alpha", alpha);
+        }
+        EXPECT_EQ(0, geometry_ff(with.argc(), with.argv()));
+        std::ifstream in(jsonFile);
+        *analysis = nlohmann::json::parse(in).at("geometry_ff").at("analysis");
+        int warnings = 0, summaries = 0;
+        for (const auto &line : linesOf(logFile))
+        {
+            if (line.find(notNormal) != std::string::npos)
+            {
+                // A line of a bond or an angle, with what tells how
+                EXPECT_TRUE(line.rfind("bond-", 0) == 0 || line.rfind("angle-", 0) == 0) << line;
+                EXPECT_NE(std::string::npos, line.find("skewness")) << line;
+                EXPECT_NE(std::string::npos, line.find("kurtosis")) << line;
+                warnings += 1;
+            }
+            if (line.rfind("Normality of the distributions", 0) == 0)
+            {
+                summaries += 1;
+            }
+        }
+        EXPECT_EQ(1, summaries);
+        return warnings;
+    };
+    nlohmann::json analysis;
+    const int      warnings = run(nullptr, &analysis);
+    EXPECT_EQ("Anderson-Darling", analysis.at("test").get<std::string>());
+    EXPECT_DOUBLE_EQ(0.01, analysis.at("alpha").get<double>());
+    EXPECT_EQ(8, analysis.at("minimum").get<int>());
+    ASSERT_TRUE(analysis.contains("BONDS"));
+    ASSERT_TRUE(analysis.contains("ANGLES"));
+    EXPECT_EQ("pm", analysis.at("BONDS").at("unit").get<std::string>());
+    EXPECT_EQ("degree", analysis.at("ANGLES").at("unit").get<std::string>());
+    EXPECT_DOUBLE_EQ(8, analysis.at("BONDS").at("tolerance").get<double>());
+    int  total = 0;
+    bool foundCH = false;
+    for (const auto &itype : { "BONDS", "ANGLES" })
+    {
+        const auto &jtype = analysis.at(itype);
+        int tested = 0, failed = 0, wide = 0;
+        for (const auto &entry : jtype.at("entries"))
+        {
+            const auto count = entry.at("count").get<int>();
+            EXPECT_GE(entry.at("sigma").get<double>(), 0);
+            wide += entry.at("wide").get<bool>() ? 1 : 0;
+            if (!entry.at("tested").get<bool>())
+            {
+                // Too few values, or all the same: no verdict
+                EXPECT_FALSE(entry.contains("normal")) << entry.dump();
+                EXPECT_FALSE(entry.contains("pvalue")) << entry.dump();
+                continue;
+            }
+            tested += 1;
+            EXPECT_GE(count, 8) << entry.dump();
+            const auto p = entry.at("pvalue").get<double>();
+            EXPECT_GE(p, 0);
+            EXPECT_LE(p, 1);
+            EXPECT_GT(entry.at("statistic").get<double>(), 0);
+            EXPECT_TRUE(entry.contains("skewness"));
+            EXPECT_TRUE(entry.contains("kurtosis"));
+            EXPECT_EQ(p >= 0.01, entry.at("normal").get<bool>()) << entry.dump();
+            failed += entry.at("normal").get<bool>() ? 0 : 1;
+            if (entry.at("identifier").get<std::string>() == "c3_b~h_b")
+            {
+                // Nine C-H bonds in each of two structures of butanol, six in acetone
+                EXPECT_EQ(24, count);
+                EXPECT_NEAR(109.4, entry.at("average").get<double>(), 0.05);
+                EXPECT_FALSE(entry.at("wide").get<bool>());
+                foundCH = true;
+            }
+        }
+        EXPECT_EQ(static_cast<int>(jtype.at("entries").size()), jtype.at("distributions").get<int>());
+        EXPECT_EQ(tested, jtype.at("tested").get<int>());
+        EXPECT_EQ(failed, jtype.at("not_normal").get<int>());
+        EXPECT_EQ(wide, jtype.at("wide").get<int>());
+        EXPECT_GT(tested, 0) << itype;
+        total += failed;
+    }
+    EXPECT_TRUE(foundCH);
+    // Each type that is not normal has its warning in the log file
+    EXPECT_EQ(total, warnings);
+    // With a significance level close to one almost nothing passes, with
+    // one close to zero everything does
+    nlohmann::json strict, loose;
+    const int      many = run("0.999", &strict);
+    EXPECT_DOUBLE_EQ(0.999, strict.at("alpha").get<double>());
+    EXPECT_GT(many, warnings);
+    EXPECT_EQ(many, strict.at("BONDS").at("not_normal").get<int>() + strict.at("ANGLES").at("not_normal").get<int>());
+    EXPECT_EQ(0, run("1e-35", &loose));
+    EXPECT_EQ(0, loose.at("BONDS").at("not_normal").get<int>() + loose.at("ANGLES").at("not_normal").get<int>());
+    EXPECT_EQ(strict.at("BONDS").at("tested").get<int>(), loose.at("BONDS").at("tested").get<int>());
 }
 
 } // namespace

@@ -161,6 +161,10 @@ void AllBondeds::addOptions(std::vector<t_pargs> *pargs)
               "Tolerance for warning about large sigma in bond-lengths (pm)" },
             { "-angle_tol",   FALSE, etREAL, {&angle_tol_},
               "Tolerance for harmonic and linear angles" },
+            { "-analyse", FALSE, etBOOL, {&analyse_},
+              "Test whether the bond lengths and the angles of each bond and angle type are normally distributed (Anderson-Darling test) and warn in the log file if not. Values that are not normally distributed can mean that one type covers different kinds of bonds or angles, or that there are structures that are off. The log file ends with the number of distributions that are not normal, and with [TT]-json[tt] the result for each type is in the json file under the key analysis. Types with fewer than 8 values and linear angles are not tested." },
+            { "-alpha", FALSE, etREAL, {&alpha_},
+              "Significance level for [TT]-analyse[tt]: a distribution is called not normal if the p-value of the test is below this. With thousands of values the test finds small deviations as well; the skewness and the kurtosis in the warning tell how large the deviation is." },
             { "-factor", FALSE, etREAL, {&factor_},
               "Scale factor to set minimum and maximum values of parameters. Min will be set to value*factor and max to value/factor, assuming factor < 1." },
             { "-bfactor", FALSE, etREAL, {&bfactor_},
@@ -177,6 +181,113 @@ void AllBondeds::addOptions(std::vector<t_pargs> *pargs)
               "Spacing for dihedral angle histograms in degrees" },
         };
     doAddOptions(pargs, sizeof(mypargs)/sizeof(mypargs[0]), mypargs);
+}
+
+std::string AllBondeds::analyseDistribution(InteractionType  iType,
+                                            const OneBonded &ob,
+                                            double           average,
+                                            double           sigma,
+                                            double           tolerance,
+                                            bool             test)
+{
+    if (!analyse_)
+    {
+        return "";
+    }
+    Distribution dist;
+    dist.id        = ob.id().id();
+    dist.average   = average;
+    dist.sigma     = sigma;
+    dist.wide      = sigma > tolerance;
+    dist.normality = testNormality(ob.values());
+    if (!test)
+    {
+        dist.normality.tested = false;
+    }
+    std::string warning;
+    if (!dist.normality.normal(alpha_))
+    {
+        const auto &normality = dist.normality;
+        warning = gmx::formatString(" WARNING not normal (p %s skewness %.2f kurtosis %.2f)",
+                                    normality.pvalue > 0 ? gmx::formatString("%.2g", normality.pvalue).c_str() : "< 1e-30",
+                                    normality.skewness, normality.kurtosis);
+    }
+    distributions_[iType].push_back(std::move(dist));
+    return warning;
+}
+
+size_t AllBondeds::notNormal() const
+{
+    size_t n = 0;
+    for (const auto &dd : distributions_)
+    {
+        for (const auto &dist : dd.second)
+        {
+            if (!dist.normality.normal(alpha_))
+            {
+                n += 1;
+            }
+        }
+    }
+    return n;
+}
+
+JsonTree AllBondeds::analysisToJson() const
+{
+    const std::map<InteractionType, std::pair<std::string, double>> scales = {
+        { InteractionType::BONDS,         { "pm", bond_tol_ } },
+        { InteractionType::ANGLES,        { "degree", angle_tol_ } },
+        { InteractionType::LINEAR_ANGLES, { "degree", angle_tol_ } }
+    };
+    // Numbers with the digits that mean something
+    const auto digits = [](double value) { return gmx::formatString("%.4g", value); };
+    JsonTree ja = JsonTree::object("analysis");
+    ja.addObject("test", std::string("Anderson-Darling"));
+    ja.addNumber("alpha", digits(alpha_));
+    ja.addObject("minimum", static_cast<int>(normalityMinimum));
+    for (const auto &dd : distributions_)
+    {
+        const auto scale = scales.find(dd.first);
+        if (scales.end() == scale)
+        {
+            continue;
+        }
+        int      wide = 0, tested = 0, notNormal = 0;
+        JsonTree jentries = JsonTree::array("entries");
+        for (const auto &dist : dd.second)
+        {
+            const auto &normality = dist.normality;
+            JsonTree    je("");
+            je.addObject("identifier", dist.id);
+            je.addObject("count", static_cast<int>(normality.n));
+            je.addNumber("average", digits(dist.average));
+            je.addNumber("sigma", digits(dist.sigma));
+            je.addBool("wide", dist.wide);
+            je.addBool("tested", normality.tested);
+            if (normality.tested)
+            {
+                je.addBool("normal", normality.normal(alpha_));
+                je.addNumber("statistic", digits(normality.statistic));
+                je.addNumber("pvalue", digits(normality.pvalue));
+                je.addNumber("skewness", digits(normality.skewness));
+                je.addNumber("kurtosis", digits(normality.kurtosis));
+                tested += 1;
+            }
+            wide      += dist.wide ? 1 : 0;
+            notNormal += normality.normal(alpha_) ? 0 : 1;
+            jentries.addObject(je);
+        }
+        JsonTree jtype = JsonTree::object(interactionTypeToString(dd.first));
+        jtype.addObject("unit", scale->second.first);
+        jtype.addNumber("tolerance", digits(scale->second.second));
+        jtype.addObject("distributions", static_cast<int>(dd.second.size()));
+        jtype.addObject("wide", wide);
+        jtype.addObject("tested", tested);
+        jtype.addObject("not_normal", notNormal);
+        jtype.addObject(jentries);
+        ja.addObject(jtype);
+    }
+    return ja;
 }
 
 void AllBondeds::addBondeds(MsgHandler             *msghandler,
@@ -501,8 +612,9 @@ void AllBondeds::updateForceField(gmx::TextWriter *tw,
                 gmx_fatal(FARGS, "Don't know what to do for ftype %s", potentialToString(fType).c_str());
             }
 
-            tw->writeStringFormatted("bond-%s len %g sigma %g (pm) N = %d%s\n",
-                    i.id().id().c_str(), av, sig, static_cast<int>(N), (sig > bond_tol_) ? " WARNING" : "");
+            tw->writeStringFormatted("bond-%s len %g sigma %g (pm) N = %d%s%s\n",
+                    i.id().id().c_str(), av, sig, static_cast<int>(N), (sig > bond_tol_) ? " WARNING" : "",
+                    analyseDistribution(bType, i, av, sig, bond_tol_, true).c_str());
         }
     }
 
@@ -537,8 +649,9 @@ void AllBondeds::updateForceField(gmx::TextWriter *tw,
                                                          std::min<double>(180.0, av/afactor_), Mutability::Bounded, false, true));
                     fs->addParameter(bondId, pname[angleKT],
                                      ForceFieldParameter("kJ/mol/rad2", kt_, 0, 1, kt_*factor_, kt_/factor_, Mutability::Bounded, false, true));
-                    tw->writeStringFormatted("angle-%s angle %g sigma %g (deg) N = %d%s\n",
-                            bondId.id().c_str(), av, sig, static_cast<int>(N), (sig > angle_tol_) ? " WARNING" : "");
+                    tw->writeStringFormatted("angle-%s angle %g sigma %g (deg) N = %d%s%s\n",
+                            bondId.id().c_str(), av, sig, static_cast<int>(N), (sig > angle_tol_) ? " WARNING" : "",
+                            analyseDistribution(iType, i, av, sig, angle_tol_, true).c_str());
                     if (fType == Potential::UREY_BRADLEY_ANGLES)
                     {
                         const std::string unit("pm");
@@ -561,6 +674,9 @@ void AllBondeds::updateForceField(gmx::TextWriter *tw,
                     fs->addParameter(bondId, pname[linangKLIN],
                                      ForceFieldParameter("kJ/mol/nm2", klin_, 0, 1, klin_*factor_, klin_/factor_, Mutability::Bounded, false, true));
 
+                    // A linear angle cannot be more than 180 degrees, so its
+                    // values are not normally distributed: not tested
+                    analyseDistribution(iType, i, av, sig, angle_tol_, false);
                     tw->writeStringFormatted("linear_angle-%s angle %g sigma %g N = %d%s\n",
                             bondId.id().c_str(), av, sig, static_cast<int>(N), (sig > angle_tol_) ? " WARNING" : "");
                 }
@@ -804,6 +920,25 @@ void AllBondeds::writeSummary(gmx::TextWriter *tw)
     {
         tw->writeStringFormatted("Extracted %zu %s\n",
                                  bb.second.size(), interactionTypeToString(bb.first).c_str());
+    }
+    if (!analyse_)
+    {
+        return;
+    }
+    tw->writeStringFormatted("Normality of the distributions: Anderson-Darling test, significance level %g, at least %zu values\n",
+                             alpha_, normalityMinimum);
+    for (const auto &dd : distributions_)
+    {
+        size_t tested = 0, notNormal = 0, wide = 0;
+        for (const auto &dist : dd.second)
+        {
+            tested    += dist.normality.tested ? 1 : 0;
+            notNormal += dist.normality.normal(alpha_) ? 0 : 1;
+            wide      += dist.wide ? 1 : 0;
+        }
+        tw->writeStringFormatted("%s: %zu of %zu distributions tested, %zu not normal, %zu with sigma above the tolerance\n",
+                                 interactionTypeToString(dd.first).c_str(), tested, dd.second.size(),
+                                 notNormal, wide);
     }
 }
 
