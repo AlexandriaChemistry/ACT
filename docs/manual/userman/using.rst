@@ -195,6 +195,12 @@ This generates a ready-to-optimize force field file, myff2.xml and a log file th
 
 which informs us, for instance, that there are 28 aliphatic c3-h bonds in the input with an average length of 108.8 :math:`\pm` 0.3 pm.
 
+A line ends with ``WARNING`` if the standard deviation is above the tolerance (options *-bond_tol* and *-angle_tol*). With the option *-analyse* the values of each bond and angle type are tested for a normal distribution as well, with the Anderson-Darling test at the significance level *-alpha* (0.01 by default), and a type that fails gets a warning of its own::
+
+  bond-c2_b=n2_b len 127 sigma 7.3 (pm) N = 1170 WARNING not normal (p < 1e-30 skewness 0.66 kurtosis 0.51)
+
+Values that are not normally distributed can mean that one type covers different kinds of bonds or angles (two peaks, which gives a negative kurtosis), or that some structures are off (outliers, which give a positive kurtosis, and a skewness if they are on one side). With thousands of values the test finds small deviations as well: the skewness and the kurtosis tell how large the deviation is. Types with fewer than eight values and linear angles are not tested. The log file ends with the number of types that were tested and the number that are not normal, and with *-json* the result for each type is in the json file under the key *analysis*.
+
 ----------------------------
 Train your first force field
 ----------------------------
