@@ -670,10 +670,10 @@ static void writeCoordinates(const std::vector<ActAtom>  &atoms,
     matrix box = { { 4, 0, 0 }, { 0, 4, 0 }, { 0, 0, 4 } };
     const std::vector<std::string> resnames = { "A", "B" };
     pdbWriter(out, title.c_str(), atoms, xorig, resnames,
-              epbcNONE, box, 'A', 1, {}, nullptr, false);
+              epbcNONE, box, 'A', 1, {}, {}, false);
 
     pdbWriter(out, title.c_str(), atoms, xmin, resnames,
-              epbcNONE, box, 'B', 1, {}, nullptr, false);
+              epbcNONE, box, 'B', 1, {}, {}, false);
 
     gmx_fio_fclose(out);
 }

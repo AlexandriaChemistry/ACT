@@ -34,6 +34,7 @@
 
 #include <algorithm>
 #include <cctype>
+#include <cmath>
 #include <csignal>
 #include <cstddef>
 #include <limits>
@@ -57,6 +58,7 @@
 #pragma GCC diagnostic ignored "-Wdeprecated-copy-with-user-provided-dtor"
 #pragma GCC diagnostic ignored "-Wdeprecated-literal-operator"
 #pragma GCC diagnostic ignored "-Wdeprecated-redundant-constexpr-static-def"
+#include <Geometry/point.h>
 #include <GraphMol/Descriptors/MolDescriptors.h>
 #include <GraphMol/DetermineBonds/DetermineBonds.h>
 #include <GraphMol/DistGeomHelpers/Embedder.h>
@@ -545,6 +547,82 @@ static bool lacksBondOrders(const RDKit::RWMol &mol)
         }
     }
     return hasHydrogen && implicitH;
+}
+
+std::vector<int> wholeBondOrders(const std::vector<int>                 &atomicNumbers,
+                                 const std::vector<gmx::RVec>           &coordinates,
+                                 const std::vector<std::pair<int, int>> &bonds,
+                                 const std::vector<double>              &orders,
+                                 int                                     charge)
+{
+    std::vector<int> whole;
+    bool             fractional = false;
+    for (const double order : orders)
+    {
+        fractional = fractional || std::round(order) != order;
+        whole.push_back(static_cast<int>(std::lround(order)));
+    }
+    if (!fractional)
+    {
+        return whole;
+    }
+    whole.clear();
+    if (bonds.size() != orders.size() || coordinates.size() != atomicNumbers.size())
+    {
+        return whole;
+    }
+    RDKit::RWMol mol;
+    auto        *conf = new RDKit::Conformer(atomicNumbers.size());
+    for (size_t i = 0; i < atomicNumbers.size(); i++)
+    {
+        auto *atom = new RDKit::Atom(atomicNumbers[i]);
+        // The hydrogens are all there
+        atom->setNoImplicit(true);
+        mol.addAtom(atom, true, true);
+        // In Angstrom, as RDKit has them
+        conf->setAtomPos(i, RDGeom::Point3D(10*coordinates[i][XX], 10*coordinates[i][YY],
+                                            10*coordinates[i][ZZ]));
+    }
+    mol.addConformer(conf, true);
+    for (const auto &bond : bonds)
+    {
+        mol.addBond(bond.first, bond.second, RDKit::Bond::SINGLE);
+    }
+    try
+    {
+        determineBondOrders(mol, charge, true, false);
+    }
+    catch (const std::exception &)
+    {
+        return whole;
+    }
+    for (size_t b = 0; b < bonds.size(); b++)
+    {
+        const auto *bond = mol.getBondBetweenAtoms(bonds[b].first, bonds[b].second);
+        int         order = 0;
+        switch (bond ? bond->getBondType() : RDKit::Bond::UNSPECIFIED)
+        {
+        case RDKit::Bond::SINGLE:
+            order = 1;
+            break;
+        case RDKit::Bond::DOUBLE:
+            order = 2;
+            break;
+        case RDKit::Bond::TRIPLE:
+            order = 3;
+            break;
+        default:
+            break;
+        }
+        // The same structure as ACT has, written with whole bonds
+        if (order == 0 || std::abs(order - orders[b]) >= 1)
+        {
+            whole.clear();
+            return whole;
+        }
+        whole.push_back(order);
+    }
+    return whole;
 }
 
 /*! \brief Read an sdf, pdb or xyz file using RDKit and add the molecule to a vector

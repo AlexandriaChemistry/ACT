@@ -58,6 +58,7 @@
 #include "act/forces/forcecomputer.h"
 #include "act/forces/forces_simd.h"
 #include "act/import/chargemap.h"
+#include "act/import/import.h"
 #include "act/molprop/composition.h"
 #include "act/molprop/experiment.h"
 #include "act/molprop/molprop.h"
@@ -1220,15 +1221,43 @@ void ACTMol::PrintConformation(const char                   *fn,
 
     int        model_nr      = 1;
     char       chain         = ' ';
-    gmx_conect conect        = gmx_conect_init();
     auto       itype         = InteractionType::BONDS;
     auto       top           = topology();
+    // The bonds with whole orders, as a PDB file has them: an aromatic
+    // ring as a Kekule structure, see wholeBondOrders
+    std::vector<PdbBond> conect;
     if (top->hasEntry(itype))
     {
-        auto &bonds = top->entry(itype);
-        for(const auto &b: bonds)
+        // The atoms alone, without shells and virtual sites
+        const auto      &particles = top->atoms();
+        std::vector<int> atomOf(particles.size(), -1);
+        std::vector<int> elements;
+        std::vector<gmx::RVec> xatoms;
+        for (size_t i = 0; i < particles.size(); i++)
         {
-            gmx_conect_add(conect, b->atomIndex(0), b->atomIndex(1));
+            if (particles[i].pType() == ActParticle::Atom)
+            {
+                atomOf[i] = static_cast<int>(elements.size());
+                elements.push_back(particles[i].atomicNumber());
+                xatoms.push_back(coords[i]);
+            }
+        }
+        std::vector<std::pair<int, int>> pairs;
+        std::vector<double>              orders;
+        for (const auto &b : top->entry(itype))
+        {
+            conect.push_back({ b->atomIndex(0), b->atomIndex(1), 1 });
+            pairs.emplace_back(atomOf[b->atomIndex(0)], atomOf[b->atomIndex(1)]);
+            orders.push_back(b->bondOrder());
+        }
+        const bool onAtoms = std::all_of(pairs.begin(), pairs.end(),
+                                         [](const auto &p) { return p.first >= 0 && p.second >= 0; });
+        const auto whole   = onAtoms ? wholeBondOrders(elements, xatoms, pairs, orders, totalCharge())
+                                     : std::vector<int>();
+        // Without whole orders each bond is listed once, as a single bond
+        for (size_t k = 0; k < whole.size() && k < conect.size(); k++)
+        {
+            conect[k].order = whole[k];
         }
     }
     auto       epbc          = epbcNONE;
@@ -1252,7 +1281,6 @@ void ACTMol::PrintConformation(const char                   *fn,
                   conect, true);
     }
     gmx_ffclose(fp);
-    gmx_conect_done(conect);
 }
 
 //! \brief Add information on a tensor to the commercials
