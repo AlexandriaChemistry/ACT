@@ -308,7 +308,8 @@ protected:
     }
 
     /*! \brief Run the nma tool
-     * \param[in]  molFile Molecule file in src/act/testdata/molecules
+     * \param[in]  molFile Molecule file in src/act/testdata/molecules,
+     *                     empty if extra gives the molecule, e.g. with -smiles
      * \param[in]  label   Unique label for the output files
      * \param[in]  extra   Extra command line options
      * \param[out] output  The output
@@ -322,7 +323,10 @@ protected:
         gmx::test::CommandLine cmd;
         cmd.append("nma");
         cmd.addOption("-ff", alexandriaFile("forcefields/" + ffFile_));
-        cmd.addOption("-f", alexandriaFile("molecules/" + molFile));
+        if (!molFile.empty())
+        {
+            cmd.addOption("-f", alexandriaFile("molecules/" + molFile));
+        }
         output->confout  = fileManager().getTemporaryFilePath(label + "-confout.pdb");
         output->spectrum = fileManager().getTemporaryFilePath(label + "-ir.xvg");
         cmd.addOption("-c", output->confout);
@@ -1002,6 +1006,41 @@ TEST_F(NmaTest, StructureWrittenByAct)
     EXPECT_EQ(0, std::count(types.begin(), types.end(), "o3")) << nlohmann::json(types).dump();
     // Acetone has 10 atoms, 3N - 6 = 24 vibrations
     EXPECT_EQ(24u, js.at("modes").size());
+}
+
+// Test: L-BFGS minimizes naphthalene from SMILES with a polarizable force
+// field. In single precision the line search failed, as the energy that it
+// saw at a point depended on the order of the evaluations before.
+TEST_F(NmaTest, MinimizeNaphthaleneWithShells)
+{
+    NmaOutput out;
+    ffFile_ = "ACS-pg1.xml";
+    ASSERT_EQ(0, runNma("", "naphthalene", { "-smiles", "c1ccc2ccccc2c1" }, &out));
+    ASSERT_FALSE(out.json.empty());
+    const auto &js = out.json.at("nma");
+    EXPECT_EQ("OK", js.value("status", ""));
+    EXPECT_TRUE(js["converged"].get<bool>());
+    // Naphthalene has 18 atoms, 3N - 6 = 48 vibrations
+    EXPECT_EQ(48u, js.at("modes").size());
+}
+
+// Test: A chlorine atom gets its virtual site with ACS-pg-vs2, which lacked
+// the particle type of it
+TEST_F(NmaTest, ChlorineVirtualSite)
+{
+    NmaOutput out;
+    ASSERT_EQ(0, runNmaFF("chloroform.sdf", "ACS-pg-vs2.xml", "chloroform", &out));
+    ASSERT_FALSE(out.json.empty());
+    const auto &js = out.json.at("nma");
+    EXPECT_EQ("OK", js.value("status", ""));
+    std::vector<std::string> types;
+    for (const auto &particle : js.at("molecule").at("particles"))
+    {
+        types.push_back(particle.value("type", ""));
+    }
+    EXPECT_EQ(3, std::count(types.begin(), types.end(), "v2cl1")) << nlohmann::json(types).dump();
+    // Chloroform has 5 atoms, 3N - 6 = 9 vibrations
+    EXPECT_EQ(9u, js.at("modes").size());
 }
 
 // Test: The motion of the atoms in each normal mode is in the JSON file

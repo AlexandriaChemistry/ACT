@@ -1024,15 +1024,17 @@ private:
     double                             bestEnergy_ = std::numeric_limits<double>::max();
     //! The coordinates with the lowest energy, empty if there are none
     Coordinates                        bestCoords_;
-    //! Whether there is a previous evaluation with a finite energy
-    bool                               havePrevious_ = false;
-    //! The coordinates of the previous evaluation
-    Coordinates                        prevCoords_;
-    //! The forces of the previous evaluation
-    std::vector<gmx::RVec>             prevForces_;
-    //! The energies of the previous evaluation
-    std::map<InteractionType, double>  prevEnergies_;
-    //! The energy along the path of the evaluations
+    //! Whether there is an evaluation with a finite energy to start from
+    bool                               haveAnchor_ = false;
+    //! The coordinates of the evaluation with the lowest path energy
+    Coordinates                        anchorCoords_;
+    //! The forces of the evaluation with the lowest path energy
+    std::vector<gmx::RVec>             anchorForces_;
+    //! The energies of the evaluation with the lowest path energy
+    std::map<InteractionType, double>  anchorEnergies_;
+    //! The lowest path energy, that of the anchor
+    double                             anchorEnergy_ = 0;
+    //! The path energy of the last evaluation
     double                             pathEnergy_ = 0;
     //! The rounding error of the energy, see energyNoise
     double                             energyNoise_ = 0;
@@ -1101,19 +1103,26 @@ public:
     double bestEnergy() const { return bestEnergy_; }
 
     /*! \brief Continue from the coordinates with the lowest energy
-     * The energy along the path starts anew, see pathEnergy.
+     * The energies stay relative to the evaluation with the lowest
+     * energy, see pathEnergy, such that the energy at these coordinates
+     * is the lowest energy again.
      */
     void restartFromBest()
     {
-        coords_       = bestCoords_;
-        havePrevious_ = false;
+        coords_ = bestCoords_;
     }
 
     /*! \brief The energy along the path of the evaluations
-     * The energy of the current coordinates is that of the previous
-     * evaluation plus the change, which close to a minimum is computed
-     * from the forces, see energyChange. The line search then also finds
-     * decreases of the energy that are smaller than its rounding error.
+     * The energy of the current coordinates is that of the evaluation
+     * with the lowest energy so far, the anchor, plus the change from
+     * there, which close to the anchor is computed from the forces, see
+     * energyChange. The line search then also finds decreases of the
+     * energy that are smaller than its rounding error. The anchor is the
+     * start of the line search, or a lower point that it found, such that
+     * the energy depends on the coordinates only, not on the order of the
+     * evaluations: adding the changes from one evaluation to the next
+     * would add the rounding errors of large steps, after which a small
+     * step from the start no longer has the energy of the start.
      * \return the energy at the current coordinates
      */
     double pathEnergy()
@@ -1123,19 +1132,23 @@ public:
         {
             return enew;
         }
-        if (havePrevious_)
+        if (haveAnchor_)
         {
-            pathEnergy_ += energyChange(theAtoms_, prevEnergies_, prevCoords_, prevForces_,
-                                        enew, coords_, forces_, energyNoise_);
+            pathEnergy_ = anchorEnergy_ + energyChange(theAtoms_, anchorEnergies_, anchorCoords_, anchorForces_,
+                                                       enew, coords_, forces_, energyNoise_);
         }
         else
         {
             pathEnergy_ = enew;
         }
-        havePrevious_ = true;
-        prevCoords_   = coords_;
-        prevForces_   = forces_;
-        prevEnergies_ = energies_;
+        if (!haveAnchor_ || pathEnergy_ < anchorEnergy_)
+        {
+            haveAnchor_     = true;
+            anchorEnergy_   = pathEnergy_;
+            anchorCoords_   = coords_;
+            anchorForces_   = forces_;
+            anchorEnergies_ = energies_;
+        }
         return pathEnergy_;
     }
 

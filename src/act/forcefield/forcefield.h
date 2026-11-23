@@ -195,7 +195,7 @@ class ForceField
         const auto atp = alexandria_.find(id);
         if (atp == alexandria_.end())
         {
-            GMX_THROW(gmx::InvalidInputError(gmx::formatString("No such atom ype %s", id.id().c_str()).c_str()));
+            GMX_THROW(gmx::InvalidInputError(gmx::formatString("No such atom type %s", id.id().c_str()).c_str()));
         }
         return &atp->second;
     }
@@ -217,13 +217,13 @@ class ForceField
      * Return the const_iterator corresponding to the atom type
      *
      * \param[in] atype  Atom Type
-     * \return const pointer to the particle type, the atom type must exist
+     * \return const pointer to the particle type
+     * \throw if atom type not found.
      */
     const ParticleType *findParticleType(const std::string &atype) const
     {
         const Identifier id(atype);
-        const auto iter = alexandria_.find(id);
-        return &iter->second;
+        return findParticleType(id);
     }
         
     /*! \brief Return mutable vector \p alexandria_
