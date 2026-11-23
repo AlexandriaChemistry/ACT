@@ -38,6 +38,7 @@
 
 #include <cstddef>
 #include <map>
+#include <string>
 #include <vector>
 
 #include "act/alexandria/molselect.h"
@@ -45,6 +46,7 @@
 #include "act/basics/interactiontype.h"
 #include "act/forcefield/forcefield.h"
 #include "act/molprop/molprop.h"
+#include "act/statistics/normality.h"
 #include "act/statistics/statistics.h"
 #include "act/topology/actmol.h"
 #include "gromacs/commandline/pargs.h"
@@ -173,6 +175,25 @@ class JsonTree;
         real                                               laspacing_ = 0.000001;
         //! Spacing for dihedrals in degrees
         real                                               dspacing_  = 1;
+        //! Whether to test the distributions of bond lengths and angles for normality
+        gmx_bool                                           analyse_   = false;
+        //! Significance level of the test for normality
+        real                                               alpha_     = 0.01;
+        //! What is known about the distribution of the values of one identifier
+        struct Distribution
+        {
+            //! The identifier
+            std::string     id;
+            //! The average and the standard deviation as they are in the log file
+            double          average = 0;
+            double          sigma   = 0;
+            //! Whether the standard deviation is above the tolerance
+            bool            wide    = false;
+            //! The moments of the values and the test for normality
+            NormalityResult normality;
+        };
+        //! The distributions that were analysed, in the order of the log file
+        std::map<InteractionType, std::vector<Distribution> > distributions_;
         //! Whether to keep where each value comes from
         bool                                               keepSamples_ = false;
         //! A molecule from which values come: its name, the data files of
@@ -216,6 +237,24 @@ class JsonTree;
                         const Identifier       &bondId,         
                         const std::vector<int> &atomid);
 
+        /*! \brief Analyse the distribution of the values of one identifier, with -analyse
+         * \param[in] iType     InteractionType
+         * \param[in] ob        The values
+         * \param[in] average   The average as it is in the log file
+         * \param[in] sigma     The standard deviation as it is in the log file
+         * \param[in] tolerance The largest standard deviation without a warning
+         * \param[in] test      Whether to test for normality
+         * \return what to add to the line of the identifier in the log file:
+         *         a warning if the values do not come from a normal
+         *         distribution, nothing otherwise or without -analyse
+         */
+        std::string analyseDistribution(InteractionType  iType,
+                                        const OneBonded &ob,
+                                        double           average,
+                                        double           sigma,
+                                        double           tolerance,
+                                        bool             test);
+
     public:
         //! Constructor
         AllBondeds() = default;
@@ -235,6 +274,31 @@ class JsonTree;
          * \return the histograms, with the key histograms
          */
         JsonTree histogramsToJson(size_t maxSamples) const;
+
+        //! \return whether the distributions are analysed (-analyse)
+        bool analyse() const { return analyse_; }
+
+        //! \return the significance level of the test for normality (-alpha)
+        double alpha() const { return alpha_; }
+
+        /*! \brief How many distributions are not normal, after updateForceField
+         * \return the number of identifiers, of all interaction types, of
+         *         which the values do not come from a normal distribution
+         */
+        size_t notNormal() const;
+
+        /*! \brief The analysis of the distributions of bond lengths and angles, in JSON
+         * The test that was used, the significance level (alpha) and the
+         * fewest values that are tested (minimum), and for each interaction
+         * type its unit, the tolerance for the standard deviation, the number
+         * of distributions, how many are wide (standard deviation above
+         * the tolerance), how many were tested and how many are not normal,
+         * and for each identifier (entries) the number of values (count),
+         * average, sigma, wide, tested and, if tested, normal, the statistic
+         * A2, pvalue, skewness and kurtosis.
+         * \return the analysis, with the key analysis
+         */
+        JsonTree analysisToJson() const;
     
         /*! \brief Add command line options for class variables
          * \param[inout] pargs The command line parameters
@@ -252,6 +316,8 @@ class JsonTree;
         std::map<InteractionType, size_t> counts() const;
             
         /*! \brief Store the bond lengths etc. in the force field
+         * With -analyse the distributions of the bond lengths and angles
+         * are analysed as well, see analysisToJson.
          * \param[in]  tw  To print information to
          * \param[out] pd  The force field structure to update
          */
@@ -271,7 +337,8 @@ class JsonTree;
                                ForceField           *pd,
                                const MolSelect      &gms);
 
-        /*! \brief Write how many bonds etc. were found
+        /*! \brief Write how many bonds etc. were found, and with -analyse
+         * how many distributions are not normal
          * \param[in] tw Text writer to write to
          */
         void writeSummary(gmx::TextWriter *tw);

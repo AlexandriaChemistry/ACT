@@ -41,5 +41,6 @@ gmx_add_unit_test(
     ${exename}
     # files with code for tests
     statisticsTest.cpp
+    normalityTest.cpp
     )
 target_link_libraries(${exename} actLib ${GMX_EXE_LINKER_FLAGS})
