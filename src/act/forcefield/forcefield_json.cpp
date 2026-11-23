@@ -92,6 +92,7 @@ JsonTree forceFieldToJson(const ForceField &pd, const std::string &key)
     jff.addObject("file", pd.filename());
     jff.addObject("checksum", pd.checkSum());
     jff.addObject("timestamp", pd.timeStamp());
+    jff.addObject("reference", pd.reference());
     jff.addBool("polarizable", pd.polarizable());
     jff.addObject("charge_generation",
                   chargeGenerationAlgorithmName(pd.chargeGenerationAlgorithm()));

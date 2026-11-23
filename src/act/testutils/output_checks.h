@@ -38,11 +38,10 @@
 #ifndef ACT_TESTUTILS_OUTPUT_CHECKS_H
 #define ACT_TESTUTILS_OUTPUT_CHECKS_H
 
+#include <nlohmann/json.hpp>
 #include <set>
 #include <string>
 #include <vector>
-
-#include <nlohmann/json.hpp>
 
 #include "act/forcefield/forcefield.h"
 #include "testutils/refdata.h"

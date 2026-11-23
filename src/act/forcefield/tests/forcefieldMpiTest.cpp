@@ -64,6 +64,8 @@ protected:
     {
         cr_.init(cr_.size());
         readForceField(fileManager_.getInputFilePath("forcefields/ACM-pg1.xml"), &ref_);
+        // An option of the whole force field
+        ref_.setForceFieldOption("reference", "A. Author, J. Chem. Phys. 1, 1 (2026)");
     }
 
     //! \return the contents of the force field written to a file of this rank
@@ -82,6 +84,7 @@ protected:
     {
         EXPECT_EQ(forcefieldCheckSum(&ref_), forcefieldCheckSum(pd));
         EXPECT_EQ(ref_.polarizable(), pd->polarizable());
+        EXPECT_EQ(ref_.reference(), pd->reference());
         EXPECT_EQ(written(&ref_, "ref"), written(pd, "received"));
     }
 };

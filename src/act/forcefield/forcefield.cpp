@@ -95,6 +95,10 @@ std::vector<std::string> ForceField::info() const
     out.push_back(gmx::formatString("Filename:    %s", filename_.c_str()));
     out.push_back(gmx::formatString("CheckSum:    %s", checkSum_.c_str()));
     out.push_back(gmx::formatString("TimeStamp:   %s", timeStamp_.c_str()));
+    if (!reference().empty())
+    {
+        out.push_back(gmx::formatString("Reference:   %s", reference().c_str()));
+    }
     out.push_back(gmx::formatString("Polarizable: %s", polarizable() ? "True" : "False"));
     out.emplace_back("Interactions:");
     for(const auto &fs : forces_)
@@ -378,6 +382,21 @@ void ForceField::setParticleTypesOption(const std::string &key, const std::strin
         GMX_THROW(gmx::InvalidInputError(gmx::formatString("Invalid value '%s' of option '%s' of the particle types",
                                                            value.c_str(), key.c_str()).c_str()));
     }
+}
+
+void ForceField::setForceFieldOption(const std::string &key, const std::string &value)
+{
+    if (key != "reference")
+    {
+        GMX_THROW(gmx::InvalidInputError(gmx::formatString("Unknown option '%s' of the force field", key.c_str()).c_str()));
+    }
+    forceFieldOptions_[key] = value;
+}
+
+std::string ForceField::reference() const
+{
+    const auto ref = forceFieldOptions_.find("reference");
+    return ref == forceFieldOptions_.end() ? std::string() : ref->second;
 }
 
 std::map<std::string, std::string> ForceField::particleTypesOptions() const
@@ -896,6 +915,12 @@ CommunicationStatus ForceField::Send(const CommunicationRecord *cr, int dest)
         cr->send(dest, filename_);
         cr->send(dest, checkSum_);
         cr->send(dest, timeStamp_);
+        cr->send(dest, forceFieldOptions_.size());
+        for (const auto &opt : forceFieldOptions_)
+        {
+            cr->send(dest, opt.first);
+            cr->send(dest, opt.second);
+        }
         cr->send(dest, static_cast<int>(ChargeGenerationAlgorithm_));
         cr->send(dest, polarizable_ ? 1 : 0);
         const auto ptOptions = particleTypesOptions();
@@ -960,6 +985,26 @@ CommunicationStatus ForceField::BroadCast(const CommunicationRecord *cr,
         cr->bcast(&filename_, comm);
         cr->bcast(&checkSum_, comm);
         cr->bcast(&timeStamp_, comm);
+        {
+            size_t nopt = forceFieldOptions_.size();
+            cr->bcast(&nopt, comm);
+            auto   opt  = forceFieldOptions_.begin();
+            std::map<std::string, std::string> options;
+            for (size_t i = 0; i < nopt; i++)
+            {
+                std::string key, value;
+                if (cr->rank() == root)
+                {
+                    key   = opt->first;
+                    value = opt->second;
+                    ++opt;
+                }
+                cr->bcast(&key, comm);
+                cr->bcast(&value, comm);
+                options.insert({ key, value });
+            }
+            forceFieldOptions_ = options;
+        }
         int icq = static_cast<int>(ChargeGenerationAlgorithm_);
         cr->bcast(&icq, comm);
         ChargeGenerationAlgorithm_ = static_cast<ChargeGenerationAlgorithm>(icq);
@@ -1084,6 +1129,18 @@ CommunicationStatus ForceField::Receive(const CommunicationRecord *cr, int src,
         cr->recv(src, &filename_);
         cr->recv(src, &checkSum_);
         cr->recv(src, &timeStamp_);
+        {
+            size_t nffopt;
+            cr->recv(src, &nffopt);
+            forceFieldOptions_.clear();
+            for (size_t i = 0; i < nffopt; i++)
+            {
+                std::string key, value;
+                cr->recv(src, &key);
+                cr->recv(src, &value);
+                forceFieldOptions_.insert({ key, value });
+            }
+        }
         int cga;
         cr->recv(src, &cga);
         ChargeGenerationAlgorithm_ = static_cast<ChargeGenerationAlgorithm>(cga);
