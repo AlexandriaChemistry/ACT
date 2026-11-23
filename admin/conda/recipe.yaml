@@ -23,7 +23,7 @@ source:
 # files that are on the channel already, and alexandria-python requires the
 # alexandria of its own build, by its name.
 build:
-  number: 0
+  number: 1
   skip:
     - not ((osx and arm64) or (linux and (x86_64 or aarch64)))
     # Double precision for the processor only, single with the GPU where there is one
