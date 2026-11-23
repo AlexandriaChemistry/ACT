@@ -34,16 +34,10 @@ To try the packages:
 
 ## The Python package
 
-Both packages are built in single and in double precision (key `precision`
-of `variants.yaml`). Single precision has the GPU support where there is
-one (the build `sycl_cuda` on Linux); double precision is for the
-processor only (`none`), the recipe skips the other combinations. The
-build string has the precision, `mpi_mpich_sycl_cuda_single_...` or
-`mpi_mpich_none_double_...`, and the double precision variant has a lower
-priority, so that conda installs single precision unless asked for double,
-for instance with `alexandria=*=*double*`. To build one precision only:
-
-    admin/conda/build-local.sh output-conda --variant mpi=mpich --variant precision=double
+Both packages are built in single precision only, with the GPU support
+where there is one (the build `sycl_cuda` on Linux, which also runs on the
+processor). Double precision, which the development and the tests of ACT
+use, needs a build from the source code.
 
 `alexandria-python` has the Python package `act`: the alexandria program
 from Python (`act.run`, `act.commands`) and the classes of ACT
@@ -53,8 +47,7 @@ from Python (`act.run`, `act.commands`) and the classes of ACT
 
 - The module is compiled for each Python version in the key `act_python` of
   `variants.yaml`, for each MPI library, since it uses MPI like the
-  libraries of ACT, and for each precision. The build string says which:
-  `py313_mpi_mpich_single_...`.
+  libraries of ACT. The build string says which: `py313_mpi_mpich_...`.
 - The code of ACT is in the module itself (static libraries, built by
   `build-python.sh` with `-DACT_GPU=NONE`), so that importing it loads
   nothing of a GPU. The classes compute on the processor, also where the

@@ -14,11 +14,9 @@ ACT is available as the conda package *alexandria*, built for
 * Linux on x86-64 processors with AVX2 (Intel since Haswell, AMD since Zen), with GPU support for NVIDIA GPUs through SYCL with AdaptiveCpp; without a GPU, the programs compute on the processor;
 * Linux on 64-bit ARM processors (aarch64), such as NVIDIA Grace in the GH200 nodes of clusters, with explicit SIMD for ARM NEON and GPU support for NVIDIA GPUs as on x86-64.
 
-The package is built in single precision with MPI (MPICH or Open MPI), and in double precision for computing on the processor only, without GPU support. conda installs single precision unless double is asked for::
+The package is built in single precision with MPI (MPICH or Open MPI). Double precision needs a build from the source code.
 
-  conda create -n act-double -c alexandriachemistry -c conda-forge "alexandria=*=*double*"
-
-*alexandria -version* tells the precision. The package requires the package *act-utilities*, which conda installs with it: the Python modules and scripts of `ACT-utilities`_ and the data files of ACT, such as *alexandria.json* and *atomprops.csv*.
+The package requires the package *act-utilities*, which conda installs with it: the Python modules and scripts of `ACT-utilities`_ and the data files of ACT, such as *alexandria.json* and *atomprops.csv*.
 
 The packages are in the channel `alexandriachemistry <https://anaconda.org/alexandriachemistry>`_ on anaconda.org. Releases, such as version 1.9b, have the label *main*, which conda uses by default; test builds between the releases have the label *dev*. Install `Miniforge <https://conda-forge.org/download/>`_, or another conda that uses the channel conda-forge, and create an environment for ACT::
 
