@@ -54,6 +54,7 @@ act_add_gpu_unit_test(
     optimizationindexTest.cpp
     optionsJsonTest.cpp
     parameterUpdateTest.cpp
+    pdbwriterTest.cpp
     queuebalanceTest.cpp
     mcmcmutatorTest.cpp
     nonbondedpairsTest.cpp

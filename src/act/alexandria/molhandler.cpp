@@ -2557,7 +2557,7 @@ void MolHandler::simulate(MsgHandler                    *msghandler,
                           coordinates.toRVec(), mol->topology()->residueNames(),
                           epbcNONE,
                           box, chain, step/simConfig.nstxout()+1, trajIndex,
-                          nullptr, true);
+                          {}, true);
             }
             if (observer && observer->coordinates)
             {

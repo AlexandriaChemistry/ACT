@@ -36,11 +36,13 @@
 #define ACT_IMPORT_IMPORT_H
 
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "act/forcefield/forcefield.h"
 #include "act/molprop/experiment.h"
 #include "act/molprop/molprop.h"
+#include "gromacs/math/vectypes.h"
 
 namespace alexandria
 {
@@ -96,6 +98,28 @@ void importSmiles(MsgHandler           *msg_handler,
                   const std::string    &smiles,
                   std::vector<MolProp> *mp,
                   bool                  oneH);
+
+/*! \brief Whole bond orders for a file format that has no others
+ *
+ * ACT has bond orders 1.5 for aromatic rings and groups such as
+ * carboxylate, which formats such as PDB cannot hold: they get a Kekule
+ * structure, one of the bonds double and the other single, as RDKit
+ * determines it from the bonds and the total charge. All atoms, with
+ * their hydrogens, have to be given.
+ * \param[in] atomicNumbers The elements of the atoms
+ * \param[in] coordinates   Their positions (nm)
+ * \param[in] bonds         The bonds, by the indices of their atoms
+ * \param[in] orders        The bond orders of ACT, one for each bond
+ * \param[in] charge        The total charge
+ * \return the orders 1, 2 or 3, one for each bond, the same as ACT has
+ *         them where these are whole and the smaller or the larger where
+ *         they are not. Empty if they could not be determined that way.
+ */
+std::vector<int> wholeBondOrders(const std::vector<int>                 &atomicNumbers,
+                                 const std::vector<gmx::RVec>           &coordinates,
+                                 const std::vector<std::pair<int, int>> &bonds,
+                                 const std::vector<double>              &orders,
+                                 int                                     charge);
 
 //! The longest SMILES string that importSmiles accepts
 const size_t maxSmilesLength = 2000;
