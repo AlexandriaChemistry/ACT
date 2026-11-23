@@ -412,8 +412,9 @@ by hand (`workflow_dispatch`):
    `alexandriachemistry` on anaconda.org. Maintainers: David van der Spoel
    (`dspoel`), Julian Köngeter (`JulianKoengeter`) and Måns Rosenbaum
    (`MansRosenbaum`), listed in the recipe under `extra`.
-2. Decided: no double precision package in the first release. Later, ship
-   both, the double one with the `_d` programs.
+2. Decided: the packages are in single precision only (confirmed
+   2026-11-23, after build 0 of 1.95b also had double precision ones).
+   Double precision stays in the development loop, built from the source.
 3. Decided: the `linux-64` package always has CUDA support (`sycl_cuda`);
    there is no variant without it. It also runs without a GPU.
 4. Decided: the whole `linux-64` build is for `x86-64-v3` (AVX2), with
