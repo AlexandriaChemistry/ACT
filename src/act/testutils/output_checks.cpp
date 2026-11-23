@@ -269,6 +269,7 @@ nlohmann::json forceFieldChanges(const ForceField &before,
         general["chargegeneration"] = { { "before", static_cast<int>(before.chargeGenerationAlgorithm()) },
                                         { "after", static_cast<int>(after.chargeGenerationAlgorithm()) } };
     }
+    addChange(&general, "options", optionChanges(before.forceFieldOptions(), after.forceFieldOptions()));
     addChange(&changes, "forcefield", general);
 
     // The particle types
