@@ -1132,12 +1132,11 @@ section 1. What remains:
    second factor is asked for and how many connections an account may make
    decide if the shared connection of step B10a is needed and how often the
    interface may ask for the state of a job.
-3. **Precision.** Answered: the conda packages `alexandria` and
-   `alexandria-python` are built in single precision (with the GPU on
-   Linux) and in double precision (for the processor only); conda takes
-   single precision unless double is asked for, with
-   `alexandria=*=*double*`. The Python module follows the build it belongs
-   to.
+3. **Precision.** Answered (2026-11-23): the conda packages `alexandria`
+   and `alexandria-python` are built in single precision only (with the GPU
+   on Linux). Double precision stays in the development loop, in builds
+   from the source code. The double precision packages of build 0 of 1.95b
+   were not continued.
 4. **GPU.** Small molecules do not gain from the GPU. Proposal: the
    interactive calculations run on the CPU; `train_ff -nooptimize` on large
    molprop files may use the GPU as the program does now, also on csb.

@@ -24,8 +24,7 @@ cmake ${CMAKE_ARGS} --compile-no-warning-as-error -S . -B build-python \
     -DACT_SIMD=${SIMD} \
     -DACT_GPU=NONE \
     -DACT_OPENMP=OFF \
-    -DACT_DOUBLE=$([[ "${ACT_PRECISION:-single}" == double ]] && echo ON || echo OFF) \
-    -DACT_DEFAULT_SUFFIX=OFF \
+    -DACT_DOUBLE=OFF \
     -DACT_PYTHON=ON \
     -DACT_INSTALL_PYTHON_PACKAGE=ON \
     -DACT_BUILD_TARBALL=ON
