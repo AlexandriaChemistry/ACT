@@ -3,6 +3,10 @@
 ********************************
 Shell Relaxation and Integration
 ********************************
+
+.. index::
+   single: integration
+
 In polarizable force fields the positions of the shells (or Drude particles) are not determined by the input structure, they have to be computed for each structure. This is done by minimizing the energy with respect to the shell positions, keeping the atoms fixed, as described in this section. The second part of the section describes the integration of the equations of motion in *alexandria simulate*.
 
 .. _sec-shellrelax:
@@ -10,6 +14,12 @@ In polarizable force fields the positions of the shells (or Drude particles) are
 =====================
 Relaxation of shells
 =====================
+
+.. index::
+   single: shell relaxation
+   single: adiabatic approximation
+   single: shell; maximum distance
+
 The shells have no mass. In the adiabatic approximation they follow the atoms instantaneously, that is, for each configuration of the atoms they are at the minimum of the potential energy. The shells are moved to this minimum iteratively, using the forces on them, as follows.
 
 #. The shells are put on top of their core particle and the energy and forces are computed.
@@ -86,6 +96,10 @@ where 0 means that there is no maximum. It can be set with *alexandria gen_ff -s
 ----------------------------
 Shell relaxation in training
 ----------------------------
+
+.. index::
+   single: shell relaxation; training
+
 During training the energies of all conformations (structures) of a molecule are computed together, see :ref:`sec-training`. The shells of all conformations are relaxed at the same time, and the conformations for which the shells converged are not computed again in the next iterations. For a dimer, the shells of each monomer are relaxed first in the isolated monomer, then all shells in the dimer. The induction energy is the change of the electrostatic energy upon relaxation of the shells. If the induction correction is trained separately (see :ref:`sec-indcorr`), the second order induction is computed by relaxing the shells of one monomer in the field of the other one, of which the shells stay at their positions in the isolated monomer, and the other way around. The rest of the induction is the induction correction.
 
 A training step changes the parameters only a little, so the relaxed shells of the previous evaluation are much closer to the new minimum than their cores are. Therefore, by default (*train_ff -shell_keep*), the relaxation of each conformation starts from the shells of the previous evaluation by the same process, in the monomers and in the dimer. The shells are still put on their cores first to compute the energies before relaxation, so the induction energy is defined as before. The shells of conformations that did not converge are not kept, they start from their cores in the next evaluation. For the PC+GS force field of the electrostatics benchmark, starting from trained parameters, the number of iterations per conformation decreased from 2.6 to 0.4, which made training about 40% faster on the processor and about 17% faster on a GPU, where the energy calculations take a larger part of the time.
@@ -101,6 +115,13 @@ Without polarization the interaction energy of a dimer is computed from the inte
 =======================
 Integration in simulate
 =======================
+
+.. index::
+   single: equations of motion
+   single: center of mass motion
+   single: degrees of freedom
+   single: Maxwell distribution
+
 The command *alexandria simulate* integrates the equations of motion in the gas phase (see :ref:`sec-simulations`) using the velocity Verlet algorithm :cite:p:`Swope1982a`. For each atom :math:`i` with mass :math:`m_i`, coordinates :math:`{\bf r}_i` and velocity :math:`{\bf v}_i`, a step of length :math:`\Delta t` is
 
 .. math:: {\bf r}_i(t+\Delta t) ~=~ {\bf r}_i(t) + \Delta t\,{\bf v}_i(t) + \frac{\Delta t^2}{2m_i}{\bf F}_i(t),
@@ -138,6 +159,11 @@ Since this is a rigid body motion, the constraints are still satisfied afterward
 -----------
 Constraints
 -----------
+
+.. index::
+   single: constraints
+   single: RATTLE
+
 With the option *-constrain* the fastest motions can be removed from the simulation, using the RATTLE algorithm :cite:p:`Ryckaert1977a,Andersen1983a`. Each constraint keeps the distance :math:`d_c` between two atoms constant. The option has three choices:
 
 * *no*: there are no constraints (the default).

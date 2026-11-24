@@ -4,9 +4,17 @@
 MD Simulations with Alexandria Force Fields
 *******************************************
 
+.. index::
+   single: molecular dynamics
+   single: MD simulation
+
 ==================
 Using ACT simulate
 ==================
+
+.. index::
+   single: energy minimization
+
 The command *alexandria simulate* will perform a simulation in the gas phase, i.e. without periodic boundary conditions. This obviously limits the usefulness but the OpenMM software can be used for condensed-phase simulations using ACT force fields :cite:p:`Kriz2024a,Spoel2025b`.
 The *alexandria simulate* utility is aimed for validation of the potentials, for instance by evaluating whether the total energy is conserved, it can be verified that the force is the derivative of the potential. The integration algorithm and the relaxation of shells are described in :ref:`sec-integration`.
 
@@ -21,6 +29,10 @@ are supported as well). The *-charges mp2.xml* option indicates a molprop file (
 ========================
 The ACT-OpenMM interface
 ========================
+
+.. index::
+   single: OpenMM
+
 The OpenMM :cite:p:`Eastman2023a` software in its native form is controlled from Python scripts. This allows users great control over the simulations. OpenMM allows to specify user-defined energy functions, which we use to implement both Gaussian-distributed charges :cite:p:`Ghahremanpour2018b,Walz2018a` and many Van der Waals potentials :cite:p:`Kriz2024a` (see Section :ref:`sec-energy`).
 To facilitate this, a special python code was implemented that makes it relatively easy for the user to run simulations and minimization. The first step is to convert an ACT force field file (*actff.xml}) to one compatible with OpenMM (*openmmff.xml*)::
 
@@ -34,6 +46,11 @@ Each compound becomes a residue in the OpenMM force field file. With the flag *-
 ---------------------------
 MD simulations using OpenMM
 ---------------------------
+
+.. index::
+   single: OpenMM; MD simulation
+   single: ActOpenMMSim
+
 It is easy to perform simulations based on an Alexandria force field. For this, we rely on the `OpenMM`_ software that you need to install separately. Then you can use the ACT python interface to OpenMM, as in this simple script, that we will call run.py::
 
   #!/usr/bin/env python3
@@ -62,6 +79,10 @@ or submitted to a cluster, preferably with GPUs available.
 --------------------------------
 Energy Minimization using OpenMM
 --------------------------------
+
+.. index::
+   single: OpenMM; energy minimization
+
 An energy minimization of the input structure can be done using this script::
 
   #!/usr/bin/env python3
