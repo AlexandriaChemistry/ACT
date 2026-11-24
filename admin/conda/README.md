@@ -27,7 +27,7 @@ directory first.
 
 To try the packages:
 
-    conda create -n alex-test -c file://$PWD/output-conda -c conda-forge alexandria-python
+    conda create -n alex-test -c file://$PWD/output-conda -c conda-forge -c alexandriachemistry alexandria-python
     conda activate alex-test
     alexandria -version
     python -c "import act; print(act.classes_available(), act.data_directory())"
