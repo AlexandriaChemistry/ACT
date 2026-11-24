@@ -126,7 +126,7 @@ The tab *Settings* has the screen mode and the cluster for long jobs. The screen
 ==================
 Jobs on a cluster
 ==================
-Long calculations, a comparison with a large file, a training, the second virial coefficient or a simulation with OpenMM, can run on a Slurm cluster on which you have an account. In the tab *Settings* you give the name of the server, your user name there and a working directory; how ACT is made available in a job (a module, a file that the shell reads, a conda environment, or nothing); the partitions for jobs with and without a GPU; and the name of the program there, *alexandria* or *alexandria_d*. The settings are kept in the file *act-gui/settings.json* in your configuration directory.
+Long calculations, a comparison with a large file, a training, the second virial coefficient or a simulation with OpenMM, can run on a Slurm cluster on which you have an account. In the tab *Settings* you give the name of the server, your user name there and a working directory; how ACT is made available in a job (a module, a file that the shell reads, a conda environment, or nothing); the partitions for jobs with and without a GPU; and the name of the program there, *alexandria* or *alexandria_d*. Several clusters can be kept, each under a name of your own, such as *csb* or *dardel*; one of them is the default. When a job is sent, the field *Cluster* chooses where it goes, the default if you choose nothing; a job that is sent again goes to the cluster that has its files. The settings are kept in the file *act-gui/settings.json* in your configuration directory.
 
 The interface logs in with the *ssh* program of your computer, which uses your own keys and settings. It never asks for a password and keeps none, so the login has to work without a question: set up a key for the server, or open one connection in a terminal with connection sharing if the server asks for a password or a code each time. *Test the login* logs in once and tells whether the directory is there and the server has Slurm.
 
@@ -134,7 +134,7 @@ A cluster may block an account that logs in often, so the interface logs in as s
 
 * Before anything is sent, the page shows the job: the script for Slurm, the command and the files that go along. The files get a name after their option, such as *ff.xml*, so no name of a file on your computer goes to the cluster.
 * Sending a job is one login. The files go to a directory of the job below the working directory, where *sbatch* is started.
-* One login asks for the state of all jobs together, not more often than the settings say (every two minutes by default), and only while the page is open. A training also tells how far it is (:numref:`fig-gui-cluster`).
+* One login for each cluster asks for the state of all its jobs together, not more often than the settings say (every two minutes by default), and only while the page is open. A training also tells how far it is (:numref:`fig-gui-cluster`).
 * When a job has ended, one more login fetches its results, which are then shown as those of a calculation on your own computer. All output files come back, also those that the program writes under a name of its own, such as the log file of *train_ff*; *Files* lists them and saves each.
 * After a login that did not work the cluster is not asked again until you press the button.
 
