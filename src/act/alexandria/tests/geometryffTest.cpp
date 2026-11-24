@@ -254,6 +254,39 @@ TEST_F(GeometryFFTest, Histograms)
     EXPECT_EQ("degree", all.at("ANGLES")[0].at("unit").get<std::string>());
 }
 
+// Test: The atoms that a value comes from are numbered as in the molprop
+// file, also with a force field that puts a virtual site on bromine: the
+// topology has it after the bromine, the molprop file does not have it
+TEST_F(GeometryFFTest, AtomNumbersWithVirtualSites)
+{
+    const auto jsonFile = fileManager().getTemporaryFilePath("vsite.json");
+    gmx::test::CommandLine cmd;
+    cmd.append("geometry_ff");
+    cmd.addOption("-mp", fileManager().getInputFilePath("molprop/hbr-vsite.xml"));
+    cmd.addOption("-ff", fileManager().getInputFilePath("forcefields/ACS-pg-vs2.xml"));
+    cmd.addOption("-o", fileManager().getTemporaryFilePath("vsite.xml"));
+    cmd.addOption("-g", fileManager().getTemporaryFilePath("vsite.log"));
+    cmd.addOption("-json", jsonFile);
+    cmd.addOption("-samples", 3);
+    ASSERT_EQ(0, geometry_ff(cmd.argc(), cmd.argv()));
+    std::ifstream in(jsonFile);
+    const auto j     = nlohmann::json::parse(in);
+    const auto &root = j.at("geometry_ff");
+    EXPECT_EQ(1, root.at("compounds").get<int>());
+    const auto &bonds = root.at("histograms").at("BONDS");
+    ASSERT_EQ(1u, bonds.size());
+    EXPECT_EQ("br_b~h_b", bonds[0].at("identifier").get<std::string>());
+    const auto &sample = bonds[0].at("bins")[0].at("samples")[0];
+    EXPECT_EQ("hydrogen-bromide", sample.at("molecule").get<std::string>());
+    EXPECT_EQ("0000", sample.at("calculation").get<std::string>());
+    // Bromine is the first atom of the file, hydrogen the second
+    auto atoms = sample.at("atoms").get<std::vector<int>>();
+    std::sort(atoms.begin(), atoms.end());
+    EXPECT_EQ((std::vector<int>{ 1, 2 }), atoms);
+    const auto names = sample.at("names").get<std::string>();
+    EXPECT_TRUE(names == "H2-Br1" || names == "Br1-H2") << names;
+}
+
 //! \return the lines of a file
 static std::vector<std::string> linesOf(const std::string &filename)
 {

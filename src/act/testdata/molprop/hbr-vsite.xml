@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!DOCTYPE molprops.dtd PUBLIC "molprops.dtd" "molprops.dtd">
+<molecules>
+  <molecule molname="hydrogen-bromide">
+    <fragments>
+      <fragment identifier="InChI=1S/BrH/h1H" mass="80.91194" charge="0" multiplicity="1" symmetry_number="1" formula="BrH"> 1 2</fragment>
+    </fragments>
+    <molinfo iupac="bromane" cas="10035-10-6" cid="255" inchi="InChI=1S/BrH/h1H"/>
+    <bond ai="2" aj="1" bondorder="1"/>
+    <experiment datasource="Theory" reference="Spoel2026a" conformation="conformation" program="Psi4" method="MP2" basisset="aug-cc-pvtz" jobtype="Opt" datafile="0000">
+      <atom name="Br" obtype="br" atomid="1" coord_unit="Angstrom">
+        <x>0</x>
+        <y>0</y>
+        <z>-0.00773293</z>
+      </atom>
+      <atom name="H" obtype="h" atomid="2" coord_unit="Angstrom">
+        <x>0</x>
+        <y>0</y>
+        <z>-1.40645</z>
+      </atom>
+    </experiment>
+  </molecule>
+</molecules>
