@@ -2,7 +2,10 @@
 # Builds the conda packages from the last commit of this git repository, with
 # rattler-build, into the directory given as the first argument (default
 # output-conda in the current directory). Further arguments go to
-# rattler-build, for instance --variant mpi=mpich to build only that variant.
+# rattler-build, for instance --variant mpi=mpich to build only that variant,
+# or --channel with a local channel that has act-utilities. The channel
+# alexandriachemistry comes last, for plotxvg, which act-utilities needs:
+# a package that the other channels have is taken from those.
 set -euo pipefail
 
 recipe_dir=$(cd "$(dirname "$0")" && pwd)
@@ -20,4 +23,5 @@ ACT_SOURCE="${work}/act.tar.gz" rattler-build build \
     --variant-config "${recipe_dir}/variants.yaml" \
     --channel conda-forge \
     --output-dir "${out}" \
-    "$@"
+    "$@" \
+    --channel alexandriachemistry

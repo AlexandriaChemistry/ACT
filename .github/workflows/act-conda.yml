@@ -79,7 +79,8 @@ jobs:
           mkdir -p ${CONDA_OUT}
           ACT_UTILITIES_SOURCE=${{ github.workspace }}/ACT-utilities \
             rattler-build build --recipe ACT-utilities/conda/recipe.yaml \
-                                --channel conda-forge --output-dir ${CONDA_OUT}
+                                --channel conda-forge --channel alexandriachemistry \
+                                --output-dir ${CONDA_OUT}
       - name: Build alexandria and alexandria-python
         shell: bash -el {0}
         run: |
