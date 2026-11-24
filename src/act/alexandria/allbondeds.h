@@ -197,12 +197,15 @@ class JsonTree;
         //! Whether to keep where each value comes from
         bool                                               keepSamples_ = false;
         //! A molecule from which values come: its name, the data files of
-        //! its calculations and the names of its atoms
+        //! its calculations, and for each particle of the topology its name
+        //! and its place among the atoms of the molprop file, -1 for a
+        //! shell or a virtual site, which the molprop file does not have
         struct SampledMolecule
         {
             std::string              name;
             std::vector<std::string> datafiles;
             std::vector<std::string> atomNames;
+            std::vector<int>         molpropIndex;
         };
         //! The molecules from which values come, if that is kept
         std::vector<SampledMolecule>                       molecules_;
@@ -268,8 +271,9 @@ class JsonTree;
          * have values: the middle of the bin and the number of values in
          * it. With samples kept, a bin lists up to maxSamples of its values
          * with the molecule, the data file of the calculation and the atoms
-         * (numbers from one and names with numbers) they come from, and the
-         * number of the others (more).
+         * they come from, and the number of the others (more). The atoms
+         * are numbered from one in the order of the molprop file, which has
+         * no shells or virtual sites (atoms), with their names (names).
          * \param[in] maxSamples The most values that a bin lists
          * \return the histograms, with the key histograms
          */

@@ -42,6 +42,7 @@
 
 #include "act/alexandria/molselect.h"
 #include "act/alexandria/train_utility.h"
+#include "act/basics/act_particle.h"
 #include "act/basics/dataset.h"
 #include "act/basics/identifier.h"
 #include "act/basics/interactiontype.h"
@@ -805,9 +806,13 @@ void AllBondeds::extractGeometries(MsgHandler           *msghandler,
                 {
                     sampled.datafiles.push_back(exper.getDatafile());
                 }
+                // The topology has the shells and virtual sites in between
+                // the atoms, the molprop file has only the atoms
+                int real = 0;
                 for (const auto &atom : mmi.topology()->atoms())
                 {
                     sampled.atomNames.push_back(atom.name());
+                    sampled.molpropIndex.push_back(atom.pType() == ActParticle::Atom ? real++ : -1);
                 }
                 molecules_.push_back(std::move(sampled));
             }
@@ -883,9 +888,13 @@ JsonTree AllBondeds::histogramsToJson(size_t maxSamples) const
                         std::string      names;
                         for (const auto a : sample.atoms)
                         {
-                            numbers.push_back(a + 1);
-                            const auto name = a < static_cast<int>(molecule.atomNames.size()) ? molecule.atomNames[a] : std::string("?");
-                            names += gmx::formatString("%s%s%d", names.empty() ? "" : "-", name.c_str(), a + 1);
+                            const bool known  = a >= 0 && a < static_cast<int>(molecule.atomNames.size());
+                            // The number in the molprop file, that of the
+                            // topology for a particle that it does not have
+                            const int  number = (known && molecule.molpropIndex[a] >= 0 ? molecule.molpropIndex[a] : a) + 1;
+                            numbers.push_back(number);
+                            const auto name   = known ? molecule.atomNames[a] : std::string("?");
+                            names += gmx::formatString("%s%s%d", names.empty() ? "" : "-", name.c_str(), number);
                         }
                         js.addArray("atoms", numbers);
                         js.addObject("names", names);
