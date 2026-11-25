@@ -44,6 +44,7 @@ gmx_add_unit_test(
     dimergeneratorTest.cpp
     minimizeTest.cpp
     princTest.cpp
+    ringpolymerTest.cpp
     simulateTest.cpp
     nmaTest.cpp
     symmetrynumberTest.cpp

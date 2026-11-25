@@ -92,6 +92,9 @@ struct ShellOptions
     bool          energyTerms = true;
     //! Whether to construct the virtual sites and spread their forces
     bool          virtualSites = true;
+    //! Whether the forces are needed. Without them, and without shells to
+    //! relax, only the energies are computed, which is faster.
+    bool          forces       = true;
 };
 
 /*! \brief Conformations of one topology, with the data for computing them
@@ -432,7 +435,10 @@ private:
      * \param[inout] set        The conformations, on return with the forces
      *                          and the relaxed shells
      * \param[in]    options    How to treat the shells, and the electric field
-     * \param[out]   energies   The energy terms of each conformation
+     * \param[out]   energies   The energy terms of each conformation. If nullptr
+     *                          they are not made, the energies of the potentials
+     *                          are in the energies of the conformations of the
+     *                          set, which is faster for many conformations.
      */
     void computeTotal(MsgHandler                                     *msghandler,
                       const ForceField                               *pd,

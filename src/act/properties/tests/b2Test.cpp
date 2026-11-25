@@ -386,6 +386,49 @@ TEST_F(SecondVirialWithoutCommandLineTest, WrongOptions)
         o.rerun.setBlockSize(-1);
         wrong.emplace_back(o, "-block");
     }
+    {
+        auto o = shortCalculation("w8");
+        o.rerun.setBeads(-1);
+        wrong.emplace_back(o, "-nbeads");
+    }
+    {
+        auto o = shortCalculation("w9");
+        o.rerun.setRingPolymers(2, 0, 0.00025, 0.05, 10, 10);
+        wrong.emplace_back(o, "-npolymers");
+    }
+    {
+        auto o = shortCalculation("w10");
+        o.rerun.setRingPolymers(2, 10, 0, 0.05, 10, 10);
+        wrong.emplace_back(o, "-pidt");
+    }
+    {
+        auto o = shortCalculation("w11");
+        o.rerun.setRingPolymers(2, 10, 0.00025, 0, 10, 10);
+        wrong.emplace_back(o, "-pitau");
+    }
+    {
+        auto o = shortCalculation("w12");
+        o.rerun.setRingPolymers(2, 10, 0.00025, 0.05, -1, 10);
+        wrong.emplace_back(o, "-piequil");
+    }
+    {
+        auto o = shortCalculation("w13");
+        o.rerun.setRingPolymers(2, 10, 0.00025, 0.05, 10, -1);
+        wrong.emplace_back(o, "-pistride");
+    }
+    {
+        // Flexible monomers are not read from a trajectory
+        auto o = shortCalculation("w14");
+        o.rerun.setBeads(1);
+        o.rerun.gendimers()->setTrajectory("dimers.pdb");
+        wrong.emplace_back(o, "-traj");
+    }
+    {
+        // The time step is too large for the springs between many beads
+        auto o = shortCalculation("w15");
+        o.rerun.setRingPolymers(64, 10, 0.002, 0.05, 10, 10);
+        wrong.emplace_back(o, "time step");
+    }
     CommunicationRecord cr;
     cr.init(cr.size());
     for (const auto &w : wrong)
@@ -411,6 +454,243 @@ TEST_F(SecondVirialWithoutCommandLineTest, WrongOptions)
     cmd.addOption("-T1", -10.0);
     cmd.addOption("-g", fileManager().getTemporaryFilePath("wrong.log"));
     EXPECT_EQ(1, b2(cmd.argc(), cmd.argv()));
+}
+
+//! The second virial with flexible monomers
+class SecondVirialFlexibleTest : public SecondVirialWithoutCommandLineTest
+{
+protected:
+    /*! \brief The options of a short calculation
+     * \param[in] label      For the names of the files
+     * \param[in] forceField The force field in src/act/testdata/forcefields
+     * \param[in] ndimer     The number of orientations
+     * \return The options
+     */
+    B2Options options(const std::string &label, const std::string &forceField, int ndimer)
+    {
+        auto o = shortCalculation(label);
+        o.forceFieldFile = fileManager().getInputFilePath("forcefields/" + forceField);
+        o.maxDimers      = ndimer;
+        o.rerun.setOutputFiles("", "");
+        o.rerun.gendimers()->setDistances(0.2, 1.2, 51);
+        o.rerun.gendimers()->finishSettings();
+        return o;
+    }
+
+    /*! \brief Compute the second virial
+     * \param[in] options What to compute
+     * \return the content of the JSON file below the second virial coefficients
+     */
+    nlohmann::json run(const B2Options &options)
+    {
+        CommunicationRecord cr;
+        cr.init(cr.size());
+        MsgHandler          msghandler;
+        msghandler.setPrintLevel(ACTStatus::Fatal);
+        EXPECT_EQ(0, runSecondVirial(&cr, &msghandler, options));
+        const auto tree = readJsonOutput(options.jsonFile);
+        const std::string key("Second virial coefficients");
+        if (!tree.contains("SecondVirialCoefficient") || !tree["SecondVirialCoefficient"].contains(key))
+        {
+            ADD_FAILURE() << "No second virial in " << options.jsonFile;
+            return {};
+        }
+        return tree["SecondVirialCoefficient"][key];
+    }
+
+    /*! \brief Check that monomers that do not move give the classical second virial of rigid ones
+     * \param[in] forceField The force field in src/act/testdata/forcefields
+     * \param[in] nbeads     The number of beads
+     */
+    void frozenSameAsRigid(const std::string &forceField, int nbeads)
+    {
+        const auto label  = forceField + std::to_string(nbeads);
+        const auto rigid  = run(options("rigid" + label, forceField, 24));
+        auto       o      = options("frozen" + label, forceField, 24);
+        // No dynamics: all beads of all structures are the minimized monomer
+        o.rerun.setRingPolymers(nbeads, 3, 0.00025, 0.05, 0, 0);
+        const auto frozen = run(o);
+        for(const auto &T : { "T = 400 K", "T = 500 K" })
+        {
+            ASSERT_TRUE(rigid.contains(T) && frozen.contains(T));
+            // The quantum corrections of rigid monomers are not there
+            EXPECT_FALSE(frozen[T].contains("B2(Classical)"));
+            EXPECT_TRUE(frozen[T].contains("Standard error"));
+            double classical = jsonNumber(rigid[T]["B2(Classical)"]);
+            double total     = jsonNumber(frozen[T]["B2(Total)"]);
+            EXPECT_NEAR(classical, total, std::abs(classical)*(GMX_DOUBLE ? 1e-9 : 2e-3)) << forceField << " " << T;
+        }
+        EXPECT_EQ(nbeads, static_cast<int>(jsonNumber(frozen["Beads"])));
+    }
+
+    /*! \brief A number of the JSON output, which may be written as text
+     * \param[in] value The value
+     * \return the number
+     */
+    static double jsonNumber(const nlohmann::json &value)
+    {
+        return value.is_string() ? std::stod(value.get<std::string>()) : value.get<double>();
+    }
+};
+
+TEST_F(SecondVirialFlexibleTest, FrozenMonomersSameAsRigid)
+{
+    frozenSameAsRigid("SPCE.xml", 1);
+    frozenSameAsRigid("SPCE.xml", 3);
+}
+
+TEST_F(SecondVirialFlexibleTest, FrozenMonomersSameAsRigidVirtualSites)
+{
+    frozenSameAsRigid("TIP5P.xml", 2);
+}
+
+TEST_F(SecondVirialFlexibleTest, FrozenMonomersSameAsRigidShells)
+{
+    frozenSameAsRigid("SWM4-NDP.xml", 2);
+}
+
+TEST_F(SecondVirialFlexibleTest, SameSeedSameResult)
+{
+    std::vector<double> b2;
+    for(int i = 0; i < 3; i++)
+    {
+        auto o = options("seed" + std::to_string(i), "SPCE.xml", 32);
+        o.rerun.setRingPolymers(4, 16, 0.00025, 0.05, 100, 20);
+        o.rerun.gendimers()->setSeed(i < 2 ? 11 : 12);
+        const auto res = run(o);
+        ASSERT_TRUE(res.contains("T = 400 K"));
+        b2.push_back(jsonNumber(res["T = 400 K"]["B2(Total)"]));
+        EXPECT_TRUE(std::isfinite(b2.back()));
+        EXPECT_GT(jsonNumber(res["T = 400 K"]["Standard error"]), 0);
+    }
+    EXPECT_EQ(b2[0], b2[1]);
+    EXPECT_NE(b2[0], b2[2]);
+}
+
+TEST_F(SecondVirialFlexibleTest, ClassicalFlexibleWater)
+{
+    // Classical flexible monomers are bound more strongly than rigid ones,
+    // since they adapt to each other. The difference is clear at 600 K,
+    // where the second virial converges fast with the number of orientations.
+    auto rigid = options("rigid600", "SPCE.xml", 16384);
+    rigid.rerun.setTemperatures(600, 600, 100);
+    auto flex  = rigid;
+    flex.jsonFile = fileManager().getTemporaryFilePath("flex600.json");
+    flex.rerun.setRingPolymers(1, 2000, 0.00025, 0.02, 2000, 40);
+    const auto r = run(rigid);
+    const auto f = run(flex);
+    const std::string T("T = 600 K");
+    ASSERT_TRUE(r.contains(T) && f.contains(T));
+    double classical = jsonNumber(r[T]["B2(Classical)"]);
+    double flexible  = jsonNumber(f[T]["B2(Total)"]);
+    double error     = jsonNumber(f[T]["Standard error"]);
+    // An independent calculation with distances up to 2 nm gives -204.3
+    // and -231.6 +/- 1.5 cm^3/mol, of which 8 are from beyond the 1.2 nm
+    // used here. The structures of the monomers depend on the random
+    // numbers of the standard library, the standard error is about 7.
+    EXPECT_NEAR(-196.5, classical, 4);
+    EXPECT_NEAR(-224, flexible, 25);
+    EXPECT_LT(flexible, classical - 8);
+    EXPECT_GT(error, 0);
+    EXPECT_LT(error, 25);
+}
+
+TEST_F(SecondVirialFlexibleTest, CommandLine)
+{
+    const auto common = [this](gmx::test::CommandLine *cmd, const std::string &label)
+    {
+        cmd->append("b2");
+        cmd->addOption("-ff", fileManager().getInputFilePath("forcefields/SPCE.xml"));
+        cmd->addOption("-f", fileManager().getInputFilePath("molecules/water_dimer.pdb"));
+        cmd->addOption("-mindist", 0.2);
+        cmd->addOption("-maxdist", 1.2);
+        cmd->addOption("-ndist", 51);
+        cmd->addOption("-maxdimer", 16);
+        cmd->addOption("-T1", 500.0);
+        cmd->addOption("-T2", 500.0);
+        cmd->addOption("-dT", 100.0);
+        cmd->addOption("-npolymers", 8);
+        cmd->addOption("-piequil", 50);
+        cmd->addOption("-pistride", 10);
+        cmd->addOption("-json", fileManager().getTemporaryFilePath(label + ".json"));
+        cmd->addOption("-b2", fileManager().getTemporaryFilePath(label + "-B2T.xvg"));
+        cmd->addOption("-eh", fileManager().getTemporaryFilePath(label + "-mayer.xvg"));
+        cmd->addOption("-g", fileManager().getTemporaryFilePath(label + ".log"));
+    };
+    const auto total = [this](const std::string &label)
+    {
+        const auto tree = readJsonOutput(fileManager().getTemporaryFilePath(label + ".json"));
+        return jsonNumber(tree["SecondVirialCoefficient"]["Second virial coefficients"]["T = 500 K"]["B2(Total)"]);
+    };
+    // -flex is one bead
+    gmx::test::CommandLine flex, one, four;
+    common(&flex, "flex");
+    flex.append("-flex");
+    ASSERT_EQ(0, b2(flex.argc(), flex.argv()));
+    common(&one, "one");
+    one.addOption("-nbeads", 1);
+    ASSERT_EQ(0, b2(one.argc(), one.argv()));
+    EXPECT_EQ(total("flex"), total("one"));
+    common(&four, "four");
+    four.addOption("-nbeads", 4);
+    ASSERT_EQ(0, b2(four.argc(), four.argv()));
+    EXPECT_NE(total("four"), total("one"));
+    // The files with the total, its error and the Mayer function
+    for(const auto &file : { "four-B2T.xvg", "four-mayer.xvg" })
+    {
+        const auto text = textWithoutComments(fileManager().getTemporaryFilePath(file));
+        EXPECT_FALSE(text.empty()) << file;
+    }
+    // A wrong number of beads stops the program
+    gmx::test::CommandLine wrong;
+    common(&wrong, "wrongbeads");
+    wrong.addOption("-nbeads", -2);
+    EXPECT_EQ(1, b2(wrong.argc(), wrong.argv()));
+}
+
+TEST(B2DataTest, AddOtherData)
+{
+    // The sums of two sets of dimers are those of all of them
+    const std::vector<double> T = { 300, 400 };
+    B2Data all(4, T), first(4, T), second(4, T);
+    const std::vector<size_t>    index  = { 0, 1, 2, 3 };
+    const std::vector<double>    dist   = { 0.3, 0.4, 0.5, 0.6 };
+    const std::vector<double>    weight = { 1, 1, 1, 1 };
+    const std::vector<double>    force2[2] = { { 1, 2, 3, 4 }, { 4, 3, 2, 1 } };
+    const std::vector<gmx::RVec> torque[2] = { std::vector<gmx::RVec>(4, { 1, 2, 3 }),
+                                               std::vector<gmx::RVec>(4, { 3, 2, 1 }) };
+    const std::vector<double>    e1 = { 5, -3, -1, -0.2 }, e2 = { 8, -4, -1.5, -0.1 };
+    all.addOrientation(index, dist, e1, force2, torque, weight);
+    all.addOrientation(index, dist, e2, force2, torque, weight);
+    first.addOrientation(index, dist, e1, force2, torque, weight);
+    second.addOrientation(index, dist, e2, force2, torque, weight);
+    // The distances are set, the first set has no dimers of its own process
+    B2Data sum(4, T);
+    sum.setDistances(dist);
+    sum.add(&first);
+    sum.add(&second);
+    EXPECT_EQ(all.nDimer(), sum.nDimer());
+    MsgHandler msghandler;
+    const std::vector<double>    mass    = { 18, 18 };
+    const std::vector<gmx::RVec> inertia = { { 1, 2, 3 }, { 1, 2, 3 } };
+    for(size_t iTemp = 0; iTemp < T.size(); iTemp++)
+    {
+        double beta = 1.0/(BOLTZ*T[iTemp]);
+        double b[2][4];
+        all.integrate(&msghandler, iTemp, beta, mass, inertia, &b[0][0], &b[0][1], &b[0][2], &b[0][3]);
+        sum.integrate(&msghandler, iTemp, beta, mass, inertia, &b[1][0], &b[1][1], &b[1][2], &b[1][3]);
+        for(int k = 0; k < 4; k++)
+        {
+            EXPECT_DOUBLE_EQ(b[0][k], b[1][k]);
+        }
+        EXPECT_EQ(all.mayer(iTemp), sum.mayer(iTemp));
+    }
+    EXPECT_EQ(dist, sum.distances());
+    // Other distances or temperatures cannot be added
+    B2Data other(5, T), otherT(4, { 300, 500 });
+    EXPECT_THROW(sum.add(&other), gmx::InternalError);
+    EXPECT_THROW(sum.add(&otherT), gmx::InternalError);
+    EXPECT_THROW(sum.setDistances({ 1, 2 }), gmx::InternalError);
 }
 
 TEST(B2DataTest, HardSpheres)

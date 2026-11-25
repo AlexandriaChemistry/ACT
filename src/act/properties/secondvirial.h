@@ -102,6 +102,18 @@ private:
     real                eMin_        = -1000;
     //! Largest number of distances of an orientation computed together, 0 means all
     int                 blockSize_   = 264;
+    //! Number of beads of the ring polymers of flexible monomers (-nbeads), 0 for rigid monomers
+    int                 nbeads_      = 0;
+    //! Number of ring polymers of each monomer on each process (-npolymers)
+    int                 npolymers_   = 1000;
+    //! Time step in ps of the dynamics of the ring polymers (-pidt)
+    real                piTimeStep_  = 0.00025;
+    //! Time constant in ps of the thermostat of the centroid of the ring polymers (-pitau)
+    real                piTau_       = 0.05;
+    //! Number of steps before the first ring polymer is used (-piequil)
+    int                 piEquil_     = 4000;
+    //! Number of steps between ring polymers (-pistride)
+    int                 piStride_    = 100;
     //! The file for the Mayer functions (-eh), none if empty
     std::string         mayerFile_;
     //! The file for the second virial as a function of the temperature (-b2), none if empty
@@ -110,6 +122,46 @@ private:
     std::vector<double> Temperatures_;
     //! Second virial as a function of T for all components (see function temperatures)
     std::map<b2Type, std::vector<double>> b2t_;
+    //! Standard error of the total second virial at each temperature, with flexible monomers only
+    std::vector<double> b2err_;
+    /*! \brief Distribute a range of orientations over the processes
+     * The master takes the first ones, including the rest of the division,
+     * and sends the random numbers of the others. They are added to those
+     * of the dimer generator.
+     * \param[in] cr         Communication record
+     * \param[in] msghandler For output
+     * \param[in] allRand    The random numbers of all orientations, on the master
+     * \param[in] start      The first orientation
+     * \param[in] end        One past the last orientation
+     * \return the number of orientations of this process
+     */
+    int distributeOrientations(CommunicationRecord                    *cr,
+                               MsgHandler                             *msghandler,
+                               const std::vector<std::vector<double>> &allRand,
+                               int                                     start,
+                               int                                     end);
+    /*! \brief Compute the second virial coefficient with flexible monomers
+     *
+     * The structures of the monomers are sampled as ring polymers at each
+     * temperature, see RingPolymerSampler. For each orientation a ring
+     * polymer of each monomer is taken, and the interaction energy of each
+     * pair of beads is computed at all distances: the energy of the dimer
+     * minus the energies of the monomers, with relaxed shells. With the
+     * average U of the interaction energy over the beads, the second
+     * virial is the integral of the Mayer function exp(-U/kT)-1, which is
+     * the path integral expression for particles without exchange. With
+     * one bead it is the classical second virial of flexible molecules.
+     * \param[in] cr         Communication Record for parallel calcs
+     * \param[in] msghandler The MsgHandler for printing and status
+     * \param[in] pd         Force field structure
+     * \param[inout] actmol  Structure with molecule info
+     * \param[in] maxdimer   Number of orientations to generate
+     */
+    void runB2PathIntegral(CommunicationRecord *cr,
+                           MsgHandler          *msghandler,
+                           const ForceField    *pd,
+                           ACTMol              *actmol,
+                           int                  maxdimer);
     //! Generate temperature series if needed and return it
     const std::vector<double> &temperatures();
     /*! \brief Generate plot with Second virial as a function of temperature
@@ -183,6 +235,34 @@ public:
      */
     void setBlockSize(int blockSize) { blockSize_ = blockSize; }
 
+    /*! \brief Use flexible monomers, sampled as ring polymers
+     * As -nbeads, -npolymers, -pidt, -pitau, -piequil and -pistride.
+     * \param[in] nbeads    The number of beads, 0 for rigid monomers, 1 for
+     *                      classical flexible monomers
+     * \param[in] npolymers The number of ring polymers of each monomer on each process
+     * \param[in] timeStep  The time step in ps
+     * \param[in] tau       The time constant in ps of the thermostat of the centroid
+     * \param[in] nequil    The number of steps before the first ring polymer
+     * \param[in] stride    The number of steps between ring polymers
+     */
+    void setRingPolymers(int nbeads, int npolymers, double timeStep, double tau, int nequil, int stride)
+    {
+        nbeads_     = nbeads;
+        npolymers_  = npolymers;
+        piTimeStep_ = timeStep;
+        piTau_      = tau;
+        piEquil_    = nequil;
+        piStride_   = stride;
+    }
+
+    /*! \brief Set the number of beads only, as -nbeads
+     * \param[in] nbeads The number of beads, 0 for rigid monomers
+     */
+    void setBeads(int nbeads) { nbeads_ = nbeads; }
+
+    //! \return the number of beads of flexible monomers, 0 for rigid monomers
+    int nbeads() const { return nbeads_; }
+
     /*! \brief Set the output files, as -eh and -b2
      * \param[in] mayerFile The Mayer functions, none if empty
      * \param[in] b2File    The second virial as a function of the temperature, none if empty
@@ -211,6 +291,9 @@ public:
                bool              verbose);
 
     /*! \brief Compute second virial coefficient including QM corrections
+     * For rigid monomers the classical second virial and the first order
+     * quantum corrections. With flexible monomers, see setRingPolymers,
+     * the path integral second virial, see runB2PathIntegral.
      * \param[in] cr         Communication Record for parallel calcs
      * \param[in] msghandler The MsgHandler for printing and status
      * \param[in] pd         Force field structure
@@ -227,7 +310,8 @@ public:
     /*! \brief Add the second virial coefficients to a JSON tree
      * For each temperature the components and the total in cm^3/mol, with
      * all digits, such that results can be compared exactly, as in the
-     * tests. Nothing is added if the second virial was not computed.
+     * tests. With flexible monomers the total and its standard error.
+     * Nothing is added if the second virial was not computed.
      * \param[inout] jtree The tree
      */
     void addB2(JsonTree *jtree);

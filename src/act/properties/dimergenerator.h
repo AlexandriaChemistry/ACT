@@ -245,6 +245,13 @@ public:
     //! Empty random number array
     void clearAllRandom() { allRandom_.clear(); }
 
+    //! Empty the random number array and start again at the first orientation
+    void resetRandom()
+    {
+        allRandom_.clear();
+        randIndex_ = 0;
+    }
+
     /*! \brief Set the random numbers
      * \param[in] newRand The new random numbers
      */
@@ -258,6 +265,22 @@ public:
 
     //! \return the shortest distance between the centers of mass
     double mindist() const { return mindist_; }
+
+    /*! \brief The distance between the centers of mass of a dimer
+     * \param[in] idist The index of the distance
+     * \return the distance in nm
+     */
+    double distance(int idist) const
+    {
+        return (ndist_ > 1) ? mindist_ + idist*binWidth_ : mindist_;
+    }
+
+    /*! \brief The coordinates of a monomer that the dimers are made of
+     * Relative to its center of mass, after prepare.
+     * \param[in] m The monomer, 0 or 1
+     * \return the coordinates of all its particles
+     */
+    const std::vector<gmx::RVec> &monomerCoordinates(int m) const { return xmOrig_[m]; }
 
     //! Return trajectory name
     const char *trajname() const { return trajname_.empty() ? nullptr : trajname_.c_str(); }
@@ -290,6 +313,17 @@ public:
     void prepare(MsgHandler       *msghandler,
                  const ForceField *pd,
                  const ACTMol     *actmol);
+
+    /*! \brief Rotate two sets of coordinates to the next orientation
+     * Each set is rotated around the origin, with the next random numbers,
+     * see generateRandomNumbers. A set can hold more than one copy of a
+     * molecule, as the beads of a ring polymer.
+     * \param[in]  x    The coordinates of the two sets
+     * \param[out] xrot The rotated coordinates
+     * \return the weight of the orientation in averages over orientations
+     */
+    double rotateNext(const std::vector<gmx::RVec> x[2],
+                      std::vector<gmx::RVec>       xrot[2]);
 
     /*! \brief Do the actual generation for one pair. Two molecules
      * will be oriented and a distance series will be generated.

@@ -60,6 +60,7 @@
 #include "gromacs/math/vec.h"
 #include "gromacs/math/vectypes.h"
 #include "gromacs/utility/basedefinitions.h"
+#include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/real.h"
@@ -126,7 +127,7 @@ void DimerGenerator::addOptions(std::vector<t_pargs>      *pa,
         { "-ngamma", FALSE, etINT, {&ngamma_},
           "Number of equally spaced points for the Euler angle gamma of each molecule, for the Gauss algorithm." },
         { "-flex", FALSE, etBOOL, {&flexible_},
-          "Use flexible monomers in dimer sampling. Not implemented completely yet, activating this flag will use the potential energy rather than the interaction energy leading to incorrect results." },
+          "Use flexible monomers in dimer sampling. The structures of the monomers are sampled at each temperature with molecular dynamics, classical unless more than one bead is used, see [TT]-nbeads[tt]." },
         { "-minimize_dimers", FALSE, etBOOL, {&minimize_},
           "Perform energy minimization of the monomers before generating dimers" },
         { "-dbgGD", FALSE, etBOOL, {&debugGD_},
@@ -484,6 +485,25 @@ void DimerGenerator::prepare(MsgHandler       *msghandler,
     }
 }
 
+double DimerGenerator::rotateNext(const std::vector<gmx::RVec> x[2],
+                                  std::vector<gmx::RVec>       xrot[2])
+{
+    if (randIndex_ >= allRandom_.size())
+    {
+        GMX_THROW(gmx::InternalError("No random numbers left for the orientation of a dimer"));
+    }
+    const auto &q = allRandom_[randIndex_];
+    for(int m = 0; m < 2; m++)
+    {
+        // Random rotation, using the pre-calculated random numbers
+        size_t j0 = m*DIM;
+        xrot[m] = rot_.randomRotate(q[j0], q[j0+1], q[j0+2], x[m]);
+    }
+    randIndex_ += 1;
+    // The weight of this orientation, if there is one
+    return q.size() > 2*DIM ? q[2*DIM] : 1.0;
+}
+
 void DimerGenerator::generateDimers(MsgHandler                *msghandler,
                                     std::vector<dimer_coords> *coords)
 {
@@ -494,20 +514,14 @@ void DimerGenerator::generateDimers(MsgHandler                *msghandler,
     }
     // Rotate the original coordinates
     std::vector<gmx::RVec> xrand[2];
-    for(int m = 0; m < 2; m++)
-    {
-        // Random rotation, using the pre-calculated random numbers
-        size_t j0 = m*DIM;
-        xrand[m] = rot_.randomRotate(allRandom_[randIndex_][j0],
-                                      allRandom_[randIndex_][j0+1],
-                                      allRandom_[randIndex_][j0+2], xmOrig_[m]);
-    }
+    double                 weight = rotateNext(xmOrig_, xrand);
     if (msghandler && msghandler->debug())
     {
-        std::string oss = gmx::formatString("randIndex_ %zu q", randIndex_);
+        size_t      index = randIndex_ - 1;
+        std::string oss   = gmx::formatString("randIndex_ %zu q", index);
         for(int m = 0; m < 2*DIM; m++)
         {
-            oss += " " + std::to_string(allRandom_[randIndex_][m]);
+            oss += " " + std::to_string(allRandom_[index][m]);
         }
         for(int m = 0; m < 2; m++)
         {
@@ -522,20 +536,13 @@ void DimerGenerator::generateDimers(MsgHandler                *msghandler,
         }
         msghandler->writeDebug(oss);
     }
-    // The weight of this orientation, if there is one
-    double weight = allRandom_[randIndex_].size() > 2*DIM ? allRandom_[randIndex_][2*DIM] : 1.0;
-    randIndex_ += 1;
     // Initiate the big array
     coords->resize(ndist_);
     // Loop over distances from mindist to maxdist
     size_t nAtoms = atoms_[0].size() + atoms_[1].size();
     for(int idist = 0; idist < ndist_; idist++)
     {
-        double    dist  = mindist_;
-        if (ndist_ > 1)
-        {
-            dist += idist*binWidth_;
-        }
+        double    dist  = distance(idist);
         auto &dc  = (*coords)[idist];
         dc.dist   = dist;
         dc.index  = idist;

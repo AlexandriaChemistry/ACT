@@ -33,6 +33,7 @@
 #include <algorithm>
 #include <cctype>
 #include <cmath>
+#include <cstdint>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -60,6 +61,7 @@
 #include "act/properties/b2data.h"
 #include "act/properties/dimergenerator.h"
 #include "act/properties/princ.h"
+#include "act/properties/ringpolymer.h"
 #include "act/statistics/statistics.h"
 #include "act/topology/actmol.h"
 #include "act/utility/jsontree.h"
@@ -72,6 +74,7 @@
 #include "gromacs/fileio/filetypes.h"
 #include "gromacs/fileio/oenv.h"
 #include "gromacs/fileio/xvgr.h"
+#include "gromacs/math/functions.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/math/vectypes.h"
@@ -157,7 +160,19 @@ void ReRunner::addOptions(std::vector<t_pargs>      *pargs,
         { "-block", FALSE, etINT, {&blockSize_},
           "Largest number of distances of an orientation that are computed together, the distances are divided into blocks of equal size. 0 means all of them. Blocks of a few hundred distances fit in the cache of a core, which is faster than computing all distances at once, in particular when many processes share a processor." },
         { "-emin", FALSE, etREAL, {&eMin_},
-          "Dimers with a lower interaction energy (kJ/mol) are treated as overlapping atoms, with a Mayer function of -1. In models without repulsion on all charged sites, such as TIP5P, a charge can come arbitrarily close to an opposite charge of the other compound, with an energy that goes to minus infinity, and the second virial would diverge. The number of these dimers is reported." }
+          "Dimers with a lower interaction energy (kJ/mol) are treated as overlapping atoms, with a Mayer function of -1. In models without repulsion on all charged sites, such as TIP5P, a charge can come arbitrarily close to an opposite charge of the other compound, with an energy that goes to minus infinity, and the second virial would diverge. The number of these dimers is reported." },
+        { "-nbeads", FALSE, etINT, {&nbeads_},
+          "Number of beads of the ring polymers of flexible monomers. With 0 the monomers are rigid, and the first order quantum corrections for the forces and torques are added to the classical second virial. With 1 the monomers are flexible and the second virial is classical, as with [TT]-flex[tt]. With more beads the nuclear quantum effects of all motions are included by a path integral, without further corrections. For water at room temperature 32 beads are needed, and more at lower temperatures." },
+        { "-npolymers", FALSE, etINT, {&npolymers_},
+          "Number of structures (ring polymers) of each flexible monomer that are sampled at each temperature, on each process. Each orientation uses a random one of them." },
+        { "-pidt", FALSE, etREAL, {&piTimeStep_},
+          "Time step (ps) of the path integral molecular dynamics that samples the flexible monomers." },
+        { "-pitau", FALSE, etREAL, {&piTau_},
+          "Time constant (ps) of the thermostat of the centroid of the ring polymers of flexible monomers. The other modes of the ring polymers are critically damped." },
+        { "-piequil", FALSE, etINT, {&piEquil_},
+          "Number of steps of the dynamics of the flexible monomers before the first structure is used." },
+        { "-pistride", FALSE, etINT, {&piStride_},
+          "Number of steps of the dynamics of the flexible monomers between structures. With 0 all structures are the minimized monomer, which with [TT]-nbeads[tt] 1 gives the classical second virial of rigid monomers, for testing." }
     };
     pargs->push_back(pa[0]);
     if (computeB2_)
@@ -191,6 +206,11 @@ void ReRunner::finishOptions(const std::vector<t_filenm> &filenm)
         b2File_           = b2 ? b2 : "";
     }
     gendimers_.finishOptions(filenm);
+    if (computeB2_ && gendimers_.flexible() && 0 == nbeads_)
+    {
+        // Classical flexible monomers
+        nbeads_ = 1;
+    }
     validate();
 }
 
@@ -220,6 +240,37 @@ void ReRunner::validate() const
     if (!std::isfinite(eMin_))
     {
         GMX_THROW(gmx::InvalidInputError("The value of -emin is not a number"));
+    }
+    if (nbeads_ < 0)
+    {
+        GMX_THROW(gmx::InvalidInputError(gmx::formatString("The value %d of -nbeads should be zero or more", nbeads_)));
+    }
+    if (nbeads_ > 0)
+    {
+        if (npolymers_ < 1)
+        {
+            GMX_THROW(gmx::InvalidInputError(gmx::formatString("The value %d of -npolymers should be one or more", npolymers_)));
+        }
+        if (!std::isfinite(piTimeStep_) || piTimeStep_ <= 0)
+        {
+            GMX_THROW(gmx::InvalidInputError(gmx::formatString("The value %g of -pidt should be more than zero", piTimeStep_)));
+        }
+        if (!std::isfinite(piTau_) || piTau_ <= 0)
+        {
+            GMX_THROW(gmx::InvalidInputError(gmx::formatString("The value %g of -pitau should be more than zero", piTau_)));
+        }
+        if (piEquil_ < 0)
+        {
+            GMX_THROW(gmx::InvalidInputError(gmx::formatString("The value %d of -piequil should be zero or more", piEquil_)));
+        }
+        if (piStride_ < 0)
+        {
+            GMX_THROW(gmx::InvalidInputError(gmx::formatString("The value %d of -pistride should be zero or more", piStride_)));
+        }
+        if (gendimers_.hasTrajectory())
+        {
+            GMX_THROW(gmx::InvalidInputError("Flexible monomers (-nbeads, -flex) cannot be combined with dimers from a trajectory (-traj)"));
+        }
     }
 }
 
@@ -255,12 +306,26 @@ void ReRunner::addB2(JsonTree *jtree)
     }
     JsonTree b2tree("Second virial coefficients");
     b2tree.addObject(JsonTree("Unit", "cm^3/mol"));
+    bool flexible = nbeads_ > 0 && b2err_.size() == T.size();
+    if (flexible)
+    {
+        b2tree.addObject(JsonTree("Beads", nbeads_));
+    }
     for(size_t ii = 0; ii < T.size(); ii++)
     {
         JsonTree ttree(gmx::formatString("T = %g K", T[ii]));
-        for(const auto &b2b : b2Type2str)
+        if (flexible)
         {
-            ttree.addObject(JsonTree(b2b.second, b2t_[b2b.first][ii]));
+            // The path integral has no components
+            ttree.addObject(JsonTree(b2TypeToString(b2Type::Total), b2t_[b2Type::Total][ii]));
+            ttree.addObject(JsonTree("Standard error", b2err_[ii]));
+        }
+        else
+        {
+            for(const auto &b2b : b2Type2str)
+            {
+                ttree.addObject(JsonTree(b2b.second, b2t_[b2b.first][ii]));
+            }
         }
         b2tree.addObject(ttree);
     }
@@ -282,7 +347,17 @@ void ReRunner::plotB2temp(const char *b2file)
     }
     FILE *b2p = xvgropen(b2file, "Second virial coefficient",
                          "Temperature (K)", "B2(T) cm^3/mol", oenv_);
-    if (totalOnly_)
+    if (nbeads_ > 0 && b2err_.size() == T.size())
+    {
+        // Flexible monomers: the total and its standard error
+        const std::vector<std::string> legend = { "Total", "Standard error" };
+        xvgrLegend(b2p, legend, oenv_);
+        for(size_t ii = 0; ii < T.size(); ii++)
+        {
+            fprintf(b2p, "%10g  %10g  %10g\n", T[ii], b2t_[b2Type::Total][ii], b2err_[ii]);
+        }
+    }
+    else if (totalOnly_)
     {
         for(size_t ii = 0; ii < T.size(); ii++)
         {
@@ -444,12 +519,522 @@ void ReRunner::rerun(MsgHandler       *msghandler,
     }
 }
 
+int ReRunner::distributeOrientations(CommunicationRecord                    *cr,
+                                     MsgHandler                             *msghandler,
+                                     const std::vector<std::vector<double>> &allRand,
+                                     int                                     start,
+                                     int                                     end)
+{
+    static const size_t timer = Timings::instance().index("Distributing orientations");
+    const ScopedTimer   scoped(timer);
+    int nper  = (end - start) / cr->size();
+    int nrest = (end - start) % cr->size();
+    int nmine = 0;
+    if (cr->isMaster())
+    {
+        // The random numbers of each node in one message, with
+        // the number of them for each orientation.
+        std::vector<int>    counts;
+        std::vector<double> numbers;
+        for(int dst = 1; dst < cr->size(); dst++)
+        {
+            counts.clear();
+            numbers.clear();
+            int nn = start + nrest + dst*nper;
+            for(int j = 0; j < nper; j++)
+            {
+                counts.push_back(allRand[nn + j].size());
+                numbers.insert(numbers.end(), allRand[nn + j].begin(), allRand[nn + j].end());
+            }
+            cr->send(dst, counts);
+            cr->send(dst, numbers);
+        }
+        nmine = nper + nrest;
+        for(int j = 0; j < nmine; j++)
+        {
+            gendimers_.addRandomNumbers(allRand[start + j]);
+        }
+        msghandler->write(gmx::formatString("Will generate %d dimers on helpers and %d on master.", nper, nmine));
+    }
+    else
+    {
+        int                 src = cr->superior();
+        std::vector<int>    counts;
+        std::vector<double> numbers;
+        cr->recv(src, &counts);
+        cr->recv(src, &numbers);
+        nmine = counts.size();
+        auto q = numbers.begin();
+        for(int count : counts)
+        {
+            gendimers_.addRandomNumbers(std::vector<double>(q, q + count));
+            q += count;
+        }
+    }
+    return nmine;
+}
+
+/*! \brief Plot the Mayer functions of some temperatures
+ * \param[in] file         The file name
+ * \param[in] oenv         GROMACS output environment
+ * \param[in] temperatures The temperatures
+ * \param[in] dist         The distances
+ * \param[in] mayer        The Mayer function at each temperature and distance
+ */
+static void plotMayerCurves(const std::string                      &file,
+                            gmx_output_env_t                       *oenv,
+                            const std::vector<double>              &temperatures,
+                            const std::vector<double>              &dist,
+                            const std::vector<std::vector<double>> &mayer)
+{
+    FILE *fp = xvgropen(file.c_str(), "Mayer function", "r (nm)",
+                        "< exp[-U12/kBT]-1 >", oenv);
+    std::vector<std::string> label;
+    for(auto T : temperatures)
+    {
+        label.push_back(gmx::formatString("T = %g K", T));
+    }
+    xvgrLegend(fp, label, oenv);
+    for(size_t i = 0; i < dist.size(); i++)
+    {
+        fprintf(fp, "%10g", dist[i]);
+        for(const auto &m : mayer)
+        {
+            fprintf(fp, "  %10g", i < m.size() ? m[i] : 0.0);
+        }
+        fprintf(fp, "\n");
+    }
+    xvgrclose(fp);
+}
+
+void ReRunner::runB2PathIntegral(CommunicationRecord *cr,
+                                 MsgHandler          *msghandler,
+                                 const ForceField    *pd,
+                                 ACTMol              *actmol,
+                                 int                  maxdimer)
+{
+    // Number of parts of the orientations for the standard error
+    constexpr size_t nStatBlocks = 8;
+    const auto &tops = actmol->fragmentHandler()->topologies();
+    if (tops.size() != 2)
+    {
+        GMX_THROW(gmx::InvalidInputError(gmx::formatString("The second virial needs two compounds, there are %zu", tops.size())));
+    }
+    const std::vector<double>    masses    = { tops[0].mass(), tops[1].mass() };
+    const std::vector<gmx::RVec> noInertia = { { 0, 0, 0 }, { 0, 0, 0 } };
+    // The orientations are computed in rounds, as for rigid monomers, see runB2
+    std::vector<int> rounds;
+    if (RandAlg::Gauss == gendimers_.randAlg())
+    {
+        maxdimer = gendimers_.numberOfOrientations(maxdimer);
+    }
+    else
+    {
+        for(int n = 1024; n < maxdimer; n *= 2)
+        {
+            rounds.push_back(n);
+        }
+    }
+    rounds.push_back(maxdimer);
+    // The same orientations at all temperatures
+    std::vector<std::vector<double>> allRand;
+    if (cr->isMaster())
+    {
+        static const size_t timer = Timings::instance().index("Random numbers");
+        const ScopedTimer   scoped(timer);
+        gendimers_.generateRandomNumbers(maxdimer);
+        allRand = gendimers_.allRandom();
+        gendimers_.clearAllRandom();
+    }
+    auto Temperature = temperatures();
+    for(const auto &b2b : b2Type2str)
+    {
+        b2t_[b2b.first].assign(Temperature.size(), 0.0);
+    }
+    b2err_.assign(Temperature.size(), 0.0);
+
+    auto               &timings       = Timings::instance();
+    static const size_t prepareTimer  = timings.index("Dimer generation");
+    static const size_t samplingTimer = timings.index("Ring polymer sampling");
+    static const size_t energyTimer   = timings.index("Interaction energies");
+    static const size_t addTimer      = timings.index("B2 accumulation");
+    static const size_t sumTimer      = timings.index("B2 aggregation");
+    static const size_t b2Timer       = timings.index("B2 integration");
+    static const size_t outputTimer   = timings.index("B2 output");
+    timings.start(prepareTimer);
+    gendimers_.prepare(msghandler, pd, actmol);
+    timings.stop(prepareTimer);
+    if (gendimers_.outCoords() && cr->isMaster())
+    {
+        msghandler->msg(ACTStatus::Warning,
+                        "The dimers of flexible monomers are not written to a file (-ox).");
+    }
+    const size_t P        = nbeads_;
+    const size_t natom[2] = { tops[0].atoms().size(), tops[1].atoms().size() };
+    const size_t natoms   = natom[0] + natom[1];
+    if (natoms != actmol->atomsConst().size())
+    {
+        GMX_THROW(gmx::InternalError("The dimer does not have the particles of its two compounds"));
+    }
+    const size_t        ndist = gendimers_.ndist();
+    std::vector<double> dist(ndist);
+    for(size_t i = 0; i < ndist; i++)
+    {
+        dist[i] = gendimers_.distance(i);
+    }
+    // The beads of some distances are computed together, see -block
+    size_t block = std::max<size_t>(ndist, 1);
+    if (blockSize_ > 0)
+    {
+        size_t bmax   = std::max<size_t>(static_cast<size_t>(blockSize_)/P, 1);
+        size_t nblock = std::max<size_t>((ndist + bmax - 1)/bmax, 1);
+        block         = std::max<size_t>((ndist + nblock - 1)/nblock, 1);
+    }
+    // The beads of a block of distances as conformations of the dimer.
+    // The shells start from where they are in the monomers, the forces
+    // are only needed for relaxing them.
+    ConformationSet set;
+    set.top = actmol->topology();
+    ShellOptions shellOptions;
+    shellOptions.resetShells = false;
+    shellOptions.energyTerms = false;
+    shellOptions.forces      = false;
+    // Different random numbers for each process, temperature and purpose
+    std::uint32_t baseSeed = gendimers_.seed();
+    if (0 == baseSeed)
+    {
+        std::random_device rd;
+        baseSeed = rd();
+    }
+    const auto seedFor = [&](size_t iTemp, int what)
+    {
+        std::seed_seq seq{ baseSeed, static_cast<std::uint32_t>(cr->rank()),
+                           static_cast<std::uint32_t>(iTemp), static_cast<std::uint32_t>(what) };
+        std::vector<std::uint32_t> seeds(1);
+        seq.generate(seeds.begin(), seeds.end());
+        // Not zero, and it fits in an int
+        return static_cast<int>(seeds[0] >> 1) + 1;
+    };
+    // Kept to use the memory again
+    std::vector<gmx::RVec>    xflat[2], xrot[2];
+    std::vector<double>       dimEnergy(ndist), dimWeight(ndist);
+    std::vector<size_t>       dimIndex(ndist);
+    const std::vector<double>    noForce2[2] = { std::vector<double>(ndist, 0.0), std::vector<double>(ndist, 0.0) };
+    const std::vector<gmx::RVec> noTorque[2] = { std::vector<gmx::RVec>(ndist, { 0, 0, 0 }),
+                                                 std::vector<gmx::RVec>(ndist, { 0, 0, 0 }) };
+    for(size_t i = 0; i < ndist; i++)
+    {
+        dimIndex[i] = i;
+    }
+    // Results on the master
+    std::vector<std::vector<double>> b2rounds(rounds.size(), std::vector<double>(Temperature.size(), 0.0));
+    std::vector<std::vector<double>> mayerCurves;
+    size_t                           nsoft = 0;
+    double                           fmax  = -1, Tmax = 0;
+    // Conversion to regular units cm^3/mol.
+    const double fac  = AVOGADRO*1e-21;
+    // Beads with a lower interaction energy are overlapping atoms
+    const double eMin = eMin_;
+    if (cr->isMaster())
+    {
+        msghandler->write(gmx::formatString("\nSecond virial coefficient of flexible monomers with %zu bead%s: %s.",
+                                            P, P == 1 ? "" : "s",
+                                            P == 1 ? "classical statistics" : "path integral"));
+        msghandler->write(gmx::formatString("At each temperature %d structures of each compound are sampled on each process, %d steps of %g ps apart after %d steps.",
+                                            npolymers_, piStride_, piTimeStep_, piEquil_));
+    }
+    for(size_t iTemp = 0; iTemp < Temperature.size(); iTemp++)
+    {
+        double T    = Temperature[iTemp];
+        double beta = 1.0/(BOLTZ*T);
+        // The structures of the monomers at this temperature
+        std::vector<RingPolymer> pool[2];
+        std::vector<double>      averages;
+        timings.start(samplingTimer);
+        for(int kk = 0; kk < 2; kk++)
+        {
+            RingPolymerSettings settings;
+            settings.nbeads      = nbeads_;
+            settings.temperature = T;
+            settings.timeStep    = piTimeStep_;
+            settings.centroidTau = piTau_;
+            settings.seed        = seedFor(iTemp, kk);
+            RingPolymerSampler sampler(pd, &tops[kk], forceComp_, settings);
+            sampler.start(msghandler, gendimers_.monomerCoordinates(kk));
+            const auto aver = sampler.sample(msghandler, piEquil_, piStride_, npolymers_, &pool[kk]);
+            averages.insert(averages.end(), { aver.n, aver.epot, aver.ekin, aver.gyration2 });
+        }
+        timings.stop(samplingTimer);
+        cr->sumd_master(static_cast<int>(averages.size()), averages.data());
+        if (cr->isMaster())
+        {
+            msghandler->write(gmx::formatString("\nTemperature %g K", T));
+            for(int kk = 0; kk < 2; kk++)
+            {
+                const double *a = averages.data() + 4*kk;
+                if (a[0] > 0)
+                {
+                    msghandler->write(gmx::formatString("Compound %d: potential energy %.3f kJ/mol, kinetic energy %.3f kJ/mol, spread of the beads %.4f nm, from %.0f structures.",
+                                                        kk + 1, a[1]/a[0], a[2]/a[0], std::sqrt(a[3]/a[0]), a[0]));
+                }
+            }
+        }
+        // The orientations, in parts for the standard error
+        gendimers_.resetRandom();
+        std::mt19937        pick(seedFor(iTemp, 2));
+        std::vector<B2Data> b2blocks(nStatBlocks, B2Data(ndist, { T }, eMin_));
+        size_t              norient = 0;
+        int                 ndone   = 0;
+        for(size_t iround = 0; iround < rounds.size(); iround++)
+        {
+            int nround = rounds[iround];
+            int ndimer = distributeOrientations(cr, msghandler, allRand, ndone, nround);
+            for(int iRotation = 0; iRotation < ndimer; iRotation++)
+            {
+                // A structure of each monomer, and which beads are at the
+                // same imaginary time: the beads of a ring polymer can be
+                // numbered from any of them
+                timings.start(prepareTimer);
+                // Each part of the orientations has its own part of the
+                // structures, consecutive ones, such that the parts are
+                // independent and the standard error includes the sampling
+                // of the structures
+                size_t             part  = norient % nStatBlocks;
+                const RingPolymer *rp[2] = { nullptr, nullptr };
+                for(int kk = 0; kk < 2; kk++)
+                {
+                    size_t npool = pool[kk].size();
+                    size_t first = 0, count = npool;
+                    if (npool >= nStatBlocks)
+                    {
+                        first = (part*npool)/nStatBlocks;
+                        count = ((part + 1)*npool)/nStatBlocks - first;
+                    }
+                    rp[kk] = &pool[kk][first + pick() % count];
+                }
+                size_t shift = pick() % P;
+                for(int kk = 0; kk < 2; kk++)
+                {
+                    xflat[kk].resize(P*natom[kk]);
+                    for(size_t k = 0; k < P; k++)
+                    {
+                        std::copy(rp[kk]->x[k].begin(), rp[kk]->x[k].end(), xflat[kk].begin() + k*natom[kk]);
+                    }
+                }
+                double weight = gendimers_.rotateNext(xflat, xrot);
+                timings.stop(prepareTimer);
+                timings.start(energyTimer);
+                for(size_t b0 = 0; b0 < ndist; b0 += block)
+                {
+                    size_t nd    = std::min(block, ndist - b0);
+                    size_t nconf = nd*P;
+                    auto  &data  = set.data;
+                    data.confs.resize(nconf);
+                    if (data.arrays.nconf != nconf || data.arrays.natom != natoms)
+                    {
+                        data.arrays.resize(nconf, natoms);
+                    }
+                    // The integer coordinates are set without rounding to
+                    // real, such that the structures of the monomers do not
+                    // depend on the distance
+                    for(size_t id = 0; id < nd; id++)
+                    {
+                        double d = dist[b0 + id];
+                        for(size_t k = 0; k < P; k++)
+                        {
+                            const auto       xc = data.x(id*P + k);
+                            const gmx::RVec *x0 = xrot[0].data() + k*natom[0];
+                            const gmx::RVec *x1 = xrot[1].data() + ((k + shift) % P)*natom[1];
+                            for(size_t a = 0; a < natom[0]; a++)
+                            {
+                                for(int m = 0; m < DIM; m++)
+                                {
+                                    xc[a][m] = static_cast<double>(x0[a][m]);
+                                }
+                            }
+                            // Translate molecule 1, leave 0 at the origin
+                            for(size_t a = 0; a < natom[1]; a++)
+                            {
+                                xc[natom[0] + a][XX] = static_cast<double>(x1[a][XX]);
+                                xc[natom[0] + a][YY] = static_cast<double>(x1[a][YY]);
+                                xc[natom[0] + a][ZZ] = static_cast<double>(x1[a][ZZ]) + d;
+                            }
+                        }
+                    }
+                    set.invalidate();
+                    forceComp_->computeTotal(msghandler, pd, &set, shellOptions, nullptr);
+                    const auto epot = data.energies.find(InteractionType::EPOT);
+                    for(size_t id = 0; id < nd; id++)
+                    {
+                        // The average over the beads of the interaction
+                        // energy: the dimer minus the monomers
+                        double usum    = 0;
+                        bool   overlap = false;
+                        for(size_t k = 0; k < P; k++)
+                        {
+                            size_t c = id*P + k;
+                            if (!epot.has(c))
+                            {
+                                GMX_THROW(gmx::InternalError("No potential energy for a dimer"));
+                            }
+                            double u = epot.act[c] - rp[0]->epot[k] - rp[1]->epot[(k + shift) % P];
+                            overlap  = overlap || u < eMin;
+                            usum    += u;
+                        }
+                        double u = usum/P;
+                        if (overlap)
+                        {
+                            // Overlapping atoms in one of the beads
+                            u = std::min(u, 2*eMin - 1);
+                        }
+                        dimEnergy[b0 + id] = u;
+                        dimWeight[b0 + id] = weight;
+                    }
+                }
+                timings.stop(energyTimer);
+                const ScopedTimer scoped(addTimer);
+                b2blocks[part].addOrientation(dimIndex, dist, dimEnergy, noForce2, noTorque, dimWeight);
+                norient += 1;
+            }
+            ndone = nround;
+            // Sum over the processes, keeping the sums of this process for
+            // the next rounds. The second virial of each part gives the
+            // standard error of that of all of them.
+            timings.start(sumTimer);
+            B2Data              b2total(ndist, { T }, eMin_);
+            std::vector<double> bpart;
+            b2total.setDistances(dist);
+            for(auto &b2block : b2blocks)
+            {
+                B2Data part = b2block;
+                part.setDistances(dist);
+                part.aggregate(cr);
+                if (cr->isMaster())
+                {
+                    if (part.nDimer() > 0)
+                    {
+                        double Bclass, BqmForce, BqmTorque1, BqmTorque2;
+                        part.integrate(msghandler, 0, beta, masses, noInertia,
+                                       &Bclass, &BqmForce, &BqmTorque1, &BqmTorque2);
+                        bpart.push_back(Bclass*fac);
+                    }
+                    b2total.add(&part);
+                }
+            }
+            timings.stop(sumTimer);
+            if (cr->isMaster())
+            {
+                const ScopedTimer scoped(b2Timer);
+                double Bclass, BqmForce, BqmTorque1, BqmTorque2;
+                b2total.integrate(msghandler, 0, beta, masses, noInertia,
+                                  &Bclass, &BqmForce, &BqmTorque1, &BqmTorque2);
+                double b2  = Bclass*fac;
+                double err = 0;
+                if (bpart.size() == nStatBlocks)
+                {
+                    double mean = 0, var = 0;
+                    for(auto b : bpart)
+                    {
+                        mean += b/nStatBlocks;
+                    }
+                    for(auto b : bpart)
+                    {
+                        var += gmx::square(b - mean);
+                    }
+                    err = std::sqrt(var/(nStatBlocks*(nStatBlocks - 1)));
+                }
+                b2rounds[iround][iTemp]    = b2;
+                b2t_[b2Type::Total][iTemp] = b2;
+                b2err_[iTemp]              = err;
+                msghandler->write(gmx::formatString("Second virial coefficient from %d dimer orientations: %.2f +/- %.2f cm^3/mol",
+                                                    nround, b2, err));
+                if (b2total.nOverlap() > 0)
+                {
+                    msghandler->msg(ACTStatus::Warning,
+                                    gmx::formatString("%.0f of %.0f dimers have a bead with an energy below %g kJ/mol and are treated as overlapping atoms, see -emin.",
+                                                      b2total.nOverlap(), b2total.nDimer(), eMin_));
+                }
+                if (iround + 1 == rounds.size())
+                {
+                    mayerCurves.push_back(b2total.mayer(0));
+                    // Below the shortest distance the Mayer function is taken as -1
+                    double f = b2total.mayerAtShortestDistance(0);
+                    if (f > -1 + 1e-6)
+                    {
+                        nsoft += 1;
+                        if (f > fmax)
+                        {
+                            fmax = f;
+                            Tmax = T;
+                        }
+                    }
+                }
+            }
+        }
+    }
+    if (!cr->isMaster())
+    {
+        return;
+    }
+    const ScopedTimer scoped(outputTimer);
+    if (nsoft > 0)
+    {
+        msghandler->msg(ACTStatus::Warning,
+                        gmx::formatString("The Mayer function at the shortest distance %g nm is larger than -1 at %zu temperature(s), up to %g at %g K. Since it is taken as -1 below that distance, please decrease -mindist.",
+                                          gendimers_.mindist(), nsoft, fmax, Tmax));
+    }
+    msghandler->write(gmx::formatString("\nSecond virial coefficient (cm^3/mol) of flexible monomers with %zu bead%s from %d dimer orientations",
+                                        P, P == 1 ? "" : "s", maxdimer));
+    msghandler->write(gmx::formatString("%11s  %16s  %16s", "Temperature",
+                                        b2TypeToString(b2Type::Total).c_str(), "Standard error"));
+    for(size_t iTemp = 0; iTemp < Temperature.size(); iTemp++)
+    {
+        msghandler->write(gmx::formatString("%11.2f  %16.2f  %16.2f", Temperature[iTemp],
+                                            b2t_[b2Type::Total][iTemp], b2err_[iTemp]));
+    }
+    if (RandAlg::Gauss == gendimers_.randAlg())
+    {
+        msghandler->write("With a grid of orientations the standard error includes the differences between parts of the grid.");
+    }
+    // Convergence of the total B2 with the number of orientations
+    msghandler->write("\nConvergence of the total second virial coefficient (cm^3/mol) with the number of dimer orientations");
+    auto header = gmx::formatString("%10s", "Dimers");
+    for(auto T : Temperature)
+    {
+        header += gmx::formatString("  %10.2f", T);
+    }
+    msghandler->write(header);
+    for(size_t r = 0; r < b2rounds.size(); r++)
+    {
+        auto out = gmx::formatString("%10d", rounds[r]);
+        for(auto b : b2rounds[r])
+        {
+            out += gmx::formatString("  %10.2f", b);
+        }
+        msghandler->write(out);
+    }
+    if (!mayerFile_.empty())
+    {
+        plotMayerCurves(mayerFile_, oenv_, Temperature, dist, mayerCurves);
+    }
+    if (!b2File_.empty())
+    {
+        plotB2temp(b2File_.c_str());
+    }
+}
+
 void ReRunner::runB2(CommunicationRecord *cr,
                      MsgHandler          *msghandler,
                      const ForceField    *pd,
                      ACTMol              *actmol,
                      int                  maxdimer)
 {
+    if (nbeads_ > 0)
+    {
+        // Flexible monomers
+        runB2PathIntegral(cr, msghandler, pd, actmol, maxdimer);
+        return;
+    }
     // Compute the relative masses
     const std::vector<double> masses = {
         actmol->fragmentHandler()->topologies()[0].mass(),
@@ -486,61 +1071,6 @@ void ReRunner::runB2(CommunicationRecord *cr,
         allRand = gendimers_.allRandom();
         gendimers_.clearAllRandom();
     }
-    /* Distribute the orientations from start to end over the nodes, the
-     * master takes the first ones, including the rest of the division.
-     * The random numbers are added to those of the previous rounds.
-     * Returns the number of orientations of this node.
-     */
-    const auto distribute = [&](int start, int end)
-    {
-        static const size_t timer = Timings::instance().index("Distributing orientations");
-        const ScopedTimer   scoped(timer);
-        int nper  = (end - start) / cr->size();
-        int nrest = (end - start) % cr->size();
-        int nmine = 0;
-        if (cr->isMaster())
-        {
-            // The random numbers of each node in one message, with
-            // the number of them for each orientation.
-            std::vector<int>    counts;
-            std::vector<double> numbers;
-            for(int dst = 1; dst < cr->size(); dst++)
-            {
-                counts.clear();
-                numbers.clear();
-                int nn = start + nrest + dst*nper;
-                for(int j = 0; j < nper; j++)
-                {
-                    counts.push_back(allRand[nn + j].size());
-                    numbers.insert(numbers.end(), allRand[nn + j].begin(), allRand[nn + j].end());
-                }
-                cr->send(dst, counts);
-                cr->send(dst, numbers);
-            }
-            nmine = nper + nrest;
-            for(int j = 0; j < nmine; j++)
-            {
-                gendimers_.addRandomNumbers(allRand[start + j]);
-            }
-            msghandler->write(gmx::formatString("Will generate %d dimers on helpers and %d on master.", nper, nmine));
-        }
-        else
-        {
-            int                 src = cr->superior();
-            std::vector<int>    counts;
-            std::vector<double> numbers;
-            cr->recv(src, &counts);
-            cr->recv(src, &numbers);
-            nmine = counts.size();
-            auto q = numbers.begin();
-            for(int count : counts)
-            {
-                gendimers_.addRandomNumbers(std::vector<double>(q, q + count));
-                q += count;
-            }
-        }
-        return nmine;
-    };
     // Will be used to obtain a seed for the random number engine for bootstrapping
     std::random_device                 bsRand;
     // Standard mersenne_twister_engine seeded with rd()
@@ -586,8 +1116,6 @@ void ReRunner::runB2(CommunicationRecord *cr,
     const auto &atoms     = actmol->atomsConst();
     const auto &atomStart = actmol->fragmentHandler()->atomStart();
     const auto &tops      = actmol->fragmentHandler()->topologies();
-    // Whether the monomers are flexible, otherwise they are rigid
-    bool        flexible  = gendimers_.flexible();
     size_t                 natom[2];
     std::vector<int>       molIndex[2];
     std::vector<real>      molMass[2];
@@ -626,7 +1154,7 @@ void ReRunner::runB2(CommunicationRecord *cr,
     int ndone = 0;
     for(auto nround : rounds)
     {
-        int ndimer = distribute(ndone, nround);
+        int ndimer = distributeOrientations(cr, msghandler, allRand, ndone, nround);
         //! Loop over my dimers, completely independently
         for(int iRotation = 0; iRotation < ndimer; iRotation++)
         {
@@ -739,7 +1267,7 @@ void ReRunner::runB2(CommunicationRecord *cr,
                     transk.resize(DIM*DIM*st);
                     for(size_t c = 0; c < ndim; c++)
                     {
-                        if (flexible || 0 == b0 + c)
+                        if (0 == b0 + c)
                         {
                             auto &xc = xCom[kk];
                             for(size_t j = 0; j < natom[kk]; j++)
@@ -765,8 +1293,7 @@ void ReRunner::runB2(CommunicationRecord *cr,
                             }
                         }
                     }
-                    // Move to inertial frame (only well-defined for
-                    // rigid molecules).
+                    // Move to inertial frame.
                     // The trans matrix should convert that coordinate to the inertial frame,
                     // but what about the force on the atoms? It likely has to be rotated in the
                     // same manner. After that, the torque can be computed.
@@ -869,7 +1396,7 @@ void ReRunner::runB2(CommunicationRecord *cr,
                     }
                     dimIndex[b0+idim]  = dimers[b0+idim].index;
                     dimDist[b0+idim]   = rcom;
-                    dimEnergy[b0+idim] = flexible ? epot : einter;
+                    dimEnergy[b0+idim] = einter;
                     dimWeight[b0+idim] = dimers[b0+idim].weight;
                     if (msghandler->verbose())
                     {

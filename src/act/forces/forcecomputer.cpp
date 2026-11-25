@@ -2646,12 +2646,18 @@ void ForceComputer::computeTotal(MsgHandler                                     
         }
         resetShells(shells, x);
     }
-    computeConformations(msghandler, pd, top, cdata, true, false);
-    addFieldForces(atoms, options.field, cdata);
-    // The energies before relaxing the shells give the induction energy
+    // The shells are relaxed using the forces
     auto &cener = cdata->energies;
     auto  itype = InteractionType::POLARIZATION;
     bool  relax = options.relax && pd->polarizable() && top->hasEntry(itype);
+    bool  needForces = options.forces || relax;
+    cdata->spreadVsites = cdata->spreadVsites && needForces;
+    computeConformations(msghandler, pd, top, cdata, needForces, false);
+    if (needForces)
+    {
+        addFieldForces(atoms, options.field, cdata);
+    }
+    // The energies before relaxing the shells give the induction energy
     cener.setBackups(relax);
     if (relax)
     {
@@ -2731,9 +2737,13 @@ void ForceComputer::computeTotal(MsgHandler                                     
             conf.done = true;
         }
     }
-    // The energy terms, as in compute
-    energies->clear();
-    for(size_t c = 0; c < confs.size(); c++)
+    // The energy terms, as in compute, unless the caller takes the
+    // energies from the conformations
+    if (energies)
+    {
+        energies->clear();
+    }
+    for(size_t c = 0; energies && c < confs.size(); c++)
     {
         std::map<InteractionType, double> emap;
         for(auto t : cener.types())
@@ -2802,7 +2812,7 @@ void ForceComputer::computeTotal(MsgHandler                                     
         energies->push_back(emap);
     }
     // Spread forces to atoms, unless the energy calculations did
-    for(size_t c = 0; c < confs.size(); c++)
+    for(size_t c = 0; needForces && c < confs.size(); c++)
     {
         if (options.virtualSites && !(cdata->spreadVsites && cdata->vsiteForcesSpread))
         {

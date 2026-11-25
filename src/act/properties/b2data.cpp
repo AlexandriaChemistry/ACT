@@ -125,6 +125,38 @@ void B2Data::aggregate(CommunicationRecord *cr)
     }
 }
 
+void B2Data::add(B2Data *other)
+{
+    flush();
+    other->flush();
+    if (other->sums_.size() != sums_.size() || other->temperatures_ != temperatures_)
+    {
+        GMX_THROW(gmx::InternalError("Adding second virial data for other distances or temperatures"));
+    }
+    for(size_t i = 0; i < sums_.size(); i++)
+    {
+        sums_[i] += other->sums_[i];
+    }
+    for(size_t i = 0; i < dist_.size(); i++)
+    {
+        if (other->dist_[i] >= 0)
+        {
+            dist_[i] = other->dist_[i];
+        }
+    }
+    nDimer_   += other->nDimer_;
+    nOverlap_ += other->nOverlap_;
+}
+
+void B2Data::setDistances(const std::vector<double> &dist)
+{
+    if (dist.size() != dist_.size())
+    {
+        GMX_THROW(gmx::InternalError(gmx::formatString("There are %zu distances for %zu bins", dist.size(), dist_.size()).c_str()));
+    }
+    dist_ = dist;
+}
+
 void B2Data::addData(size_t iTemp, size_t index, double dist,
                      double exp_U12, double exp_F0, double exp_F1,
                      const gmx::RVec exp_tau0, const gmx::RVec exp_tau1,
