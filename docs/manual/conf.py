@@ -24,7 +24,7 @@ github_repo_name = "ACT"
 github_version = "main"
 conf_py_path = "/docs/manual"
 # The full version, including alpha/beta/rc tags
-release = '1.95b'#act_version_string
+release = '1.95'#act_version_string
 
 extlinks = {'issue': ('https://github.com/AlexandriaChemistry/ACT/issues/%s',
                       'Issue ')}
