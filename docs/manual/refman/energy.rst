@@ -3,15 +3,28 @@
 ***************
 Energy Function
 ***************
+
+.. index::
+   single: energy function
+   single: potential energy
+
 The ACT supports a range of different potentials for classical force field simulations. These potentials are described briefly in what follows. 
 
 =======================
 Non-bonded interactions
 =======================
 
+.. index::
+   single: non-bonded interactions
+
 ---------------------------------------
 Coulomb Interaction using Point charges
 ---------------------------------------
+
+.. index::
+   single: Coulomb interaction; point charge
+   single: point charge
+
 The Coulomb interaction can be computed with point charges:
 
 .. math:: V_{coul}(r_{ij}) ~=~ \frac{q_i q_j} {4\pi\varepsilon_0\varepsilon_r r_{ij}}.
@@ -20,6 +33,12 @@ The Coulomb interaction can be computed with point charges:
 ------------------------------------------
 Coulomb Interaction using Gaussian charges
 ------------------------------------------
+
+.. index::
+   single: Coulomb interaction; Gaussian charge
+   single: Gaussian charge
+   single: charge distribution width
+
 Alternatively, the Coulomb interaction can be described using Gaussian shielded charges
 
 .. math:: V_{coul}(r_{ij}) ~=~ \frac{q_i q_j {\rm erf}\left(\zeta_{ij} r_{ij} \right)}{4\pi\varepsilon_0\varepsilon_r r_{ij}}, \quad \zeta_{ij} = \frac{\zeta_i \zeta_j}{\sqrt{\zeta_i^2 + \zeta_j^2}},
@@ -32,6 +51,13 @@ where :math:`\varepsilon_0` is the permittivity of vacuum, :math:`q_{i,j}` are t
 ----------------------------------------
 Coulomb Interaction using Slater charges
 ----------------------------------------
+
+.. index::
+   single: Coulomb interaction; Slater charge
+   single: Slater charge
+   single: Slater orbital
+   single: Class Library for Numbers (CLN)
+
 In addition, Slater distributed charges can be used as described in ref. :cite:p:`Ghahremanpour2018b`, from which the text below is an adapted version.
 
 The spherical Slater orbital wavefunction is given by
@@ -77,6 +103,12 @@ It should be noted that the  arbitrary  precision library significantly increase
 -------------------------------
 Long range Coulomb interactions
 -------------------------------
+
+.. index::
+   single: particle-mesh Ewald (PME)
+   single: Ewald summation
+   single: long-range electrostatics
+
 It is good practice :cite:p:`Spoel2006a` to use the particle-mesh Ewald :cite:p:`Darden1993a,Essmann1995a` method to treat long-range electrostatics interactions in the condensed phase. In short, the method splits the Coulomb potential, either Eqn. :eq:`vcoul`, Eqn. :eq:`vcoulg` or something similar into a short and a long-range part as follows
 
 .. math:: V_{coul}(r_{ij}) ~=~ V_{coul} \,{\rm erfc}(\alpha r_{ij}) +  V_{coul}\, {\rm erf}(\alpha r_{ij})
@@ -101,6 +133,14 @@ This shows that :math:`\alpha` has the dimension of 1 over distance in the units
 ------------
 Polarization
 ------------
+
+.. index::
+   single: polarization
+   single: core-shell model
+   single: shell
+   see: Drude particle; shell
+   single: polarizability
+
 Polarization can be treated explicitly as well in the ACT using the  core-shell model :cite:p:`Dick1958a,Jordan1995a` 
 
 .. math:: V_{pol}(r_{cs}) ~=~ \frac{1}{4\pi\varepsilon_0} \frac{q_s^2}{2\alpha_c}r_{cs}^2,
@@ -113,6 +153,10 @@ where :math:`q_s` is the shell charge, :math:`\alpha_c` is the polarizability an
 --------------------
 Induction correction
 --------------------
+
+.. index::
+   single: induction correction
+
 A term to add extra attraction between atoms was proposed in ref. :cite:p:`McDaniel2013a`
 
 .. math:: V_{ic}(r_{ij}) ~=~ -A_{ij} {\rm e}^{-b_{ij} r_{ij}}
@@ -126,12 +170,25 @@ It is not certain whether the exponential functional form is optimal to describe
 -------------------------------------
 Pauli Repulsion and London Dispersion
 -------------------------------------
+
+.. index::
+   single: Pauli repulsion
+   single: London dispersion
+   single: exchange repulsion
+   single: Van der Waals potential
+   single: 14-7 potential
+   single: Van der Waals potential; 14-7
+
 The repulsion and dispersion interactions acting between atoms :math:`i` and :math:`j` can be described by a number of potentials. In a recent study on noble gases :cite:p:`Kriz2024a` we found that the 14-7 potential due to Halgren :cite:p:`Halgren1992a` was one of the most accurate ones:
 
 .. math:: V_{14-7}(r_{ij}) ~=~ \epsilon_{ij} \left(\frac{1+\delta_{ij}}{\frac{r_{ij}}{\sigma_{ij}} + \delta_{ij}} \right)^7\left(  \frac{1+\gamma_{ij}}{(\frac{r_{ij}}{\sigma_{ij}})^7 +\gamma_{ij}}    -2      \right)       
    :label: 14_7
 
 where  :math:`\epsilon_{ij}` is the well depth at minimum, :math:`\gamma_{ij}` and :math:`\delta_{ij}` are dimensionless numbers that were originally shared for all elements. However, in our previous work :cite:p:`Kriz2024a`, we treated :math:`\gamma` and :math:`\delta` as free atom-specific parameters subject to optimization and combination rules.
+
+.. index::
+   single: generalized Buckingham potential
+   single: Van der Waals potential; generalized Buckingham
 
 Furthermore, the generalized 4-parameter Buckingham potential with an adjustable long-range attraction is implemented as :cite:p:`Werhahn2015a` 
 
@@ -141,10 +198,19 @@ Furthermore, the generalized 4-parameter Buckingham potential with an adjustable
 where :math:`\gamma` and :math:`\delta` again are dimensionless constants and :math:`r_{min}` is the position of the minimum in the potential. :math:`\delta` should be larger than zero for this potential to converge to 0 at long distance, and with :math:`\delta` = 6, the Wang-Buckingham potential (:eq:`vwbh`) is recovered.
 
 
+.. index::
+   single: Wang-Buckingham potential
+   single: buffered Buckingham potential
+   single: Van der Waals potential; Wang-Buckingham
+
 Another potential that is supported is the buffered (Wang) Buckingham potential :cite:p:`Wang2013a`:
 
 .. math:: V_{WBH}(r_{ij}) = \left(\frac{2\epsilon_{ij}}{1-\frac{3}{\gamma_{ij}+3}}\right) \left( \frac{\sigma_{ij}^6}{\sigma_{ij}^6+r_{ij}^6} \right) \left[\frac{3}{\gamma_{ij}+3}e^{\displaystyle{\gamma_{ij}\left(1-\frac{r_{ij}}{\sigma_{ij}}\right)}} - 1 \right] 
    :label: vwbh
+
+.. index::
+   single: Buckingham potential
+   single: Van der Waals potential; Buckingham
 
 where :math:`\epsilon_{ij}` is the well depth at minimum, :math:`\sigma_{ij}` is the Van der Waals radius and :math:`\gamma_{ij}` determines the steepness of the potential and :math:`r_{ij}` is the distance between particles :math:`i` and :math:`j`. 
 The buffered Buckingham potential mentioned above have been used to develop an accurate phase-transferable  model for alkali-halides :cite:p:`Walz2018a,Walz2019a,Walz2019b,Walz2019c,Walz2021a`
@@ -152,6 +218,10 @@ and the original Buckingham potential :cite:p:`Buckingham1938a` is implemented a
 
 .. math:: V_{BH}(r_{ij}) ~=~ A_{ij}{\rm e}^{\displaystyle -b_{ij}r_{ij}} - \frac{C_{ij}}{r_{ij}^6}
    :label: vbh
+
+.. index::
+   single: modified Buckingham potential
+   single: exp-6 potential
 
 where :math:`A_{ij}`, :math:`b_{ij}` and :math:`C_{ij}` are parameters to be trained.
 An alternative way of formulating the Buckingham potential :cite:p:`mason_transport_2004` is
@@ -162,6 +232,10 @@ An alternative way of formulating the Buckingham potential :cite:p:`mason_transp
 where :math:`\epsilon` is the well-depth :math:`\sigma` reflects the position of the minimum and :math:`\gamma` is again a dimensionless constant.
 Although mathematically identical to Eqn. :eq:`vbh` we have shown that the potentials behave differently when combination rules are applied :cite:p:`Kriz2024a`.
 
+
+.. index::
+   single: Tang-Toennies potential
+   single: Van der Waals potential; Tang-Toennies
 
 The well-known Tang-Toennies potential :cite:p:`Tang1984a,Tang2003a` containing five parameters is implemented according to:
 
@@ -176,6 +250,9 @@ In other works, the Tang-Toennies potential is extended with an additional param
 .. math:: V_{TT2}(x) = Ae^{-b_{exp} x} - \sum_{n=3}^5\left[1-e^{-b_{disp} x}\sum_{k=0}^{2n}\frac{(b_{disp} x)^k}{k!}\right]\frac{C_{2n}}{x^{2n}}
    :label: TT2
 
+.. index::
+   single: Slater-ISA exchange
+
 and the ACT supports both these functions.
 Van Vleet *et al.* described a more accurate formula for the Pauli repulsion :cite:p:`Vleet2016a` that was applied to derive a force field later :cite:p:`Vleet2018a`. In this model the exchange repulsion is given by the Slater-ISA formula
 
@@ -183,6 +260,11 @@ Van Vleet *et al.* described a more accurate formula for the Pauli repulsion :ci
    :label: slater_isa
 
 where it can be noted, that no additional parameters are needed for equation~:eq:`slater_isa` compared to the repulsion part in the Tang-Toennies potential (Eqn. :eq:`TT`). In the ACT the Slater-ISA exchange can be combined with the damped dispersion part of the latter potential.
+
+.. index::
+   single: Lennard-Jones potential
+   single: 12-6-4 potential
+   single: Van der Waals potential; Lennard-Jones
 
 The Lennard-Jones 12-6 potential :cite:p:`Lennard-Jones1924b` is available as well:
 
@@ -195,6 +277,11 @@ and, in addition, the 12-6-4 potential
    :label: 12_6_4
 
 which is meant to model ion-dipole interactions is supported too.
+
+.. index::
+   single: sigma hole
+   single: exchange correction
+   single: combination rule; Kronecker
 
 It is worth noting that in all these potentials (except Buckingham, Eqn. :eq:`vbh`) parameters describe both the exchange and dispersion interactions at the same time, which necessitates simultaneous training of these interaction.
 To account for anisotropy in exchange, a correction can be implemented using a virtual site particle on the atom that has a :math:`\sigma`-hole interacting with other particles :cite:p:`Kriz2024b`: 
@@ -214,6 +301,11 @@ Multiple different combination rules can be used for parameters involved in van 
 ----------------------------------
 Treatment of long range dispersion
 ----------------------------------
+
+.. index::
+   single: long-range dispersion
+   single: LJ-PME
+
 The different Van der Waals potentials described above can be used with Lennard-Jones PME :cite:p:`Darden1993a,Wennberg2013a` if treated carefully. LJ-PME assumes a simple dispersion interaction given by
 
 .. math:: V_{LJPME}(r_{ij}) ~=~ -\frac{C_{ij}}{r_{ij}^6}
@@ -253,11 +345,21 @@ Another problem is, that the parameters :math:`C_i` that we need to compute the 
 ----------------------------------------------
 Combination Rules for Van der Waals Potentials
 ----------------------------------------------
+
+.. index::
+   single: combination rule
+
 In a recent paper :cite:p:`Kriz2024a` we studied the effect of combination rules on potentials for noble gases and introduced two new combination rules (Eqn. :eq:`cr_volumetric` and Eqn. :eq:`cr_invsquare` ). Here is a brief summary, copied (with permission) from that paper.
 
 Combination rules reduce the number of parameters required for the pair-wise potentials introduced  above because
 the parameters describing the interaction between dissimilar  X--Y atoms are reconstructed from parameters of homodimers X--X and Y--Y. In this way, it is necessary only to fit atomic parameters on data for homodimers.
 Different sets of mathematical expression were considered, as detailed below.
+
+.. index::
+   single: combination rule; geometric
+   single: geometric combination rule
+   single: combination rule; arithmetic
+   single: arithmetic combination rule
 
 The two simplest expressions that have historically been used as combination rules are the geometric :cite:p:`Berthelot1898a` and arithmetic :cite:p:`Lorentz1881a` averages, respectively:
 
@@ -271,6 +373,9 @@ The two simplest expressions that have historically been used as combination rul
 
 where :math:`x_1` and :math:`x_2` are the atomic parameters. Both these rules can in principle be applied to all parameters in the Van der Waals potentials described above and the rules are well-behaved mathematically.
 
+.. index::
+   single: combination rule; Hogervorst
+
 Hogervorst introduced a set of combination rules for 12-6 Lennard-Jones and exp-6, modified Buckingham, potential (Eqn. :eq:`MBH`) :cite:p:`Hogervorst1971a`. He proposed using Eqn. :eq:`cr_hogervorst_epsilon` for :math:`\epsilon` for both potential forms. For the :math:`\sigma` of 12-6 potential (Eqn. :eq:`12_6`), the
 arithmetic mean (Eqn. :eq:`cr_arithmetic`) was used. In the case of the modified Buckingham potential (eqn. :eq:`MBH`), expression~:eq:`cr_sigma5`, which depends on the combined parameters :math:`\epsilon_{1,2}` and :math:`\gamma_{1,2}` was advocated for the :math:`\sigma`, along with arithmetic mean for :math:`\gamma`. 
 
@@ -280,6 +385,9 @@ arithmetic mean (Eqn. :eq:`cr_arithmetic`) was used. In the case of the modified
 .. math:: \sigma_{12}^6 = \sqrt{\frac{\epsilon_1\gamma_1\sigma_1^6}{\gamma_1 - 6}  \frac{\epsilon_2\gamma_2\sigma_2^6}{\gamma_2 - 6}} \frac{(\gamma_{1,2}-6)}{\gamma_{1,2}\epsilon_{1,2}}
    :label: cr_sigma5
 
+.. index::
+   single: combination rule; Yang
+
 Where the :math:`\gamma`:sup:`1,2` used Eqn. :eq:`cr_arithmetic` and :math:`\epsilon`:sup:`1,2` Eqn. :eq:`cr_hogervorst_epsilon`. 
 It should be noted that equation :eq:`cr_hogervorst_epsilon` is ill-behaved if both :math:`x_1` and :math:`x_2` are zero, while Eqn. :eq:`cr_sigma5`
 is ill-behaved if either :math:`\gamma_{1,2}` or :math:`\epsilon_{1,2}` is zero.
@@ -288,11 +396,18 @@ Yang *et al.* :cite:p:`Yang2018_combination` introduced an expression  for the M
 .. math:: X_{12} = \frac{x_{1} x_{2}(x_1 + x_2)}{x_{1}^2 + x_{2}^2}
    :label: cr_yang
 
+.. index::
+   single: combination rule; Mason
+
 The expression for :math:`\gamma`  proposed by Mason :cite:p:`Mason1955a` for the exp-6 potential has the form
 %\red{while used other rels for epsilon, sigma in alexandria}
 
 .. math:: \gamma_{12} = \sqrt{\sigma_1 \sigma_2} \left(\frac{\gamma_1}{2\sigma_1}+  \frac{\gamma_2}{2\sigma_2}\right)
    :label: f10
+
+.. index::
+   single: combination rule; Waldman-Hagler
+   single: combination rule; Qi
 
 Waldman and Hagler :cite:p:`Waldman1993a` introduced expressions :eq:`cr_whepsilon` for :math:`\epsilon` and  :eq:`cr_whsigma` for :math:`\sigma`
  to reproduce experimental well-depths and interaction distances.
@@ -308,11 +423,18 @@ Although Eqn. :eq:`cr_whsigma` was devised for :math:`\sigma` we have evaluated 
 .. math:: X_{12} = \frac{x_1^3+x_2^3}{x_1^2+x_2^2}
    :label: f7
 
+.. index::
+   single: combination rule; harmonic mean
+
 A further relation, the harmonic mean rule, was proposed by Halgren :cite:p:`Halgren1992a`:
 
 .. math:: X_{12} =  \frac{4 x_1 x_2}{(x_1^{1/2}+x_2^{1/2})^2}
    :label: cr_harmonic_mean
 
+
+.. index::
+   single: combination rule; volumetric
+   single: combination rule; inverse square
 
 Finally, we introduce two new combination rules that we have not seen published previously. Since the :math:`\sigma` in most potentials can be interpreted as a Van der Waals radius, we introduced a relation averaging  third powers, corresponding to an atomic volume :cite:p:`Kriz2024a`:
 
@@ -326,6 +448,9 @@ In addition, we applied the following rule for in particular :math:`\epsilon` si
 
 The combination relations described above were permuted with each other into new combination rules. In this way, relations that depend on only one parameter type were used for any parameter. Relations depending on multiple parameters  were used only for the specific parameter type combination they depend on (e.g. Eqn. :eq:`cr_whepsilon` was only used for :math:`\epsilon`, using homodimer :math:`\epsilon` and :math:`\sigma`). 
 In our previous work on alkali halides :cite:p:`Walz2018a` we used combination rules according to eqn. :eq:`cr_sigma5` for :math:`\sigma`, eqn. :eq:`cr_hogervorst_epsilon` for :math:`\epsilon` and eqn. :eq:`cr_arithmetic` for :math:`\gamma` with the Wang-Buckingham potential (Eqn. :eq:`vwbh`).
+
+.. index::
+   single: combination rule; generalized mean
 
 A number of these combination rules can be written using the generalized mean equation :cite:p:`Hohm2026a`
 
@@ -359,9 +484,16 @@ for :math:`p \ne 0`. For :math:`p = 0`, Eqn. :eq:`cr_genmean` turns into the geo
 Bonded interactions
 ===================
 
+.. index::
+   single: bonded interactions
+
 ------------------
 Harmonic potential
 ------------------
+
+.. index::
+   single: bond; harmonic potential
+
 Bond vibrations can be described using a harmonic term based on the bond length :math:`r_{ij}`
 
 .. math:: V_b(r_{ij}) ~=~ \frac{k_{ij}^{b}}{2}\left(r_{ij}-r_{ij}^0\right)^2,
@@ -372,6 +504,11 @@ where :math:`k_{ij}^{b}` is the force constant, and :math:`r_{ij}^0` is the equi
 ------------------
 Morse potential
 ------------------
+
+.. index::
+   single: Morse potential
+   single: bond; Morse potential
+
 A Morse potential :cite:p:`Morse1929a` can be used, with one addition:
 
 .. math:: V_M(r_{ij}) ~=~ D_{ij}^e\left[{\rm e}^{\displaystyle{-2\beta_{ij}(r_{ij}-r_{ij}^0)}}-2{\rm e}^{\displaystyle{-\beta_{ij}(r_{ij}-r_{ij}^0)}}\right] + D_{ij}^0
@@ -382,6 +519,11 @@ The term :math:`D_{ij}^e` roughly corresponds to a dissociation energy, however 
 ------------------
 Wei-Hua potential
 ------------------
+
+.. index::
+   single: Wei-Hua potential
+   single: bond; Wei-Hua potential
+
 In a very recent study we found the potential due to Hua :cite:p:`Hua1990a,Hua1990b` to be the best compromise between accuracy of the vibrational frequencies and computational cost :cite:p:`Maaren2025a`. 
 It is given by:
 
@@ -393,6 +535,11 @@ where :math:`D_e` is the well-depth, :math:`r_e` the equilibrium bond length, an
 ---------------
 Angle potential
 ---------------
+
+.. index::
+   single: angle potential
+   single: angle; harmonic potential
+
 Angle vibrations are described using a harmonic term based on the angle :math:`\theta_{ijk}`
 
 .. math:: V_a(\theta_{ijk}) ~=~ \frac{k_{ijk}^{\theta}}{2}\left(\theta_{ijk}-\theta_{ijk}^0\right)^2,
@@ -403,6 +550,11 @@ where :math:`k_{ijk}^{\theta}` is the force constant, and :math:`\theta_{ijk}^0`
 ------------------------------------
 Angle potential for linear compounds
 ------------------------------------
+
+.. index::
+   single: linear angle potential
+   single: angle; linear
+
 The reference position, corresponding to a minimum energy structure, :math:`\mathbf{x}_j^0` for a central atom :math:`j` in a linear triplet of atoms 
 :math:`i,j,k` is given by
 
@@ -424,6 +576,11 @@ with k :sub:`lin` the force constant :cite:p:`Spoel2020a`.
 -----------------------
 Out-of-plane vibrations
 -----------------------
+
+.. index::
+   single: out-of-plane vibration
+   single: improper dihedral
+
 Finally, out-of-plane vibrations are treated by another harmonic potential
 
 .. math:: V_i(\phi_{ijkl}) ~=~ \frac{k_{ijkl}^{\phi}}{2}\phi_{ijkl}^2,
@@ -434,6 +591,11 @@ where :math:`k_{ijkl}^{\phi}` is the force constant and :math:`\phi_{ijkl}` is d
 ------------------
 Torsion potential
 ------------------
+
+.. index::
+   single: torsion potential
+   single: Ryckaert-Bellemans potential
+
 A torsion potential is implemented using a Fourier series:
 
 .. math:: V_{d}(\phi_{ijkl}) ~=~ \sum_{n=0}^5 c_n {\rm cos}^n(\pi+\phi_{ijkl})
@@ -444,6 +606,10 @@ where :math:`c_n` are constants and the torsion angle is defined as above. The c
 ---------------
 Proper dihedral
 ---------------
+
+.. index::
+   single: proper dihedral
+
 A simpler torsion potential is implemented for backward compatibility as:
 
 .. math:: V_{d}(\phi_{ijkl}) ~=~ {\rm cos}(n \phi_{ijkl} + \phi_0)
@@ -454,6 +620,11 @@ where :math:`n` is the multiplicity (number of minima in 360 degrees) :math:`\ph
 ==================
 Special potentials
 ==================
+
+.. index::
+   single: flat-bottom position restraint
+   single: position restraint
+
 The ACT includes a flat-bottom position restraint potential according to
 
 .. math:: 
@@ -470,6 +641,12 @@ mainly to keep molecules close to the origin and prevent them from flying into o
 ==================
 Virtual Sites
 ==================
+
+.. index::
+   single: virtual site
+   single: lone pair
+   single: TIP4P
+
 A virtual site is an extra point, located at a defined position in a molecule. A variety of virtual site options is currently implemented within the ACT framework:
 
   * a virtual site on top of an atom (VSITE1) :cite:p:`Spoel2025a`
@@ -482,6 +659,11 @@ A virtual site is an extra point, located at a defined position in a molecule. A
 ==================
 Total energy
 ==================
+
+.. index::
+   single: total energy
+   single: exclusions
+
 The total energy :math:`E` of a compound then follows from 
 
 .. math::

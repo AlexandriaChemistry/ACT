@@ -2,9 +2,17 @@
 Force field design
 ******************
 
+.. index::
+   single: force field design
+
 ===================
 Physical Background
 ===================
+
+.. index::
+   single: functional form
+   single: parameter types
+
 The Alexandria force-fields have a functional form consisting of van der Waals (*vdw*), electrostatics (*coul*), polarization (*pol*)  and bonded terms including a radial (*b*), angular (*a*), out-of-plane dihedral (*i*) and torsion (*d*) terms.
 
 .. math:: E ~=~ V_{vdw}(r_{ij})+V_{coul}(r_{ij})+V_{pol}(r_{cs})+V_b(r_{ij})+V_a(\theta_{ijk})+V_i(\phi_{ijkl}) + V_{d}(\phi_{ijkl})
@@ -21,6 +29,13 @@ A variety of virtual sites can be used, like those used in water models :cite:p:
 ======================
 Determining atom types
 ======================
+
+.. index::
+   single: atom type
+   single: atom typing
+   single: SMARTS pattern
+   single: RDKit
+   single: atom_bond.xml
 
 When importing structure files (SDF, PDB, or XYZ), ACT uses RDKit for the initial chemical perception, including sanitization and aromaticity assignment :cite:p:`rdkit2025`.
 
@@ -288,6 +303,11 @@ The code to determine atomtypes is implemented in both the C++ code and in a Pyt
 ===========================
 Determining partial charges
 ===========================
+
+.. index::
+   single: partial charges
+   single: charge transfer
+
 The electrostatic potential (ESP, Section :ref:`sec-esp`) has historically been used 
 to determine partial charges :cite:p:`Besler1990a` and the ACT supports training models to reproduce the ESP.
 However, in a very recent paper we have shown that fitting charges to reproduce the ESP in a limited volume around a compound is fundamentally flawed due to lack of information :cite:p:`Hosseini2026a`. 
@@ -300,6 +320,15 @@ For background information we refer the reader to an excellent review by Jensen 
 =================================================
 Charge Equilibration with Shells or Virtual Sites
 =================================================
+
+.. index::
+   single: charge equilibration
+   single: electronegativity equalization method (EEM)
+   single: split charge equilibration (SQE)
+   single: electronegativity
+   single: atomic hardness
+   single: bond hardness
+
 Among the approaches to modeling the charge-dependent component of a force field, those rooted in the chemical potential equalization principle are especially notable, as the principle stems directly from density functional theory :cite:p:`itskowitz1997chemical`. The first computational implementation of the chemical potential equalization principle was the electronegativity equalization method (EEM) :cite:p:`Mortier1986a,Rappe1991a`. However, due to limitations of this model, Chelli *et al.* proposed the atom-atom charge transfer (AACT) model :cite:p:`chelli1999electrical`. Later, Nistor and co-workers combined the EEM and AACT approaches into a single framework, the split-charge equilibration (SQE) model, which fulfills the essential criteria for a successful charge-transfer potential :cite:p:`Nistor2006a,Verstraelen2009a`.
 The ACT implements both the EEM and the SQE as algorithms for determining partial charges. 
 

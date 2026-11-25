@@ -1,6 +1,10 @@
 ***********************
 Installation of the ACT
 ***********************
+
+.. index::
+   single: installation
+
 The Alexandria Chemistry Toolkit (ACT) can be installed in two ways: from a conda package, which is the simplest and is enough for most users, or from the source code, which is needed for double precision, for AMD GPUs, for other processors than those of the packages, and for developing ACT.
 
 .. _install-conda-package:
@@ -8,6 +12,11 @@ The Alexandria Chemistry Toolkit (ACT) can be installed in two ways: from a cond
 ===================================
 Installing ACT from a conda package
 ===================================
+
+.. index::
+   single: conda package
+   single: installation; conda
+
 ACT is available as the conda package *alexandria*, built for
 
 * macOS on Apple silicon (M1 and later), with explicit SIMD for ARM NEON and without GPU support;
@@ -55,11 +64,23 @@ The conda package is not available in double precision, nor for AMD GPUs, for ot
 ==========================
 Installing ACT from source
 ==========================
+
+.. index::
+   single: installation; from source
+
 ACT relies on a number of libraries. Even though we tried to keep it to a minimum, some more or less standard libraries are needed. ACT should compile fine on any UNIX (including macOS) or Linux machine.
 
 -------------
 Prerequisites
 -------------
+
+.. index::
+   single: prerequisites
+   single: Eigen
+   single: Boost
+   single: LibXml2
+   single: nlohmann/json
+
 The following software packages are required for the ACT to work:
 
 * C and C++ compilers supporting C++20 at least. On Linux a GNU c++ version newer than 12.0 is recommended.
@@ -94,6 +115,10 @@ For developers, the following additional packages are needed:
 -----------------
 Conda Environment
 -----------------
+
+.. index::
+   single: conda environment
+
 There are multiple ways to fulfill the prerequisites.
 The simplest way that should suffice on a single computer (i.e. not a cluster), is to first install miniconda on your computer, download the ACT conda environment file `Yml`_ and create and activate a new conda environment.::
 
@@ -116,6 +141,10 @@ For developers, please additionally install these packages::
 
 Installing ACT-utilities
 ~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. index::
+   single: ACT-utilities
+
 The Python modules and scripts of ACT, for instance *coords2molprop*, *gauss2molprop* and the interface to OpenMM, are in the repository `ACT-utilities`_. ACT requires them, and *cmake* stops if the Python it finds cannot import them. Install them before building ACT, into the conda environment of ACT or into the prefix where ACT will be installed::
 
   git clone https://github.com/AlexandriaChemistry/ACT-utilities.git
@@ -137,6 +166,10 @@ Until version 1.9b the modules were in *site-packages/act*. That directory now h
 
 Building on a cluster
 ~~~~~~~~~~~~~~~~~~~~~
+
+.. index::
+   single: cluster; building
+
 On a cluster, use the MPI library of the cluster, which its administrators built for its network and queue system, and conda only for the libraries that the cluster does not provide, such as RDKit. Leave *openmpi* out of the conda environment, or tell *cmake* which MPI to use with the compiler wrappers of the module, for instance::
 
   module load <compiler and MPI module of the cluster>
@@ -175,6 +208,12 @@ The programs are started with plain *srun*. This libxml2 needs the ICU libraries
 ------------------------
 Running the Installation
 ------------------------
+
+.. index::
+   single: cmake
+   single: single precision
+   single: double precision
+
 Once you have download ACT either as a release version or by cloning the git repository, enter the directory where the ACT source code is installed, and issue the following commands::
 
   mkdir build-Release
@@ -361,6 +400,11 @@ where *Value* can be *ON* or *OFF* or something more option specific.
    |                      | AdaptiveCpp, see below.                                    |
    +----------------------+------------------------------------------------------------+
 
+.. index::
+   single: SIMD
+   single: ACT_SIMD (CMake variable)
+   single: ACT_NO_EXPLICIT_SIMD (environment variable)
+
 The SIMD (single instruction, multiple data) instructions of the processor are used to compute the energies and forces of several conformations of a molecule at once, which speeds up training considerably.
 At the start of each program the log file reports the SIMD of the processor, the SIMD the compiler could use for the rest of the code and whether explicit SIMD is used, for instance::
 
@@ -385,6 +429,13 @@ The last command returns to the default. The results do not depend on the unroll
 
 GPU support with SYCL
 ~~~~~~~~~~~~~~~~~~~~~
+
+.. index::
+   single: GPU
+   single: SYCL
+   single: AdaptiveCpp
+   single: MPS (multi-process service)
+
 GPU support uses SYCL with `AdaptiveCpp <https://adaptivecpp.github.io>`_, which compiles the GPU code at run time for the GPU found, such that the same build runs on NVIDIA and AMD GPUs. AdaptiveCpp is available from conda-forge, in its own environment, for instance for NVIDIA GPUs::
 
   conda create -n act-sycl -c conda-forge "adaptivecpp=*=cuda*"
@@ -415,6 +466,10 @@ The GPU gives the same results as the processor, within single precision. The op
 ----------------------------
 Troubleshooting Installation
 ----------------------------
+
+.. index::
+   single: troubleshooting
+
 Sometimes, the *cmake* process or building using *make* does not work as described above.
 For instance, there may be library mismatches like this::
 
@@ -427,6 +482,10 @@ In that case you can instruct cmake to change the order of libraries by adding t
 ---------------
 Testing the ACT
 ---------------
+
+.. index::
+   single: tests
+   single: ctest
 
 To start testing, you first want to familiarize yourself with the test set. If the ACT is in your home directory, you can::
 
@@ -478,6 +537,10 @@ Note that these tests are run every time a change in the ACT source code is uplo
 
 Testing the GPU code
 ~~~~~~~~~~~~~~~~~~~~
+
+.. index::
+   single: tests; GPU
+
 The tests of the GPU code need a GPU, in a single precision build with *-DACT_GPU=SYCL*. Their names end in *Gpu*, and *ctest* runs them separately from the other tests of a test program: *ACTForcesTestsGpu* (the pair potentials on the GPU), *AlexandriaTestsGpu* (the molecules on the GPU, several sets of parameters at once, the deviations on the GPU and *-shell_keep*) and *AlexandriaMpiTestsGpu* (training on the GPU with *-lockstep* and with molecules that are skipped). Without a GPU, or in double precision, *ctest* reports these three as skipped, for instance::
 
   20/29 Test #20: ACTForcesTestsGpu ................***Skipped   0.85 sec

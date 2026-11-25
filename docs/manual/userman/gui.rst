@@ -4,6 +4,11 @@
 The graphical user interface
 *****************************
 
+.. index::
+   single: ACT-GUI
+   single: graphical user interface
+   see: GUI; ACT-GUI
+
 ACT-GUI is a user interface for ACT that runs in a web browser. A small server on your own computer runs the commands of *alexandria* through the Python package of :ref:`sec-python`, and a page shows the results: molecules in three dimensions with their charges, spectra, force fields, and how well a force field reproduces reference data. Long calculations can be sent from the page to a cluster on which you have an account. The interface is a repository of its own, `ACT-GUI`_, which replaces the program *actgui* of ACT-utilities.
 
 Everything the interface does, it does by running *alexandria* with options that it shows or that this manual describes, so a calculation that was tried in the interface can be repeated on the command line or in a script.
@@ -13,6 +18,10 @@ Everything the interface does, it does by running *alexandria* with options that
 ========================
 Installing and starting
 ========================
+
+.. index::
+   single: ACT-GUI; installation
+
 The conda package *act-gui* brings everything along: ACT with its Python package (the package *alexandria-python*), the web server and `plotXVG`_ for PDF files.
 
 .. code-block:: bash
@@ -38,6 +47,11 @@ The interface finds *alexandria* as the Python package does: the program the pac
 ======================
 The molecule workspace
 ======================
+
+.. index::
+   single: ACT-GUI; molecule workspace
+   single: dimer scan
+
 A molecule is given as a SMILES string or as a file, and is read with the default force field, the force field of the force field workspace or a force field file. The viewer shows it coloured by element or by charge, and the tabs run the calculations for one molecule (:numref:`fig-gui-molecule`):
 
 * *Charges*: the charges and the topology (*alexandria gentop*).
@@ -65,6 +79,10 @@ A molecule is given as a SMILES string or as a file, and is read with the defaul
 =========================
 The force field workspace
 =========================
+
+.. index::
+   single: ACT-GUI; force field workspace
+
 This workspace has one force field at a time, which is made there or opened from a file. Each step writes a new file that can be saved and that the other workspaces can use.
 
 * *Generate* makes a new force field with *alexandria gen_ff* from a few choices: the charge model, the potentials with their combination rules, the atom types and which of them get a shell, and virtual sites. Parameters with a known value are fixed at that value from a file with a line *interaction|potential|atom type|parameter|value|unit* for each.
@@ -90,6 +108,10 @@ This workspace has one force field at a time, which is made there or opened from
 =======================
 The molprop workspace
 =======================
+
+.. index::
+   single: ACT-GUI; molprop workspace
+
 A molprop file with compounds and their reference data is opened and checked (*edit_mp -validate*). Under the name of the file the page shows the problems that were found and the number of values of each property; a click on a property shows only the compounds that have it. Calculations that are in the file twice with the same results, which *train_ff* uses once, are reported, and *Remove them and save* writes the file without them (*edit_mp -o*). The table of compounds can be sorted by each column, and a click on a compound shows its details under the table. The table also says what each compound is used for: training, testing or nothing. A click changes that for one compound, and the buttons above the table for all compounds that the table shows.
 
 **Selection files.** The choices of the table make the selection file that *train_ff* reads with *-sel*, see :ref:`sec-files`: a line for each compound that is used, with *Train* or *Test*. The box in front of a compound says whether it is used, and the box in the header does so for all compounds that the table shows, which can be limited to those that have values of one property. For a file with dimers the card *Selection file* lists the monomers, and ticking monomers chooses the dimers they are in: with the dimers A#B, A#C and B#C, ticking only A gives A#B and A#C but not B#C. The other setting uses a dimer only when all its monomers are ticked. *Draw at random* uses a percentage of the ticked compounds for testing. *Save* writes the file, named after the molprop file with the extension *.dat*, and *Open* reads a selection file that exists already: the table then says what the file says, and compounds of the molprop file that the selection does not have are not used. A comparison or a training, on your own computer or on a cluster, uses what the table says at that moment.
@@ -119,6 +141,10 @@ The page follows a training with a plot of :math:`\chi^2` (:numref:`fig-gui-trai
 ==================
 Settings
 ==================
+
+.. index::
+   single: ACT-GUI; settings
+
 The tab *Settings* has the screen mode and the cluster for long jobs. The screen is light, dark (white on black) or hippy (yellow on dark purple, with orange borders); the button at the right of the top bar goes to the next mode. The choice is kept with the other settings, and the page starts in it the next time.
 
 .. _sec-gui-cluster:
@@ -126,6 +152,11 @@ The tab *Settings* has the screen mode and the cluster for long jobs. The screen
 ==================
 Jobs on a cluster
 ==================
+
+.. index::
+   single: ACT-GUI; cluster
+   single: ssh
+
 Long calculations, a comparison with a large file, a training, the second virial coefficient or a simulation with OpenMM, can run on a Slurm cluster on which you have an account. In the tab *Settings* you give the name of the server, your user name there and a working directory; how ACT is made available in a job (a module, a file that the shell reads, a conda environment, or nothing); the partitions for jobs with and without a GPU; and the name of the program there, *alexandria* or *alexandria_d*. Several clusters can be kept, each under a name of your own, such as *csb* or *dardel*; one of them is the default. When a job is sent, the field *Cluster* chooses where it goes, the default if you choose nothing; a job that is sent again goes to the cluster that has its files. The settings are kept in the file *act-gui/settings.json* in your configuration directory.
 
 The interface logs in with the *ssh* program of your computer, which uses your own keys and settings. It never asks for a password and keeps none, so the login has to work without a question: set up a key for the server, or open one connection in a terminal with connection sharing if the server asks for a password or a code each time. *Test the login* logs in once and tells whether the directory is there and the server has Slurm.
@@ -154,6 +185,10 @@ The program on the cluster has to know the options that the *alexandria* of your
 -----------
 Failed jobs
 -----------
+
+.. index::
+   single: ACT-GUI; failed jobs
+
 A job that failed says why, under its row in the tab *Cluster* (:numref:`fig-gui-cluster-failed`). The interface reads the output of Slurm and the log files that came back, and picks the lines that tell:
 
 * the message with which *alexandria* stopped, told once with the number of processes that printed it;

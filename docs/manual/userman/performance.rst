@@ -4,11 +4,18 @@
 Getting the best performance from ACT
 *************************************
 
+.. index::
+   single: performance
+
 Training a force field takes most of the computer time spent with ACT, so this chapter is mainly about *alexandria train_ff*. The run times quoted are examples from our own tests. The best settings depend on the computer and on the training set, so the most useful advice is to do a short test run with a few settings before a long one, see :ref:`sec-measuring`.
 
 ======================
 Building ACT for speed
 ======================
+
+.. index::
+   single: performance; build
+
 * Build in single precision, the default, and not with *-DACT_DOUBLE=ON*. The explicit SIMD routines then compute twice as many interactions per instruction, and a GPU can only be used in single precision builds. Energies are still summed in double precision.
 * On a cluster, set *ACT_SIMD* to the SIMD instructions of the compute nodes if you compile on a head node with another processor, and give the compiler the instructions of the compute nodes in *CMAKE_CXX_FLAGS*, for instance *-march=native* when compiling on a compute node.
 * For a GPU, build with *-DACT_GPU=SYCL*, see the installation chapter.
@@ -18,6 +25,12 @@ The section *Code used* at the start of each log file tells which SIMD instructi
 ===============================
 How train_ff uses the processes
 ===============================
+
+.. index::
+   single: master process
+   single: middleman
+   single: population
+
 One process, the master, runs the genetic algorithm. How the others work depends on the size of the population (*-pop_size*):
 
 * **Population no larger than the number of processes.** The processes are divided into one group per individual, a middleman and its helpers, and the molecules of the training set are divided over the processes of a group, see :numref:`fig-trainff-helpers`. The master is the middleman of the first group. Each individual needs the same number of processes, so use a multiple of the population size; otherwise the processes left over are idle, which *train_ff* warns about. Splitting the molecules over helpers stays efficient down to 4-5 molecules per process :cite:p:`Spoel2025b`.
@@ -57,6 +70,10 @@ With 64 processes, 4 middlemen compute a fifth individual in each generation whi
 =================
 Processor or GPU?
 =================
+
+.. index::
+   single: GPU; polarizable force field
+
 The GPU computes the training only for **polarizable** force fields, in single precision builds, with *train_ff -gpu_resident* (the default). Each process then keeps its molecules on the GPU, which computes the interactions, the virtual sites, the relaxation of the shells and the deviations from the reference data, and the charges if they are generated with SQE. The relaxation of the shells repeats the force calculation many times in each evaluation, which is expensive on a processor, and this is where the GPU gains most.
 
 For force fields **without shells**, the processor computes everything, also in a build with GPU support. Such a training takes the same time with and without *-nogpu*. Without shells, ACT only recomputes the molecules that a changed parameter affects, and of a dimer only the interactions between its two molecules, so one evaluation is short: about a hundred microseconds on a core for a training set of small dimers in our tests. That is shorter than the time needed just to start the work on a GPU and wait for the result, so for these force fields, use all cores of the node rather than the GPUs.
@@ -64,6 +81,11 @@ For force fields **without shells**, the processor computes everything, also in 
 ================
 Training on GPUs
 ================
+
+.. index::
+   single: GPU; training
+   single: replica
+
 * **Several processes per GPU.** Each process waits for the GPU part of the time, so several processes per GPU keep it busy. On NVIDIA GPUs, start the multi-process service in the job script when several processes share a GPU, see the installation chapter. The service takes at most 48 or 60 processes per GPU, depending on the NVIDIA driver; the ranks beyond that compute without the GPU.
 * **-lockstep.** With a population larger than the number of processes, *-lockstep k* gives each middleman *k* individuals at once. The GPU runs the MCMC steps of these individuals together, in the same calculations: each step takes as many operations on the GPU, and as much waiting for it, for *k* individuals as for one. Fewer processes are needed, *pop_size/k* + 1, which also shortens the start-up of the GPU in each process. The master then hands out groups of *k* individuals, and a middleman keeps a copy of the molecules on the GPU for each individual of its group, a replica, see :numref:`fig-trainff-lockstep`. The replicas share the topology; each one adds its own parameters, coordinates and shells, about 43 MB for BFdb, on top of about 330 MB for the GPU context of the process and about 270 MB for the first copy of the molecules. With a population *P*, lockstep *k* and *M* middlemen (the processes minus the master), a generation has *P/k* groups, each middleman computes *P/(k M)* of them one after another, in rounds, and the GPU computes *k M* individuals at once. For example, *P* = 512 with 4 middlemen on one GPU and *-lockstep 16* gives 32 groups and 8 rounds per middleman, with 64 individuals on the GPU at once and about 1.3 GB of GPU memory per process for BFdb. *-lockstep 128* would do the same work in one round, but needs about 6 GB per process, which no longer fits 4 processes on a GPU with 21 GB. With a population of 128 on a node with eight AMD MI250X GCDs (dardel) and on a node with four NVIDIA GH200 (arrhenius) we measured:
 
@@ -115,6 +137,10 @@ With any value of *-lockstep*, a middleman puts as many replicas on the GPU as f
 ====================================
 Measuring and comparing the run time
 ====================================
+
+.. index::
+   single: run time
+
 At the end of the log file, *train_ff* prints how much time each part of the program took, summed over all processes and as an average per process for the master and for the middlemen, preceded by the wall time of the master. Useful lines are:
 
 * *MPI waiting in Middleman loop*: middlemen waiting for work, for instance at the end of each generation. A large share means that the processes are not used evenly, see :numref:`tab-processes`.
