@@ -459,6 +459,119 @@ ShellParametersChanged generateShellParameters(ForceField *pd)
     return changed;
 }
 
+std::vector<Identifier> shellTypes(const ForceField *pd)
+{
+    std::vector<Identifier> types;
+    if (!pd->interactionPresent(InteractionType::POLARIZATION))
+    {
+        return types;
+    }
+    const auto alphaName = potentialToParameterName(Potential::POLARIZATION)[polALPHA];
+    for (const auto &p : pd->findForcesConst(InteractionType::POLARIZATION).parametersConst())
+    {
+        if (p.second.count(alphaName) > 0 && pd->hasParticleType(p.first) &&
+            ActParticle::Shell == pd->findParticleType(p.first)->apType() &&
+            pd->findParticleType(p.first)->hasParameter(chargeName))
+        {
+            types.push_back(p.first);
+        }
+    }
+    std::sort(types.begin(), types.end(),
+              [](const Identifier &a, const Identifier &b) { return a.id() < b.id(); });
+    return types;
+}
+
+/*! \brief The polarization parameters of a shell type
+ * \param[in] pd        The force field
+ * \param[in] shellType The shell type
+ * \return The parameters
+ * \throws gmx::InvalidInputError if it is not a shell type
+ */
+static ForceFieldParameterMap *shellPolarization(ForceField *pd, const Identifier &shellType)
+{
+    const auto types = shellTypes(pd);
+    if (std::find(types.begin(), types.end(), shellType) == types.end())
+    {
+        GMX_THROW(gmx::InvalidInputError(gmx::formatString("%s is not a shell type with a polarizability",
+                                                           shellType.id().c_str())));
+    }
+    return &pd->findForces(InteractionType::POLARIZATION)->parametersNoRemoval()->find(shellType)->second;
+}
+
+/*! \brief The force constant of the current polarizability and charge of a shell type
+ * \param[in] alpha     The polarizability
+ * \param[in] charge    The charge of the shell
+ * \param[in] shellType The shell type, for the message
+ * \return The force constant in kJ/mol nm2
+ * \throws gmx::InvalidInputError if alpha or the charge is zero
+ */
+static double currentForceConstant(const ForceFieldParameter &alpha,
+                                   const ForceFieldParameter &charge,
+                                   const Identifier          &shellType)
+{
+    const double a = alpha.internalValue();
+    const double q = convertToGromacs(charge.value(), charge.unit());
+    if (a <= 0 || q == 0)
+    {
+        GMX_THROW(gmx::InvalidInputError(gmx::formatString("The force constant of shell type %s is not defined, since its polarizability is %g %s and its charge %g %s",
+                                                           shellType.id().c_str(), alpha.value(), alpha.unit().c_str(),
+                                                           charge.value(), charge.unit().c_str())));
+    }
+    return ONE_4PI_EPS0*q*q/a;
+}
+
+void fixShellForceConstant(ForceField       *pd,
+                           const Identifier &shellType,
+                           ShellFollows      follows,
+                           double            kshell)
+{
+    auto *pmap   = shellPolarization(pd, shellType);
+    auto *alpha  = &pmap->find(potentialToParameterName(Potential::POLARIZATION)[polALPHA])->second;
+    auto *charge = pd->findParticleType(shellType)->parameter(chargeName);
+    const double k = kshell > 0 ? kshell : currentForceConstant(*alpha, *charge, shellType);
+    if (!std::isfinite(k))
+    {
+        GMX_THROW(gmx::InvalidInputError(gmx::formatString("The force constant %g of shell type %s is not a number",
+                                                           k, shellType.id().c_str())));
+    }
+    // The unit of the program, such that no conversion is needed
+    pmap->insert_or_assign(kshellName, ForceFieldParameter("kJ/mol nm2", k, 0, 1, k, k,
+                                                           Mutability::Fixed, true, true));
+    auto *follower = ShellFollows::Alpha == follows ? alpha : charge;
+    auto *other    = ShellFollows::Alpha == follows ? charge : alpha;
+    if (Mutability::Dependent == other->mutability())
+    {
+        other->setMutability(Mutability::Fixed);
+    }
+    follower->setMutability(Mutability::Dependent);
+    (void) generateShellParameters(pd);
+}
+
+bool releaseShellForceConstant(ForceField       *pd,
+                               const Identifier &shellType)
+{
+    auto *pmap   = shellPolarization(pd, shellType);
+    const auto kp     = pmap->find(kshellName);
+    const bool fixed = pmap->end() != kp && Mutability::Dependent != kp->second.mutability();
+    auto *alpha  = &pmap->find(potentialToParameterName(Potential::POLARIZATION)[polALPHA])->second;
+    auto *charge = pd->findParticleType(shellType)->parameter(chargeName);
+    for (auto *p : { alpha, charge })
+    {
+        if (Mutability::Dependent == p->mutability())
+        {
+            p->setMutability(Mutability::Fixed);
+        }
+    }
+    if (pmap->end() != kp)
+    {
+        // As it would be computed, if it could
+        const double k = (alpha->internalValue() > 0 && charge->value() != 0) ?
+            currentForceConstant(*alpha, *charge, shellType) : 0;
+        kp->second.setDependent(convertFromGromacs(k, kp->second.unit()), k);
+    }
+    return fixed;
+}
+
 void generateDependentParameter(MsgHandler                      *msghandler,
                                 ForceField                      *pd,
                                 bool                             force,

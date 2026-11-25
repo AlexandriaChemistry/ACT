@@ -33,10 +33,12 @@
 #ifndef ACT_GEN_FF_H
 #define ACT_GEN_FF_H
 
+#include <optional>
 #include <string>
 #include <vector>
 
 #include "act/basics/chargemodel.h"
+#include "act/forcefield/generate_dependent.h"
 #include "act/forcefield/potential.h"
 
 namespace alexandria
@@ -81,6 +83,19 @@ struct GenFFOptions
     Potential                inductionCorrection   = Potential::MACDANIEL_SCHMIDT;
     //! The combination rules, separated by spaces (-cr), see CombRuleUtil
     std::string              combinationRules;
+    /*! \brief Which parameter of the shells follows from a fixed force constant (-fixkshell)
+     *
+     * None if not set: the force constant follows from the polarizability
+     * and the charge. See ShellForceConstant and fixShellForceConstant.
+     */
+    std::optional<ShellFollows> shellFollows;
+    /*! \brief The fixed force constant of the shells in kJ/mol nm2 (-kshell)
+     *
+     * If it is not above zero, each shell type gets the one of a column
+     * POLARIZATION:kshell of the table, or else that of the charge it
+     * starts with and the middle of the range of its polarizability.
+     */
+    double                   kshell                = 0;
 
     /*! \brief Check that the options make sense
      * \throws gmx::InvalidInputError that says which option is wrong

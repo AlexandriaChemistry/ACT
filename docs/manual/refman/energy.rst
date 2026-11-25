@@ -156,10 +156,18 @@ The force constant of the spring between core and shell,
 :math:`k_s = q_s^2/(4\pi\varepsilon_0\alpha_c)`, normally follows from the
 shell charge and the polarizability, which can both be trained. It can be
 fixed instead, such that training changes only one of the two and the other
-one follows. For this, the polarization parameters of the shell type get a
-parameter *kshell* that is not Dependent, and either the polarizability
-*alpha* or the charge of the shell particle type gets the mutability
-Dependent, for instance:
+one follows. *alexandria gen_ff -fixkshell alpha* (or *charge*) makes a
+force field in which this is so for all shells, with the force constant of
+*-kshell*, of a column POLARIZATION:kshell of the table of particle types,
+or else of the charge of the shell and the middle of the range of its
+polarizability. *alexandria edit_ff -fixkshell alpha* (or *charge*) fixes
+the force constants of an existing force field, of the shell types of *-a*
+or of all, at *-kshell* or at their current values, and *edit_ff -fixkshell
+release* lets them follow from the polarizability and the charge again. In
+the force field file, the polarization parameters of the shell type then
+have a parameter *kshell* that is not Dependent, and either the
+polarizability *alpha* or the charge of the shell particle type has the
+mutability Dependent, for instance:
 
 .. code-block:: xml
 

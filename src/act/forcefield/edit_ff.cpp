@@ -931,6 +931,60 @@ static Validation printValidation(const ForceField  *pd,
     return result;
 }
 
+/*! \brief Fix or release the force constants of shells, see EditFFOptions::shellFollows
+ * \param[inout] pd      The force field
+ * \param[in]    options What to do, and to which shell types (particles,
+ *                        all if empty)
+ * \throws gmx::InvalidInputError if a type is not a shell type, or there
+ *         are no shells
+ */
+static void changeShellForceConstants(ForceField *pd, const EditFFOptions &options)
+{
+    const auto all = shellTypes(pd);
+    std::vector<Identifier> types;
+    if (options.particles.empty())
+    {
+        types = all;
+    }
+    else
+    {
+        for (const auto &name : gmx::splitString(options.particles))
+        {
+            const Identifier id(name);
+            if (std::find(all.begin(), all.end(), id) == all.end())
+            {
+                GMX_THROW(gmx::InvalidInputError(gmx::formatString("%s (-a) is not a shell type with a polarizability", name.c_str())));
+            }
+            types.push_back(id);
+        }
+    }
+    if (types.empty())
+    {
+        GMX_THROW(gmx::InvalidInputError("-fixkshell needs shells, there are none in the force field"));
+    }
+    for (const auto &id : types)
+    {
+        if (options.releaseShells)
+        {
+            if (releaseShellForceConstant(pd, id))
+            {
+                    printf("The force constant of shell type %s follows from its polarizability and charge again.\n",
+                       id.id().c_str());
+            }
+        }
+        else
+        {
+            fixShellForceConstant(pd, id, *options.shellFollows, options.kshell);
+        }
+    }
+    for (const auto &s : fixedShellForceConstants(pd))
+    {
+        printf("The force constant of shell type %s is fixed at %g %s, with alpha %g %s and charge %g, its %s follows from it.\n",
+               s.shellType.c_str(), s.kshell, s.kshellUnit.c_str(), s.alpha, s.alphaUnit.c_str(), s.charge,
+               s.alphaDependent ? "polarizability" : "charge");
+    }
+}
+
 /*! \brief Tool to manipulate force field files
  * \param[in] argc Number of arguments on the cmd line
  * \param[in] argv The actual arguments
@@ -976,6 +1030,34 @@ void EditFFOptions::check() const
             if (o.second)
             {
                 GMX_THROW(gmx::InvalidInputError(gmx::formatString("-sign cannot be combined with %s", o.first)));
+            }
+        }
+    }
+    if (!std::isfinite(kshell) || kshell < 0)
+    {
+        GMX_THROW(gmx::InvalidInputError(gmx::formatString("The value %g of -kshell should be zero or more", kshell)));
+    }
+    if (kshell > 0 && !shellFollows)
+    {
+        GMX_THROW(gmx::InvalidInputError("-kshell needs -fixkshell alpha or charge"));
+    }
+    // Fixing or releasing the force constants of the shells is all that is done
+    if (shellFollows || releaseShells)
+    {
+        const std::vector<std::pair<const char *, bool>> others = {
+            { "-ff2", !secondForceFieldFile.empty() }, { "-p", !parameter.empty() },
+            { "-min", minimum.has_value() }, { "-val", value.has_value() },
+            { "-max", maximum.has_value() }, { "-scale", scale.has_value() },
+            { "-mut", mutability.has_value() }, { "-nonneg", nonNegative.has_value() },
+            { "-limits", limits.has_value() }, { "-del", remove }, { "-stretch", stretch },
+            { "-bounds", bounds }, { "-validate", validate }, { "-ana", !analyze.empty() },
+            { "-sign", sign }
+        };
+        for (const auto &o : others)
+        {
+            if (o.second)
+            {
+                GMX_THROW(gmx::InvalidInputError(gmx::formatString("-fixkshell cannot be combined with %s", o.first)));
             }
         }
     }
@@ -1059,6 +1141,10 @@ int runEditFF(MsgHandler *msghandler, const EditFFOptions &options)
             generateDependentParameter(msghandler, &pd);
             plotInteractions(msghandler, &pd, options.analyze);
         }
+    }
+    else if (options.shellFollows || options.releaseShells)
+    {
+        changeShellForceConstants(&pd, options);
     }
     else if (options.remove)
     {
@@ -1217,7 +1303,14 @@ int edit_ff(int argc, char*argv[])
         "The file is written to [TT]-o[tt] or, without [TT]-o[tt], over the file",
         "that was read. Older files are converted to the present format first.",
         "Nothing else is done, so [TT]-sign[tt] cannot be combined with options",
-        "that change or analyze parameters."
+        "that change or analyze parameters.[PAR]",
+        "With [TT]-fixkshell alpha[tt] or [TT]-fixkshell charge[tt] the force",
+        "constant of the spring between each shell and its core, of the shell",
+        "types of [TT]-a[tt] or of all of them, is fixed, at [TT]-kshell[tt] or,",
+        "without it, at its current value. The polarizability or the charge of",
+        "the shell then follows from it and the other one, which can be trained.",
+        "[TT]-fixkshell release[tt] lets the force constant follow from both",
+        "again; the parameter that followed becomes Fixed at its value."
     };
     CombRuleUtil crule;
     crule.addInfo(&desc);
@@ -1251,6 +1344,8 @@ int edit_ff(int argc, char*argv[])
     char        *replace    = (char *)"";
     char        *implant    = (char *)"";
     char        *analyze    = (char *)"";
+    const char  *fixkshell[] = { nullptr, "keep", "alpha", "charge", "release", nullptr };
+    real         kshell     = 0;
     std::vector<t_pargs> pa =
     {
         { "-p",      FALSE, etSTR,  {&parameter},
@@ -1294,7 +1389,11 @@ int edit_ff(int argc, char*argv[])
         { "-write",   FALSE, etBOOL, {&forceWrite},
           "Write out a force field file even if there were no changes" },
         { "-sign",    FALSE, etBOOL, {&sign},
-          "Write the force field with a new checksum and time stamp, to [TT]-o[tt] or over the input file, see above." }
+          "Write the force field with a new checksum and time stamp, to [TT]-o[tt] or over the input file, see above." },
+        { "-fixkshell", FALSE, etENUM, {fixkshell},
+          "Fix the force constant of the spring between shell and core of the shell types of [TT]-a[tt], or of all, such that the polarizability (alpha) or the charge of the shell follows from it and the other one, or release it, such that it follows from both again (the dependent parameter becomes Fixed), see the manual." },
+        { "-kshell",  FALSE, etREAL, {&kshell},
+          "With [TT]-fixkshell[tt] alpha or charge, the force constant (kJ/mol nm2). If zero, the current force constant of each shell type is kept." }
     };
     crule.addPargs(&pa);
     MsgHandler msghandler;
@@ -1376,6 +1475,16 @@ int edit_ff(int argc, char*argv[])
         options.replace          = replace;
         options.implant          = implant;
         options.combinationRules = crule.rules();
+        if (std::string("alpha") == fixkshell[0])
+        {
+            options.shellFollows = ShellFollows::Alpha;
+        }
+        else if (std::string("charge") == fixkshell[0])
+        {
+            options.shellFollows = ShellFollows::Charge;
+        }
+        options.releaseShells    = std::string("release") == fixkshell[0];
+        options.kshell           = kshell;
         return runEditFF(&msghandler, options);
     }
     catch (const gmx::InvalidInputError &ex)

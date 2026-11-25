@@ -38,6 +38,7 @@
 #include <string>
 #include <vector>
 
+#include "act/basics/identifier.h"
 #include "act/basics/interactiontype.h"
 
 namespace alexandria
@@ -104,6 +105,55 @@ struct ShellParametersChanged
  *         if not exactly one of alpha and the shell charge is Dependent
  */
 ShellParametersChanged generateShellParameters(ForceField *pd);
+
+//! Which parameter of a shell follows from its fixed force constant
+enum class ShellFollows
+{
+    //! The polarizability
+    Alpha,
+    //! The charge of the shell
+    Charge
+};
+
+/*! \brief The shell types of a force field
+ * \param[in] pd The force field
+ * \return The identifiers of the polarization parameters with alpha that
+ *         are particle types of shells, sorted
+ */
+std::vector<Identifier> shellTypes(const ForceField *pd);
+
+/*! \brief Fix the force constant of a shell type
+ *
+ * The parameter kshell becomes Fixed, the one that follows Dependent,
+ * and the other one, if it was Dependent, Fixed at its value. The
+ * dependent parameter is computed, see generateShellParameters.
+ * \param[inout] pd        The force field
+ * \param[in]    shellType A shell type, see shellTypes
+ * \param[in]    follows   Which parameter follows from the force constant
+ * \param[in]    kshell    The force constant in kJ/mol nm2, or, if it is
+ *                         not above zero, that of the current
+ *                         polarizability and charge
+ * \throws gmx::InvalidInputError if shellType is not a shell type, or if
+ *         the current force constant is not defined (alpha or the charge
+ *         is zero)
+ */
+void fixShellForceConstant(ForceField       *pd,
+                           const Identifier &shellType,
+                           ShellFollows      follows,
+                           double            kshell);
+
+/*! \brief Let the force constant of a shell type follow from alpha and the charge again
+ *
+ * The parameter kshell, if there is one, becomes Dependent with the force
+ * constant of the current values, and a dependent polarizability or charge
+ * becomes Fixed at its value.
+ * \param[inout] pd        The force field
+ * \param[in]    shellType A shell type, see shellTypes
+ * \return Whether the force constant was fixed
+ * \throws gmx::InvalidInputError if shellType is not a shell type
+ */
+bool releaseShellForceConstant(ForceField       *pd,
+                               const Identifier &shellType);
 
 /*! \brief Generate nonbonded parameters for pairs of atoms
  * as well as the shell parameters that follow from fixed force
