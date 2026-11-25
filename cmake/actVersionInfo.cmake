@@ -190,7 +190,7 @@ set(ACT_VERSION_PATCH 95)
 # candidates, where it signifies the most recent such release from
 # this branch; it will be empty before the first such release, as well
 # as after the final release is out.
-set(ACT_VERSION_SUFFIX "b")
+set(ACT_VERSION_SUFFIX "")
 
 # Conventionally with libtool, any ABI change must change the major
 # version number, the minor version number should change if it's just
