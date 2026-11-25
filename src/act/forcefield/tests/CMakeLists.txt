@@ -50,6 +50,7 @@ gmx_add_unit_test(
     forcefield_parameterlist_test.cpp
     forcefield_test.cpp
     potential_test.cpp
+    shellForceConstantTest.cpp
     vsite1ConversionTest.cpp
     )
 target_link_libraries(${exename} actLib ${GMX_EXE_LINKER_FLAGS})

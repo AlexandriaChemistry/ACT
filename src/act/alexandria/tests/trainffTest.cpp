@@ -51,12 +51,16 @@
 #include <utility>
 #include <vector>
 
+#include "act/basics/identifier.h"
+#include "act/basics/interactiontype.h"
 #include "act/basics/mutability.h"
 #include "act/forcefield/forcefield.h"
 #include "act/forcefield/forcefield_parameter.h"
 #include "act/forcefield/forcefield_xml.h"
+#include "act/forcefield/generate_dependent.h"
 #include "act/forcefield/particletype.h"
 #include "act/gpu/gpu.h"
+#include "gromacs/math/units.h"
 #include "gromacs/utility/exceptions.h"
 #include "testutils/cmdlinetest.h"
 #include "testutils/gputests.h"
@@ -434,6 +438,80 @@ TEST_F(TrainFFTest, PolarizabilityAndInductionCorrection)
     expectTrained(&fileManager(), output, ffFile, expected);
     EXPECT_TRUE(hasInitialComponent(output, "Induction"));
     EXPECT_TRUE(hasInitialComponent(output, "DeltaHF"));
+}
+
+// Test: With a fixed force constant of the shells (issue #1565), training
+// the polarizabilities changes the charges of the shells with them, such
+// that the force constants stay the same, and the log and json files list
+// the shells
+TEST_F(TrainFFTest, PolarizabilityWithFixedForceConstant)
+{
+    ForceField pd;
+    readForceField(fileManager().getInputFilePath("forcefields/ACS-pol.xml"), &pd);
+    std::map<std::string, double> kfixed;
+    for (const char *shell : { "c3_s", "o3_s" })
+    {
+        // The force constant of the charge of the shell and alpha = 1 A^3,
+        // with alpha trained between 0.5 and 2 A^3
+        auto &pmap  = pd.findForces(InteractionType::POLARIZATION)->parametersNoRemoval()->find(Identifier(shell))->second;
+        auto &alpha = pmap.find("alpha")->second;
+        alpha.setMaximum(2);
+        (void) alpha.setMinimum(0.5);
+        alpha.setValue(1);
+        auto   charge = pd.findParticleType(shell)->parameter("charge");
+        double k      = ONE_4PI_EPS0*charge->value()*charge->value()/alpha.internalValue();
+        pmap.insert_or_assign(kshellName, ForceFieldParameter("kJ/mol nm2", k, 0, 1, k, k,
+                                                              Mutability::Fixed, true, true));
+        charge->setMutability(Mutability::Dependent);
+        kfixed[shell] = k;
+    }
+    const auto ffFile = fileManager().getTemporaryFilePath("fixed-kshell-input.xml");
+    writeForceField(ffFile, &pd, false);
+    const auto output = trainfftest::runTrainFF(&fileManager(), "fixedk", "", "",
+                                                combine(mcmcOptions(10),
+                                                        { { "-fit", "alpha" }, { "-fc_induc", "1" } }),
+                                                fileManager().getInputFilePath("molprop/methanol-ethane-deltaHF.xml"),
+                                                trainSelection(&fileManager(), "fixedk", { "methanol#ethane" }),
+                                                ffFile);
+    expectTrained(&fileManager(), output, ffFile, { { "c3_s", "alpha" }, { "o3_s", "alpha" } });
+    ForceField trained;
+    const auto trainedFile = fileManager().getTemporaryFilePath("fixed-kshell-trained.xml");
+    {
+        std::ofstream out(trainedFile);
+        out << output.forceField;
+    }
+    readForceField(trainedFile, &trained);
+    int nchanged = 0;
+    for (const auto &kf : kfixed)
+    {
+        const auto *alpha  = findParameter(trained, kf.first, "alpha");
+        const auto *charge = findParameter(trained, kf.first, "charge");
+        const auto *kshell = findParameter(trained, kf.first, kshellName);
+        ASSERT_TRUE(alpha && charge && kshell) << kf.first;
+        EXPECT_EQ(Mutability::Dependent, charge->mutability()) << kf.first;
+        EXPECT_EQ(Mutability::Fixed, kshell->mutability()) << kf.first;
+        EXPECT_NEAR(kf.second, kshell->value(), 1e-5*kf.second) << kf.first;
+        // As the force computation has it, to the precision of the file
+        double q = charge->value();
+        EXPECT_NEAR(kf.second, ONE_4PI_EPS0*q*q/alpha->internalValue(), 1e-4*kf.second) << kf.first;
+        EXPECT_LT(q, 0) << kf.first;
+        nchanged += (findParameter(pd, kf.first, "charge")->value() != q) ? 1 : 0;
+    }
+    EXPECT_LT(0, nchanged);
+    ASSERT_TRUE(output.json.contains("train_ff"));
+    ASSERT_TRUE(output.json["train_ff"].contains("fixed_shell_force_constants"));
+    const auto &shells = output.json["train_ff"]["fixed_shell_force_constants"];
+    for (const auto &kf : kfixed)
+    {
+        ASSERT_TRUE(shells.contains(kf.first)) << shells.dump();
+        EXPECT_EQ("charge", shells[kf.first]["dependent"].get<std::string>());
+    }
+    bool logged = false;
+    for (const auto &line : output.log)
+    {
+        logged = logged || line.find("Shells with a fixed force constant") != std::string::npos;
+    }
+    EXPECT_TRUE(logged);
 }
 
 // Test: The components of the interaction energy, electrostatics, exchange

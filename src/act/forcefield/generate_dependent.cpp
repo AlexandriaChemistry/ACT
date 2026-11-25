@@ -26,9 +26,11 @@
  * Boston, MA  02110-1301, USA.
  */
 #include <algorithm>
+#include <cmath>
 #include <cstddef>
 #include <memory>
 #include <set>
+#include <type_traits>
 #include <utility>
 #include <vector>
 
@@ -39,13 +41,19 @@
 #include "act/forcefield/forcefield.h"
 #include "act/forcefield/forcefield_parameter.h"
 #include "act/forcefield/forcefield_parameterlist.h"
+#include "act/forcefield/forcefield_parametername.h"
 #include "act/forcefield/particletype.h"
 #include "act/forcefield/potential.h"
+#include "act/utility/units.h"
 #include "generate_dependent.h"
+#include "gromacs/math/units.h"
+#include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/stringutil.h"
 
 namespace alexandria
 {
+
+const char *kshellName = "kshell";
 
 //! The parameters of a single particle type, from which pair parameters are made
 struct SingleParameters
@@ -301,6 +309,156 @@ static void generateParameterPairs(MsgHandler      *msghandler,
     // Phew, we're done!
 }
 
+//! The name of the charge of a particle type
+static const char *chargeName = "charge";
+
+/*! \brief The parameters of a shell type with a fixed force constant
+ * \param[in] pd    The force field
+ * \param[in] id    The identifier of the polarization parameters
+ * \param[in] pmap  The polarization parameters
+ * \param[out] kshell The force constant
+ * \param[out] alpha  The polarizability
+ * \param[out] charge The charge of the shell
+ * \return Whether the force constant is fixed
+ * \throws gmx::InvalidInputError if the parameters are not consistent
+ */
+template <class Map, class FF, class Param>
+static bool shellParameters(FF               *pd,
+                            const Identifier &id,
+                            Map              &pmap,
+                            Param           **kshell,
+                            Param           **alpha,
+                            Param           **charge)
+{
+    const auto kp = pmap.find(kshellName);
+    if (pmap.end() == kp || Mutability::Dependent == kp->second.mutability())
+    {
+        return false;
+    }
+    const auto ap = pmap.find(potentialToParameterName(Potential::POLARIZATION)[polALPHA]);
+    if (pmap.end() == ap)
+    {
+        GMX_THROW(gmx::InvalidInputError(gmx::formatString("The polarization parameters of %s have a fixed %s but no alpha",
+                                                           id.id().c_str(), kshellName)));
+    }
+    if (!pd->hasParticleType(id) || !pd->findParticleType(id)->hasParameter(chargeName))
+    {
+        GMX_THROW(gmx::InvalidInputError(gmx::formatString("The polarization parameters of %s have a fixed %s but there is no shell particle type %s with a charge",
+                                                           id.id().c_str(), kshellName, id.id().c_str())));
+    }
+    *kshell = &kp->second;
+    *alpha  = &ap->second;
+    if constexpr (std::is_const_v<Param>)
+    {
+        *charge = &pd->findParticleType(id)->parameterConst(chargeName);
+    }
+    else
+    {
+        *charge = pd->findParticleType(id)->parameter(chargeName);
+    }
+    bool alphaDep  = Mutability::Dependent == (*alpha)->mutability();
+    bool chargeDep = Mutability::Dependent == (*charge)->mutability();
+    if (alphaDep == chargeDep)
+    {
+        GMX_THROW(gmx::InvalidInputError(gmx::formatString("The force constant %s of shell type %s is fixed (mutability %s), so either alpha or the charge of %s must have mutability Dependent, not %s",
+                                                           kshellName, id.id().c_str(),
+                                                           mutabilityName((*kshell)->mutability()).c_str(),
+                                                           id.id().c_str(), alphaDep ? "both" : "neither")));
+    }
+    if ((*kshell)->internalValue() <= 0)
+    {
+        GMX_THROW(gmx::InvalidInputError(gmx::formatString("The force constant %s of shell type %s is %g %s, it must be positive",
+                                                           kshellName, id.id().c_str(),
+                                                           (*kshell)->value(), (*kshell)->unit().c_str())));
+    }
+    return true;
+}
+
+std::vector<ShellForceConstant> fixedShellForceConstants(const ForceField *pd)
+{
+    std::vector<ShellForceConstant> result;
+    if (!pd->interactionPresent(InteractionType::POLARIZATION))
+    {
+        return result;
+    }
+    for (const auto &p : pd->findForcesConst(InteractionType::POLARIZATION).parametersConst())
+    {
+        const ForceFieldParameter *kshell = nullptr;
+        const ForceFieldParameter *alpha  = nullptr;
+        const ForceFieldParameter *charge = nullptr;
+        if (shellParameters(pd, p.first, p.second, &kshell, &alpha, &charge))
+        {
+            ShellForceConstant s;
+            s.shellType      = p.first.id();
+            s.kshell         = kshell->value();
+            s.kshellUnit     = kshell->unit();
+            s.alpha          = alpha->value();
+            s.alphaUnit      = alpha->unit();
+            s.charge         = charge->value();
+            s.alphaDependent = Mutability::Dependent == alpha->mutability();
+            result.push_back(std::move(s));
+        }
+    }
+    std::sort(result.begin(), result.end(),
+              [](const ShellForceConstant &a, const ShellForceConstant &b)
+              { return a.shellType < b.shellType; });
+    return result;
+}
+
+/*! \brief Give a dependent parameter a new value, keeping its other properties
+ * \param[inout] p     The parameter
+ * \param[in]    value The value in the unit of the parameter
+ * \return Whether the value changed
+ */
+static bool setDependentValue(ForceFieldParameter *p, double value)
+{
+    if (p->value() == value && p->minimum() == value && p->maximum() == value)
+    {
+        return false;
+    }
+    // Without bounds that the new value would violate
+    p->setMaximum(value);
+    (void) p->setMinimum(value);
+    p->forceSetValue(value);
+    return true;
+}
+
+ShellParametersChanged generateShellParameters(ForceField *pd)
+{
+    ShellParametersChanged changed;
+    if (!pd->interactionPresent(InteractionType::POLARIZATION))
+    {
+        return changed;
+    }
+    for (auto &p : *pd->findForces(InteractionType::POLARIZATION)->parametersNoRemoval())
+    {
+        ForceFieldParameter *kshell = nullptr;
+        ForceFieldParameter *alpha  = nullptr;
+        ForceFieldParameter *charge = nullptr;
+        if (!shellParameters(pd, p.first, p.second, &kshell, &alpha, &charge))
+        {
+            continue;
+        }
+        // In the units of the program, as in the force computation,
+        // where the force constant is ONE_4PI_EPS0*q*q/alpha
+        double k = kshell->internalValue();
+        if (Mutability::Dependent == alpha->mutability())
+        {
+            double q        = convertToGromacs(charge->value(), charge->unit());
+            double newAlpha = ONE_4PI_EPS0*q*q/k;
+            changed.alpha   = setDependentValue(alpha, convertFromGromacs(newAlpha, alpha->unit())) || changed.alpha;
+        }
+        else
+        {
+            double a       = alpha->internalValue();
+            double q       = std::sqrt(k*a/ONE_4PI_EPS0);
+            double newQ    = charge->value() > 0 ? q : -q;
+            changed.charge = setDependentValue(charge, convertFromGromacs(newQ, charge->unit())) || changed.charge;
+        }
+    }
+    return changed;
+}
+
 void generateDependentParameter(MsgHandler                      *msghandler,
                                 ForceField                      *pd,
                                 bool                             force,
@@ -310,6 +468,12 @@ void generateDependentParameter(MsgHandler                      *msghandler,
           {
               return force || nullptr == changed || changed->count(itype) > 0;
           };
+    // The shells first, since a charge may change. Particle types may
+    // have changed if changed is nullptr.
+    if (todo(InteractionType::POLARIZATION))
+    {
+        (void) generateShellParameters(pd);
+    }
     for(auto itype : { InteractionType::VDW, InteractionType::VDWCORRECTION,
                        InteractionType::INDUCTIONCORRECTION })
     {

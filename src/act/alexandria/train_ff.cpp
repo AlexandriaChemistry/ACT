@@ -70,6 +70,7 @@
 #include "act/basics/msg_handler.h"
 #include "act/forcefield/forcefield.h"
 #include "act/forcefield/forcefield_xml.h"
+#include "act/forcefield/generate_dependent.h"
 #include "act/forces/forcecomputer.h"
 #include "act/forces/simd_information.h"
 #include "act/ga/gene_pool.h"
@@ -760,6 +761,51 @@ void OptACM::printNumCalcDevEstimate()
     }
 }
 
+/*! \brief Write the shells with a fixed force constant, see ShellForceConstant
+ * The polarizability or the charge of these shells is not trained, but
+ * follows from the force constant and the other one, which may be trained.
+ * \param[in] tw    For the log file, may be nullptr
+ * \param[in] jtree For the json file, may be nullptr
+ * \param[in] pd    The force field with the best parameters
+ */
+static void printFixedShells(gmx::TextWriter  *tw,
+                             JsonTree         *jtree,
+                             const ForceField *pd)
+{
+    const auto shells = fixedShellForceConstants(pd);
+    if (shells.empty())
+    {
+        return;
+    }
+    if (tw)
+    {
+        tw->writeStringFormatted("\nShells with a fixed force constant %s. The polarizability alpha or the charge marked with * follows from it and the other one:\n",
+                                 kshellName);
+        tw->writeStringFormatted("%-12s %24s %24s %16s\n", "Shell", kshellName, "alpha", "charge (e)");
+    }
+    JsonTree jshells("fixed_shell_force_constants");
+    for (const auto &s : shells)
+    {
+        if (tw)
+        {
+            const auto k = gmx::formatString("%g %s", s.kshell, s.kshellUnit.c_str());
+            const auto a = gmx::formatString("%g %s%s", s.alpha, s.alphaUnit.c_str(), s.alphaDependent ? " *" : "");
+            const auto q = gmx::formatString("%g%s", s.charge, s.alphaDependent ? "" : " *");
+            tw->writeStringFormatted("%-12s %24s %24s %16s\n", s.shellType.c_str(), k.c_str(), a.c_str(), q.c_str());
+        }
+        JsonTree js(s.shellType);
+        js.addValueUnit(kshellName, s.kshell, s.kshellUnit);
+        js.addValueUnit("alpha", s.alpha, s.alphaUnit);
+        js.addValueUnit("charge", s.charge, "e");
+        js.addObject("dependent", s.alphaDependent ? "alpha" : "charge");
+        jshells.addObject(js);
+    }
+    if (jtree)
+    {
+        jtree->addObject(jshells);
+    }
+}
+
 void OptACM::printGenomeTable(const std::map<iMolSelect, ga::Genome> &genome,
                               const ga::GenePool                     &pop,
                               JsonTree                               *jtree)
@@ -1098,6 +1144,7 @@ bool OptACM::runMaster(bool               optimize,
             }
             //! \todo resetting the train parameters for the TrainFFPrinter. We may have to work on that if we want to show the best test parameters too
             sii_->updateForceField(&msghandler_, changed, bestGenome.find(iMolSelect::Train)->second.bases());
+            printFixedShells(tw, jtree, sii_->forcefield());
         }
     }
     else if (optimize)

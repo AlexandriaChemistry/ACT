@@ -178,12 +178,19 @@ void StaticIndividualInfo::updateForceField(MsgHandler                *msghandle
             // p->setUncertainty(psigma_[n]);
         }
     }
+    // The polarizabilities or shell charges that follow from a fixed
+    // force constant of the shells, see generateShellParameters
+    const auto shells = generateShellParameters(&pd_);
     // Keep track of what may have changed, such that only what depends on
     // it has to be computed again. Particle type parameters may be used
-    // anywhere.
+    // anywhere, like the charge of a shell.
     nUpdate_ += 1;
     std::set<InteractionType> types;
-    bool                      all = false;
+    bool                      all = shells.charge;
+    if (shells.alpha)
+    {
+        types.insert(InteractionType::POLARIZATION);
+    }
     for(int n : mychanged)
     {
         if (!optIndex_[n].particleType().empty())
