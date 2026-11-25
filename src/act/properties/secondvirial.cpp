@@ -803,14 +803,15 @@ void ReRunner::runB2PathIntegral(CommunicationRecord *cr,
                 const RingPolymer *rp[2] = { nullptr, nullptr };
                 for(int kk = 0; kk < 2; kk++)
                 {
-                    size_t npool = pool[kk].size();
-                    size_t first = 0, count = npool;
+                    const auto &mypool = pool[kk];
+                    size_t      npool  = mypool.size();
+                    size_t      first  = 0, count = npool;
                     if (npool >= nStatBlocks)
                     {
                         first = (part*npool)/nStatBlocks;
                         count = ((part + 1)*npool)/nStatBlocks - first;
                     }
-                    rp[kk] = &pool[kk][first + pick() % count];
+                    rp[kk] = &mypool[first + pick() % count];
                 }
                 size_t shift = pick() % P;
                 for(int kk = 0; kk < 2; kk++)

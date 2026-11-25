@@ -333,6 +333,47 @@ protected:
             tc.checkDouble(r.total, b2TypeToString(b2Type::Total).c_str());
         }
     }
+
+    /*! \brief Run the b2 tool for the water dimer with flexible monomers on all ranks
+     * \param[in] ffName  Force field file in src/act/testdata/forcefields
+     * \param[in] label   For the names of the files
+     * \param[in] nDimer  Number of dimer orientations
+     * \param[in] options Further options with their values
+     * \return The rows of the file with the second virial, on the master
+     */
+    std::vector<std::vector<double>> runFlexible(const std::string                              &ffName,
+                                                 const std::string                              &label,
+                                                 int                                             nDimer,
+                                                 const std::vector<std::pair<std::string, int>> &options)
+    {
+        auto &fm = fileManager();
+        gmx::test::CommandLine cmd;
+        cmd.append("b2");
+        cmd.addOption("-ff", fm.getInputFilePath("forcefields/" + ffName));
+        cmd.addOption("-f", fm.getInputFilePath("molecules/water_dimer.pdb"));
+        cmd.addOption("-mindist", 0.2);
+        cmd.addOption("-maxdist", 1.2);
+        cmd.addOption("-ndist", 51);
+        cmd.addOption("-maxdimer", nDimer);
+        cmd.addOption("-randalg", "Sobol");
+        cmd.addOption("-T1", 400.0);
+        cmd.addOption("-T2", 500.0);
+        cmd.addOption("-dT", 100.0);
+        for(const auto &o : options)
+        {
+            cmd.addOption(o.first.c_str(), o.second);
+        }
+        const auto b2file = fm.getTemporaryFilePath(label + "-B2T.xvg");
+        cmd.addOption("-b2", b2file);
+        cmd.addOption("-g", fm.getTemporaryFilePath(label + "-b2.log"));
+        EXPECT_EQ(0, b2(cmd.argc(), cmd.argv()));
+        if (gmx_node_rank() != 0)
+        {
+            // Only the master writes the output
+            return {};
+        }
+        return readColumns(b2file);
+    }
 };
 
 TEST_F(WaterB2Test, SPCE)
@@ -460,6 +501,62 @@ void checkDimers(const std::string &fileName, int nDimer, int nDist)
             EXPECT_NEAR(a < 3 ? 0 : 1, std::sqrt(d2), 1e-4) << "structure " << i << " atom " << a;
         }
     }
+}
+
+// Test: Flexible monomers that do not move give the classical second virial
+// of rigid monomers, with the orientations and the structures of the
+// monomers divided over the ranks. With shells and a virtual site this
+// covers the energies of the beads with relaxed shells.
+TEST_F(WaterB2Test, FrozenMonomersSameAsRigid)
+{
+    for(const std::string ffName : { "SPCE.xml", "SWM4-NDP.xml" })
+    {
+        const auto rigid  = runFlexible(ffName, "rigid-" + ffName, 1027, {});
+        const auto frozen = runFlexible(ffName, "frozen-" + ffName, 1027,
+                                        { { "-nbeads", 2 }, { "-npolymers", 3 },
+                                          { "-piequil", 0 }, { "-pistride", 0 } });
+        if (gmx_node_rank() == 0)
+        {
+            ASSERT_EQ(2u, rigid.size());
+            ASSERT_EQ(2u, frozen.size());
+            for(size_t i = 0; i < rigid.size(); i++)
+            {
+                // Temperature, total, classical and the corrections of rigid
+                // monomers, temperature, total and its error of flexible ones
+                ASSERT_EQ(6u, rigid[i].size());
+                ASSERT_EQ(3u, frozen[i].size());
+                EXPECT_EQ(rigid[i][0], frozen[i][0]);
+                // The files have six digits
+                EXPECT_NEAR(rigid[i][2], frozen[i][1], std::abs(rigid[i][2])*(GMX_DOUBLE ? 2e-6 : 2e-3)) << ffName;
+            }
+        }
+        barrier();
+    }
+}
+
+// Test: The path integral second virial with the structures of the monomers
+// sampled on each rank
+TEST_F(WaterB2Test, PathIntegral)
+{
+    const auto rows = runFlexible("SPCE.xml", "pi", 1024,
+                                  { { "-nbeads", 4 }, { "-npolymers", 64 },
+                                    { "-piequil", 200 }, { "-pistride", 20 } });
+    if (gmx_node_rank() == 0)
+    {
+        ASSERT_EQ(2u, rows.size());
+        for(const auto &r : rows)
+        {
+            ASSERT_EQ(3u, r.size());
+            // Water attracts water, with a statistical error
+            EXPECT_TRUE(std::isfinite(r[1]));
+            EXPECT_LT(r[1], 0);
+            EXPECT_GT(r[2], 0);
+            EXPECT_LT(r[2], std::abs(r[1]));
+        }
+        // More at the lower temperature
+        EXPECT_LT(rows[0][1], rows[1][1]);
+    }
+    barrier();
 }
 
 // Test: The dimers generated on all ranks are written by the master
