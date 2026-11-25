@@ -2,6 +2,9 @@
 Sensitivity Analysis
 ********************
 
+.. index::
+   single: sensitivity analysis
+
 
 The sensitivity analysis is a post-optimization tool that evaluates how sensitive
 the total chi-squared (:math:`\chi^2`) deviation is to small changes in each
@@ -24,6 +27,9 @@ it with the *-nooptimize* and *-norandom_init* flags.
 ============================
 Running Sensitivity Analysis
 ============================
+
+.. index::
+   single: sensitivity analysis; running
 
 The sensitivity analysis runs automatically after training with MCMC or HYBRID. To
 disable it, pass *-sensitivity No*::
@@ -48,6 +54,11 @@ template force field, may not change :math:`\chi^2` at all; they are reported as
 =========
 Algorithm
 =========
+
+.. index::
+   single: sensitivity analysis; algorithm
+   single: flat parameter
+   single: parameter; converged
 
 For each trainable force field parameter :math:`p_i`, the algorithm evaluates
 :math:`\chi^2` at three nearby points, one of which is the parameter itself:
@@ -97,6 +108,11 @@ parameter set is in a minimum if all parameters are converged.
 =========================
 Two-dimensional analysis
 =========================
+
+.. index::
+   single: sensitivity analysis; two-dimensional
+   single: Hessian (of chi-squared)
+   single: parameter; correlation
 
 Each parameter on its own can be at the minimum of its parabola while the
 parameter set is not in a minimum: two strongly correlated parameters form a
@@ -176,6 +192,10 @@ convergence.
 Convergence during training
 ============================
 
+.. index::
+   single: convergence; training
+   single: adaptive step size
+
 During training with the HYBRID optimizer, the *-max_local_minimum_generations*
 option stops the training when the best parameter set has been in a minimum for
 that number of generations. The test for a minimum is two-dimensional with
@@ -188,6 +208,10 @@ generation how many parameters, and in 2D pairs, are converged. Adaptive step si
 =============
 Output Format
 =============
+
+.. index::
+   single: sensitivity analysis; output
+   single: sensitivity.json
 
 The results are written to a JSON file, set with *-sensout* (default
 *sensitivity.json*). The log file only gets a summary::
@@ -328,6 +352,9 @@ values as *null*.
 ==============
 Interpretation
 ==============
+
+.. index::
+   single: sensitivity analysis; interpretation
 
 The coefficient *a* of the fitted parabola quantifies how sharply :math:`\chi^2`
 responds to changes in the parameter:

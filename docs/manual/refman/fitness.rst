@@ -1,6 +1,11 @@
 ****************
 Fitness function
 ****************
+
+.. index::
+   single: fitness function
+   single: chi-squared
+
 In genetic algorithm terminology, the idea is to maximize the fitness of the population. However, in practice the ACT minimizes a function :math:`F(\Theta)` where :math:`\Theta` is the force field genome, containing all the parameters. Zero indicates perfect correspondence to reference data and algorithmic bounds.
 The function consists of multiple components corresponding to observables that can be combined at will by the user:
 
@@ -8,6 +13,16 @@ The function consists of multiple components corresponding to observables that c
 
 where :math:`N_{obs}` is the number of observables, the :math:`\Omega_i` are the corresponding user-supplied weights for each of these and :math:`N_{i}` is the number of individual data points :math:`x` for observable i and :math:`\mathcal{L}` is the loss function selected. 
 Finally, :math:`\Lambda` adds a penalty to keep (some of the) parameters within bounds. 
+
+.. index::
+   single: loss function
+   single: loss function; MSE
+   single: mean squared error (MSE)
+   single: loss function; MAE
+   single: mean absolute error (MAE)
+   single: loss function; Huber
+   single: Huber loss function
+   single: loss function; Asinh
 
 The supported loss functions can be described by first defining the deviation 
 (for property i and data point j)  where it should be noted that :math:`E` does not have to indicate an energy
@@ -43,6 +58,10 @@ as:
 --------------------------
 Supported training targets
 --------------------------
+
+.. index::
+   single: training target
+   single: observable
 
 Table :ref:`tab-fitness` lists the supported observables and the corresponding command line flags.
 
@@ -106,6 +125,11 @@ Table :ref:`tab-fitness` lists the supported observables and the corresponding c
 --------------------
 Parameter mutability
 --------------------
+
+.. index::
+   single: mutability
+   single: parameter; mutability
+
 A force field consists many parameters and typically only a subset is trained at any one time. Therefore, parameters are qualified by a mutability value as indicated in Table :ref:`tab-mutability`.
 
 .. table:: Parameter mutabilities and their interpretation in ACT.
@@ -143,6 +167,11 @@ A force field consists many parameters and typically only a subset is trained at
 --------------
 Bounds Penalty
 --------------
+
+.. index::
+   single: bounds penalty
+   single: parameter; bounds
+
 A bounds penalty can be applied to charges when the mutability is ACM (Table :ref:`tab-mutability`). In that case the penalty V(q) is
 
 .. math:: V(q) = \begin{split}

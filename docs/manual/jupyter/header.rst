@@ -2,11 +2,17 @@
 Interactive Notebooks
 #####################
 
+.. index::
+   single: Jupyter notebook
+
 .. _sec-charges:
 
 **************
 Charge Methods
 **************
+
+.. index::
+   single: Jupyter notebook; charge methods
 
 A number of different algorithms are available in ACT.
 
@@ -20,4 +26,7 @@ A number of different algorithms are available in ACT.
 ***********************
 Atom Typing using RDKit
 ***********************
+
+.. index::
+   single: Jupyter notebook; atom typing
 

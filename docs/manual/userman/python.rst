@@ -4,6 +4,9 @@
 Using ACT from Python
 **********************
 
+.. index::
+   single: Python package act
+
 The Python package *act* runs the commands of the *alexandria* program from Python: the options of a command are keyword arguments, and the results come back as Python objects and files. It is installed together with ACT, next to the program it starts, and needs no other package than the Python standard library. The graphical user interface, see :ref:`sec-gui`, is built on it.
 
 The package starts the program as a separate process for each command. A second layer, the classes of ACT in Python, is being built: see :ref:`sec-python-classes` for what there is.
@@ -11,6 +14,10 @@ The package starts the program as a separate process for each command. A second 
 ==================
 Running a command
 ==================
+
+.. index::
+   single: Python; running a command
+
 Each command of *alexandria* is a function in *act.commands* with the name of the command:
 
 .. code-block:: python
@@ -38,6 +45,10 @@ The options are checked before the program starts, against the description that 
 ===========
 The result
 ===========
+
+.. index::
+   single: Python; result
+
 A command returns an object of the class *act.Result*:
 
 * *data* has what the program wrote in JSON format: numbers are numbers, and a quantity with a unit is a dict with *value* and *unit*. Commands that can write JSON are asked to do so, unless *json=False* is given.
@@ -58,6 +69,10 @@ A result can be used in a *with* statement, which removes a temporary directory 
 =======
 Errors
 =======
+
+.. index::
+   single: Python; errors
+
 All errors are subclasses of *act.ActError*:
 
 * *act.ActOptionError*: an unknown command or option, or a value that the option cannot take. Nothing was started.
@@ -78,6 +93,11 @@ With *check=False* a program that fails raises no error: the result is returned 
 =========================================
 Long runs: progress, time limit, stopping
 =========================================
+
+.. index::
+   single: progress report
+   single: time limit
+
 *simulate* and *train_ff* can report how far they are while they run (their option *-progress*). The argument *on_progress* takes a function that is called with each report:
 
 .. code-block:: python
@@ -106,6 +126,10 @@ Other arguments of every command, which are not options of the program:
 ==========================================
 Which program, and how it is started
 ==========================================
+
+.. index::
+   single: MPI launcher
+
 The package starts the *alexandria* it was installed with. Otherwise it takes *alexandria*, or *alexandria_d* of a build in double precision, from the *PATH*. Another program, or a command that starts it such as that of a container, is chosen with the environment variable *ACT_ALEXANDRIA* or in Python:
 
 .. code-block:: python
@@ -119,6 +143,10 @@ For several processes the package looks for *mpirun*, *mpiexec* or *srun*; the e
 ==========================================
 The options of the program as data
 ==========================================
+
+.. index::
+   single: options; description
+
 *act.program_info()* gives the description of all commands that the package itself uses: for each command its options with their type, default value, allowed values and help text. A program that builds forms or command lines can use it:
 
 .. code-block:: python
@@ -134,6 +162,11 @@ The options of the program as data
 ========================
 The classes of ACT
 ========================
+
+.. index::
+   single: Python; classes
+   single: pybind11
+
 When ACT is built with *-DACT_PYTHON=ON*, which needs `pybind11`_, the package also has classes that use the code of ACT directly, without a program in between. *act.classes_available()* tells whether an installation has them; the conda package *alexandria-python* does. There are the force field, the molecule with its energy, its minimum, its vibrations and simulations of it, and the compounds of a molprop file. Numbers such as coordinates, forces, charges, frequencies and the energies along a simulation come as *numpy* arrays, which are copies: changing them does not change the molecule. All functions and classes of the package are described in :ref:`sec-python-api`.
 
 .. code-block:: python

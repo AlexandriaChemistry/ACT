@@ -1,11 +1,19 @@
 ************************
 Verifying changes to ACT
 ************************
+
+.. index::
+   single: verification
+
 The test set described in the previous chapter checks that ACT works as intended. When changing the code, two scripts in the *admin* directory of the source code help to check more thoroughly that nothing broke: *verify.sh* runs the tests in different ways and compares a set of real calculations with a reference, and *coverage.sh* reports which parts of the code the tests do not run. In addition, *make tidy* cleans up the code with *clang-tidy*, see the last section.
 
 ==========================
 Running the test set fully
 ==========================
+
+.. index::
+   single: test set
+
 From the directory with the ACT source code, the command::
 
   admin/verify.sh
@@ -72,6 +80,11 @@ After changes to the GPU code, run the script on a node with a GPU with *-\-gpu*
 ==================
 The regression set
 ==================
+
+.. index::
+   single: regression test
+   single: reference data
+
 The tests check small parts of the code. The regression set checks whole calculations: training of the hydrogen fluoride dimer, of the halgren-PG force field for alcohols and water, of the polarizable alc-pol force field and of bonded parameters for monomers, as well as the second virial coefficient of the BK3, TIP5P and hydrogen fluoride models. These are small versions of the benchmarks of ACT and take about a minute together. They need the input files of the ACTdata repository, by default in *$HOME/Alexandria/ACTdata*, which can be changed with the environment variable *ACT_VERIFY_DATA*: the force fields, molecules and selections in *Performance/train_ff*, the dimer structures in *Performance/b2*, and the force fields *BK3.xml* and *TIP5P.xml* in *LegacyForceFields*. Each calculation is run with 8 MPI processes, with the MPI launcher found when the build directory was configured, so the build needs MPI (*ACT_MPI*, on by default).
 
 The regression set is useful for changes that should not change the results, such as making the code faster or easier to maintain. Before such a change, keep the results as the reference::
@@ -99,6 +112,10 @@ A calculation fails if the difference is larger than the tolerance (*-\-toleranc
 =============
 Test coverage
 =============
+
+.. index::
+   single: test coverage
+
 The command::
 
   admin/coverage.sh
@@ -114,6 +131,10 @@ This shows where new tests are most needed. The script needs the clang compiler 
 ====================================
 Cleaning up the code with clang-tidy
 ====================================
+
+.. index::
+   single: clang-tidy
+
 The build target *tidy* cleans up the code of *src/act* with the *clang-tidy* program of the LLVM project and changes the source files in place. From a configured build directory, the command::
 
   make tidy
@@ -177,6 +198,11 @@ The package *clang* is needed for the header files of the compiler that *clang-t
 ======================
 Code testing on GitHub
 ======================
+
+.. index::
+   single: continuous integration
+   single: GitHub Actions
+
 When a branch is pushed to github five `CI`_ (continuous integration) tests are deployed, so-called *github-workflows*. Four of them download ACT to a test machine, build it and run the tests, all of which should pass. If a single test does not pass the branch cannot be included into the main branch.
 
 .. _CI: https://en.wikipedia.org/wiki/Continuous_integration

@@ -1,6 +1,12 @@
 ****************************
 Force Field Training Targets
 ****************************
+
+.. index::
+   single: training target
+   single: interaction energy
+   single: SAPT
+
 A number of different targets can be used for training force fields in the ACT.
 Below, we mention the most important ones including,  where needed, the technical details necessary to appreciate the methods.
 For information on obtaining or generating training data we refer to Section :ref:`sec-data`.
@@ -11,6 +17,14 @@ It is not entirely trivial to match the energy components from SAPT to force fie
 =============================================
 Algorithm to compute energy components in ACT
 =============================================
+
+.. index::
+   single: energy components
+   single: interaction energy; electrostatics
+   single: interaction energy; induction
+   single: interaction energy; exchange
+   single: interaction energy; dispersion
+
 The component of the interaction energy of a dimer can be computed from the difference between dimer and monomers :math:`A` and :math:`B` :cite:p:`chalasinski2000state`:
 
 .. math:: E_x^{inter}(AB) = E_x^{total}(AB) - \left(E_x(A) + E_x(B)\right)
@@ -67,6 +81,11 @@ In the output the ACT training module *alexandria train_ff* there are two terms 
 ===========================
 Monomer Energies and Forces
 ===========================
+
+.. index::
+   single: monomer energy
+   single: forces (training target)
+
 Typically, a series of single-point quantum calculations are done at a user-defined level of theory. These calculations can then be converted to a molprop file. More information to come.
 
 ================
@@ -77,6 +96,10 @@ In principle, all the molecular properties mentioned in Section :ref:`sec-proper
 ***********************************
 Parameters for Force Field Training
 ***********************************
+
+.. index::
+   single: force field parameters
+   single: parameter; names
 
 Each potential available in the ACT has its own set of parameters. Those are listed in :numref:`nb_parameters` for non-bonded parameters, :numref:`bf_parameters` for bonded parameters.
 Parameters for virtual sites are given in :numref:`vs_parameters` and for charge generation algorithms in :numref:`eem_parameters`.

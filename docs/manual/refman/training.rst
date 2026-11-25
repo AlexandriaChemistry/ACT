@@ -4,6 +4,10 @@
 Force Field Training Algorithms
 *******************************
 
+.. index::
+   single: training algorithm
+   single: optimizer
+
 *This chapter was written by Juli{\'a}n Marrades and is based in part on his M.Sc. thesis :cite:p:`Marrades2022a`.*
 
 Within the *alexandria train_ff* module of the Alexandria Chemistry Toolkit you can choose among three algorithms to optimize force field parameters:
@@ -17,6 +21,11 @@ Let us see what they do behind the scenes and how to control them.
 ====
 MCMC
 ====
+
+.. index::
+   single: MCMC
+   single: Markov chain Monte Carlo
+
 Assume we want to set the values for five parameters (nParam = 5) by performing ten MCMC iterations (flag *-maxiter 10*). Then, the code "reads"
 
 .. code-block:: c++
@@ -43,6 +52,13 @@ Now, let us add some more detail to the algorithm.
 --------------------
 Metropolis Criterion
 --------------------
+
+.. index::
+   single: Metropolis criterion
+   single: simulated annealing
+   single: annealing
+   single: MCMC; temperature
+
 If Mathematics is your thing and you *really* want to know the nitty-gritty stuff, you have thorough explanations of this method on \href{https://en.wikipedia.org/wiki/Metropolis%E2%80%93Hastings_algorithm}{Wikipedia} and Shuyi Qin's Master thesis :cite:p:`Qin2021a`.
 Here, we shall say that the Metropolis Criterion allows us to take steps that do not get us closer to a minimum, giving the opportunity to explore the parameter space and avoid local minima. How exactly?
 
@@ -73,11 +89,21 @@ There are two remarks to be made here:
 ------------------
 Multiple MCMC runs
 ------------------
+
+.. index::
+   single: MCMC; population
+
 We can optimize several candidate solutions in parallel using the  *-pop_size* flag. If the *-random_init* flag is set (default), each candidate solution will be initialized arbitrarily and respecting parameter ranges. If *-norandom_init* is employed, the candidate solution(s) will be initialized as specified by the force field file(s) provided by the user.
 
 =================
 Genetic Algorithm
 =================
+
+.. index::
+   single: genetic algorithm
+   see: GA; genetic algorithm
+   single: genome
+
 Quoting `WikipediaGA`_
 
   | In computer science and operations research, a genetic algorithm is a metaheuristic 
@@ -115,6 +141,11 @@ Let us explore the different stages of the process.
 --------------
 Initialization
 --------------
+
+.. index::
+   single: genetic algorithm; initialization
+   single: load balance
+
 This stage fills the `params` field in the `Genome` class, generating popSize (flag *-pop_size*) genomes.
 
 If we are using flag *-norandom_init*, the genomes will be initialized as specified by the force field file(s) provided. If we are employing flag *-random_init*, each genome will be initialized by setting a random value for each parameter, uniformly distributed over the allowed range.
@@ -133,17 +164,31 @@ A4500 with MPS, and the population can be much larger than that.
 -------------------
 Deviation from data
 -------------------
+
+.. index::
+   single: genetic algorithm; deviation
+
 Here we fill the `deviation` field in for each `Genome` in the population by computing the deviation from the dataset.
 
 -------
 Sorting
 -------
+
+.. index::
+   single: genetic algorithm; sorting
+
 Sorting is not a mandatory step but may be required depending on the GA components selected by the user.
 We sort the population in ascending order of `deviation`. Whether we sort or not is controlled by the flag *-sort* flag.
 
 ---------
 Penalties
 ---------
+
+.. index::
+   single: genetic algorithm; penalty
+   single: catastrophe
+   single: population volume
+
 At this stage, we may alter the population if certain conditions are met, with the main goal of preventing premature convergence and enforcing solution diversity.
 
   | Covering such a small portion of the space you are. Broaden your search, you should. - Yoda
@@ -182,6 +227,10 @@ where x is given by flag *-vfp_vol_frac_limit (0, 1]*, the *worst* fraction flag
 -----------------------
 Selection probabilities
 -----------------------
+
+.. index::
+   single: selection probability
+
 We provide three options for computing selection probabilities:
 
 #. Rank (flag *-prob_computer RANK*)
@@ -193,6 +242,10 @@ The sum of the selection probabilities of the genomes in the population, is 1.
 ----
 Rank
 ----
+
+.. index::
+   single: selection probability; rank
+
 This option enables flag *-sort*.
 The selection probability depends exclusively on the index (rank) of genome in the population (Listing :ref:`listing-rank`).
 
@@ -208,6 +261,10 @@ The independence of the `deviation` avoids the possible phenomena of a genome wi
 -------
 Fitness
 -------
+
+.. index::
+   single: selection probability; fitness
+
 The selection probability is inversely proportional to the `deviation` (Listing :ref:`listing-fitness`).
 
 .. literalinclude:: ../code/fitness.c++
@@ -219,7 +276,11 @@ The selection probability is inversely proportional to the `deviation` (Listing 
 ---------
 Boltzmann
 ---------
-The `temperature` parameter is specified by the flag *-boltz_temp* flag and controls the smoothing of the selection probabilities (Listing :ref:`listing-boltz`). A higher value will avoid polarization in the probability values and vice versa. The flag *-boltz_anneal* flag allows us to decrease the temperature over time and has the same logic as flag *-anneal*, except that it targets the Boltzmann selection temperature and operates based on the maximum amount of generations.
+
+.. index::
+   single: selection probability; Boltzmann
+
+The `temperature` parameter is specified by the flag *-ga_boltz_temp* and controls the smoothing of the selection probabilities (Listing :ref:`listing-boltz`). A higher value will avoid polarization in the probability values and vice versa. The flag *-ga_boltz_anneal* allows us to decrease the temperature over time and has the same logic as flag *-anneal_begin*, except that it targets the Boltzmann selection temperature and operates based on the maximum amount of generations: the temperature decreases linearly to 0 at the last generation.
 
 .. literalinclude:: ../code/boltz.c++
    :language: c++
@@ -230,6 +291,10 @@ The `temperature` parameter is specified by the flag *-boltz_temp* flag and cont
 -------
 Elitism
 -------
+
+.. index::
+   single: elitism
+
 In order to avoid losing the best candidate solutions found so far, the GA will move the top nElites flag *-n_elites* genomes, *unchanged*, into the new population. That means, the genome will not undergo crossover nor mutation.
 
 When flag *-n_elites > 0*, flag *-sort* will be enabled.
@@ -237,6 +302,10 @@ When flag *-n_elites > 0*, flag *-sort* will be enabled.
 ---------
 Selection
 ---------
+
+.. index::
+   single: genetic algorithm; selection
+
 Once the selection probabilities are computed, the population becomes a \href{https://en.wikipedia.org/wiki/Probability_density_function}{probability density function} from which we can sample genomes based on their `probability`.
 
 As of now, only a vanilla selector is available. It only looks at the probability and can select the same genome to be `parent1` and `parent2`.
@@ -244,6 +313,10 @@ As of now, only a vanilla selector is available. It only looks at the probabilit
 ---------
 Crossover
 ---------
+
+.. index::
+   single: crossover
+
 With certain probability `prCross`, controlled by the flag *-pr_cross* flag, two parents will combine their parameters to form two children.
 Right now, only an N-point crossover is available, where N is defined by the flag *-n_crossovers* flag.
 
@@ -272,6 +345,10 @@ If `N = 4`... you get the idea (hopefully).
 --------
 Mutation
 --------
+
+.. index::
+   single: mutation
+
 Given the mutation probability `prMut`, controlled by flag *-pr_mut*, we iterate through the parameters. If the probability is met, we alter the parameter, otherwise, we leave it unchanged.
 
 .. code-block:: c++
@@ -289,6 +366,10 @@ The parameter is changed in the same way as in MCMC, by a fraction of its allowe
 -----------
 Termination
 -----------
+
+.. index::
+   single: genetic algorithm; termination
+
 This stage decides whether the GA evolution should continue or halt. We allow the user to tweak the termination criteria with several flags:
 
 #. flag *-max_generations*: evolution will halt after so many generations.
@@ -297,14 +378,23 @@ This stage decides whether the GA evolution should continue or halt. We allow th
 -------------
 Fitness files
 -------------
+
+.. index::
+   single: fitness file
+
 The `deviation` of each genome in the population is written to the fitness files, one for each data set, given by flag *-fitness*, at the start and then every flag *-nstfitness* fitness evaluations per genome (default 1). The last population is always written. A generation of GA has one fitness evaluation per genome, from the mutation, while a generation of HYBRID has flag *-maxiter* times the number of parameters, the number of MCMC steps. Since GA therefore needs many more generations than HYBRID, the two can be compared by using the same value of flag *-nstfitness* for both, for instance the number of MCMC steps in a HYBRID generation. With MCMC and HYBRID, the flag also sets the number of steps between writing to the parameter and `deviation` convergence files of each individual, which are written with flag *-v 4* or higher.
 
 ======
 HYBRID
 ======
+
+.. index::
+   single: HYBRID optimizer
+   single: global annealing
+
 Even though this optimizer has a very fancy name, it is just a GA with MCMC as its mutator engine.
 When MCMC acts as a mutator, it will always alter the genomes independently of flag *-pr_mut*. Also, it is important to note that the simulated annealing by default is applied independently in each MCMC run.
-For instance, in case we would use flag *-max_generations 2 -maxiter 10 -temp 5 -anneal 0.5*, :numref:`fig-annealing` A shows the temperature during the MCMC part.
+For instance, in case we would use flag *-max_generations 2 -maxiter 10 -temp 5 -anneal_begin 0.5*, :numref:`fig-annealing` A shows the temperature during the MCMC part.
 
 However, when using the flag flag *-anneal_global_begin [0,1]*, the starting temperature of the annealing will be decreased in steps at the beginning of each generation (:numref:`fig-annealing` B).
 

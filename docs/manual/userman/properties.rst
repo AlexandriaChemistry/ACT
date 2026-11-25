@@ -3,6 +3,10 @@
 *******************************
 Predicting Molecular Properties
 *******************************
+
+.. index::
+   single: molecular properties
+
 The ACT can be used to perform MD simulations of clusters in the gas-phase using the *alexandria simulate* command. This module includes the possibility to perform energy minimizations with the flag *-minimize*.
 For simulations employing periodic boundaries the OpenMM package :cite:p:`Eastman2023a` should be used instead. 
 For more details about MD simulations, see Section :ref:`sec-simulations`.
@@ -14,6 +18,11 @@ Below we describe some of the properties that can be computed using the ACT.
 =======================
 Electrostatic Potential
 =======================
+
+.. index::
+   single: electrostatic potential (ESP)
+   see: MEP; electrostatic potential (ESP)
+
 The charge distribution :math:`\rho` of a molecule is determined by the nuclear position of the :math:`N` atoms at positions :math:`\mathbf{x}` and the electron density :math:`n(\mathbf{r})`. The molecular electrostatic potential (MEP) at a point in space :math:`r^\prime` is thus given by
 
 .. math:: \Phi(\mathbf{r}^\prime) = \frac{1}{4\pi\varepsilon_0}\left[\sum_{i=1}^N \frac{z_i}{ \|\mathbf{x}_i-\mathbf{r}^\prime\|} - \int \frac{n(\mathbf{r})}{\|\mathbf{r}-\mathbf{r}^\prime\|}{\mathrm d}r \right]
@@ -29,6 +38,12 @@ The MEP can be used as a target in model development in the ACT, however we reco
 =====================
 Electrostatic Moments
 =====================
+
+.. index::
+   single: multipole moments
+   single: dipole moment
+   single: quadrupole moment
+
 If point :math:`{\bf r}^\prime` in Eqn. :eq:`phi` is outside the distribution of electron
 density and :math:`{\bf r}^\prime >> {\bf r}`, the electrostatic potential can be evaluated through the  
 Taylor expansion of :math:`|{\bf r}-{\bf r}^\prime|^{-1}`  :cite:p:`Berendsen2007a`:
@@ -95,6 +110,12 @@ Finally, we get
 ==============
 Polarizability
 ==============
+
+.. index::
+   single: polarizability; molecular
+   single: hyperpolarizability
+   single: polarizability; anisotropy
+
 The shape of the molecular electron density changes when it interacts with an external electric
 field; hence, the total energy of the molecule
 changes. The static response of a molecule to a homogeneous external
@@ -173,6 +194,12 @@ can be calculated.
 ====================
 Normal Mode Analysis
 ====================
+
+.. index::
+   single: normal mode analysis
+   single: vibrational frequencies
+   single: Hessian
+
 Please note that the text below is largely taken (with permission) from a paper by Henschel *et al.* :cite:p:`Henschel2020a`.
 
 The ACT contains the *alexandria nma* tool that performs a normal mode analysis to determine the vibrational frequencies of a compound.
@@ -197,6 +224,11 @@ updated before each force calculation, which means that their influence on the H
 ----------------
 Infrared Spectra
 ----------------
+
+.. index::
+   single: infrared spectrum
+   single: IR intensities
+
 For the calculation of a full IR spectrum, in addition to the vibrational frequencies, the intensities and the line shapes are required.
 
 In case of the quantum chemical calculations both the eigenfrequencies and the corresponding IR intensities are produced by default when a frequency calculation is requested in, for instance, the Gaussian software :cite:p:`g16`. The frequencies for about 5000 compounds  are available from the Alexandria library :cite:p:`Ghahremanpour2018a` at the B3LYP/aug-cc-pvtz level of theory :cite:p:`Becke1988a,Kendall1992a,Woon1993a,Woon1993b`.Details of the quantum chemical calculations from which the frequencies were obtained have been presented previously :cite:p:`Ghahremanpour2016a,Ghahremanpour2018a`.
@@ -232,6 +264,13 @@ yielding the spectrum in :numref:`fig-ethanol`.
 ---------------
 Thermochemistry
 ---------------
+
+.. index::
+   single: thermochemistry
+   single: entropy
+   single: heat capacity
+   single: partition function
+
 The `Canonical`_ ensemble :math:`Q(N,V,T)` can be used to compute the molecular `Internal`_ energy :math:`E` (:eq:`intE`),
 the standard `Entropy`_ :math:`S^o` (:eq:`S0`), and the `Heat-Capacity`_ :math:`C_v` (:eq:`Cv`) at constant volume, using
 
@@ -310,6 +349,13 @@ Information on calculation of the enthalpy of formation will be pubslished in th
 =========================
 Second Virial Coefficient
 =========================
+
+.. index::
+   single: second virial coefficient
+   single: B2(T)
+   single: Sobol sequence
+   single: second virial coefficient; quantum correction
+
 The second `Virial-Coefficient`_ is the second term in the `Virial-Expansion`_ that describes the deviation from the ideal gas law for real gases:
 
 .. math:: \displaystyle{\frac{P}{RT\rho}} = A + B_2(T)\rho + C_3(T)\rho^2 + ...
