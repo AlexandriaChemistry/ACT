@@ -77,6 +77,12 @@ jobs:
         shell: bash -el {0}
         run: |
           mkdir -p ${CONDA_OUT}
+          # alexandria asks for the act-utilities of its own version, the one
+          # in admin/conda/recipe.yaml; ACT-utilities takes its version from
+          # its tags, so it is given that of ACT here
+          version=$(sed -n 's/^  version: "\(.*\)"$/\1/p' admin/conda/recipe.yaml)
+          echo "act-utilities ${version}"
+          ACT_UTILITIES_VERSION=${version} \
           ACT_UTILITIES_SOURCE=${{ github.workspace }}/ACT-utilities \
             rattler-build build --recipe ACT-utilities/conda/recipe.yaml \
                                 --channel conda-forge --channel alexandriachemistry \
