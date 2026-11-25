@@ -115,7 +115,13 @@ RingPolymerSampler::RingPolymerSampler(const ForceField          *pd,
         }
         else if (ActParticle::Shell == atoms[i].pType() && atoms[i].parents().size() == 1)
         {
-            shells_.emplace_back(i, static_cast<size_t>(atoms[i].parents()[0]));
+            int parent = atoms[i].parents()[0];
+            if (parent < 0 || static_cast<size_t>(parent) >= atoms.size())
+            {
+                GMX_THROW(gmx::InternalError(gmx::formatString("Shell %zu has parent %d, which is not a particle of its molecule of %zu particles",
+                                                               i, parent, atoms.size()).c_str()));
+            }
+            shells_.emplace_back(i, static_cast<size_t>(parent));
         }
     }
     if (massive_.empty())

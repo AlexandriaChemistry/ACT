@@ -7,6 +7,7 @@ This directory calculates thermodynamic and structural molecular properties that
 - **secondvirial.h / secondvirial.cpp** — `SecondVirial`: computes the second virial coefficient *B*(T) by numerical integration over dimer interaction energies at a range of temperatures.
 - **b2data.h / b2data.cpp** — Storage and I/O for second virial coefficient data (computed values and experimental references).
 - **dimergenerator.h / dimergenerator.cpp** — `DimerGenerator`: systematically generates dimer configurations (orientations and separations) for two molecules, used in *B*(T) and interaction-energy calculations.
+- **ringpolymer.h / ringpolymer.cpp** — `RingPolymerSampler`: path integral molecular dynamics of one molecule as a ring polymer of beads, with shells relaxed and virtual sites constructed for each bead. It samples the structures of flexible monomers for *B*(T) with nuclear quantum effects (`b2 -nbeads`).
 - **normalmodes.h / normalmodes.cpp** — Normal-mode analysis: diagonalises the Hessian to obtain harmonic vibrational frequencies and zero-point energies, and computes thermochemical corrections (ZPE, *H*, *S*, *G*).
 - **rotator.h / rotator.cpp** — Rotates a molecule to a standard orientation (e.g. principal axes) before property calculations.
 - **velocityhandler.h / velocityhandler.cpp** — Assigns or scales atomic velocities for MD initialisation or kinetic-energy analysis.
