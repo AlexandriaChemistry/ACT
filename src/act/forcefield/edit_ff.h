@@ -36,6 +36,8 @@
 #include <optional>
 #include <string>
 
+#include "act/forcefield/generate_dependent.h"
+
 namespace alexandria
 {
 
@@ -47,8 +49,8 @@ class MsgHandler;
  * the members. runEditFF checks it, see check. One thing is done, the
  * first of: with a second force field, copying, replacing or implanting
  * its parameters, or else comparing the two; checking the bounds;
- * validating; analysing or plotting; removing particle types; signing,
- * see sign; changing parameters. The combination rules are applied after any of these.
+ * validating; analysing or plotting; fixing or releasing the force constants
+ * of shells; removing particle types; signing, see sign; changing parameters. The combination rules are applied after any of these.
  */
 struct EditFFOptions
 {
@@ -111,6 +113,16 @@ struct EditFFOptions
     std::string           implant;
     //! The combination rules, separated by spaces (-cr), see CombRuleUtil
     std::string           combinationRules;
+    /*! \brief Fix the force constants of the shells, with this parameter following (-fixkshell alpha or charge)
+     *
+     * Of the shell types in particles, or of all of them. See
+     * fixShellForceConstant. Nothing if not set.
+     */
+    std::optional<ShellFollows> shellFollows;
+    //! Let the force constants of the shells follow from alpha and the charge again (-fixkshell release)
+    bool                  releaseShells = false;
+    //! The fixed force constant in kJ/mol nm2 (-kshell), the current one if not above zero
+    double                kshell        = 0;
 
     /*! \brief Check that the options make sense
      * \throws gmx::InvalidInputError that says which option is wrong

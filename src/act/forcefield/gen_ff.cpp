@@ -59,15 +59,18 @@
 #include "act/forcefield/forcefield_parametername.h"
 #include "act/forcefield/forcefield_validation.h"
 #include "act/forcefield/forcefield_xml.h"
+#include "act/forcefield/generate_dependent.h"
 #include "act/forcefield/particletype.h"
 #include "act/forcefield/potential.h"
 #include "act/forces/forcecomputer.h"
 #include "act/utility/jsontree.h"
 #include "act/utility/stringutil.h"
+#include "act/utility/units.h"
 #include "gen_ff.h"
 #include "gromacs/commandline/filenm.h"
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/fileio/filetypes.h"
+#include "gromacs/math/units.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/real.h"
@@ -499,6 +502,60 @@ void GenFFOptions::check() const
     checkPotential(dihedralPotential, genFFDihedralPotentials(), "-dihfn");
     checkPotential(vdwPotential, genFFVdwPotentials(), "-vdwfn");
     checkPotential(inductionCorrection, genFFInductionCorrectionPotentials(), "-icfn");
+    if (!std::isfinite(kshell) || kshell < 0)
+    {
+        GMX_THROW(gmx::InvalidInputError(gmx::formatString("The value %g of -kshell should be zero or more", kshell)));
+    }
+    if (kshell > 0 && !shellFollows)
+    {
+        GMX_THROW(gmx::InvalidInputError("-kshell needs -fixkshell alpha or charge"));
+    }
+}
+
+/*! \brief Fix the force constants of the shells, see GenFFOptions::shellFollows
+ * \param[in]    options What to do
+ * \param[inout] pd      The force field, with the particle types and
+ *                        the polarization parameters as they start
+ * \throws gmx::InvalidInputError if there are no shells, or if the force
+ *         constant of a shell type is not defined
+ */
+static void fixShellForceConstants(const GenFFOptions &options, ForceField *pd)
+{
+    const auto types = shellTypes(pd);
+    if (types.empty())
+    {
+        GMX_THROW(gmx::InvalidInputError("-fixkshell needs particle types with shells, there are none"));
+    }
+    const auto alphaName = potentialToParameterName(Potential::POLARIZATION)[polALPHA];
+    for (const auto &id : types)
+    {
+        double      k     = options.kshell;
+        const auto &pmap  = pd->findForcesConst(InteractionType::POLARIZATION).parametersConst().find(id)->second;
+        const auto  kp    = pmap.find(kshellName);
+        if (k <= 0 && pmap.end() != kp && kp->second.internalValue() > 0)
+        {
+            // From the table
+            k = kp->second.internalValue();
+        }
+        if (k <= 0)
+        {
+            // The charge as it starts and the middle of the range of alpha
+            const auto  &alpha  = pmap.find(alphaName)->second;
+            const auto  &charge = pd->findParticleType(id)->parameterConst("charge");
+            const double a      = convertToGromacs(0.5*(alpha.minimum() + alpha.maximum()), alpha.unit());
+            const double q      = convertToGromacs(charge.value(), charge.unit());
+            if (a <= 0 || q == 0)
+            {
+                GMX_THROW(gmx::InvalidInputError(gmx::formatString("The force constant of shell type %s cannot be computed from its charge %g and the middle of the range of its polarizability, %g %s. Give it with -kshell or in a column POLARIZATION:kshell of the table.",
+                                                                   id.id().c_str(), charge.value(),
+                                                                   0.5*(alpha.minimum() + alpha.maximum()), alpha.unit().c_str())));
+            }
+            k = ONE_4PI_EPS0*q*q/a;
+        }
+        fixShellForceConstant(pd, id, *options.shellFollows, k);
+        printf("The force constant of shell type %s is fixed at %g kJ/mol nm2, its %s follows from it.\n",
+               id.id().c_str(), k, ShellFollows::Alpha == *options.shellFollows ? "polarizability" : "charge");
+    }
 }
 
 void runGenFF(const GenFFOptions &options)
@@ -764,6 +821,10 @@ void runGenFF(const GenFFOptions &options)
         fsp->setCanSwap(CanSwap::Yes);
         fsp->addOption(shellMaxDistanceName, gmx_ftoa(options.shellMaxDistance));
     }
+    if (options.shellFollows)
+    {
+        fixShellForceConstants(options, &pd);
+    }
     // Bonded functions need to be added
     const ForceFieldParameterList bonds(potentialToString(options.bondPotential), CanSwap::Yes);
     pd.addForces(InteractionType::BONDS, bonds);
@@ -843,7 +904,14 @@ int gen_ff(int argc, char*argv[])
         "to the given file, gen_ff.json by default, in the same form as",
         "edit_ff writes it, together with the result of the checks that",
         "edit_ff -validate does. This is meant for programs that show the",
-        "force field, such as the user interface of ACT."
+        "force field, such as the user interface of ACT.[PAR]",
+        "With [TT]-fixkshell alpha[tt] or [TT]-fixkshell charge[tt] the force",
+        "constant of the spring between each shell and its core is fixed, such",
+        "that the polarizability or the charge of the shell follows from it and",
+        "the other one, which can be trained. The force constant is that of",
+        "[TT]-kshell[tt], or of a column POLARIZATION:kshell of the table, or",
+        "else that of the charge of the shell and the middle of the range of",
+        "its polarizability."
     };
     CombRuleUtil crule;
     crule.addInfo(&desc);
@@ -856,6 +924,8 @@ int gen_ff(int argc, char*argv[])
     real              shellMaxDistance = options.shellMaxDistance;
     bool              qsymm    = options.symmetricCharges;
     std::vector<const char *>qdn2    = { nullptr, "GAUSSIAN", "POINT", "SLATER", nullptr };
+    std::vector<const char *> fixkshell = { nullptr, "no", "alpha", "charge", nullptr };
+    real              kshell   = options.kshell;
     auto bondfn  = choices(genFFBondPotentials());
     auto anglefn = choices(genFFAnglePotentials());
     auto dihfn   = choices(genFFDihedralPotentials());
@@ -896,7 +966,11 @@ int gen_ff(int argc, char*argv[])
         { "-vdwcorr", FALSE, etBOOL, {&useVdwCorr},
           "Add exchange correction to vsites" },
         { "-icfn", FALSE, etENUM, {icfn.data()},
-          "Function to use for induction correction interactions, can be either" }
+          "Function to use for induction correction interactions, can be either" },
+        { "-fixkshell", FALSE, etENUM, {fixkshell.data()},
+          "Fix the force constant of the spring between each shell and its core, such that the polarizability (alpha) or the charge of the shell follows from it and the other one, see the manual. With no the force constant follows from both." },
+        { "-kshell", FALSE, etREAL, {&kshell},
+          "With -fixkshell, the force constant (kJ/mol nm2) of all shell types. If zero, each shell type gets the force constant of a column POLARIZATION:kshell of the table, or else that of the charge it starts with and the middle of the range of its polarizability." }
     };
     crule.addPargs(&pa);
 
@@ -938,6 +1012,15 @@ int gen_ff(int argc, char*argv[])
     options.vdwCorrection       = useVdwCorr;
     options.inductionCorrection = potentialOf(icfn[0], "-icfn");
     options.combinationRules    = crule.rules();
+    if (std::string("alpha") == fixkshell[0])
+    {
+        options.shellFollows = ShellFollows::Alpha;
+    }
+    else if (std::string("charge") == fixkshell[0])
+    {
+        options.shellFollows = ShellFollows::Charge;
+    }
+    options.kshell              = kshell;
     runGenFF(options);
     return 0;
 }
