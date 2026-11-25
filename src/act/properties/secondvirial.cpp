@@ -1200,8 +1200,11 @@ void ReRunner::runB2(CommunicationRecord *cr,
                 {
                     allParticleCoords(atoms, dimers[b0+i].coords, &allCoordsShells[i]);
                 }
-                // Compute the interaction energies and forces of the dimers at once
-                forceComp_->computeInteraction(msghandler, pd, actmol, allCoordsShells, true, &inter);
+                // Compute the interaction energies and forces of the dimers at once.
+                // Only the total energy is used, so the induction correction
+                // is not computed separately, which takes two more relaxations
+                // of the shells.
+                forceComp_->computeInteraction(msghandler, pd, actmol, allCoordsShells, false, &inter);
                 timings.stop(energyTimer);
                 // Loop over dimers
                 timings.start(torqueTimer);
