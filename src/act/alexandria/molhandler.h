@@ -208,7 +208,7 @@ public:
      * \param[in]  mol          The molecule to analyze
      * \param[in]  forceComp    Force Computer utility
      * \param[in]  coords       Coordinates for a minimized structure
-     * \param[out] frequencies  The normal mode frequencies (in cm^-1)
+     * \param[out] frequencies  The normal mode frequencies of the vibrations (in 1/ps)
      * \param[out] intensities  The normal mode intensities
      * \param[out] output       Vector of string to write information such as frequencies to, may be nullptr (default)
      * \param[in]  debugNMA     Will provide excessive printing statements

@@ -417,6 +417,41 @@ The result is plotted in :numref:`fig-b2`.
 
 .. _Quasi-Random: https://en.wikipedia.org/wiki/Sobol_sequence
 
+-------------------------------------
+Flexible molecules and path integrals
+-------------------------------------
+
+.. index::
+   single: second virial coefficient; flexible molecules
+   single: second virial coefficient; path integral
+   single: path integral molecular dynamics
+   single: ring polymer
+
+The equations above are for rigid molecules, with the quantum corrections to first order in :math:`\hbar^2`. With the option *-nbeads* the molecules are flexible instead, and the nuclear quantum effects of all motions, including the vibrations within the molecules, can be taken into account by a path integral :cite:p:`Garberoglio2014a`. In a path integral each molecule is replaced by a ring polymer of :math:`P` copies of the molecule, the beads, in which each atom :math:`i` is connected to itself in the next bead by a harmonic spring with the frequency :math:`\omega_P = P k_B T/\hbar`. The quantum mechanical distribution of the atoms of one molecule at the temperature :math:`T`, without exchange of identical nuclei, is the classical distribution of the ring polymer at the temperature :math:`PT` with the Hamiltonian
+
+.. math:: H_P = \sum_{k=1}^{P} \left[ \sum_i \frac{{\mathbf p}_{i,k}^2}{2m_i} + \frac{m_i\omega_P^2}{2}\left({\mathbf q}_{i,k}-{\mathbf q}_{i,k+1}\right)^2 + V({\mathbf q}_k) \right]
+   :label: ringpolymer
+
+where :math:`V` is the potential energy of the molecule and bead :math:`P+1` is bead 1. The second virial coefficient then is
+
+.. math:: B_2(T) = -2\pi\int_0^{\infty} r^2 \left< \exp\left[-\frac{\beta}{P}\sum_{k=1}^{P} u_{12}\left(r; {\mathbf q}^{(1)}_k, {\mathbf q}^{(2)}_k\right)\right] -1 \right> dr
+   :label: b2pi
+
+where :math:`r` is the distance between the centers of mass of the two ring polymers, :math:`u_{12}` is the interaction energy of bead :math:`k` of the first molecule with bead :math:`k` of the second one, and the average is over the orientations and over the structures of the ring polymers of the two *isolated* molecules. With one bead this is the classical second virial coefficient of flexible molecules, which differs from that of rigid molecules, since flexible molecules adapt their structures to each other. With more beads it converges to the quantum mechanical result, and the corrections :math:`B_2^F` and :math:`B_2^{\tau}` are not added. The number of beads that is needed is a few times :math:`\hbar\omega/k_BT` for the highest frequency :math:`\omega` in the molecule: for water around room temperature 32 beads, and proportionally more at lower temperatures. Please check the convergence with the number of beads.
+
+The interaction energy of a pair of beads is the energy of the dimer minus the energies of the two monomers in the same structures. This holds for any model, also with shells and virtual sites. Only particles with a mass are part of the ring polymers. Virtual sites are constructed for each bead, and shells are relaxed for each bead, in the monomers and in the dimer, such that the energies are those of the adiabatic (Born-Oppenheimer) surface of the model. The charges are those of the monomers in their input structures.
+
+The structures of the monomers are sampled at each temperature by path integral molecular dynamics of the isolated monomers, with the Hamiltonian of Eqn. :eq:`ringpolymer`. The motion in the springs is integrated exactly in the normal modes of the free ring polymer, and each normal mode has a Langevin thermostat :cite:p:`Ceriotti2010a`, which is applied in the middle of each time step. Each process samples *-npolymers* structures, *-pistride* steps of *-pidt* ps apart, after *-piequil* steps, and each orientation uses a random one of them for each molecule. For example::
+
+  mpirun -n 16 alexandria b2 -g SWM4 -b2 SWM4 -ff SWM4-NDP
+  -f water#water.pdb -T1 373.15 -T2 673.15 -dT 100.0
+  -maxdimer 32768 -nbeads 32
+
+Since the structures depend on the temperature, each temperature is a separate calculation, unlike for rigid molecules, where all temperatures use the same dimers. The log file gives for each temperature the average potential and kinetic energy of the monomers, the latter from the centroid virial estimator, and the spread of the beads. The second virial coefficient is given with a standard error, from eight independent parts of the orientations and structures. With quasi-random numbers or a grid of orientations the true error can be smaller.
+
+For the dimers no forces are needed, and the shells start from their positions in the monomers. Therefore a dimer of beads takes less time than a dimer of rigid molecules: for a polarizable water model 32 beads take about five times as long as rigid molecules at one temperature.
+
+
 .. figure:: ../images/TIP4P-b2.pdf
    :align: center
    :width: 90%

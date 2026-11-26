@@ -193,6 +193,31 @@ public:
      */
     void aggregate(CommunicationRecord *cr);
 
+    /*! \brief Add the sums of other data
+     * For the same distances and temperatures, as when the dimers of the
+     * other data had been added to this.
+     * \param[inout] other The other data, its pending orientations are added to its sums
+     * \throws gmx::InternalError if the distances or temperatures differ
+     */
+    void add(B2Data *other);
+
+    //! \return the distances, -1 for those without dimers
+    const std::vector<double> &distances() const { return dist_; }
+
+    /*! \brief Set the distances
+     * Otherwise they are those of the dimers that were added. A process
+     * that adds no dimers itself has to set them before aggregate.
+     * \param[in] dist The distance of each bin
+     * \throws gmx::InternalError if the number of distances is wrong
+     */
+    void setDistances(const std::vector<double> &dist);
+
+    /*! \brief The Mayer function at a temperature, after integrate
+     * \param[in] iTemp Temperature index
+     * \return the Mayer function at each distance
+     */
+    const std::vector<double> &mayer(size_t iTemp) const { return mayer_[iTemp]; }
+
     /*! \brief Add one data point.
      * Adds all values times the weight, and the weight to the internal
      * counter, such that the averages are weighted.
