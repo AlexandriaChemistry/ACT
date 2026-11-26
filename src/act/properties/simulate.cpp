@@ -54,6 +54,7 @@
 #include "act/molprop/molprop.h"
 #include "act/molprop/molprop_xml.h"
 #include "act/properties/minimize.h"
+#include "act/properties/pathintegralmd.h"
 #include "act/properties/secondvirial.h"
 #include "act/properties/velocityhandler.h"
 #include "act/topology/actmol.h"
@@ -90,6 +91,94 @@ namespace
 const char *fileOrNull(const std::string &fileName)
 {
     return fileName.empty() ? nullptr : fileName.c_str();
+}
+
+/*! \brief Simulate at constant temperature with beads, see pathIntegralMD
+ *
+ * Simulates the compounds together and, on request, each compound alone,
+ * and writes the averages and the binding energy.
+ * \param[in]    msghandler For output and warnings
+ * \param[in]    pd         The force field
+ * \param[in]    actmol     The compounds
+ * \param[in]    x          The starting coordinates
+ * \param[in]    forceComp  The force computer
+ * \param[in]    sch        The settings
+ * \param[in]    options    The files
+ * \param[in]    oenv       The output environment
+ * \param[inout] jtree      The averages are added
+ */
+void simulateWithBeads(MsgHandler                    *msghandler,
+                       const ForceField              *pd,
+                       const ACTMol                  *actmol,
+                       const std::vector<gmx::RVec>  &x,
+                       const ForceComputer           *forceComp,
+                       const SimulationConfigHandler &sch,
+                       const SimulateOptions         &options,
+                       const gmx_output_env_t        *oenv,
+                       JsonTree                      *jtree)
+{
+    const auto        fragments = actmol->fragmentHandler();
+    const auto       &tops      = fragments->topologies();
+    // The first particle of each compound, and the number of particles
+    std::vector<size_t> atomStart = { 0 };
+    for(const auto &top : tops)
+    {
+        atomStart.push_back(atomStart.back() + top.atoms().size());
+    }
+    if (atomStart.back() != actmol->atomsConst().size() || atomStart.back() != x.size())
+    {
+        GMX_THROW(gmx::InternalError("The compounds do not have the particles of the molecule"));
+    }
+    PathIntegralFiles files;
+    files.trajectory = fileOrNull(options.trajectoryFile);
+    files.energy     = fileOrNull(options.energyFile);
+    files.progress   = fileOrNull(options.progressFile);
+    files.histogram  = fileOrNull(options.histogramFile);
+    files.oenv       = oenv;
+    const auto all   = pathIntegralMD(msghandler, pd, actmol->topology(), atomStart, x,
+                                      forceComp, sch, sch.seed(), files);
+    JsonTree   tree("Simulation with beads");
+    reportPathIntegral(msghandler, tops.size() > 1 ? "all compounds" : "the compound", all, &tree);
+    if (sch.monomers() && tops.size() < 2)
+    {
+        msghandler->msg(ACTStatus::Warning, "There is one compound, hence no binding energy (-monomers).");
+    }
+    else if (sch.monomers())
+    {
+        // Each compound alone, without files or wall, and with other random numbers
+        std::vector<PathIntegralResults> alone;
+        auto                             schAlone = sch;
+        schAlone.setWall(0, sch.kwall());
+        for(size_t f = 0; f < tops.size(); f++)
+        {
+            const std::vector<gmx::RVec> xf(x.begin() + atomStart[f], x.begin() + atomStart[f + 1]);
+            const std::vector<size_t>    one  = { 0, xf.size() };
+            const int                    seed = sch.seed() == 0 ? 0 : sch.seed() + 1 + static_cast<int>(f);
+            msghandler->write(gmx::formatString("\nCompound %zu alone.", f + 1));
+            alone.push_back(pathIntegralMD(msghandler, pd, &tops[f], one, xf, forceComp, schAlone, seed,
+                                           PathIntegralFiles()));
+            reportPathIntegral(msghandler, gmx::formatString("compound %zu", f + 1), alone.back(), &tree);
+        }
+        AverageError deltaH;
+        const auto   deltaU = bindingEnergy(all, alone, &deltaH);
+        msghandler->write(gmx::formatString("\nBinding at %g K with %d bead%s: the total energy of all compounds minus those of the compounds alone.",
+                                            all.temperature, all.nbeads, all.nbeads == 1 ? "" : "s"));
+        msghandler->write(gmx::formatString("  %-22s %14.4f +/- %.4f kJ/mol", "Energy", deltaU.average, deltaU.error));
+        msghandler->write(gmx::formatString("  %-22s %14.4f +/- %.4f kJ/mol", "Enthalpy", deltaH.average, deltaH.error));
+        JsonTree btree("Binding");
+        btree.addObject("Unit", std::string("kJ/mol"));
+        btree.addObject("Energy", deltaU.average);
+        btree.addObject("Enthalpy", deltaH.average);
+        btree.addObject("Standard error", deltaU.error);
+        tree.addObject(btree);
+        if (all.movedApart || all.wallFraction > 0)
+        {
+            msghandler->msg(ACTStatus::Warning,
+                            gmx::formatString("The compounds %s, they are not bound all the time at %g K. The binding energy then depends on the volume that the wall leaves them, and is not that of a bound cluster.",
+                                              all.movedApart ? "moved apart" : "reached the wall", all.temperature));
+        }
+    }
+    jtree->addObject(tree);
 }
 
 } // namespace
@@ -223,6 +312,11 @@ int runSimulate(MsgHandler                *msghandler,
         // The rerun keeps the force computer and the output environment
         auto rerun = *options.rerun;
         phase.next("Rerun");
+        if (sch.nbeads() > 0)
+        {
+            msghandler->msg(ACTStatus::Warning,
+                            "The energies of the structures of a trajectory are computed, there is no simulation with beads (-nbeads).");
+        }
         rerun.setFunctions(&forceComp, output.get());
         rerun.setEInteraction(actmol.fragmentHandler()->topologies().size() > 1);
         rerun.rerun(msghandler, &pd, &actmol, msghandler->verbose());
@@ -283,11 +377,19 @@ int runSimulate(MsgHandler                *msghandler,
         {
             phase.next("Molecular dynamics");
             // Start from the minimized coordinates, if we minimized
-            molhandler.simulate(msghandler, &pd, &actmol, xmin, &forceComp, sch,
-                                fileOrNull(options.trajectoryFile),
-                                fileOrNull(options.energyFile),
-                                output.get(),
-                                fileOrNull(options.progressFile));
+            if (sch.nbeads() > 0)
+            {
+                simulateWithBeads(msghandler, &pd, &actmol, xmin, &forceComp, sch, options,
+                                  output.get(), &jtree);
+            }
+            else
+            {
+                molhandler.simulate(msghandler, &pd, &actmol, xmin, &forceComp, sch,
+                                    fileOrNull(options.trajectoryFile),
+                                    fileOrNull(options.energyFile),
+                                    output.get(),
+                                    fileOrNull(options.progressFile));
+            }
         }
         phase.next("Output");
         auto confout = fileOrNull(options.confout);
@@ -365,6 +467,8 @@ int simulate(int argc, char *argv[])
         "a force field derived by the Alexandria Chemistry Toolkit.", 
         "The program can perform energy minimization and/or do a",
         "constant energy molecular dynamics simulation in vacuum.",
+        "With [TT]-nbeads[tt] the simulation is at the constant temperature",
+        "[TT]-temp[tt] instead, see below.",
         "In addition, a series of conformations (trajectory) may be",
         "submitted after which the energy per conformation is printed.[PAR]",
         "The input is given by a coordinate file, a force field file and",
@@ -383,7 +487,39 @@ int simulate(int argc, char *argv[])
         "given file each time the energies are written, with the step, the",
         "time, the temperature and the energies. The energy, trajectory and",
         "progress files are flushed a few times per second, such that",
-        "another program can follow the simulation while it runs."
+        "another program can follow the simulation while it runs.[PAR]",
+        "With [TT]-nbeads[tt] 1 the simulation is classical dynamics with a",
+        "Langevin thermostat. With more beads it is path integral molecular",
+        "dynamics: each atom is a ring polymer of beads, which gives the",
+        "nuclear quantum effects on the energies and the structure, such as",
+        "the zero point energy. Shells are relaxed and virtual sites are",
+        "constructed for each bead. The charges are those of the input",
+        "structure. The center of mass does not move, and [TT]-comm[tt] is not",
+        "used. Constraints cannot be used. The averages over the steps after",
+        "[TT]-equil[tt] are written to the log file, with standard errors from",
+        "eight blocks. Since the thermostat changes the dynamics, only the",
+        "averages have a meaning, not the time dependence.[PAR]",
+        "The energy file then has the energy terms averaged over the beads,",
+        "the kinetic energy from the centroid virial estimator (EKIN), which",
+        "includes the translation of the center of mass, their sum (ETOT), the",
+        "temperature of the momenta of the beads, the spread of the beads",
+        "around their centroids (RGYR, nm) and, for more than one compound, the",
+        "distance between the centers of mass of the compounds (DISTANCE, nm).",
+        "The trajectory has the centroids of the beads.[PAR]",
+        "In vacuum, compounds that move apart do not come back. A wall",
+        "([TT]-rwall[tt], [TT]-kwall[tt]) keeps them together. It acts on the",
+        "centers of mass and does not change the structure or orientation of",
+        "the compounds. For two compounds [TT]-hist[tt] gives the distribution",
+        "of the distance and the potential of mean force along it.[PAR]",
+        "With [TT]-monomers[tt] each compound is simulated alone as well, and",
+        "the binding energy is printed: the total energy of all compounds",
+        "together minus those of the compounds alone, and the enthalpy, which",
+        "has -kT in addition for each compound that binds. At low temperature",
+        "it is the binding energy with zero point motion, -D0. This has a",
+        "meaning only as long as the compounds stay together without the",
+        "wall: the program warns if they reach it. Please check the convergence",
+        "with the number of beads, which has to increase when the temperature",
+        "decreases."
     };
 
     std::vector<t_filenm>     fnm = {
@@ -394,7 +530,8 @@ int simulate(int argc, char *argv[])
         { efNDX, "-freeze",  "freeze",     ffOPTRD },
         { efXML, "-omp",     "molprop",    ffOPTWR },
         { efJSON, "-json",   "simulate",   ffOPTWR },
-        { efJSONL, "-progress", "progress", ffOPTWR }
+        { efJSONL, "-progress", "progress", ffOPTWR },
+        { efXVG, "-hist",    "distance",   ffOPTWR }
     };
     gmx_output_env_t         *oenv;
     SimulateOptions           options;
@@ -405,6 +542,7 @@ int simulate(int argc, char *argv[])
     };
     options.simulation.add_options(&pa, &fnm);
     options.simulation.add_MD_options(&pa);
+    options.simulation.add_bead_options(&pa);
     options.rerun.emplace(false);
     options.rerun->addOptions(&pa, &fnm, &desc);
     options.compounds.addOptions(&pa, &fnm, &desc);
@@ -443,7 +581,8 @@ int simulate(int argc, char *argv[])
         options.freezeFile   = optional("-freeze");
         options.molpropFile  = optional("-omp");
         options.jsonFile     = optional("-json");
-        options.progressFile = optional("-progress");
+        options.progressFile  = optional("-progress");
+        options.histogramFile = optional("-hist");
         return runSimulate(&msghandler, options, oenv, &cr);
     }
     catch (const gmx::InvalidInputError &ex)

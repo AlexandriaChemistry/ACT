@@ -193,3 +193,39 @@ The constraints are applied in energy minimization (*alexandria minimize* or *al
    :label: newtoncons
 
 where :math:`{\bf H}` is the second derivative matrix of the energy, :math:`{\bf F}` the forces, the rows of :math:`{\bf J}` are the derivatives of the constraints with respect to the coordinates and :math:`\boldsymbol{\mu}` are Lagrange multipliers. Since the steps close to the minimum are small, the constraints are satisfied to a relative tolerance of :math:`10^3` times the machine precision in minimization, rather than *-constr_toler*. Frozen atoms (option *-freeze*) are not moved by the constraints. A planar ring of which the angle constraints are not consistent with a planar ring, as discussed above, has to pucker during the minimization, which the L-BFGS and Newton algorithms may not achieve from an exactly planar starting structure. The steepest descent algorithm, or *-constrain bonds*, can be used instead.
+
+.. _sec-pimd:
+
+---------------------------------------
+Constant temperature and path integrals
+---------------------------------------
+
+.. index::
+   single: path integral molecular dynamics
+   single: ring polymer
+   single: thermostat
+   single: centroid virial estimator
+   single: wall
+
+With the option *-nbeads* the simulation is at the constant temperature :math:`T` of *-temp* instead of at constant energy. Each atom is a ring polymer of :math:`P` beads with the Hamiltonian of Eqn. :eq:`ringpolymer`, which is simulated at the temperature :math:`PT`. With one bead this is classical molecular dynamics with a Langevin thermostat. With more beads it is path integral molecular dynamics, in which the distribution of the beads is the quantum mechanical distribution of the atoms, without exchange of identical nuclei. This gives the nuclear quantum effects on energies and structures, such as the zero point energy, but not the dynamics: since the thermostat changes the motion, only averages have a meaning.
+
+A time step is
+
+.. math:: {\bf p} \leftarrow {\bf p} + \frac{\Delta t}{2}{\bf F},\quad \mbox{free ring polymer for } \frac{\Delta t}{2},\quad \mbox{thermostat for } \Delta t,\quad \mbox{free ring polymer for } \frac{\Delta t}{2},\quad {\bf p} \leftarrow {\bf p} + \frac{\Delta t}{2}{\bf F},
+   :label: baoab
+
+where the forces :math:`{\bf F}` of the force field are computed for all beads together after the positions have changed. The motion of the free ring polymer, the beads connected by their springs without the force field, is computed exactly in its normal modes, such that the time step is limited by the force field only, and by the highest frequency :math:`2Pk_BT/\hbar` of the springs: the program stops if the product of that frequency and the time step is more than 2. Each normal mode has a Langevin thermostat :cite:p:`Ceriotti2010a`. The modes in which the beads move with respect to each other are critically damped. The mode in which they move together, the centroid :math:`\bar{\bf q}_i = \frac{1}{P}\sum_k {\bf q}_{i,k}`, has the time constant *-tau*. The center of mass of the centroids does not move, the rotation is part of the thermal motion and is not removed, and the options *-comm* and *-nstcomm* are not used. Virtual sites are constructed and shells are relaxed for each bead. The shells start from their positions relative to their cores in the previous step. Constraints cannot be combined with beads.
+
+All beads start at the starting structure, the minimized one with *-minimize*. The first *-equil* steps, by default a tenth of the steps, are left out of the averages. The energy file has, every *-nstener* steps, the terms of the potential energy averaged over the beads, and the kinetic energy from the centroid virial estimator :cite:p:`Herman1982a,Cao1989a`
+
+.. math:: E_{kin} ~=~ \frac{3N}{2}k_BT - \frac{1}{2P}\sum_{k=1}^{P}\sum_{i=1}^{N} \left({\bf q}_{i,k}-\bar{\bf q}_i\right)\cdot{\bf F}_{i,k},
+   :label: centroidvirial
+
+for :math:`N` atoms with a mass. It includes the :math:`\frac{3}{2}k_BT` of the translation of the center of mass, although that does not move in the simulation, such that the sum of the potential and the kinetic energy, ETOT, is the energy of the compound or cluster in the gas phase. With one bead it is the classical :math:`\frac{3N}{2}k_BT` in every step. The temperature in the energy file is that of the momenta of the beads, divided by :math:`P`, for :math:`3NP-3` degrees of freedom. It fluctuates around :math:`T` and is not the kinetic energy above. Finally there is the spread of the beads (RGYR), the root of the mean squared distance of the beads of the atoms to their centroids. As for the induction energy in simulations at constant energy, the energy terms take one more energy calculation in the steps in which they are written if there are shells. The trajectory has the centroids.
+
+In vacuum, compounds that move apart do not come back. With *-rwall* a wall keeps them together. For two compounds with the distance :math:`R` between the centers of mass of their centroids it is the potential
+
+.. math:: U_w ~=~ \frac{k_w}{2}\left(R - r_w\right)^2 \quad\mbox{for}\quad R > r_w,
+   :label: fragmentwall
+
+and zero otherwise, with the radius :math:`r_w` of *-rwall* and the force constant :math:`k_w` of *-kwall*. For more than two compounds :math:`R` is the distance of the center of mass of each compound to that of all compounds, and :math:`U_w` is the sum over the compounds. The force on a compound is divided over its atoms in proportion to their masses, and each bead of an atom gets the same force, which corresponds to a term :math:`P\,U_w` in Eqn. :eq:`ringpolymer`. The wall therefore does not change the structure or the orientation of the compounds, nor the spread of the beads, and it does not contribute to Eqn. :eq:`centroidvirial`. Its energy is a separate column of the energy file (WALL) and is not part of the potential or the total energy. The distance :math:`R` is written as well (DISTANCE; for more than two compounds the largest one). Without a wall the program warns when the distance has increased by more than 1 nm.

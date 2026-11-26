@@ -417,6 +417,8 @@ The result is plotted in :numref:`fig-b2`.
 
 .. _Quasi-Random: https://en.wikipedia.org/wiki/Sobol_sequence
 
+.. _sec-b2-flexible:
+
 -------------------------------------
 Flexible molecules and path integrals
 -------------------------------------
@@ -450,6 +452,16 @@ The structures of the monomers are sampled at each temperature by path integral 
 Since the structures depend on the temperature, each temperature is a separate calculation, unlike for rigid molecules, where all temperatures use the same dimers. The log file gives for each temperature the average potential and kinetic energy of the monomers, the latter from the centroid virial estimator, and the spread of the beads. The second virial coefficient is given with a standard error, from eight independent parts of the orientations and structures. With quasi-random numbers or a grid of orientations the true error can be smaller.
 
 For the dimers no forces are needed, and the shells start from their positions in the monomers. Therefore a dimer of beads takes less time than a dimer of rigid molecules: for a polarizable water model 32 beads take about five times as long as rigid molecules at one temperature.
+
+.. index::
+   single: potential of mean force
+
+The average in Eqn. :eq:`b2pi`, and the corresponding one for rigid molecules, also gives the potential of mean force along the distance between the centers of mass,
+
+.. math:: W(r) = -k_B T \ln\left(1 + f(r)\right)
+   :label: b2pmf
+
+where :math:`f(r)` is the Mayer function, the average at the distance :math:`r` that is integrated for the second virial coefficient. The distribution of the distance in a dimer is proportional to :math:`r^2\exp\left[-W(r)/k_BT\right]`. With the option *-pmf* it is written for each temperature, and with *-nbeads* with its standard error from the eight parts. Distances where :math:`W` is more than :math:`27 k_BT` at one of the temperatures are left out, since :math:`1+f` is not known precisely there. At low temperature few orientations dominate the average and many dimers are needed. A simulation of the dimer itself, at one temperature, is described in :ref:`sec-simulate-beads`.
 
 
 .. figure:: ../images/TIP4P-b2.pdf

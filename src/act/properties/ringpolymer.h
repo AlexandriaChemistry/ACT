@@ -35,10 +35,13 @@
 #define ACT_RINGPOLYMER_H
 
 #include <cstddef>
+#include <functional>
+#include <map>
 #include <random>
 #include <utility>
 #include <vector>
 
+#include "act/basics/interactiontype.h"
 #include "act/basics/msg_handler.h"
 #include "act/forcefield/forcefield.h"
 #include "act/forces/forcecomputer.h"
@@ -113,6 +116,15 @@ struct RingPolymerAverages
     double gyrationSquared() const { return n > 0 ? gyration2/n : 0.0; }
 };
 
+/*! \brief A potential of the centroids of the atoms, in addition to the force field
+ *
+ * It gets the centroids, the averages over the beads, of all particles in
+ * nm, of which only those of particles with a mass are set, and returns
+ * the energy in kJ/mol and the forces on the centroids in kJ/mol nm. See
+ * RingPolymerSampler::setCentroidPotential.
+ */
+using CentroidPotential = std::function<double(const std::vector<gmx::DVec> &, std::vector<gmx::DVec> *)>;
+
 /*! \brief Path integral molecular dynamics of one molecule
  *
  * The quantum mechanical distribution of the atoms of a molecule at a
@@ -137,6 +149,13 @@ struct RingPolymerAverages
  * thermostat of the internal modes is critically damped, that of the
  * centroid has the time constant of the settings. The center of mass of
  * the centroid does not move.
+ *
+ * A potential of the centroids can be added, for instance a wall that
+ * keeps the compounds of a dimer together. With the energy U of the
+ * centroids \f$\bar{\bf q}\f$, the Hamiltonian of the ring polymer has the
+ * term \f$P U(\bar{\bf q})\f$ in addition, such that each bead of an atom gets
+ * the force on its centroid. This does not change the distribution of the
+ * beads around their centroid.
  */
 class RingPolymerSampler
 {
@@ -154,20 +173,32 @@ public:
                        const ForceComputer       *forceComp,
                        const RingPolymerSettings &settings);
 
+    /*! \brief Add a potential of the centroids to the force field
+     * Call it before start.
+     * \param[in] potential The potential, an empty one for none
+     */
+    void setCentroidPotential(CentroidPotential potential);
+
     /*! \brief Start with all beads at the same coordinates
      * The momenta are drawn from the Maxwell distribution.
-     * \param[in] msghandler For warnings and debugging, may be nullptr
-     * \param[in] x          The coordinates of all particles of the molecule
+     * \param[in] msghandler  For warnings and debugging, may be nullptr
+     * \param[in] x           The coordinates of all particles of the molecule
+     * \param[in] energyTerms Whether to compute the energy terms, see energyTerms()
      */
     void start(MsgHandler                   *msghandler,
-               const std::vector<gmx::RVec> &x);
+               const std::vector<gmx::RVec> &x,
+               bool                          energyTerms = false);
 
     /*! \brief Do a number of time steps
-     * \param[in] msghandler For warnings and debugging, may be nullptr
-     * \param[in] nsteps     The number of steps
+     * \param[in] msghandler  For warnings and debugging, may be nullptr
+     * \param[in] nsteps      The number of steps
+     * \param[in] energyTerms Whether to compute the energy terms in the last
+     *                        step, see energyTerms(). With shells this takes
+     *                        one more energy calculation.
      */
     void run(MsgHandler *msghandler,
-             int         nsteps);
+             int         nsteps,
+             bool        energyTerms = false);
 
     /*! \brief Sample configurations of the ring polymer
      * \param[in]  msghandler For warnings and debugging, may be nullptr
@@ -190,8 +221,28 @@ public:
     //! \return the number of beads
     size_t nbeads() const { return nbeads_; }
 
-    //! \return the potential energy in kJ/mol, the average over the beads
+    /*! \brief The potential energy of the force field
+     * \return the energy in kJ/mol, the average over the beads, without
+     *         the potential of the centroids
+     */
     double potentialEnergy() const;
+
+    //! \return the energy in kJ/mol of the potential of the centroids, see setCentroidPotential
+    double centroidEnergy() const { return ecentroid_; }
+
+    /*! \brief The energy terms of the present configuration
+     * As ForceComputer::compute gives them, with the induction energy
+     * with respect to the shells on their parent particles.
+     * \return the terms in kJ/mol, the averages over the beads. Empty,
+     *         unless they were asked for in start or in the last step of run.
+     */
+    const std::map<InteractionType, double> &energyTerms() const { return terms_; }
+
+    /*! \brief The centroids of all particles
+     * \param[out] x The averages over the beads of the coordinates in nm,
+     *               of the shells and virtual sites as well
+     */
+    void centroids(std::vector<gmx::DVec> *x) const;
 
     /*! \brief The centroid virial estimator of the kinetic energy
      * \f[ K = \frac{3N}{2}k_B T - \frac{1}{2P}\sum_{k=1}^P\sum_i
@@ -209,7 +260,8 @@ public:
     double gyration2() const;
 
     /*! \brief The Hamiltonian of the ring polymer
-     * \return \f$H_P\f$ in kJ/mol, which is conserved without thermostat
+     * \return \f$H_P\f$ in kJ/mol, which is conserved without thermostat,
+     *         with P times the potential of the centroids
      */
     double hamiltonian() const;
 
@@ -250,6 +302,14 @@ private:
     std::vector<double>                    qn_, pn_;
     //! Potential energy of each bead
     std::vector<double>                    epot_;
+    //! The potential of the centroids, may be empty
+    CentroidPotential                      centroidPotential_;
+    //! Its energy
+    double                                 ecentroid_ = 0;
+    //! The centroids of all particles and the forces on them, for the potential of the centroids
+    std::vector<gmx::DVec>                 xcentroid_, fcentroid_;
+    //! The energy terms, the averages over the beads, if they were computed
+    std::map<InteractionType, double>      terms_;
     //! The beads as conformations of the molecule, with all particles
     ConformationSet                        set_;
     //! Coordinates of one bead, kept to use the memory again
@@ -291,17 +351,21 @@ private:
     /*! \brief Compute the forces and energies of all beads
      * The shells move with their parents and are relaxed, the virtual
      * sites are constructed.
-     * \param[in] msghandler For warnings and debugging, may be nullptr
-     * \param[in] first      Whether these are the starting coordinates,
-     *                       then the shells start from their parents
+     * \param[in] msghandler  For warnings and debugging, may be nullptr
+     * \param[in] first       Whether these are the starting coordinates,
+     *                        then the shells start from their parents
+     * \param[in] energyTerms Whether to compute the energy terms
      */
     void computeForces(MsgHandler *msghandler,
-                       bool        first);
+                       bool        first,
+                       bool        energyTerms);
 
     /*! \brief Do one time step
-     * \param[in] msghandler For warnings and debugging, may be nullptr
+     * \param[in] msghandler  For warnings and debugging, may be nullptr
+     * \param[in] energyTerms Whether to compute the energy terms
      */
-    void step(MsgHandler *msghandler);
+    void step(MsgHandler *msghandler,
+              bool        energyTerms);
 };
 
 } // namespace alexandria

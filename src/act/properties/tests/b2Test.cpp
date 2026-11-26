@@ -33,9 +33,11 @@
 #include <cmath>
 #include <cstddef>
 #include <filesystem>
+#include <fstream>
 #include <gtest/gtest.h>
 #include <limits>
 #include <map>
+#include <sstream>
 #include <string>
 #include <utility>
 #include <vector>
@@ -345,6 +347,7 @@ TEST_F(SecondVirialWithoutCommandLineTest, NoB2FileWithoutTheOption)
     EXPECT_TRUE(std::filesystem::exists(dir / "b2.log"));
     EXPECT_FALSE(std::filesystem::exists(dir / "B2T.xvg"));
     EXPECT_FALSE(std::filesystem::exists(dir / "mayer.xvg"));
+    EXPECT_FALSE(std::filesystem::exists(dir / "pmf.xvg"));
     EXPECT_FALSE(std::filesystem::exists(dir / "b2.json"));
 }
 
@@ -640,6 +643,104 @@ TEST_F(SecondVirialFlexibleTest, QuantumArgon)
     EXPECT_LT(error, 0.5);
 }
 
+/*! \brief Read the rows of numbers of an xvg file
+ * \param[in] fileName The file
+ * \return the numbers of each row, without the comments and the legends
+ */
+static std::vector<std::vector<double>> xvgRows(const std::string &fileName)
+{
+    std::vector<std::vector<double>> rows;
+    std::ifstream                    in(fileName);
+    EXPECT_TRUE(in.good()) << "Cannot open " << fileName;
+    for (std::string line; std::getline(in, line); )
+    {
+        if (line.empty() || '#' == line[0] || '@' == line[0])
+        {
+            continue;
+        }
+        std::istringstream  iss(line);
+        std::vector<double> row;
+        for (double value; iss >> value; )
+        {
+            row.push_back(value);
+        }
+        rows.push_back(row);
+    }
+    return rows;
+}
+
+TEST_F(SecondVirialFlexibleTest, PotentialOfMeanForceArgon)
+{
+    // For two atoms the classical potential of mean force along their
+    // distance is the potential itself, at any temperature. With beads it
+    // is higher where the potential is curved upwards. The numbers are
+    // from an independent calculation for the buffered 14-7 potential of
+    // this force field: the potential, and with 16 beads at 80 K a path
+    // integral in which the ring polymer of the distance vector is drawn
+    // from its normal distribution, with errors below 1e-4 kJ/mol.
+    const std::vector<double> distance  = { 0.36, 0.40, 0.415, 0.5, 0.7 };
+    const std::vector<double> potential = { 0.47630, -1.56358, -1.57610, -0.72170, -0.07974 };
+    const std::vector<double> beads16   = { 0.53805, -1.54974, -1.56899, -0.72238, -0.07983 };
+    auto rigid = options("argon-pmf", "noble-halgren14-7.xml", 8);
+    rigid.compounds.setFileName(fileManager().getInputFilePath("molecules/argon#argon.pdb"));
+    rigid.rerun.setTemperatures(80, 100, 20);
+    rigid.rerun.gendimers()->setDistances(0.25, 1.5, 251);
+    rigid.rerun.gendimers()->finishSettings();
+    const auto rigidFile = fileManager().getTemporaryFilePath("argon-pmf-rigid.xvg");
+    rigid.rerun.setPmfFile(rigidFile);
+    auto beads      = rigid;
+    beads.jsonFile  = fileManager().getTemporaryFilePath("argon-pmf-beads.json");
+    beads.maxDimers = 2048;
+    beads.rerun.setTemperatures(80, 80, 10);
+    beads.rerun.setRingPolymers(16, 2000, 0.00025, 0.05, 2000, 100);
+    const auto beadsFile = fileManager().getTemporaryFilePath("argon-pmf-beads.xvg");
+    beads.rerun.setPmfFile(beadsFile);
+    (void) run(rigid);
+    (void) run(beads);
+    const auto find = [](const std::vector<std::vector<double>> &rows, double r)
+    {
+        for(const auto &row : rows)
+        {
+            if (std::abs(row[0] - r) < 1e-6)
+            {
+                return row;
+            }
+        }
+        ADD_FAILURE() << "No distance " << r;
+        return std::vector<double>(3, 0.0);
+    };
+    // The potential at 80 and at 100 K
+    const auto rrows = xvgRows(rigidFile);
+    ASSERT_GT(rrows.size(), 200U);
+    for(size_t i = 0; i < distance.size(); i++)
+    {
+        const auto row = find(rrows, distance[i]);
+        ASSERT_EQ(3U, row.size());
+        EXPECT_NEAR(potential[i], row[1], GMX_DOUBLE ? 2e-5 : 1e-3) << distance[i];
+        EXPECT_NEAR(potential[i], row[2], GMX_DOUBLE ? 2e-5 : 1e-3) << distance[i];
+    }
+    // Where the atoms overlap, with more than 27 kT, there are no values
+    EXPECT_GT(rrows[0][0], 0.25);
+    EXPECT_LT(rrows[0][0], 0.33);
+    EXPECT_LT(rrows[0][1], 27*BOLTZ*80);
+    EXPECT_GT(rrows[0][1], 15*BOLTZ*80);
+    EXPECT_NEAR(1.5, rrows.back()[0], 1e-6);
+    // With beads there is a standard error as well, of about 0.001 kJ/mol
+    // at the shortest of these distances and less beyond
+    const auto brows = xvgRows(beadsFile);
+    ASSERT_GT(brows.size(), 200U);
+    for(size_t i = 0; i < distance.size(); i++)
+    {
+        const auto row = find(brows, distance[i]);
+        ASSERT_EQ(3U, row.size());
+        EXPECT_NEAR(beads16[i], row[1], 0.012) << distance[i];
+        EXPECT_GT(row[2], 0.0) << distance[i];
+        EXPECT_LT(row[2], 0.01) << distance[i];
+    }
+    // The beads raise the potential of mean force on the repulsive side
+    EXPECT_GT(find(brows, 0.36)[1], potential[0] + 0.04);
+}
+
 TEST_F(SecondVirialFlexibleTest, CommandLine)
 {
     const auto common = [this](gmx::test::CommandLine *cmd, const std::string &label)
@@ -660,6 +761,7 @@ TEST_F(SecondVirialFlexibleTest, CommandLine)
         cmd->addOption("-json", fileManager().getTemporaryFilePath(label + ".json"));
         cmd->addOption("-b2", fileManager().getTemporaryFilePath(label + "-B2T.xvg"));
         cmd->addOption("-eh", fileManager().getTemporaryFilePath(label + "-mayer.xvg"));
+        cmd->addOption("-pmf", fileManager().getTemporaryFilePath(label + "-pmf.xvg"));
         cmd->addOption("-g", fileManager().getTemporaryFilePath(label + ".log"));
     };
     const auto total = [this](const std::string &label)
@@ -680,8 +782,9 @@ TEST_F(SecondVirialFlexibleTest, CommandLine)
     four.addOption("-nbeads", 4);
     ASSERT_EQ(0, b2(four.argc(), four.argv()));
     EXPECT_NE(total("four"), total("one"));
-    // The files with the total, its error and the Mayer function
-    for(const auto &file : { "four-B2T.xvg", "four-mayer.xvg" })
+    // The files with the total, its error, the Mayer function and the
+    // potential of mean force
+    for(const auto &file : { "four-B2T.xvg", "four-mayer.xvg", "four-pmf.xvg" })
     {
         const auto text = textWithoutComments(fileManager().getTemporaryFilePath(file));
         EXPECT_FALSE(text.empty()) << file;
