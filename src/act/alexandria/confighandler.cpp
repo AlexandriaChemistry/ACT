@@ -522,7 +522,7 @@ void SimulationConfigHandler::add_MD_options(std::vector<t_pargs> *pargs)
         { "-ws",     FALSE, etBOOL, {&writeShells_},
           "Write coordinates of shell particles to trajectory and final coordinates as well." },
         { "-temp",    FALSE, etREAL, {&temperature_},
-          "Initial simulation temperature (K). If larger than zero, initial velocites will be generated from a Maxwellian distribution at the given temperature." },
+          "Initial simulation temperature (K). If larger than zero, initial velocites will be generated from a Maxwellian distribution at the given temperature. With [TT]-nbeads[tt] it is the temperature of the whole simulation." },
         { "-seed",    FALSE, etINT, {&seed_},
           "Random number seed for generating velocities, 0 to make a new one each time." },
         { "-nstxout", FALSE, etINT, {&nstxout_},
@@ -537,6 +537,28 @@ void SimulationConfigHandler::add_MD_options(std::vector<t_pargs> *pargs)
           "Number of steps between removing the motion of the center of mass. It is always removed from the initial velocities, 0 means only then." }
     };
     for(auto &i : MDextra)
+    {
+        pargs->push_back(i);
+    }
+}
+
+void SimulationConfigHandler::add_bead_options(std::vector<t_pargs> *pargs)
+{
+    const std::vector<t_pargs> beads = {
+        { "-nbeads", FALSE, etINT, {&nbeads_},
+          "Number of beads for a simulation at the constant temperature [TT]-temp[tt]. With 0 the simulation is at constant energy. With 1 it is classical dynamics with a Langevin thermostat. With more beads it is path integral molecular dynamics, in which each atom is a ring polymer of this number of beads, which gives the nuclear quantum effects on energies and structures. For water at room temperature 32 beads are needed, and more at lower temperatures." },
+        { "-tau", FALSE, etREAL, {&tau_},
+          "Time constant (ps) of the thermostat of the centroids of the beads, with [TT]-nbeads[tt]. The other modes of the ring polymers are critically damped." },
+        { "-equil", FALSE, etINT, {&nequil_},
+          "Number of steps at the start that are left out of the averages, with [TT]-nbeads[tt]. With -1 this is a tenth of the steps." },
+        { "-rwall", FALSE, etREAL, {&rwall_},
+          "Radius (nm) of a wall that keeps the compounds together, with [TT]-nbeads[tt]. With two compounds it acts on the distance between their centers of mass, with more on the distance of each compound to the center of mass of all. 0 means no wall." },
+        { "-kwall", FALSE, etREAL, {&kwall_},
+          "Force constant (kJ/mol nm^2) of the wall, which is harmonic beyond [TT]-rwall[tt]." },
+        { "-monomers", FALSE, etBOOL, {&monomers_},
+          "With [TT]-nbeads[tt], simulate each compound alone as well and print the binding energy, the energy of all compounds together minus those of the separate compounds." }
+    };
+    for(auto &i : beads)
     {
         pargs->push_back(i);
     }
@@ -587,7 +609,11 @@ void SimulationConfigHandler::validate() const
         { "-kfbpr", kFBPR_, true },
         { "-r0fbpr", r0FBPR_, true },
         { "-constr_maxiter", static_cast<double>(constraintMaxIter_), true },
-        { "-constr_toler", constraintTolerance_, false }
+        { "-constr_toler", constraintTolerance_, false },
+        { "-nbeads", static_cast<double>(nbeads_), true },
+        { "-tau", tau_, false },
+        { "-rwall", rwall_, true },
+        { "-kwall", kwall_, true }
     };
     for (const auto &limit : limits)
     {
@@ -596,6 +622,42 @@ void SimulationConfigHandler::validate() const
             GMX_THROW(gmx::InvalidInputError(gmx::formatString("The value %g of %s should be %s", limit.value,
                                                                limit.option,
                                                                limit.zeroAllowed ? "zero or more" : "more than zero")));
+        }
+    }
+    if (nequil_ < -1)
+    {
+        GMX_THROW(gmx::InvalidInputError(gmx::formatString("The value %d of -equil should be zero or more, or -1 for a tenth of the steps", nequil_)));
+    }
+    if (0 == nbeads_)
+    {
+        // What needs beads
+        if (rwall_ > 0)
+        {
+            GMX_THROW(gmx::InvalidInputError("The wall (-rwall) is only there in simulations at constant temperature, please use -nbeads as well"));
+        }
+        if (monomers_)
+        {
+            GMX_THROW(gmx::InvalidInputError("The binding energy (-monomers) needs a simulation at constant temperature, please use -nbeads as well"));
+        }
+    }
+    else if (nsteps_ > 0)
+    {
+        // What a simulation with beads needs and cannot do
+        if (temperature_ <= 0)
+        {
+            GMX_THROW(gmx::InvalidInputError(gmx::formatString("The value %g of -temp should be more than zero with -nbeads", temperature_)));
+        }
+        if (ConstraintType::No != constrain_)
+        {
+            GMX_THROW(gmx::InvalidInputError("Constraints (-constrain) cannot be combined with -nbeads"));
+        }
+        if (nstvout_ > 0)
+        {
+            GMX_THROW(gmx::InvalidInputError("Velocities (-nstvout) are not written with -nbeads, since they are those of the thermostat"));
+        }
+        if (nequil() >= nsteps_)
+        {
+            GMX_THROW(gmx::InvalidInputError(gmx::formatString("The value %d of -equil should be less than the number of steps %d (-nsteps)", nequil(), nsteps_)));
         }
     }
 }

@@ -574,6 +574,18 @@ private:
     COMMRemoval        commRemoval_          = COMMRemoval::Angular;
     //! Number of steps between removing the motion of the center of mass
     int                nstcomm_              = 100;
+    //! Number of beads of the ring polymers, 0 for molecular dynamics at constant energy
+    int                nbeads_               = 0;
+    //! Time constant (ps) of the thermostat of the centroids of the ring polymers
+    real               tau_                  = 0.05;
+    //! Number of steps left out of the averages, -1 for a tenth of the steps
+    int                nequil_               = -1;
+    //! Radius (nm) of the wall that keeps the fragments together, zero for no wall
+    real               rwall_                = 0;
+    //! Force constant (kJ/mol nm^2) of the wall
+    real               kwall_                = 1000;
+    //! Whether to simulate the fragments as well, for the binding energy
+    bool               monomers_             = false;
     //! Whether the warning that the force tolerance is too strict was given, see toleranceWarning
     mutable bool       toleranceWarned_      = false;
     /*! \brief The choices of the enumerated options, as the command line
@@ -592,6 +604,12 @@ public:
      * @param pargs     pointer to arguments vector
      */
     void add_MD_options(std::vector<t_pargs> *pargs);
+
+    /*! \brief Add the command-line arguments for simulations with ring
+     * polymers at constant temperature, see RingPolymerSampler
+     * \param[inout] pargs Pointer to arguments vector
+     */
+    void add_bead_options(std::vector<t_pargs> *pargs);
 
     /*! \brief Add the command-line arguments for energy minimization
      * \param[inout] pargs       Pointer to arguments vector
@@ -661,6 +679,52 @@ public:
     
     //! \return MD integration time step (ps)
     double deltat() const { return deltat_; }
+
+    //! \return the number of beads of the ring polymers, 0 for molecular dynamics at constant energy
+    int nbeads() const { return nbeads_; }
+
+    //! \return the time constant (ps) of the thermostat of the centroids of the ring polymers
+    double tau() const { return tau_; }
+
+    //! \return the number of steps at the start that are left out of the averages
+    int nequil() const { return nequil_ < 0 ? nsteps_/10 : nequil_; }
+
+    /*! \brief Set what a simulation with ring polymers needs, for a program without a command line
+     * \param[in] nbeads The number of beads, 0 for molecular dynamics at constant
+     *                   energy, 1 for classical dynamics at constant temperature
+     * \param[in] tau    The time constant in ps of the thermostat of the centroids
+     * \param[in] nequil The number of steps left out of the averages, -1 for a tenth of the steps
+     */
+    void setBeads(int nbeads, double tau, int nequil)
+    {
+        nbeads_ = nbeads;
+        tau_    = tau;
+        nequil_ = nequil;
+    }
+
+    //! \return the radius (nm) of the wall that keeps the fragments together, zero for no wall
+    double rwall() const { return rwall_; }
+
+    //! \return the force constant (kJ/mol nm^2) of the wall
+    double kwall() const { return kwall_; }
+
+    /*! \brief Set the wall that keeps the fragments together in a simulation with ring polymers
+     * \param[in] radius        The radius in nm, zero for no wall
+     * \param[in] forceConstant The force constant in kJ/mol nm^2
+     */
+    void setWall(double radius, double forceConstant)
+    {
+        rwall_ = radius;
+        kwall_ = forceConstant;
+    }
+
+    //! \return whether to simulate the fragments as well, for the binding energy
+    bool monomers() const { return monomers_; }
+
+    /*! \brief Set whether to simulate the fragments as well
+     * \param[in] monomers Whether to do so
+     */
+    void setMonomers(bool monomers) { monomers_ = monomers; }
     
     //! \return number of steps between coordinate output
     int nstxout() const { return nstxout_; }

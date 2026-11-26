@@ -1632,6 +1632,608 @@ TEST_F(SimulateTest, MinimizeToolMissingMolecule)
     EXPECT_EQ(1, minimize(cmd.argc(), cmd.argv()));
 }
 
+// Simulations at constant temperature with beads, -nbeads. The random
+// numbers of the thermostat differ between standard libraries, so the
+// results are compared with independent calculations within their
+// statistical errors, and not with reference data.
+
+class SimulateBeadsTest : public SimulateTest
+{
+protected:
+    /*! \brief Make a command line for a pair of noble gas atoms in a wall
+     * The wall has a radius of 0.8 nm and a force constant of 1000 kJ/mol nm^2.
+     * \param[in]  molFile The pair in src/act/testdata/molecules
+     * \param[in]  label   Unique label for the output files
+     * \param[out] files   The output file names
+     * \param[in]  nbeads  The number of beads
+     * \param[in]  T       The temperature
+     * \param[in]  nsteps  The number of steps
+     * \return The command line
+     */
+    gmx::test::CommandLine pairCommand(const std::string &molFile,
+                                       const std::string &label,
+                                       SimulateFiles     *files,
+                                       int                nbeads,
+                                       double             T,
+                                       int                nsteps)
+    {
+        auto cmd = baseCommand(molFile, label, files,
+                               alexandriaFile("forcefields/noble-halgren14-7.xml"));
+        cmd.addOption("-nbeads", nbeads);
+        cmd.addOption("-temp", T);
+        cmd.addOption("-nsteps", nsteps);
+        cmd.addOption("-deltat", 0.005);
+        cmd.addOption("-tau", 1.0);
+        cmd.addOption("-rwall", 0.8);
+        cmd.addOption("-kwall", 1000.0);
+        cmd.addOption("-nstener", 0);
+        cmd.addOption("-nstxout", 0);
+        cmd.addOption("-seed", 1993);
+        return cmd;
+    }
+
+    /*! \brief Run simulate and read the results of the simulation with beads
+     * \param[in] cmd   The command line, the JSON file is added
+     * \param[in] label Unique label for the JSON file
+     * \return what the JSON file has for the simulation with beads
+     */
+    nlohmann::json runBeads(gmx::test::CommandLine *cmd, const std::string &label)
+    {
+        const auto json = fileManager().getTemporaryFilePath(label + ".json");
+        cmd->addOption("-json", json);
+        EXPECT_EQ(0, run(cmd));
+        std::ifstream in(json);
+        if (!in.good())
+        {
+            ADD_FAILURE() << "Cannot open " << json;
+            return {};
+        }
+        const auto        tree = nlohmann::json::parse(in);
+        const std::string key("Simulation with beads");
+        if (!tree.contains("simulate") || !tree["simulate"].contains(key))
+        {
+            ADD_FAILURE() << "No simulation with beads in " << json;
+            return {};
+        }
+        return tree["simulate"][key];
+    }
+
+    //! \return the average of a quantity in the results of a simulation with beads
+    static double average(const nlohmann::json &results, const std::string &quantity)
+    {
+        if (!results.contains(quantity) || !results[quantity].contains("Average"))
+        {
+            ADD_FAILURE() << "No " << quantity << " in " << results.dump();
+            return 0;
+        }
+        return results[quantity]["Average"].get<double>();
+    }
+
+    //! \return the standard error of a quantity in the results of a simulation with beads
+    static double error(const nlohmann::json &results, const std::string &quantity)
+    {
+        if (!results.contains(quantity) || !results[quantity].contains("Standard error"))
+        {
+            ADD_FAILURE() << "No error of " << quantity << " in " << results.dump();
+            return 0;
+        }
+        return results[quantity]["Standard error"].get<double>();
+    }
+
+    /*! \brief Check that simulate refuses a command line
+     * \param[in] cmd  The command line
+     * \param[in] what What is wrong with it
+     */
+    void expectRefused(gmx::test::CommandLine *cmd, const std::string &what)
+    {
+        EXPECT_EQ(1, run(cmd)) << what;
+    }
+};
+
+TEST_F(SimulateBeadsTest, ArgonPairInWall)
+{
+    // Two argon atoms with the buffered 14-7 potential at 80 K, kept
+    // together by a wall on their distance R. Classically the distribution
+    // of R is R^2 times the Boltzmann factor of the potential and the wall,
+    // which gives by quadrature <R> = 0.5610 nm, <V> = -0.6962 kJ/mol,
+    // 45.98 % of R below 0.5 nm and 6.34 % beyond the wall.
+    const double kT = BOLTZ*80;
+    {
+        SimulateFiles files;
+        auto cmd = pairCommand("argon#argon.pdb", "argon-1", &files, 1, 80, 1000000);
+        const auto hist = fileManager().getTemporaryFilePath("argon-1-hist.xvg");
+        cmd.addOption("-hist", hist);
+        const auto res = runBeads(&cmd, "argon-1");
+        ASSERT_TRUE(res.contains("all compounds")) << res.dump();
+        const auto &all = res["all compounds"];
+        EXPECT_EQ(1, all["Beads"].get<int>());
+        EXPECT_EQ(900000, all["Steps"].get<int>());
+        // The standard error of the distance is about 0.005 nm
+        EXPECT_NEAR(0.5610, average(all, "Distance"), 0.03);
+        EXPECT_NEAR(-0.6962, average(all, "Potential energy"), 0.08);
+        EXPECT_NEAR(0.0634, all["Fraction at the wall"].get<double>(), 0.025);
+        // One bead has the classical kinetic energy, 3 kT for two atoms,
+        // and no spread
+        EXPECT_NEAR(3*kT, average(all, "Kinetic energy"), 1e-9);
+        EXPECT_EQ(0.0, average(all, "Spread of the beads"));
+        EXPECT_GT(error(all, "Distance"), 0.0);
+        EXPECT_LT(error(all, "Distance"), 0.02);
+        // The histogram of the distance is a probability density, and the
+        // potential of mean force is the potential plus a constant:
+        // V(0.501) - V(0.415) = 0.8615 kJ/mol
+        const auto xvg = readXvg(hist);
+        ASSERT_EQ(2U, xvg.legends.size());
+        ASSERT_GT(xvg.rows.size(), 100U);
+        double total = 0, below = 0, wmin = 1e9, w415 = 0, w501 = 0;
+        for(const auto &row : xvg.rows)
+        {
+            ASSERT_EQ(3U, row.size());
+            total += row[1]*0.002;
+            below += (row[0] < 0.5) ? row[1]*0.002 : 0.0;
+            wmin   = std::min(wmin, row[2]);
+            if (std::abs(row[0] - 0.415) < 1e-6)
+            {
+                w415 = row[2];
+            }
+            if (std::abs(row[0] - 0.501) < 1e-6)
+            {
+                w501 = row[2];
+            }
+        }
+        EXPECT_NEAR(1.0, total, 1e-4);
+        EXPECT_NEAR(0.4598, below, 0.06);
+        EXPECT_EQ(0.0, wmin);
+        EXPECT_NEAR(0.8615, w501 - w415, 0.25);
+        // No energy file and no trajectory were asked for
+        EXPECT_FALSE(fileNotEmpty(files.trajectory));
+    }
+    {
+        // With 16 beads an independent path integral, in which the ring
+        // polymer of the distance vector is drawn from its normal
+        // distribution, gives <R> = 0.5618 nm, <V> = -0.68995 kJ/mol and a
+        // kinetic energy of 1.99875 kJ/mol, 0.0033 more than 3 kT
+        SimulateFiles files;
+        auto cmd = pairCommand("argon#argon.pdb", "argon-16", &files, 16, 80, 300000);
+        const auto res = runBeads(&cmd, "argon-16");
+        ASSERT_TRUE(res.contains("all compounds")) << res.dump();
+        const auto &all = res["all compounds"];
+        EXPECT_EQ(16, all["Beads"].get<int>());
+        // The standard error of the distance is about 0.01 nm
+        EXPECT_NEAR(0.5618, average(all, "Distance"), 0.05);
+        EXPECT_NEAR(-0.68995, average(all, "Potential energy"), 0.2);
+        EXPECT_NEAR(1.99875, average(all, "Kinetic energy"), 0.0012);
+        EXPECT_GT(average(all, "Kinetic energy"), 3*kT + 0.002);
+        EXPECT_NEAR(average(all, "Potential energy") + average(all, "Kinetic energy"),
+                    average(all, "Total energy"), 1e-9);
+        // The beads of argon at 80 K are spread over 6 pm
+        EXPECT_NEAR(0.0061, average(all, "Spread of the beads"), 0.0005);
+    }
+}
+
+TEST_F(SimulateBeadsTest, HeliumPairQuantum)
+{
+    // Two helium atoms at 20 K in the same wall. Classically
+    // <R> = 0.5929 nm and <V> = -0.07122 kJ/mol. With 16 beads the
+    // independent path integral gives <R> = 0.6080 nm, <V> = -0.05651
+    // kJ/mol and a kinetic energy of 0.50714 kJ/mol, where 3 kT is 0.49887:
+    // the atoms avoid each other.
+    const double kT = BOLTZ*20;
+    double       vclass = 0;
+    {
+        SimulateFiles files;
+        auto cmd = pairCommand("helium#helium.pdb", "helium-1", &files, 1, 20, 600000);
+        const auto res = runBeads(&cmd, "helium-1");
+        ASSERT_TRUE(res.contains("all compounds")) << res.dump();
+        const auto &all = res["all compounds"];
+        EXPECT_NEAR(0.5929, average(all, "Distance"), 0.03);
+        EXPECT_NEAR(-0.07122, average(all, "Potential energy"), 0.015);
+        EXPECT_NEAR(3*kT, average(all, "Kinetic energy"), 1e-9);
+        vclass = average(all, "Potential energy");
+    }
+    {
+        SimulateFiles files;
+        auto cmd = pairCommand("helium#helium.pdb", "helium-16", &files, 16, 20, 400000);
+        const auto res = runBeads(&cmd, "helium-16");
+        ASSERT_TRUE(res.contains("all compounds")) << res.dump();
+        const auto &all = res["all compounds"];
+        EXPECT_NEAR(0.6080, average(all, "Distance"), 0.03);
+        // The standard errors are about 0.0015 and 0.0004 kJ/mol
+        EXPECT_NEAR(-0.05651, average(all, "Potential energy"), 0.008);
+        EXPECT_NEAR(0.50714, average(all, "Kinetic energy"), 0.002);
+        EXPECT_GT(average(all, "Potential energy"), vclass);
+    }
+}
+
+TEST_F(SimulateBeadsTest, OneBeadIsClassical)
+{
+    // Water with a thermostat: the kinetic energy that is written is the
+    // classical 9/2 kT in every step, and the momenta have the temperature
+    // for the 6 degrees of freedom that are left without the translation
+    SimulateFiles files;
+    auto cmd = baseCommand("water-3-oep.log.pdb", "one-bead", &files);
+    cmd.addOption("-minimize");
+    cmd.addOption("-nbeads", 1);
+    cmd.addOption("-temp", 300.0);
+    cmd.addOption("-nsteps", 60000);
+    cmd.addOption("-deltat", 0.00025);
+    cmd.addOption("-tau", 0.01);
+    cmd.addOption("-equil", 2000);
+    cmd.addOption("-nstener", 20);
+    cmd.addOption("-nstxout", 0);
+    cmd.addOption("-seed", 1993);
+    const auto res = runBeads(&cmd, "one-bead");
+    ASSERT_TRUE(res.contains("the compound")) << res.dump();
+    const auto &one = res["the compound"];
+    EXPECT_EQ(58000, one["Steps"].get<int>());
+    EXPECT_FALSE(one.contains("Distance"));
+    const auto xvg = readXvg(files.energy);
+    ASSERT_EQ(3000U, xvg.rows.size());
+    const int cEkin = xvg.column("EKIN");
+    const int cEtot = xvg.column("ETOT");
+    const int cEpot = xvg.column("EPOT");
+    const int cTemp = xvg.column("TEMPERATURE");
+    const int cRgyr = xvg.column("RGYR");
+    ASSERT_GT(cEkin, 0);
+    ASSERT_GT(cEtot, 0);
+    ASSERT_GT(cEpot, 0);
+    ASSERT_GT(cTemp, 0);
+    ASSERT_GT(cRgyr, 0);
+    // One compound: no wall and no distance
+    EXPECT_EQ(-1, xvg.column("WALL"));
+    EXPECT_EQ(-1, xvg.column("DISTANCE"));
+    double temp = 0, epot = 0;
+    for(const auto &row : xvg.rows)
+    {
+        EXPECT_NEAR(4.5*BOLTZ*300, row[cEkin], 2e-5);
+        EXPECT_NEAR(row[cEpot] + row[cEkin], row[cEtot], 2e-5);
+        EXPECT_EQ(0.0, row[cRgyr]);
+        temp += row[cTemp]/xvg.rows.size();
+        epot += row[cEpot]/xvg.rows.size();
+    }
+    // The temperature of one configuration fluctuates by 170 K, the
+    // standard error of the average is about 6 K
+    EXPECT_NEAR(300, temp, 30);
+    // Three vibrations with kT/2 of potential energy each, above the minimum
+    EXPECT_NEAR(1.5*BOLTZ*300, epot - xvg.rows[0][cEpot], 0.3*1.5*BOLTZ*300);
+    // The energy terms are averaged over the energies written after the equilibration
+    ASSERT_TRUE(one.contains("Energy terms") && one["Energy terms"].contains("EPOT")) << one.dump();
+    EXPECT_NEAR(average(one, "Potential energy"), one["Energy terms"]["EPOT"]["Average"].get<double>(),
+                0.3*1.5*BOLTZ*300);
+}
+
+TEST_F(SimulateBeadsTest, OutputFilesAndBinding)
+{
+    // A water dimer with shells and four beads in a wall that it does not reach
+    SimulateFiles files;
+    auto cmd = baseCommand("water_dimer.pdb", "beads-files", &files,
+                           alexandriaFile("forcefields/SWM4-NDP.xml"));
+    const auto progress = fileManager().getTemporaryFilePath("beads-progress.jsonl");
+    const auto hist     = fileManager().getTemporaryFilePath("beads-hist.xvg");
+    cmd.addOption("-minimize");
+    cmd.addOption("-nbeads", 4);
+    cmd.addOption("-temp", 100.0);
+    cmd.addOption("-nsteps", 400);
+    cmd.addOption("-deltat", 0.00025);
+    cmd.addOption("-nstener", 10);
+    cmd.addOption("-nstxout", 100);
+    cmd.addOption("-seed", 1993);
+    cmd.addOption("-rwall", 0.6);
+    cmd.addOption("-monomers");
+    cmd.addOption("-progress", progress);
+    cmd.addOption("-hist", hist);
+    const auto res = runBeads(&cmd, "beads-files");
+    ASSERT_TRUE(res.contains("all compounds") && res.contains("compound 1") &&
+                res.contains("compound 2") && res.contains("Binding")) << res.dump();
+    const auto &all = res["all compounds"];
+    // A tenth of the steps is equilibration
+    EXPECT_EQ(360, all["Steps"].get<int>());
+    EXPECT_EQ(0.0, all["Fraction at the wall"].get<double>());
+    EXPECT_FALSE(all.contains("Moved apart"));
+    EXPECT_NEAR(0.29, average(all, "Distance"), 0.03);
+    EXPECT_FALSE(res["compound 1"].contains("Distance"));
+    EXPECT_FALSE(res["compound 1"].contains("Fraction at the wall"));
+    // The binding energy from the three simulations
+    double deltaU = (average(all, "Total energy") - average(res["compound 1"], "Total energy") -
+                     average(res["compound 2"], "Total energy"));
+    EXPECT_NEAR(deltaU, res["Binding"]["Energy"].get<double>(), 1e-9);
+    EXPECT_NEAR(deltaU - BOLTZ*100, res["Binding"]["Enthalpy"].get<double>(), 1e-6);
+    EXPECT_GT(res["Binding"]["Standard error"].get<double>(), 0.0);
+    // The water molecules bind
+    EXPECT_LT(deltaU, -5);
+    EXPECT_GT(deltaU, -40);
+
+    // The energy file
+    const auto xvg = readXvg(files.energy);
+    ASSERT_EQ(40U, xvg.rows.size());
+    for(const std::string name : { "BONDS", "INDUCTION", "EPOT", "WALL", "EKIN", "ETOT",
+                                   "TEMPERATURE", "RGYR", "DISTANCE" })
+    {
+        ASSERT_GT(xvg.column(name), 0) << name;
+    }
+    EXPECT_EQ("DISTANCE", xvg.legends.back());
+    double induction = 0;
+    for(const auto &row : xvg.rows)
+    {
+        EXPECT_NEAR(row[xvg.column("EPOT")] + row[xvg.column("EKIN")], row[xvg.column("ETOT")], 2e-5);
+        EXPECT_EQ(0.0, row[xvg.column("WALL")]);
+        EXPECT_NEAR(0.29, row[xvg.column("DISTANCE")], 0.03);
+        induction += row[xvg.column("INDUCTION")]/xvg.rows.size();
+    }
+    // All beads start at the minimum, and spread
+    EXPECT_EQ(0.0, xvg.rows[0][xvg.column("RGYR")]);
+    EXPECT_GT(xvg.rows.back()[xvg.column("RGYR")], 0.005);
+    EXPECT_LT(induction, 0);
+
+    // The trajectory has the centroids of the atoms, four frames of six atoms
+    const auto frames = readPdbFrames(files.trajectory);
+    ASSERT_EQ(4U, frames.size());
+    for(const auto &frame : frames)
+    {
+        EXPECT_EQ(6U, frame.size());
+    }
+
+    // The progress file, as without beads, and with the beads in addition
+    std::ifstream               in(progress);
+    ASSERT_TRUE(in.good()) << "Cannot open " << progress;
+    std::vector<nlohmann::json> lines;
+    for (std::string line; std::getline(in, line); )
+    {
+        const auto js = nlohmann::json::parse(line, nullptr, false);
+        ASSERT_TRUE(js.is_object()) << "Not a JSON object: " << line;
+        lines.push_back(js);
+    }
+    ASSERT_EQ(xvg.rows.size(), lines.size());
+    for (size_t i = 0; i < lines.size(); i++)
+    {
+        const auto &js = lines[i];
+        EXPECT_EQ(static_cast<int>(10*i), js["step"].get<int>());
+        EXPECT_EQ(400, js["nsteps"].get<int>());
+        EXPECT_EQ(4, js["beads"].get<int>());
+        EXPECT_EQ("nm", js["gyration"]["unit"].get<std::string>());
+        EXPECT_NEAR(xvg.rows[i][xvg.column("RGYR")], js["gyration"]["value"].get<double>(), 1e-6);
+        EXPECT_NEAR(xvg.rows[i][xvg.column("DISTANCE")], js["distance"]["value"].get<double>(), 1e-6);
+        EXPECT_NEAR(xvg.rows[i][xvg.column("TEMPERATURE")], js["temperature"]["value"].get<double>(), 1e-4);
+        for (const std::string term : { "EPOT", "EKIN", "ETOT", "WALL", "INDUCTION" })
+        {
+            ASSERT_TRUE(js["energies"].contains(term)) << term;
+            EXPECT_NEAR(xvg.rows[i][xvg.column(term)], js["energies"][term].get<double>(), 1e-4) << term;
+        }
+    }
+
+    // The histogram of the distance
+    const auto hxvg = readXvg(hist);
+    ASSERT_FALSE(hxvg.rows.empty());
+    double total = 0;
+    for(const auto &row : hxvg.rows)
+    {
+        total += row[1]*0.002;
+    }
+    EXPECT_NEAR(1.0, total, 1e-4);
+}
+
+TEST_F(SimulateBeadsTest, VirtualSites)
+{
+    // A water dimer with virtual sites runs, and has no file that was not asked for
+    SimulateFiles files;
+    auto cmd = baseCommand("water_dimer.pdb", "beads-vsites", &files,
+                           alexandriaFile("forcefields/TIP5P.xml"));
+    cmd.addOption("-minimize");
+    cmd.addOption("-nbeads", 8);
+    cmd.addOption("-temp", 100.0);
+    cmd.addOption("-nsteps", 400);
+    cmd.addOption("-deltat", 0.00025);
+    cmd.addOption("-nstener", 20);
+    cmd.addOption("-seed", 1993);
+    std::remove("distance.xvg");
+    const auto res = runBeads(&cmd, "beads-vsites");
+    ASSERT_TRUE(res.contains("all compounds")) << res.dump();
+    EXPECT_FALSE(res.contains("Binding"));
+    EXPECT_FALSE(res["all compounds"].contains("Fraction at the wall"));
+    EXPECT_NEAR(0.28, average(res["all compounds"], "Distance"), 0.03);
+    EXPECT_FALSE(std::ifstream("distance.xvg").good());
+    const auto xvg = readXvg(files.energy);
+    ASSERT_EQ(20U, xvg.rows.size());
+    // No wall, no column for it
+    EXPECT_EQ(-1, xvg.column("WALL"));
+    EXPECT_GT(xvg.column("DISTANCE"), 0);
+    // The trajectory has the atoms only
+    const auto frames = readPdbFrames(files.trajectory);
+    ASSERT_EQ(400U, frames.size());
+    EXPECT_EQ(6U, frames[0].size());
+}
+
+TEST_F(SimulateBeadsTest, Reproducible)
+{
+    std::vector<SimulateFiles> files(3);
+    for(int i = 0; i < 3; i++)
+    {
+        auto cmd = baseCommand("water_dimer.pdb", "beads-repro" + std::to_string(i), &files[i]);
+        cmd.addOption("-nbeads", 4);
+        cmd.addOption("-temp", 100.0);
+        cmd.addOption("-nsteps", 100);
+        cmd.addOption("-nstener", 10);
+        cmd.addOption("-nstxout", 50);
+        cmd.addOption("-seed", i < 2 ? 7 : 8);
+        ASSERT_EQ(0, run(&cmd));
+    }
+    EXPECT_EQ(textWithoutComments(files[0].energy), textWithoutComments(files[1].energy));
+    EXPECT_EQ(textWithoutComments(files[0].trajectory), textWithoutComments(files[1].trajectory));
+    EXPECT_NE(textWithoutComments(files[0].energy), textWithoutComments(files[2].energy));
+}
+
+TEST_F(SimulateBeadsTest, WithoutCommandLineSameAsTheProgram)
+{
+    SimulateFiles files;
+    auto cmd = baseCommand("water_dimer.pdb", "beads-tool", &files);
+    cmd.addOption("-nbeads", 4);
+    cmd.addOption("-temp", 100.0);
+    cmd.addOption("-nsteps", 100);
+    cmd.addOption("-deltat", 0.0002);
+    cmd.addOption("-nstener", 10);
+    cmd.addOption("-nstxout", 50);
+    cmd.addOption("-seed", 1993);
+    cmd.addOption("-tau", 0.1);
+    cmd.addOption("-equil", 20);
+    cmd.addOption("-rwall", 0.25);
+    cmd.addOption("-kwall", 500.0);
+    ASSERT_EQ(0, run(&cmd));
+
+    SimulateOptions options;
+    options.forceFieldFile = alexandriaFile("forcefields/ACS-g1.xml");
+    options.compounds.setFileName(alexandriaFile("molecules/water_dimer.pdb"));
+    options.energyFile     = fileManager().getTemporaryFilePath("beads-direct-energy.xvg");
+    options.trajectoryFile = fileManager().getTemporaryFilePath("beads-direct-traj.pdb");
+    options.simulation.setSimulation(100, 0.0002, 100, 1993, 10, 50);
+    options.simulation.setBeads(4, 0.1, 20);
+    options.simulation.setWall(0.25, 500);
+    MsgHandler msghandler;
+    msghandler.setPrintLevel(ACTStatus::Fatal);
+    EXPECT_EQ(0, alexandria::runSimulate(&msghandler, options));
+    EXPECT_EQ(textWithoutComments(files.energy), textWithoutComments(options.energyFile));
+    EXPECT_EQ(textWithoutComments(files.trajectory), textWithoutComments(options.trajectoryFile));
+    // The wall is closer than the molecules are, and pushes them together
+    const auto xvg = readXvg(files.energy);
+    ASSERT_GT(xvg.column("WALL"), 0);
+    EXPECT_GT(xvg.rows[0][xvg.column("WALL")], 0.0);
+}
+
+TEST_F(SimulateBeadsTest, MovedApart)
+{
+    // Two argon atoms at 300 K without a wall do not stay together
+    SimulateFiles files;
+    auto cmd = baseCommand("argon#argon.pdb", "apart", &files,
+                           alexandriaFile("forcefields/noble-halgren14-7.xml"));
+    cmd.addOption("-nbeads", 1);
+    cmd.addOption("-temp", 300.0);
+    cmd.addOption("-nsteps", 20000);
+    cmd.addOption("-deltat", 0.005);
+    cmd.addOption("-tau", 1.0);
+    cmd.addOption("-nstener", 0);
+    cmd.addOption("-nstxout", 0);
+    cmd.addOption("-seed", 1993);
+    cmd.addOption("-monomers");
+    const auto res = runBeads(&cmd, "apart");
+    ASSERT_TRUE(res.contains("all compounds")) << res.dump();
+    ASSERT_TRUE(res["all compounds"].contains("Moved apart")) << res.dump();
+    EXPECT_TRUE(res["all compounds"]["Moved apart"].get<bool>());
+    EXPECT_GT(average(res["all compounds"], "Distance"), 1.5);
+    // The log file says so, and that the binding energy has no meaning
+    std::ifstream in(files.log);
+    const std::string log((std::istreambuf_iterator<char>(in)), std::istreambuf_iterator<char>());
+    EXPECT_NE(std::string::npos, log.find("The compounds moved apart"));
+    EXPECT_NE(std::string::npos, log.find("not bound all the time"));
+}
+
+TEST_F(SimulateBeadsTest, WrongOptions)
+{
+    const auto beads = [this](const std::string &label, SimulateFiles *files)
+    {
+        auto cmd = baseCommand("water_dimer.pdb", label, files);
+        cmd.addOption("-nsteps", 20);
+        cmd.addOption("-temp", 100.0);
+        return cmd;
+    };
+    SimulateFiles files;
+    {
+        auto cmd = beads("wrong-nbeads", &files);
+        cmd.addOption("-nbeads", -1);
+        expectRefused(&cmd, "a negative number of beads");
+    }
+    {
+        // No temperature
+        auto cmd = baseCommand("water_dimer.pdb", "wrong-temp", &files);
+        cmd.addOption("-nsteps", 20);
+        cmd.addOption("-nbeads", 4);
+        expectRefused(&cmd, "no temperature");
+    }
+    {
+        auto cmd = beads("wrong-constrain", &files);
+        cmd.addOption("-nbeads", 4);
+        cmd.addOption("-constrain", "bonds");
+        expectRefused(&cmd, "constraints");
+    }
+    {
+        auto cmd = beads("wrong-nstvout", &files);
+        cmd.addOption("-nbeads", 4);
+        cmd.addOption("-nstvout", 10);
+        expectRefused(&cmd, "velocities");
+    }
+    {
+        auto cmd = beads("wrong-equil", &files);
+        cmd.addOption("-nbeads", 4);
+        cmd.addOption("-equil", 20);
+        expectRefused(&cmd, "equilibration as long as the simulation");
+    }
+    {
+        auto cmd = beads("wrong-tau", &files);
+        cmd.addOption("-nbeads", 4);
+        cmd.addOption("-tau", 0.0);
+        expectRefused(&cmd, "no time constant");
+    }
+    {
+        auto cmd = beads("wrong-rwall", &files);
+        cmd.addOption("-nbeads", 4);
+        cmd.addOption("-rwall", -1.0);
+        expectRefused(&cmd, "a negative radius");
+    }
+    {
+        // A wall and the binding energy need beads
+        auto cmd = beads("wrong-wall", &files);
+        cmd.addOption("-rwall", 1.0);
+        expectRefused(&cmd, "a wall without beads");
+        auto cmd2 = beads("wrong-monomers", &files);
+        cmd2.addOption("-monomers");
+        expectRefused(&cmd2, "monomers without beads");
+    }
+    {
+        // The springs of 64 beads at 300 K need a time step below 0.4 fs
+        auto cmd = baseCommand("water_dimer.pdb", "wrong-deltat", &files);
+        cmd.addOption("-nsteps", 20);
+        cmd.addOption("-temp", 300.0);
+        cmd.addOption("-nbeads", 64);
+        cmd.addOption("-deltat", 0.002);
+        expectRefused(&cmd, "a time step too large for the beads");
+        EXPECT_FALSE(fileNotEmpty(files.energy));
+    }
+    // The settings say which option is wrong, without a command line as well
+    const auto message = [](const SimulationConfigHandler &sch)
+    {
+        try
+        {
+            sch.validate();
+        }
+        catch (const gmx::InvalidInputError &ex)
+        {
+            return std::string(ex.what());
+        }
+        return std::string();
+    };
+    {
+        SimulationConfigHandler sch;
+        sch.setSimulation(20, 0.0002, 0, 1, 1, 1);
+        sch.setBeads(4, 0.05, -1);
+        EXPECT_NE(std::string::npos, message(sch).find("-temp")) << message(sch);
+        sch.setSimulation(20, 0.0002, 100, 1, 1, 1);
+        EXPECT_EQ("", message(sch));
+        sch.setBeads(4, 0.05, 20);
+        EXPECT_NE(std::string::npos, message(sch).find("-equil")) << message(sch);
+        sch.setBeads(4, 0.05, -2);
+        EXPECT_NE(std::string::npos, message(sch).find("-equil")) << message(sch);
+        sch.setBeads(4, -0.05, -1);
+        EXPECT_NE(std::string::npos, message(sch).find("-tau")) << message(sch);
+        sch.setBeads(0, 0.05, -1);
+        sch.setWall(1.0, 1000);
+        EXPECT_NE(std::string::npos, message(sch).find("-rwall")) << message(sch);
+        sch.setWall(0, 1000);
+        sch.setMonomers(true);
+        EXPECT_NE(std::string::npos, message(sch).find("-monomers")) << message(sch);
+        // Without steps there is no simulation that needs a temperature
+        SimulationConfigHandler none;
+        none.setBeads(4, 0.05, -1);
+        EXPECT_EQ("", message(none));
+    }
+}
+
 } // namespace
 
 } // namespace alexandria

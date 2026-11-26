@@ -43,6 +43,7 @@ gmx_add_unit_test(
     b2Test.cpp
     dimergeneratorTest.cpp
     minimizeTest.cpp
+    pathintegralmdTest.cpp
     princTest.cpp
     ringpolymerTest.cpp
     simulateTest.cpp

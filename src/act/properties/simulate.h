@@ -71,6 +71,8 @@ struct SimulateOptions
     std::string               jsonFile;
     //! The file for the progress, a line of JSON for each energy (-progress), none if empty
     std::string               progressFile;
+    //! The histogram of the distance between two compounds in a simulation with beads (-hist), none if empty
+    std::string               histogramFile;
     //! The tolerance for relaxing the shells (-shelltoler), see SimulationConfigHandler::shellTolerance
     double                    shellTolerance = 1e-6;
     //! The settings of the minimization and the simulation (-minimize, -nsteps and so on)
@@ -106,7 +108,8 @@ struct SimulateOptions
  * Reads the force field and the molecule, computes a single point, or
  * minimizes, simulates, and writes the files that the options name. Or,
  * with a trajectory in options.rerun, computes the energies of its
- * structures.
+ * structures. With beads, see SimulationConfigHandler::nbeads, the
+ * simulation is at constant temperature, see pathIntegralMD.
  * \param[in] msghandler For output and errors
  * \param[in] options    What to do
  * \param[in] oenv       The output environment for the energies; one with

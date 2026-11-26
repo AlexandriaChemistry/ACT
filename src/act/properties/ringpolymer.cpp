@@ -34,6 +34,7 @@
 #include <algorithm>
 #include <cmath>
 #include <cstddef>
+#include <map>
 #include <random>
 #include <utility>
 #include <vector>
@@ -294,8 +295,14 @@ void RingPolymerSampler::stopCenterOfMass()
     }
 }
 
+void RingPolymerSampler::setCentroidPotential(CentroidPotential potential)
+{
+    centroidPotential_ = std::move(potential);
+}
+
 void RingPolymerSampler::computeForces(MsgHandler *msghandler,
-                                       bool        first)
+                                       bool        first,
+                                       bool        energyTerms)
 {
     size_t n     = mass_.size();
     size_t natom = top_->atoms().size();
@@ -338,10 +345,23 @@ void RingPolymerSampler::computeForces(MsgHandler *msghandler,
         }
     }
     set_.invalidate();
+    // The induction energy is the change of the energy from the shells on
+    // their parents. For the energy terms the shells are put there first,
+    // and are relaxed from where they were.
     ShellOptions options;
-    options.resetShells = first;
-    options.energyTerms = false;
-    forceComp_->computeTotal(msghandler, pd_, &set_, options, nullptr);
+    options.resetShells     = first || energyTerms;
+    options.shellsFromInput = energyTerms && !first;
+    options.energyTerms     = energyTerms;
+    std::vector<std::map<InteractionType, double>> beadTerms;
+    forceComp_->computeTotal(msghandler, pd_, &set_, options, energyTerms ? &beadTerms : nullptr);
+    terms_.clear();
+    for(const auto &bt : beadTerms)
+    {
+        for(const auto &t : bt)
+        {
+            terms_[t.first] += t.second/nbeads_;
+        }
+    }
     const auto epot = set_.data.energies.find(InteractionType::EPOT);
     for(size_t j = 0; j < nbeads_; j++)
     {
@@ -360,10 +380,76 @@ void RingPolymerSampler::computeForces(MsgHandler *msghandler,
             }
         }
     }
+    ecentroid_ = 0;
+    if (centroidPotential_)
+    {
+        // Each bead of an atom gets the force on its centroid
+        const gmx::DVec zero = { 0, 0, 0 };
+        xcentroid_.assign(natom, zero);
+        fcentroid_.assign(natom, zero);
+        for(size_t i = 0; i < massive_.size(); i++)
+        {
+            for(int m = 0; m < DIM; m++)
+            {
+                double qc = 0;
+                for(size_t j = 0; j < nbeads_; j++)
+                {
+                    qc += q_[n*j + DIM*i + m];
+                }
+                xcentroid_[massive_[i]][m] = qc/nbeads_;
+            }
+        }
+        ecentroid_ = centroidPotential_(xcentroid_, &fcentroid_);
+        for(size_t j = 0; j < nbeads_; j++)
+        {
+            double *f = f_.data() + n*j;
+            for(size_t i = 0; i < massive_.size(); i++)
+            {
+                for(int m = 0; m < DIM; m++)
+                {
+                    f[DIM*i + m] += fcentroid_[massive_[i]][m];
+                }
+            }
+        }
+    }
+}
+
+void RingPolymerSampler::centroids(std::vector<gmx::DVec> *x) const
+{
+    size_t n     = mass_.size();
+    size_t natom = top_->atoms().size();
+    const gmx::DVec zero = { 0, 0, 0 };
+    x->assign(natom, zero);
+    // The shells and virtual sites
+    for(size_t j = 0; j < nbeads_; j++)
+    {
+        const auto xb = set_.data.x(j);
+        for(size_t a = 0; a < natom; a++)
+        {
+            for(int m = 0; m < DIM; m++)
+            {
+                (*x)[a][m] += static_cast<double>(xb[a][m])/nbeads_;
+            }
+        }
+    }
+    // The particles with a mass, as they are integrated
+    for(size_t i = 0; i < massive_.size(); i++)
+    {
+        for(int m = 0; m < DIM; m++)
+        {
+            double qc = 0;
+            for(size_t j = 0; j < nbeads_; j++)
+            {
+                qc += q_[n*j + DIM*i + m];
+            }
+            (*x)[massive_[i]][m] = qc/nbeads_;
+        }
+    }
 }
 
 void RingPolymerSampler::start(MsgHandler                   *msghandler,
-                               const std::vector<gmx::RVec> &x)
+                               const std::vector<gmx::RVec> &x,
+                               bool                          energyTerms)
 {
     if (x.size() != top_->atoms().size())
     {
@@ -388,11 +474,12 @@ void RingPolymerSampler::start(MsgHandler                   *msghandler,
     toNormalModes(p_, &pn_);
     stopCenterOfMass();
     fromNormalModes(pn_, &p_);
-    computeForces(msghandler, true);
+    computeForces(msghandler, true, energyTerms);
     started_ = true;
 }
 
-void RingPolymerSampler::step(MsgHandler *msghandler)
+void RingPolymerSampler::step(MsgHandler *msghandler,
+                              bool        energyTerms)
 {
     double dt = settings_.timeStep;
     for(size_t d = 0; d < p_.size(); d++)
@@ -410,7 +497,7 @@ void RingPolymerSampler::step(MsgHandler *msghandler)
     freeMotion(0.5*dt);
     fromNormalModes(qn_, &q_);
     fromNormalModes(pn_, &p_);
-    computeForces(msghandler, false);
+    computeForces(msghandler, false, energyTerms);
     for(size_t d = 0; d < p_.size(); d++)
     {
         p_[d] += 0.5*dt*f_[d];
@@ -418,7 +505,8 @@ void RingPolymerSampler::step(MsgHandler *msghandler)
 }
 
 void RingPolymerSampler::run(MsgHandler *msghandler,
-                             int         nsteps)
+                             int         nsteps,
+                             bool        energyTerms)
 {
     if (!started_)
     {
@@ -426,7 +514,7 @@ void RingPolymerSampler::run(MsgHandler *msghandler,
     }
     for(int i = 0; i < nsteps; i++)
     {
-        step(msghandler);
+        step(msghandler, energyTerms && i + 1 == nsteps);
     }
 }
 
@@ -496,7 +584,7 @@ double RingPolymerSampler::hamiltonian() const
         }
         h += epot_[j];
     }
-    return h;
+    return h + nbeads_*ecentroid_;
 }
 
 double RingPolymerSampler::beadTemperature() const
