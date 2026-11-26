@@ -118,6 +118,8 @@ private:
     std::string         mayerFile_;
     //! The file for the second virial as a function of the temperature (-b2), none if empty
     std::string         b2File_;
+    //! The file for the potential of mean force along the distance (-pmf), none if empty
+    std::string         pmfFile_;
     //! The temperature array
     std::vector<double> Temperatures_;
     //! Second virial as a function of T for all components (see function temperatures)
@@ -272,6 +274,11 @@ public:
         mayerFile_ = mayerFile;
         b2File_    = b2File;
     }
+
+    /*! \brief Set the file for the potential of mean force along the distance, as -pmf
+     * \param[in] pmfFile The file, none if empty
+     */
+    void setPmfFile(const std::string &pmfFile) { pmfFile_ = pmfFile; }
 
     /*! \brief Set the interaction energy flag
      * \param[in] eInter The value

@@ -35,6 +35,7 @@
 
 #include <cstddef>
 #include <limits>
+#include <string>
 #include <vector>
 
 #include "act/basics/msg_handler.h"
@@ -301,9 +302,41 @@ public:
      * \param[in] fmayer The output file name
      * \param[in] oenv   GROMACS output environment
      */
+    /*! \brief Plot the potential of mean force along the distance, see plotPotentialOfMeanForce
+     * Call it after integrate has been called for all temperatures.
+     * \param[in] file The output file name
+     * \param[in] oenv GROMACS output environment
+     */
+    void plotPmf(const std::string &file,
+                 gmx_output_env_t  *oenv) const;
+
     void plotMayer(const char                *fmayer,
                    gmx_output_env_t          *oenv);
 };
+
+/*! \brief Plot the potential of mean force along the distance between two compounds
+ *
+ * The Mayer function f at a distance is the average over the orientations,
+ * and for flexible compounds over their structures, of the Boltzmann factor
+ * of the interaction energy minus one. The potential of mean force is
+ * \f[ W(r) = -k_B T \ln\left(1 + f(r)\right) \f]
+ * The distances at which the atoms overlap in nearly all dimers at one of
+ * the temperatures, where 1 + f is below 1e-12 and W above 27 k_B T, are
+ * left out, since f is not known more precisely.
+ * \param[in] file         The output file name, nothing is written if empty
+ * \param[in] oenv         GROMACS output environment
+ * \param[in] temperatures The temperatures
+ * \param[in] dist         The distances in nm
+ * \param[in] mayer        The Mayer function at each temperature and distance
+ * \param[in] mayerError   Its standard error, empty if not known. The standard
+ *                         error of W is then written next to it.
+ */
+void plotPotentialOfMeanForce(const std::string                      &file,
+                              gmx_output_env_t                       *oenv,
+                              const std::vector<double>              &temperatures,
+                              const std::vector<double>              &dist,
+                              const std::vector<std::vector<double>> &mayer,
+                              const std::vector<std::vector<double>> &mayerError);
 
 } // namespace
 

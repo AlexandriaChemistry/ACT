@@ -184,7 +184,8 @@ void ReRunner::addOptions(std::vector<t_pargs>      *pargs,
     
         const std::vector<t_filenm> fnm = {
             { efXVG, "-eh", "mayer",      ffOPTWR },
-            { efXVG, "-b2", "B2T",        ffOPTWR }
+            { efXVG, "-b2", "B2T",        ffOPTWR },
+            { efXVG, "-pmf", "pmf",       ffOPTWR }
         };
         for(const auto &fn : fnm)
         {
@@ -204,6 +205,8 @@ void ReRunner::finishOptions(const std::vector<t_filenm> &filenm)
         // and the json file; it is plotted only when -b2 is given
         const char *b2    = opt2fn_null("-b2", filenm.size(), filenm.data());
         b2File_           = b2 ? b2 : "";
+        const char *pmf   = opt2fn_null("-pmf", filenm.size(), filenm.data());
+        pmfFile_          = pmf ? pmf : "";
     }
     gendimers_.finishOptions(filenm);
     if (computeB2_ && gendimers_.flexible() && 0 == nbeads_)
@@ -728,7 +731,7 @@ void ReRunner::runB2PathIntegral(CommunicationRecord *cr,
     }
     // Results on the master
     std::vector<std::vector<double>> b2rounds(rounds.size(), std::vector<double>(Temperature.size(), 0.0));
-    std::vector<std::vector<double>> mayerCurves;
+    std::vector<std::vector<double>> mayerCurves, mayerErrors;
     size_t                           nsoft = 0;
     double                           fmax  = -1, Tmax = 0;
     // Conversion to regular units cm^3/mol.
@@ -904,6 +907,8 @@ void ReRunner::runB2PathIntegral(CommunicationRecord *cr,
             timings.start(sumTimer);
             B2Data              b2total(ndist, { T }, eMin_);
             std::vector<double> bpart;
+            // The Mayer function of each part, for its standard error
+            std::vector<std::vector<double>> mayerParts;
             b2total.setDistances(dist);
             for(auto &b2block : b2blocks)
             {
@@ -918,6 +923,7 @@ void ReRunner::runB2PathIntegral(CommunicationRecord *cr,
                         part.integrate(msghandler, 0, beta, masses, noInertia,
                                        &Bclass, &BqmForce, &BqmTorque1, &BqmTorque2);
                         bpart.push_back(Bclass*fac);
+                        mayerParts.push_back(part.mayer(0));
                     }
                     b2total.add(&part);
                 }
@@ -957,6 +963,25 @@ void ReRunner::runB2PathIntegral(CommunicationRecord *cr,
                 }
                 if (iround + 1 == rounds.size())
                 {
+                    // The standard error of the Mayer function at each distance
+                    std::vector<double> ferr(ndist, 0.0);
+                    if (mayerParts.size() == nStatBlocks)
+                    {
+                        for(size_t i = 0; i < ndist; i++)
+                        {
+                            double mean = 0, var = 0;
+                            for(const auto &mp : mayerParts)
+                            {
+                                mean += mp[i]/nStatBlocks;
+                            }
+                            for(const auto &mp : mayerParts)
+                            {
+                                var += gmx::square(mp[i] - mean);
+                            }
+                            ferr[i] = std::sqrt(var/(nStatBlocks*(nStatBlocks - 1)));
+                        }
+                    }
+                    mayerErrors.push_back(ferr);
                     mayerCurves.push_back(b2total.mayer(0));
                     // Below the shortest distance the Mayer function is taken as -1
                     double f = b2total.mayerAtShortestDistance(0);
@@ -1017,6 +1042,10 @@ void ReRunner::runB2PathIntegral(CommunicationRecord *cr,
     if (!mayerFile_.empty())
     {
         plotMayerCurves(mayerFile_, oenv_, Temperature, dist, mayerCurves);
+    }
+    if (!pmfFile_.empty())
+    {
+        plotPotentialOfMeanForce(pmfFile_, oenv_, Temperature, dist, mayerCurves, mayerErrors);
     }
     if (!b2File_.empty())
     {
@@ -1574,6 +1603,11 @@ void ReRunner::runB2(CommunicationRecord *cr,
         {
             b2total.plotMayer(mayerFile_.c_str(), oenv_);
         }
+        // The potential of mean force along the distance
+        if (!pmfFile_.empty())
+        {
+            b2total.plotPmf(pmfFile_, oenv_);
+        }
         // Print B2(T) if requested
         if (!b2File_.empty())
         {
@@ -1723,6 +1757,12 @@ int b2(int argc, char *argv[])
         "One bead gives the classical second virial of flexible monomers,",
         "more beads include the nuclear quantum effects of all motions.",
         "The total is then given with its standard error.[PAR]",
+        "With [TT]-pmf[tt] the potential of mean force along the distance",
+        "between the centers of mass is written, W(r) = -kT ln(1+f(r)), in",
+        "which f is the Mayer function: the average over the orientations and,",
+        "for flexible monomers, their structures. With [TT]-nbeads[tt] it has",
+        "a standard error. At low temperature few orientations dominate the",
+        "average and many dimers are needed.[PAR]",
         "With [TT]-json[tt], part of the output, including the second virial",
         "coefficients with all digits, is written in json format to the given",
         "file, b2.json by default."

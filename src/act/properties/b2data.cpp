@@ -466,6 +466,67 @@ void B2Data::integrate(MsgHandler *msghandler,
     *BqmTorque2 = hbarfac*simpsonIntegrate(msghandler, true, dist_, myBtorq[1]);
 }
 
+void plotPotentialOfMeanForce(const std::string                      &file,
+                              gmx_output_env_t                       *oenv,
+                              const std::vector<double>              &temperatures,
+                              const std::vector<double>              &dist,
+                              const std::vector<std::vector<double>> &mayer,
+                              const std::vector<std::vector<double>> &mayerError)
+{
+    if (file.empty() || mayer.empty() || mayer.size() != temperatures.size())
+    {
+        return;
+    }
+    bool errors = mayerError.size() == mayer.size();
+    FILE *fp = xvgropen(file.c_str(), "Potential of mean force", "r (nm)",
+                        "W (kJ/mol)", oenv);
+    std::vector<std::string> label;
+    for(auto T : temperatures)
+    {
+        label.push_back(gmx::formatString("T = %g K", T));
+        if (errors)
+        {
+            label.push_back(gmx::formatString("Standard error at %g K", T));
+        }
+    }
+    xvgrLegend(fp, label, oenv);
+    // The Mayer function is a sum of Boltzmann factors minus one, such
+    // that one plus it is known to about 1e-16 only
+    const double gmin = 1e-12;
+    for(size_t i = 0; i < dist.size(); i++)
+    {
+        // Where the atoms overlap in nearly all dimers there is no value
+        bool known = true;
+        for(const auto &m : mayer)
+        {
+            known = known && i < m.size() && std::isfinite(m[i]) && 1 + m[i] > gmin;
+        }
+        if (!known)
+        {
+            continue;
+        }
+        fprintf(fp, "%10g", dist[i]);
+        for(size_t j = 0; j < mayer.size(); j++)
+        {
+            double kT = BOLTZ*temperatures[j];
+            double g  = 1 + mayer[j][i];
+            fprintf(fp, "  %12g", -kT*std::log(g));
+            if (errors)
+            {
+                fprintf(fp, "  %12g", i < mayerError[j].size() ? kT*mayerError[j][i]/g : 0.0);
+            }
+        }
+        fprintf(fp, "\n");
+    }
+    xvgrclose(fp);
+}
+
+void B2Data::plotPmf(const std::string &file,
+                     gmx_output_env_t  *oenv) const
+{
+    plotPotentialOfMeanForce(file, oenv, temperatures_, dist_, mayer_, {});
+}
+
 void B2Data::plotMayer(const char                *fmayer,
                        gmx_output_env_t          *oenv)
 {
