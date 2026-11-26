@@ -553,12 +553,13 @@ static bool lacksBondOrders(const RDKit::RWMol &mol)
 /*! \brief The charge of an atom without bonds, where RDKit gives a wrong one
  * RDKit gives an atom the formal charge that fills its octet. That is
  * right for a halide, but for an atom without bonds it is minus six for
- * helium, minus seven for an alkali metal and minus six for an alkaline
- * earth metal. The charges then do not add up to the total charge, and
- * RDKit finds no bond orders for the whole file.
+ * helium, minus seven for an alkali metal, minus six for an alkaline
+ * earth metal and minus five for aluminium. The charges then do not add
+ * up to the total charge, and RDKit finds no bond orders for the whole file.
  * \param[in]  atomicNumber The element
- * \param[out] charge       Zero for helium, one for the alkali metals and
- *                          two for the alkaline earth metals
+ * \param[out] charge       Zero for helium, one for the alkali metals, two
+ *                          for the alkaline earth metals and three for
+ *                          aluminium
  * \return whether it is one of these elements
  */
 static bool loneAtomCharge(int  atomicNumber,
@@ -585,15 +586,18 @@ static bool loneAtomCharge(int  atomicNumber,
     case 88:
         *charge = 2;
         return true;
+    case 13:
+        *charge = 3;
+        return true;
     default:
         return false;
     }
 }
 
 /*! \brief Determine the bond orders of a molecule that may have helium atoms or metal ions
- * A helium atom, alkali metal or alkaline earth metal without bonds gets
- * the charge of loneAtomCharge, and the other atoms the remainder of the
- * total charge. These atoms are neon atoms, which have their octet, while
+ * A helium atom, alkali metal, alkaline earth metal or aluminium atom
+ * without bonds gets the charge of loneAtomCharge, and the other atoms the
+ * remainder of the total charge. These atoms are neon atoms, which have their octet, while
  * RDKit determines the bond orders.
  * \param[in] mol                   The molecule with its bonds
  * \param[in] charge                The total charge
@@ -655,10 +659,11 @@ static void bondOrdersWithLoneAtoms(RDKit::RWMol &mol,
 }
 
 /*! \brief Determine the bonds of a molecule and their orders from the coordinates
- * As determineBonds of RDKit, but alkali and alkaline earth metals are
- * ions: RDKit finds bonds from the distances between the atoms, also from
- * a metal ion to the atoms next to it, and then no bond orders. Those bonds
- * are removed, as in a file with bonds, where sodium chloride has none.
+ * As determineBonds of RDKit, but alkali metals, alkaline earth metals and
+ * aluminium are ions: RDKit finds bonds from the distances between the
+ * atoms, also from a metal ion to the atoms next to it, and then no bond
+ * orders, but for aluminium with four bonds. Those bonds are removed, as in
+ * a file with bonds, where sodium chloride has none.
  * See bondOrdersWithLoneAtoms for the charges.
  * \param[in] mol    The molecule without bonds
  * \param[in] charge The total charge

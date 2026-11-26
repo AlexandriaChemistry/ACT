@@ -42,8 +42,10 @@
 #include <utility>
 #include <vector>
 
+#include "act/basics/identifier.h"
 #include "act/basics/msg_handler.h"
 #include "act/forcefield/forcefield.h"
+#include "act/forcefield/particletype.h"
 #include "act/import/import.h"
 #include "act/import/import_utils.h"
 #include "act/molprop/experiment.h"
@@ -444,13 +446,12 @@ struct ImportedIons
  * \param[in] file       The file in the molecules directory of the test data
  * \param[in] userqtot   Whether the total charge is given
  * \param[in] qtot       The total charge
- * \param[in] forceField The force field
+ * \param[in] pd         The force field
  * \return what was read
  */
 static ImportedIons importIons(const std::string &file, bool userqtot, double qtot,
-                               const std::string &forceField = "gaff_hydrogen_types")
+                               const ForceField *pd)
 {
-    auto         pd = getForceField(forceField);
     MsgHandler   msghandler;
     msghandler.setPrintLevel(ACTStatus::Fatal);
     std::vector<MolProp> molprops;
@@ -471,6 +472,19 @@ static ImportedIons importIons(const std::string &file, bool userqtot, double qt
         }
     }
     return ions;
+}
+
+/*! \brief Read a file with ions
+ * \param[in] file       The file in the molecules directory of the test data
+ * \param[in] userqtot   Whether the total charge is given
+ * \param[in] qtot       The total charge
+ * \param[in] forceField The name of the force field
+ * \return what was read
+ */
+static ImportedIons importIons(const std::string &file, bool userqtot, double qtot,
+                               const std::string &forceField = "gaff_hydrogen_types")
+{
+    return importIons(file, userqtot, qtot, getForceField(forceField));
 }
 
 // Test: An alkali halide from an xyz file is the same pair of ions as from
@@ -541,6 +555,57 @@ TEST(ImportIonTest, SingleIonAndMagnesium)
     EXPECT_EQ("Mg2+", magnesium.atypes[0]);
     EXPECT_EQ(2u, magnesium.nbond);
     EXPECT_EQ((std::vector<int>{ 2, 0 }), magnesium.charges);
+}
+
+// Test: Aluminium is an ion with the charge three in a file without bonds,
+// also with four chlorides around it, for which RDKit found bonds.
+TEST(ImportIonTest, Aluminium)
+{
+    // The force fields of the tests have no aluminium. This one gets the
+    // ion, with the parameters of the magnesium ion.
+    ForceField  pd = *getForceField("ACS-g1");
+    const auto *mg = pd.findParticleType("Mg2+");
+    ASSERT_NE(nullptr, mg);
+    ParticleType al(Identifier("Al3+"), "aluminium ion", mg->apType());
+    for (const auto &[key, value] : mg->optionsConst())
+    {
+        if (key != "element" && key != "atomnumber")
+        {
+            al.setOption(key, value);
+        }
+    }
+    al.setOption("element", "Al");
+    al.setOption("atomnumber", "13");
+    for (const auto &[type, param] : mg->parametersConst())
+    {
+        al.addForceFieldParameter(type, param);
+    }
+    pd.addParticleType(al);
+
+    const auto water = importIons("aluminium#water.xyz", true, 3, &pd);
+    ASSERT_TRUE(water.ok);
+    ASSERT_EQ(4u, water.atypes.size());
+    EXPECT_EQ("Al3+", water.atypes[0]);
+    EXPECT_EQ(2u, water.nbond);
+    EXPECT_EQ((std::vector<int>{ 3, 0 }), water.charges);
+    // Without the charge of the ion in the total charge there is no structure
+    EXPECT_FALSE(importIons("aluminium#water.xyz", false, 0, &pd).ok);
+
+    const auto chloride = importIons("tetrachloroaluminate.xyz", true, -1, &pd);
+    ASSERT_TRUE(chloride.ok);
+    EXPECT_EQ((std::vector<std::string>{ "Al3+", "Cl-", "Cl-", "Cl-", "Cl-" }), chloride.atypes);
+    EXPECT_EQ(0u, chloride.nbond);
+    EXPECT_EQ((std::vector<int>{ 3, -1, -1, -1, -1 }), chloride.charges);
+
+    // Formate with an aluminium ion next to it, see the test with helium
+    const std::vector<int>                 elements = { 6, 1, 8, 8, 13 };
+    const std::vector<gmx::RVec>           x        = { { 0, 0, 0 }, { 0, -0.112, 0 }, { 0.110, 0.062, 0 },
+                                                        { -0.110, 0.062, 0 }, { 0, 0, 0.35 } };
+    const std::vector<std::pair<int, int>> bonds    = { { 0, 1 }, { 0, 2 }, { 0, 3 } };
+    const auto whole = wholeBondOrders(elements, x, bonds, { 1, 1.5, 1.5 }, 2);
+    ASSERT_EQ(3u, whole.size());
+    EXPECT_EQ(1, whole[0]);
+    EXPECT_EQ(3, whole[1] + whole[2]);
 }
 
 // Test: In a box with many copies of a compound, a pattern can match more
