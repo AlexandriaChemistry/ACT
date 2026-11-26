@@ -427,6 +427,122 @@ TEST(ImportHeliumTest, WholeBondOrders)
     }
 }
 
+//! What the tests of ions look at in a file
+struct ImportedIons
+{
+    //! Whether the file was read without error
+    bool                     ok = false;
+    //! The atom types
+    std::vector<std::string> atypes;
+    //! The number of bonds
+    size_t                   nbond = 0;
+    //! The charges of the fragments
+    std::vector<int>         charges;
+};
+
+/*! \brief Read a file with ions
+ * \param[in] file       The file in the molecules directory of the test data
+ * \param[in] userqtot   Whether the total charge is given
+ * \param[in] qtot       The total charge
+ * \param[in] forceField The force field
+ * \return what was read
+ */
+static ImportedIons importIons(const std::string &file, bool userqtot, double qtot,
+                               const std::string &forceField = "gaff_hydrogen_types")
+{
+    auto         pd = getForceField(forceField);
+    MsgHandler   msghandler;
+    msghandler.setPrintLevel(ACTStatus::Fatal);
+    std::vector<MolProp> molprops;
+    importFile(&msghandler, pd, gmx::test::TestFileManager::getInputFilePath("molecules/" + file),
+               &molprops, "minimum", JobType::OPT, userqtot, &qtot, false);
+    ImportedIons ions;
+    ions.ok = msghandler.ok() && molprops.size() == 1;
+    if (ions.ok)
+    {
+        for (const auto &ca : molprops[0].experimentConst()[0].calcAtomConst())
+        {
+            ions.atypes.push_back(ca.getObtype());
+        }
+        ions.nbond = molprops[0].bondsConst().size();
+        for (const auto &fragment : molprops[0].fragments())
+        {
+            ions.charges.push_back(fragment.charge());
+        }
+    }
+    return ions;
+}
+
+// Test: An alkali halide from an xyz file is the same pair of ions as from
+// an sdf file with the charges. RDKit made a bond between the atoms from
+// their distance and then found no bond orders.
+TEST(ImportIonTest, AlkaliHalideFromXyz)
+{
+    for (const std::string salt : { "NaCl", "KBr" })
+    {
+        SCOPED_TRACE(salt);
+        const auto sdf = importIons(salt + ".sdf", false, 0);
+        const auto xyz = importIons(salt + ".xyz", false, 0);
+        ASSERT_TRUE(sdf.ok);
+        ASSERT_TRUE(xyz.ok);
+        EXPECT_EQ(sdf.atypes, xyz.atypes);
+        EXPECT_EQ(0u, xyz.nbond);
+        EXPECT_EQ((std::vector<int>{ 1, -1 }), xyz.charges);
+        EXPECT_EQ(sdf.charges, xyz.charges);
+    }
+}
+
+// Test: A sodium ion next to a water molecule, without bonds in the file,
+// is the same as in the file with the bonds of water. The ion has the
+// charge one and no bond to the oxygen.
+TEST(ImportIonTest, SodiumAndWater)
+{
+    const auto bonds = importIons("sodium#water.pdb", true, 1);
+    ASSERT_TRUE(bonds.ok);
+    ASSERT_EQ(4u, bonds.atypes.size());
+    EXPECT_EQ("Na+", bonds.atypes[0]);
+    // The total charge is given for the xyz file, and is in the pdb file
+    for (const auto &[file, userqtot] : std::vector<std::pair<std::string, bool>>{
+             { "sodium#water.xyz", true }, { "sodium#water-nobonds.pdb", false } })
+    {
+        SCOPED_TRACE(file);
+        const auto ions = importIons(file, userqtot, userqtot ? 1 : 0);
+        ASSERT_TRUE(ions.ok);
+        EXPECT_EQ(bonds.atypes, ions.atypes);
+        EXPECT_EQ(2u, ions.nbond);
+        EXPECT_EQ((std::vector<int>{ 1, 0 }), ions.charges);
+        EXPECT_EQ(bonds.charges, ions.charges);
+    }
+    // Without the charge of the ion in the total charge there is no structure
+    EXPECT_FALSE(importIons("sodium#water.xyz", false, 0).ok);
+}
+
+// Test: A single atom has the total charge, and an alkaline earth metal
+// without bonds the charge two.
+TEST(ImportIonTest, SingleIonAndMagnesium)
+{
+    const auto sodium = importIons("sodium.xyz", true, 1);
+    ASSERT_TRUE(sodium.ok);
+    EXPECT_EQ((std::vector<std::string>{ "Na+" }), sodium.atypes);
+    EXPECT_EQ((std::vector<int>{ 1 }), sodium.charges);
+    const auto chloride = importIons("chloride.xyz", true, -1);
+    ASSERT_TRUE(chloride.ok);
+    EXPECT_EQ((std::vector<std::string>{ "Cl-" }), chloride.atypes);
+    EXPECT_EQ((std::vector<int>{ -1 }), chloride.charges);
+    // Without a charge it is an atom
+    const auto chlorine = importIons("chloride.xyz", false, 0);
+    ASSERT_TRUE(chlorine.ok);
+    EXPECT_EQ((std::vector<std::string>{ "cl" }), chlorine.atypes);
+    EXPECT_EQ((std::vector<int>{ 0 }), chlorine.charges);
+    // This force field has the alkaline earth metals
+    const auto magnesium = importIons("magnesium#water.xyz", true, 2, "ACS-g1");
+    ASSERT_TRUE(magnesium.ok);
+    ASSERT_EQ(4u, magnesium.atypes.size());
+    EXPECT_EQ("Mg2+", magnesium.atypes[0]);
+    EXPECT_EQ(2u, magnesium.nbond);
+    EXPECT_EQ((std::vector<int>{ 2, 0 }), magnesium.charges);
+}
+
 // Test: In a box with many copies of a compound, a pattern can match more
 // than 1000 times, the default maximum of RDKit. Each copy gets the atom
 // types of the single compound.
