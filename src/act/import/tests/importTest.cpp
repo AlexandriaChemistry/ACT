@@ -39,6 +39,7 @@
 #include <sstream>
 #include <string>
 #include <tuple>
+#include <utility>
 #include <vector>
 
 #include "act/basics/msg_handler.h"
@@ -48,6 +49,7 @@
 #include "act/molprop/experiment.h"
 #include "act/molprop/molprop.h"
 #include "act/testutils/forcefield_utils.h"
+#include "gromacs/math/vectypes.h"
 #include "gromacs/utility/stringutil.h"
 #include "testutils/cmdlinetest.h"
 #include "testutils/refdata.h"
@@ -346,6 +348,82 @@ TEST(ImportPdbTest, BondOrdersOfConectWithoutThem)
         ASSERT_EQ(1u, fromFile.size());
         EXPECT_EQ(fromSmiles[0].experimentConst()[0].calcAtomConst().size(),
                   fromFile[0].experimentConst()[0].calcAtomConst().size());
+    }
+}
+
+// Test: Helium is read from pdb and xyz files, in which RDKit determines
+// the bonds. RDKit gives a helium atom without bonds the formal charge that
+// fills its octet, minus six, and then found no bond orders for any file
+// with helium and another atom.
+TEST(ImportHeliumTest, FilesWithoutBonds)
+{
+    auto       pd     = getForceField("gaff_hydrogen_types");
+    const auto helium = importTypes(pd, gmx::test::TestFileManager::getInputFilePath("molecules/helium-4.sdf"));
+    ASSERT_EQ(1u, helium.size());
+    auto       water  = importTypes(pd, gmx::test::TestFileManager::getInputFilePath("molecules/water-3-oep.log.pdb"));
+    ASSERT_EQ(3u, water.size());
+    std::sort(water.begin(), water.end());
+    // The file, and the numbers of helium atoms and of bonds
+    for (const auto &[file, nhelium, nbond] : std::vector<std::tuple<std::string, size_t, size_t>>{
+             { "helium#helium.pdb", 2, 0 }, { "helium#helium.xyz", 2, 0 }, { "helium#water.xyz", 1, 2 } })
+    {
+        SCOPED_TRACE(file);
+        MsgHandler msghandler;
+        msghandler.setPrintLevel(ACTStatus::Warning);
+        std::vector<MolProp> molprops;
+        double               qtot = 0;
+        importFile(&msghandler, pd, gmx::test::TestFileManager::getInputFilePath("molecules/" + file),
+                   &molprops, "minimum", JobType::OPT, false, &qtot, false);
+        EXPECT_TRUE(msghandler.ok());
+        ASSERT_EQ(1u, molprops.size());
+        EXPECT_EQ(0, qtot);
+        std::vector<std::string> atypes;
+        for (const auto &ca : molprops[0].experimentConst()[0].calcAtomConst())
+        {
+            atypes.push_back(ca.getObtype());
+        }
+        // The helium atoms come first in these files
+        ASSERT_LE(nhelium, atypes.size());
+        for (size_t i = 0; i < nhelium; i++)
+        {
+            EXPECT_EQ(helium[0], atypes[i]);
+        }
+        std::vector<std::string> other(atypes.begin() + nhelium, atypes.end());
+        std::sort(other.begin(), other.end());
+        EXPECT_EQ(nhelium == 1 ? water : std::vector<std::string>{}, other);
+        EXPECT_EQ(nbond, molprops[0].bondsConst().size());
+        // Two compounds without charge
+        const auto &fragments = molprops[0].fragments();
+        ASSERT_EQ(2u, fragments.size());
+        for (const auto &fragment : fragments)
+        {
+            EXPECT_EQ(0, fragment.charge());
+        }
+    }
+}
+
+// Test: The bond orders of formate are written with whole bonds, also with
+// a helium atom next to it.
+TEST(ImportHeliumTest, WholeBondOrders)
+{
+    // Carbon, hydrogen and two oxygens, in nm
+    std::vector<int>                       elements = { 6, 1, 8, 8 };
+    std::vector<gmx::RVec>                 x        = { { 0, 0, 0 }, { 0, -0.112, 0 },
+                                                        { 0.110, 0.062, 0 }, { -0.110, 0.062, 0 } };
+    const std::vector<std::pair<int, int>> bonds    = { { 0, 1 }, { 0, 2 }, { 0, 3 } };
+    const std::vector<double>              orders   = { 1, 1.5, 1.5 };
+    for (bool withHelium : { false, true })
+    {
+        SCOPED_TRACE(withHelium ? "with helium" : "formate");
+        if (withHelium)
+        {
+            elements.push_back(2);
+            x.emplace_back(0, 0, 0.35);
+        }
+        const auto whole = wholeBondOrders(elements, x, bonds, orders, -1);
+        ASSERT_EQ(3u, whole.size());
+        EXPECT_EQ(1, whole[0]);
+        EXPECT_EQ(3, whole[1] + whole[2]);
     }
 }
 

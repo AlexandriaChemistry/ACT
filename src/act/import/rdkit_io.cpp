@@ -549,6 +549,67 @@ static bool lacksBondOrders(const RDKit::RWMol &mol)
     return hasHydrogen && implicitH;
 }
 
+/*! \brief Determine the bond orders of a molecule that may have helium atoms
+ * RDKit gives an atom the formal charge that fills its octet, which is
+ * minus six for a helium atom without bonds. The charges then do not add
+ * up to the total charge, and no bond orders are found for any file with
+ * helium and another atom. A helium atom without bonds is therefore a neon
+ * atom, which has its octet, while RDKit determines the bond orders.
+ * \param[in] mol                   The molecule with its bonds
+ * \param[in] charge                The total charge
+ * \param[in] allowChargedFragments See RDKit
+ * \param[in] embedChiral           See RDKit
+ * \throws what RDKit throws if it finds no bond orders
+ */
+static void bondOrdersWithHelium(RDKit::RWMol &mol,
+                                 int           charge,
+                                 bool          allowChargedFragments = true,
+                                 bool          embedChiral           = true)
+{
+    const int                  helium = 2;
+    const int                  neon   = 10;
+    std::vector<RDKit::Atom *> lone;
+    for (auto atom : mol.atoms())
+    {
+        if (atom->getAtomicNum() == helium && atom->getDegree() == 0)
+        {
+            atom->setAtomicNum(neon);
+            lone.push_back(atom);
+        }
+    }
+    const auto restore = [&lone]()
+    {
+        for (auto atom : lone)
+        {
+            atom->setAtomicNum(helium);
+            atom->updatePropertyCache(false);
+        }
+    };
+    try
+    {
+        determineBondOrders(mol, charge, allowChargedFragments, embedChiral);
+    }
+    catch (...)
+    {
+        restore();
+        throw;
+    }
+    restore();
+}
+
+/*! \brief Determine the bonds of a molecule and their orders from the coordinates
+ * As determineBonds of RDKit, but see bondOrdersWithHelium.
+ * \param[in] mol    The molecule without bonds
+ * \param[in] charge The total charge
+ * \throws what RDKit throws if it finds no bond orders
+ */
+static void bondsWithHelium(RDKit::RWMol &mol,
+                            int           charge)
+{
+    determineConnectivity(mol, false, charge);
+    bondOrdersWithHelium(mol, charge);
+}
+
 std::vector<int> wholeBondOrders(const std::vector<int>                 &atomicNumbers,
                                  const std::vector<gmx::RVec>           &coordinates,
                                  const std::vector<std::pair<int, int>> &bonds,
@@ -590,7 +651,7 @@ std::vector<int> wholeBondOrders(const std::vector<int>                 &atomicN
     }
     try
     {
-        determineBondOrders(mol, charge, true, false);
+        bondOrdersWithHelium(mol, charge, true, false);
     }
     catch (const std::exception &)
     {
@@ -685,7 +746,7 @@ static void importFile(MsgHandler                           *msg_handler,
                 {
                     msg_handler->writeDebug("PDB has no bonds; inferring connectivity and bond orders.");
                 }
-                determineBonds(*mol2, false, totalCharge());
+                bondsWithHelium(*mol2, totalCharge());
             }
             else if (lacksBondOrders(*mol2))
             {
@@ -701,7 +762,7 @@ static void importFile(MsgHandler                           *msg_handler,
                     atom->setNumExplicitHs(0);
                 }
                 mol2->updatePropertyCache(false);
-                determineBondOrders(*mol2, totalCharge());
+                bondOrdersWithHelium(*mol2, totalCharge());
             }
             else
             {
@@ -726,7 +787,7 @@ static void importFile(MsgHandler                           *msg_handler,
             {
                 iqtot = RDKit::MolOps::getFormalCharge(*mol2);
             }
-            determineBonds(*mol2, false, iqtot);
+            bondsWithHelium(*mol2, iqtot);
         }
         if (mol2)
         {
