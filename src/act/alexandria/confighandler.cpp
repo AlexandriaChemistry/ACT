@@ -556,7 +556,11 @@ void SimulationConfigHandler::add_bead_options(std::vector<t_pargs> *pargs)
         { "-kwall", FALSE, etREAL, {&kwall_},
           "Force constant (kJ/mol nm^2) of the wall, which is harmonic beyond [TT]-rwall[tt]." },
         { "-monomers", FALSE, etBOOL, {&monomers_},
-          "With [TT]-nbeads[tt], simulate each compound alone as well and print the binding energy, the energy of all compounds together minus those of the separate compounds." }
+          "With [TT]-nbeads[tt], simulate each compound alone as well and print the binding energy, the energy of all compounds together minus those of the separate compounds." },
+        { "-thermo", FALSE, etBOOL, {&thermo_},
+          "With [TT]-nbeads[tt], compute the thermochemistry of one compound at the temperature [TT]-temp[tt]: the internal energy, the enthalpy, the heat capacity and the standard entropy, next to the values of the normal mode analysis. The compound is minimized first. The entropy needs 2 x [TT]-nquad[tt] more simulations." },
+        { "-nquad", FALSE, etINT, {&nquad_},
+          "Number of simulations for each of the two integrals that give the entropy with [TT]-thermo[tt]: classical simulations at lower temperatures, and simulations with beads in which the constant of Planck is scaled down. With 0 there is no entropy and only one simulation." }
     };
     for(auto &i : beads)
     {
@@ -628,9 +632,21 @@ void SimulationConfigHandler::validate() const
     {
         GMX_THROW(gmx::InvalidInputError(gmx::formatString("The value %d of -equil should be zero or more, or -1 for a tenth of the steps", nequil_)));
     }
+    if (nquad_ < 0 || nquad_ > 16)
+    {
+        GMX_THROW(gmx::InvalidInputError(gmx::formatString("The value %d of -nquad should be between 0 and 16", nquad_)));
+    }
+    if (thermo_ && (rwall_ > 0 || monomers_))
+    {
+        GMX_THROW(gmx::InvalidInputError("The thermochemistry (-thermo) is that of one compound, it cannot be combined with a wall (-rwall) or the binding energy (-monomers)"));
+    }
     if (0 == nbeads_)
     {
         // What needs beads
+        if (thermo_)
+        {
+            GMX_THROW(gmx::InvalidInputError("The thermochemistry (-thermo) needs simulations at constant temperature, please use -nbeads as well"));
+        }
         if (rwall_ > 0)
         {
             GMX_THROW(gmx::InvalidInputError("The wall (-rwall) is only there in simulations at constant temperature, please use -nbeads as well"));

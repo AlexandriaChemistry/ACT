@@ -189,6 +189,20 @@ bool fileNotEmpty(const std::string &filename)
     return in.good() && in.peek() != std::ifstream::traits_type::eof();
 }
 
+//! \return whether a file has a text
+bool fileContains(const std::string &filename, const std::string &text)
+{
+    std::ifstream in(filename);
+    for(std::string line; std::getline(in, line); )
+    {
+        if (line.find(text) != std::string::npos)
+        {
+            return true;
+        }
+    }
+    return false;
+}
+
 //! Output file names for one run
 struct SimulateFiles
 {
@@ -2124,6 +2138,181 @@ TEST_F(SimulateBeadsTest, MovedApart)
     EXPECT_NE(std::string::npos, log.find("not bound all the time"));
 }
 
+TEST_F(SimulateBeadsTest, ThermochemistryHydrogenFluoride)
+{
+    // Hydrogen fluoride with the anharmonic bond of hh-intra.xml at
+    // 298.15 K. The levels of the vibration and the rotation in this
+    // potential, from the radial Schrodinger equation on a grid for each
+    // angular momentum (NumPy, not part of ACT), give exactly, relative to
+    // the minimum: E = 30.778 kJ/mol, cV = 20.82 J/mol K and
+    // S = 173.83 J/mol K at 1 bar. The rigid rotor with a harmonic
+    // oscillator has 31.118, 20.786 and 173.639. With 16 beads harmonic
+    // oscillators lack 3.8 kJ/mol and have 20 J/mol K too much, which is
+    // corrected for.
+    SimulateFiles files;
+    auto cmd = baseCommand("hydrogen-fluoride.sdf", "thermo-hf", &files,
+                           alexandriaFile("forcefields/hh-intra.xml"));
+    const auto progress = fileManager().getTemporaryFilePath("thermo-hf.jsonl");
+    cmd.addOption("-nbeads", 16);
+    cmd.addOption("-temp", 298.15);
+    cmd.addOption("-nsteps", 80000);
+    cmd.addOption("-tau", 0.01);
+    cmd.addOption("-nstener", 2000);
+    cmd.addOption("-nstxout", 0);
+    cmd.addOption("-seed", 1993);
+    cmd.addOption("-thermo");
+    cmd.addOption("-progress", progress);
+    const auto res = runBeads(&cmd, "thermo-hf");
+    ASSERT_TRUE(res.contains("Thermochemistry")) << res.dump();
+    const auto &tc = res["Thermochemistry"];
+    EXPECT_EQ(16, tc["Beads"].get<int>());
+    EXPECT_EQ(1, tc["Symmetry number"].get<int>());
+    // The temperature is a real number
+    EXPECT_NEAR(298.15, tc["Temperature"]["value"].get<double>(), 1e-4);
+    EXPECT_NEAR(-595.587, tc["Minimum energy"]["value"].get<double>(), 0.01);
+    // The normal mode analysis
+    EXPECT_NEAR(24.921, tc["Zero point energy"]["Harmonic"].get<double>(), 0.01);
+    EXPECT_FALSE(tc["Zero point energy"].contains("Average"));
+    EXPECT_NEAR(31.118, tc["Internal energy"]["Harmonic"].get<double>(), 0.01);
+    EXPECT_NEAR(20.786, tc["Heat capacity cV"]["Harmonic"].get<double>(), 0.01);
+    EXPECT_NEAR(173.639, tc["Standard entropy"]["Harmonic"].get<double>(), 0.02);
+    EXPECT_NEAR(3.82, tc["Bead correction"]["Energy"]["value"].get<double>(), 0.02);
+    EXPECT_NEAR(-20.03, tc["Bead correction"]["Heat capacity"]["value"].get<double>(), 0.05);
+    // The simulations, within about six standard errors
+    EXPECT_NEAR(30.778, average(tc, "Internal energy"), 0.5);
+    EXPECT_NEAR(average(tc, "Internal energy") + BOLTZ*298.15, average(tc, "Enthalpy"), 1e-4);
+    EXPECT_NEAR(20.82, average(tc, "Heat capacity cV"), 8.0);
+    EXPECT_NEAR(average(tc, "Heat capacity cV") + RGAS, average(tc, "Heat capacity cP"), 1e-6);
+    EXPECT_NEAR(173.83, average(tc, "Standard entropy"), 2.0);
+    EXPECT_NEAR(average(tc, "Enthalpy") - 298.15*average(tc, "Standard entropy")/KILO,
+                average(tc, "Gibbs energy"), 1e-4);
+    for(const std::string name : { "Internal energy", "Heat capacity cV", "Standard entropy", "Gibbs energy" })
+    {
+        EXPECT_GT(error(tc, name), 0.0) << name;
+        EXPECT_EQ("J/mol K" == tc[name]["Unit"].get<std::string>(), name.find("energy") == std::string::npos) << name;
+    }
+    EXPECT_LT(error(tc, "Internal energy"), 0.2);
+    EXPECT_LT(error(tc, "Standard entropy"), 1.0);
+    // The internal energy is the total energy with the correction, relative to the minimum
+    EXPECT_NEAR(average(res["the compound"], "Total energy") - tc["Minimum energy"]["value"].get<double>() +
+                tc["Bead correction"]["Energy"]["value"].get<double>(),
+                average(tc, "Internal energy"), 1e-6);
+    // The quantum effects are close to those of the harmonic oscillator,
+    // the anharmonicity of the classical molecule is small
+    ASSERT_TRUE(tc.contains("Free energy")) << tc.dump();
+    const auto &fe = tc["Free energy"];
+    EXPECT_NEAR(17.481, fe["Quantum effects"]["Harmonic"].get<double>(), 0.01);
+    EXPECT_NEAR(17.15, average(fe, "Quantum effects"), 0.3);
+    EXPECT_NEAR(-0.05, average(fe, "Anharmonicity"), 0.4);
+    // The progress: the simulation, then a line for each of the eight
+    // simulations of the entropy, of which the one with one bead is not done
+    std::ifstream            in(progress);
+    std::vector<std::string> entropy;
+    size_t                   nenergy = 0;
+    for(std::string line; std::getline(in, line); )
+    {
+        const auto js = nlohmann::json::parse(line);
+        if (js.contains("entropy"))
+        {
+            entropy.push_back(js["entropy"].dump());
+        }
+        else
+        {
+            // All lines of the simulation come first
+            EXPECT_TRUE(entropy.empty());
+            nenergy++;
+        }
+    }
+    EXPECT_EQ(40U, nenergy);
+    ASSERT_EQ(8U, entropy.size());
+    EXPECT_EQ(R"({"done":1,"total":8})", entropy.front());
+    EXPECT_EQ(R"({"done":8,"total":8})", entropy.back());
+    // The log file has the table
+    EXPECT_TRUE(fileContains(files.log, "Thermochemistry at 298.15 K and 1 bar from simulations with 16 beads"));
+    EXPECT_TRUE(fileContains(files.log, "Standard entropy (J/mol K)"));
+}
+
+TEST_F(SimulateBeadsTest, ThermochemistryClassicalAndWithoutEntropy)
+{
+    // With one bead the thermochemistry is classical: water has 6 kT of
+    // energy and a heat capacity of 6 k, and only the anharmonicity is
+    // computed. The harmonic values next to it are quantum mechanical.
+    const double T = 300;
+    {
+        SimulateFiles files;
+        auto cmd = baseCommand("water-3-oep.log.pdb", "thermo-classical", &files);
+        cmd.addOption("-nbeads", 1);
+        cmd.addOption("-temp", T);
+        cmd.addOption("-nsteps", 100000);
+        cmd.addOption("-tau", 0.01);
+        cmd.addOption("-nstener", 0);
+        cmd.addOption("-nstxout", 0);
+        cmd.addOption("-seed", 1993);
+        cmd.addOption("-thermo");
+        cmd.addOption("-nquad", 3);
+        const auto res = runBeads(&cmd, "thermo-classical");
+        ASSERT_TRUE(res.contains("Thermochemistry")) << res.dump();
+        const auto &tc = res["Thermochemistry"];
+        EXPECT_EQ(1, tc["Beads"].get<int>());
+        EXPECT_EQ(2, tc["Symmetry number"].get<int>());
+        EXPECT_FALSE(tc.contains("Bead correction"));
+        EXPECT_NEAR(6*BOLTZ*T, average(tc, "Internal energy"), 0.5);
+        EXPECT_NEAR(6*RGAS, average(tc, "Heat capacity cV"), 8.0);
+        // The quantum oscillators have a zero point energy and hardly a heat capacity
+        EXPECT_GT(tc["Internal energy"]["Harmonic"].get<double>(), 40.0);
+        EXPECT_GT(tc["Heat capacity cV"]["Harmonic"].get<double>(), 3*RGAS);
+        EXPECT_LT(tc["Heat capacity cV"]["Harmonic"].get<double>(), 3*RGAS + 1.0);
+        ASSERT_TRUE(tc.contains("Free energy")) << tc.dump();
+        EXPECT_FALSE(tc["Free energy"].contains("Quantum effects"));
+        EXPECT_NEAR(0.0, average(tc["Free energy"], "Anharmonicity"), 0.5);
+        // and hardly an entropy, where that of a classical oscillator,
+        // R(1 - ln(h nu/kT)), is negative for these frequencies: -40 J/mol K
+        // for the bend and the two stretches together
+        const double sharmonic = tc["Standard entropy"]["Harmonic"].get<double>();
+        EXPECT_NEAR(sharmonic - 40, average(tc, "Standard entropy"), 5.0);
+        EXPECT_TRUE(fileContains(files.log, "With one bead the simulation is classical"));
+    }
+    {
+        // Without the simulations of the integrals there is no entropy.
+        // The structure is minimized also without -minimize.
+        SimulateFiles files;
+        auto cmd = baseCommand("water-3-oep.log.pdb", "thermo-nquad", &files);
+        cmd.addOption("-nbeads", 8);
+        cmd.addOption("-temp", T);
+        cmd.addOption("-nsteps", 4000);
+        cmd.addOption("-nstener", 0);
+        cmd.addOption("-nstxout", 0);
+        cmd.addOption("-seed", 1993);
+        cmd.addOption("-thermo");
+        cmd.addOption("-nquad", 0);
+        const auto res = runBeads(&cmd, "thermo-nquad");
+        ASSERT_TRUE(res.contains("Thermochemistry")) << res.dump();
+        const auto &tc = res["Thermochemistry"];
+        EXPECT_FALSE(tc.contains("Free energy"));
+        EXPECT_TRUE(tc["Standard entropy"].contains("Harmonic"));
+        EXPECT_FALSE(tc["Standard entropy"].contains("Average"));
+        EXPECT_TRUE(tc["Internal energy"].contains("Average"));
+        EXPECT_TRUE(tc.contains("Bead correction"));
+        EXPECT_FALSE(fileContains(files.log, "Entropy:"));
+    }
+    {
+        // The thermochemistry is that of one compound
+        SimulateFiles files;
+        auto cmd = baseCommand("water_dimer.pdb", "thermo-dimer", &files);
+        cmd.addOption("-nbeads", 4);
+        cmd.addOption("-temp", 100.0);
+        cmd.addOption("-nsteps", 200);
+        cmd.addOption("-nstener", 0);
+        cmd.addOption("-nstxout", 0);
+        cmd.addOption("-seed", 1993);
+        cmd.addOption("-thermo");
+        const auto res = runBeads(&cmd, "thermo-dimer");
+        EXPECT_TRUE(res.contains("all compounds"));
+        EXPECT_FALSE(res.contains("Thermochemistry"));
+        EXPECT_TRUE(fileContains(files.log, "the thermochemistry (-thermo) is that of one compound"));
+    }
+}
+
 TEST_F(SimulateBeadsTest, WrongOptions)
 {
     const auto beads = [this](const std::string &label, SimulateFiles *files)
@@ -2186,6 +2375,32 @@ TEST_F(SimulateBeadsTest, WrongOptions)
         expectRefused(&cmd2, "monomers without beads");
     }
     {
+        // The thermochemistry needs beads, and one compound without a wall
+        auto cmd = beads("wrong-thermo", &files);
+        cmd.addOption("-thermo");
+        expectRefused(&cmd, "thermochemistry without beads");
+        auto cmd2 = beads("wrong-thermo-wall", &files);
+        cmd2.addOption("-nbeads", 4);
+        cmd2.addOption("-thermo");
+        cmd2.addOption("-rwall", 1.0);
+        expectRefused(&cmd2, "thermochemistry with a wall");
+        auto cmd3 = beads("wrong-thermo-monomers", &files);
+        cmd3.addOption("-nbeads", 4);
+        cmd3.addOption("-thermo");
+        cmd3.addOption("-monomers");
+        expectRefused(&cmd3, "thermochemistry with the binding energy");
+        auto cmd4 = beads("wrong-nquad", &files);
+        cmd4.addOption("-nbeads", 4);
+        cmd4.addOption("-thermo");
+        cmd4.addOption("-nquad", -1);
+        expectRefused(&cmd4, "a negative number of simulations");
+        auto cmd5 = beads("wrong-nquad-large", &files);
+        cmd5.addOption("-nbeads", 4);
+        cmd5.addOption("-thermo");
+        cmd5.addOption("-nquad", 17);
+        expectRefused(&cmd5, "too many simulations");
+    }
+    {
         // The springs of 64 beads at 300 K need a time step below 0.4 fs
         auto cmd = baseCommand("water_dimer.pdb", "wrong-deltat", &files);
         cmd.addOption("-nsteps", 20);
@@ -2227,6 +2442,19 @@ TEST_F(SimulateBeadsTest, WrongOptions)
         sch.setWall(0, 1000);
         sch.setMonomers(true);
         EXPECT_NE(std::string::npos, message(sch).find("-monomers")) << message(sch);
+        sch.setMonomers(false);
+        sch.setThermochemistry(true, 4);
+        EXPECT_NE(std::string::npos, message(sch).find("-thermo")) << message(sch);
+        sch.setBeads(4, 0.05, -1);
+        sch.setSimulation(20, 0.0002, 100, 1, 1, 1);
+        EXPECT_EQ("", message(sch));
+        EXPECT_TRUE(sch.thermochemistry());
+        EXPECT_EQ(4, sch.nquad());
+        sch.setWall(1.0, 1000);
+        EXPECT_NE(std::string::npos, message(sch).find("-thermo")) << message(sch);
+        sch.setWall(0, 1000);
+        sch.setThermochemistry(true, 17);
+        EXPECT_NE(std::string::npos, message(sch).find("-nquad")) << message(sch);
         // Without steps there is no simulation that needs a temperature
         SimulationConfigHandler none;
         none.setBeads(4, 0.05, -1);

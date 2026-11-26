@@ -107,6 +107,57 @@ private:
     std::vector<size_t> count_;
 };
 
+/*! \brief Covariance of two series of values with a standard error from blocks
+ *
+ * As BlockAverager, for the covariance of two quantities of a simulation.
+ * The covariance is that of all values, the standard error follows from
+ * the covariances within the blocks.
+ */
+class CovarianceAverager
+{
+public:
+    /*! \brief Constructor
+     * \param[in] nexpected The number of pairs of values that will be added
+     * \param[in] nblocks   The number of blocks
+     */
+    explicit CovarianceAverager(size_t nexpected = 0, size_t nblocks = 8);
+
+    /*! \brief Add a pair of values
+     * \param[in] a The value of the first quantity
+     * \param[in] b The value of the second quantity
+     */
+    void add(double a, double b);
+
+    /*! \brief The covariance of the values added so far
+     * \return the average of the product minus the product of the averages
+     *         of all values, and the standard error from the blocks that
+     *         are complete
+     */
+    AverageError result() const;
+
+private:
+    //! Sums of a block
+    struct Sums
+    {
+        //! The number of pairs
+        size_t n  = 0;
+        //! The sum of the first quantity
+        double a  = 0;
+        //! The sum of the second quantity
+        double b  = 0;
+        //! The sum of the product
+        double ab = 0;
+        //! \return the covariance, zero without values
+        double covariance() const { return n > 0 ? ab/n - (a/n)*(b/n) : 0.0; }
+    };
+    //! The number of pairs that will be added
+    size_t            nexpected_ = 0;
+    //! The sums of all values
+    Sums              total_;
+    //! The sums of each block
+    std::vector<Sums> block_;
+};
+
 //! The results of a simulation with ring polymers, see pathIntegralMD
 struct PathIntegralResults
 {
@@ -128,6 +179,20 @@ struct PathIntegralResults
     AverageError                            ekin;
     //! Their sum
     AverageError                            etot;
+    //! The kinetic energy in kJ/mol from the primitive estimator, a check of the number of beads and the time step
+    AverageError                            ekinPrimitive;
+    /*! \brief The heat capacity at constant volume in kJ/mol K
+     *
+     * From the fluctuations of the energy,
+     * \f$C_V = k_B\beta^2(\langle\epsilon_V\epsilon_T\rangle -
+     * \langle\epsilon_V\rangle\langle\epsilon_T\rangle) + \frac{3N}{2}k_B\f$
+     * with the total energy from the centroid virial estimator
+     * \f$\epsilon_V\f$ and from the primitive estimator \f$\epsilon_T\f$,
+     * including the translation of the molecule. It has no meaning with a
+     * wall, and it converges slowly with the number of beads, see
+     * computeThermochemistry for the correction.
+     */
+    AverageError                            heatCapacity;
     //! The spread of the beads in nm, see RingPolymerSampler::gyration2
     AverageError                            gyration;
     //! The distance between the fragments in nm, see FragmentWall::distance
@@ -189,6 +254,8 @@ struct PathIntegralFiles
  * \param[in] files      The files to write
  * \param[in] observer   Gets the energies and the centroids when they are
  *                       due, and can end the simulation, may be nullptr
+ * \param[in] planckScale The factor for the constant of Planck, see
+ *                       RingPolymerSettings::planckScale
  * \return the averages over the steps after the equilibration
  * \throws gmx::InvalidInputError for settings that are out of range, see
  * RingPolymerSettings::check
@@ -202,7 +269,8 @@ PathIntegralResults pathIntegralMD(MsgHandler                    *msghandler,
                                    const SimulationConfigHandler &simConfig,
                                    int                            seed,
                                    const PathIntegralFiles       &files,
-                                   const SimulationObserver      *observer = nullptr);
+                                   const SimulationObserver      *observer = nullptr,
+                                   double                         planckScale = 1.0);
 
 /*! \brief Write the averages of a simulation with ring polymers
  * \param[in]    msghandler For the log file

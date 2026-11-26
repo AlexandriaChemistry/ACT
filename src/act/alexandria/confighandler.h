@@ -586,6 +586,10 @@ private:
     real               kwall_                = 1000;
     //! Whether to simulate the fragments as well, for the binding energy
     bool               monomers_             = false;
+    //! Whether to compute the thermochemistry of the compound from simulations with beads
+    bool               thermo_               = false;
+    //! Number of simulations for each of the two integrals of the entropy, zero for no entropy
+    int                nquad_                = 4;
     //! Whether the warning that the force tolerance is too strict was given, see toleranceWarning
     mutable bool       toleranceWarned_      = false;
     /*! \brief The choices of the enumerated options, as the command line
@@ -725,6 +729,23 @@ public:
      * \param[in] monomers Whether to do so
      */
     void setMonomers(bool monomers) { monomers_ = monomers; }
+
+    //! \return whether to compute the thermochemistry from simulations with beads
+    bool thermochemistry() const { return thermo_; }
+
+    //! \return the number of simulations for each of the two integrals of the entropy, zero for no entropy
+    int nquad() const { return nquad_; }
+
+    /*! \brief Set whether to compute the thermochemistry from simulations with beads
+     * \param[in] thermo Whether to do so
+     * \param[in] nquad  The number of simulations for each of the two
+     *                   integrals of the entropy, zero for no entropy
+     */
+    void setThermochemistry(bool thermo, int nquad)
+    {
+        thermo_ = thermo;
+        nquad_  = nquad;
+    }
     
     //! \return number of steps between coordinate output
     int nstxout() const { return nstxout_; }

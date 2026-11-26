@@ -765,11 +765,80 @@ TEST_F(RingPolymerTest, KineticEnergyEstimators)
                          s.nbeads*sampler.potentialEnergy());
         virial    += sampler.kineticEnergy()/nsteps;
         primitive += (1.5*natom*s.nbeads*BOLTZ*s.temperature - spring/s.nbeads)/nsteps;
+        if (i % 1000 == 0)
+        {
+            // Which the sampler gives as well
+            EXPECT_NEAR(1.5*natom*s.nbeads*BOLTZ*s.temperature - spring/s.nbeads,
+                        sampler.primitiveKineticEnergy(), 1e-6*std::abs(spring));
+        }
     }
     // Much more than the classical 9 kT
     EXPECT_GT(virial, 5*9*BOLTZ*s.temperature);
     // The primitive estimator has the larger fluctuations, about 1 %
     EXPECT_NEAR(primitive, virial, 0.04*virial);
+}
+
+TEST_F(RingPolymerTest, PlanckScale)
+{
+    // A smaller constant of Planck makes the springs of the ring polymer
+    // stiffer, as for heavier atoms: the Hamiltonian with these springs is
+    // conserved, the beads spread less, and the kinetic energy goes to
+    // the classical one
+    TestMolecule tm;
+    load("SPCE.xml", "water.pdb", &tm);
+    RingPolymerSettings s;
+    s.nbeads      = 8;
+    s.temperature = 300;
+    s.timeStep    = 0.0001;
+    s.planckScale = 0.5;
+    const double scale = 4.5*s.nbeads*s.nbeads*BOLTZ*s.temperature;
+    EXPECT_LT(hamiltonianChange(tm, s, 2000), 2e-3*scale);
+    const double kclassical = 4.5*BOLTZ*s.temperature;
+    double       previous   = 0, kprevious = 0;
+    for(double g : { 0.05, 0.25, 1.0 })
+    {
+        s.planckScale = g;
+        // Short enough for the stiffest springs
+        s.timeStep    = 0.0001;
+        s.centroidTau = 0.01;
+        s.seed        = 31;
+        RingPolymerSampler sampler(&tm.pd, tm.top(), tm.forceComp.get(), s);
+        sampler.start(nullptr, tm.x);
+        sampler.run(nullptr, 2000);
+        const int nsteps    = 40000;
+        double    gyration2 = 0, ekin = 0, primitive = 0;
+        for(int i = 0; i < nsteps; i++)
+        {
+            sampler.run(nullptr, 1);
+            gyration2 += sampler.gyration2()/nsteps;
+            ekin      += sampler.kineticEnergy()/nsteps;
+            primitive += sampler.primitiveKineticEnergy()/nsteps;
+        }
+        EXPECT_GT(gyration2, 2*previous) << g;
+        EXPECT_GT(ekin, kprevious) << g;
+        EXPECT_GT(ekin, kclassical) << g;
+        // The two estimators agree, the primitive one within its noise
+        EXPECT_NEAR(ekin, primitive, 0.08*ekin) << g;
+        if (g < 0.1)
+        {
+            // Nearly classical: harmonic oscillators have 1.5 % more
+            EXPECT_NEAR(kclassical, ekin, 0.05*kclassical);
+        }
+        previous  = gyration2;
+        kprevious = ekin;
+    }
+    // The stiffer springs need a shorter time step
+    s.planckScale = 1;
+    s.nbeads      = 32;
+    s.timeStep    = 0.0004;
+    EXPECT_NO_THROW(RingPolymerSampler(&tm.pd, tm.top(), tm.forceComp.get(), s));
+    s.planckScale = 0.25;
+    EXPECT_THROW(RingPolymerSampler(&tm.pd, tm.top(), tm.forceComp.get(), s), gmx::InvalidInputError);
+    // A factor that is not positive
+    s.planckScale = 0;
+    EXPECT_THROW(s.check(), gmx::InvalidInputError);
+    s.planckScale = -1;
+    EXPECT_THROW(s.check(), gmx::InvalidInputError);
 }
 
 TEST_F(RingPolymerTest, SameSeedSamePolymers)

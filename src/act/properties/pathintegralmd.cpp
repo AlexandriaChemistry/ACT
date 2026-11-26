@@ -291,6 +291,68 @@ AverageError BlockAverager::result() const
     return ae;
 }
 
+CovarianceAverager::CovarianceAverager(size_t nexpected, size_t nblocks) :
+    nexpected_(nexpected), block_(std::max<size_t>(nblocks, 1))
+{
+}
+
+void CovarianceAverager::add(double a, double b)
+{
+    size_t nblocks = block_.size();
+    size_t block   = nblocks - 1;
+    if (total_.n < nexpected_)
+    {
+        block = (total_.n*nblocks)/nexpected_;
+    }
+    for(Sums *sums : { &total_, &block_[block] })
+    {
+        sums->n  += 1;
+        sums->a  += a;
+        sums->b  += b;
+        sums->ab += a*b;
+    }
+}
+
+AverageError CovarianceAverager::result() const
+{
+    AverageError ae;
+    ae.n = total_.n;
+    if (0 == total_.n)
+    {
+        return ae;
+    }
+    ae.average     = total_.covariance();
+    // The blocks that got all their values
+    size_t nblocks = block_.size();
+    size_t ndone   = nblocks;
+    if (total_.n < nexpected_)
+    {
+        ndone = (total_.n*nblocks)/nexpected_;
+    }
+    std::vector<double> cov;
+    for(size_t b = 0; b < ndone; b++)
+    {
+        if (block_[b].n > 1)
+        {
+            cov.push_back(block_[b].covariance());
+        }
+    }
+    if (cov.size() >= 2)
+    {
+        double mean = 0, var = 0;
+        for(auto c : cov)
+        {
+            mean += c/cov.size();
+        }
+        for(auto c : cov)
+        {
+            var += (c - mean)*(c - mean);
+        }
+        ae.error = std::sqrt(var/(cov.size()*(cov.size() - 1)));
+    }
+    return ae;
+}
+
 PathIntegralResults pathIntegralMD(MsgHandler                    *msghandler,
                                    const ForceField              *pd,
                                    const Topology                *top,
@@ -300,7 +362,8 @@ PathIntegralResults pathIntegralMD(MsgHandler                    *msghandler,
                                    const SimulationConfigHandler &simConfig,
                                    int                            seed,
                                    const PathIntegralFiles       &files,
-                                   const SimulationObserver      *observer)
+                                   const SimulationObserver      *observer,
+                                   double                         planckScale)
 {
     PathIntegralResults results;
     const int nsteps  = simConfig.nsteps();
@@ -319,6 +382,7 @@ PathIntegralResults pathIntegralMD(MsgHandler                    *msghandler,
     settings.timeStep    = deltat;
     settings.centroidTau = simConfig.tau();
     settings.seed        = seed;
+    settings.planckScale = planckScale;
     RingPolymerSampler sampler(pd, top, forceComp, settings);
     // The fragments, and the wall that keeps them together
     const auto         &atoms = top->atoms();
@@ -382,6 +446,12 @@ PathIntegralResults pathIntegralMD(MsgHandler                    *msghandler,
         nterm += (step % nstener == 0) ? 1 : 0;
     }
     BlockAverager epot(nsample), ekin(nsample), etot(nsample), gyration(nsample), distance(nsample);
+    BlockAverager ekinPrimitive(nsample);
+    // The fluctuations of the energy, relative to the first value since
+    // the differences are small compared to the energy itself
+    CovarianceAverager fluctuation(nsample);
+    double             energy0     = 0;
+    bool               haveEnergy0 = false;
     std::map<InteractionType, BlockAverager> terms;
     size_t                 nwall = 0;
     std::vector<gmx::DVec> xc;
@@ -390,7 +460,7 @@ PathIntegralResults pathIntegralMD(MsgHandler                    *msghandler,
     bool                   legendDone = false;
     bool                   keepGoing  = true;
 
-    msghandler->write(gmx::formatString("\nWill start a simulation at %g K with %d bead%s: %s.",
+    msghandler->write(gmx::formatString("\nWill start a simulation of %d steps at %g K with %d bead%s: %s.", nsteps,
                                         settings.temperature, nbeads, nbeads == 1 ? "" : "s",
                                         nbeads == 1 ? "classical dynamics with a thermostat" : "path integral molecular dynamics"));
     if (wall.active())
@@ -440,6 +510,14 @@ PathIntegralResults pathIntegralMD(MsgHandler                    *msghandler,
             epot.add(sample.epot);
             ekin.add(sample.ekin);
             etot.add(sample.epot + sample.ekin);
+            const double kprim = sampler.primitiveKineticEnergy();
+            ekinPrimitive.add(kprim);
+            if (!haveEnergy0)
+            {
+                energy0     = sample.epot + sample.ekin;
+                haveEnergy0 = true;
+            }
+            fluctuation.add(sample.epot + sample.ekin - energy0, sample.epot + kprim - energy0);
             gyration.add(sample.gyration);
             if (haveDistance)
             {
@@ -558,6 +636,15 @@ PathIntegralResults pathIntegralMD(MsgHandler                    *msghandler,
     results.epot     = epot.result();
     results.ekin     = ekin.result();
     results.etot     = etot.result();
+    results.ekinPrimitive = ekinPrimitive.result();
+    {
+        // The heat capacity from the fluctuations of the energy
+        const double kT   = BOLTZ*settings.temperature;
+        const auto   cov  = fluctuation.result();
+        results.heatCapacity.n       = cov.n;
+        results.heatCapacity.average = BOLTZ*(cov.average/(kT*kT) + 0.5*sampler.ncoordinates());
+        results.heatCapacity.error   = BOLTZ*cov.error/(kT*kT);
+    }
     results.gyration = gyration.result();
     results.distance = distance.result();
     for(const auto &t : terms)
