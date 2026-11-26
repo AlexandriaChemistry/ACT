@@ -39,6 +39,7 @@
 #include <cstddef>
 #include <limits>
 #include <string>
+#include <tuple>
 #include <utility>
 #include <vector>
 
@@ -549,6 +550,165 @@ static bool lacksBondOrders(const RDKit::RWMol &mol)
     return hasHydrogen && implicitH;
 }
 
+/*! \brief The charge of an atom without bonds, where RDKit gives a wrong one
+ * RDKit gives an atom the formal charge that fills its octet. That is
+ * right for a halide, but for an atom without bonds it is minus six for
+ * helium, minus seven for an alkali metal, minus six for an alkaline
+ * earth metal and minus five for aluminium. The charges then do not add
+ * up to the total charge, and RDKit finds no bond orders for the whole file.
+ * \param[in]  atomicNumber The element
+ * \param[out] charge       Zero for helium, one for the alkali metals, two
+ *                          for the alkaline earth metals and three for
+ *                          aluminium
+ * \return whether it is one of these elements
+ */
+static bool loneAtomCharge(int  atomicNumber,
+                           int *charge)
+{
+    switch (atomicNumber)
+    {
+    case 2:
+        *charge = 0;
+        return true;
+    case 3:
+    case 11:
+    case 19:
+    case 37:
+    case 55:
+    case 87:
+        *charge = 1;
+        return true;
+    case 4:
+    case 12:
+    case 20:
+    case 38:
+    case 56:
+    case 88:
+        *charge = 2;
+        return true;
+    case 13:
+        *charge = 3;
+        return true;
+    default:
+        return false;
+    }
+}
+
+/*! \brief Determine the bond orders of a molecule that may have helium atoms or metal ions
+ * A helium atom, alkali metal, alkaline earth metal or aluminium atom
+ * without bonds gets the charge of loneAtomCharge, and the other atoms the
+ * remainder of the total charge. These atoms are neon atoms, which have their octet, while
+ * RDKit determines the bond orders.
+ * \param[in] mol                   The molecule with its bonds
+ * \param[in] charge                The total charge
+ * \param[in] allowChargedFragments See RDKit
+ * \param[in] embedChiral           See RDKit
+ * \throws what RDKit throws if it finds no bond orders
+ */
+static void bondOrdersWithLoneAtoms(RDKit::RWMol &mol,
+                                    int           charge,
+                                    bool          allowChargedFragments = true,
+                                    bool          embedChiral           = true)
+{
+    const int                                        neon      = 10;
+    // The atoms, their elements and their charges
+    std::vector<std::tuple<RDKit::Atom *, int, int>> lone;
+    int                                              ionCharge = 0;
+    for (auto atom : mol.atoms())
+    {
+        int q = 0;
+        if (atom->getDegree() == 0 && loneAtomCharge(atom->getAtomicNum(), &q))
+        {
+            lone.emplace_back(atom, atom->getAtomicNum(), q);
+            ionCharge += q;
+            atom->setAtomicNum(neon);
+            atom->setFormalCharge(0);
+        }
+    }
+    const auto restore = [&lone]()
+    {
+        for (auto &[atom, element, q] : lone)
+        {
+            atom->setAtomicNum(element);
+            atom->setFormalCharge(q);
+            atom->setNoImplicit(true);
+            atom->setNumRadicalElectrons(0);
+            atom->updatePropertyCache(false);
+        }
+    };
+    try
+    {
+        determineBondOrders(mol, charge - ionCharge, allowChargedFragments, embedChiral);
+    }
+    catch (const ValueErrorException &ve)
+    {
+        restore();
+        if (ionCharge == 0)
+        {
+            throw;
+        }
+        throw ValueErrorException(gmx::formatString("%s. The metal atoms without bonds are ions with a total charge of %d, which leaves %d for the other atoms at the total charge of %d. Please check the total charge",
+                                                    ve.what(), ionCharge, charge - ionCharge, charge));
+    }
+    catch (...)
+    {
+        restore();
+        throw;
+    }
+    restore();
+}
+
+/*! \brief Determine the bonds of a molecule and their orders from the coordinates
+ * As determineBonds of RDKit, but alkali metals, alkaline earth metals and
+ * aluminium are ions: RDKit finds bonds from the distances between the
+ * atoms, also from a metal ion to the atoms next to it, and then no bond
+ * orders, but for aluminium with four bonds. Those bonds are removed, as in
+ * a file with bonds, where sodium chloride has none.
+ * See bondOrdersWithLoneAtoms for the charges.
+ * \param[in] mol    The molecule without bonds
+ * \param[in] charge The total charge
+ * \throws what RDKit throws if it finds no bond orders
+ */
+static void bondsWithIons(RDKit::RWMol &mol,
+                          int           charge)
+{
+    if (mol.getNumAtoms() == 1)
+    {
+        // RDKit does nothing for a single atom. It has the total charge.
+        auto atom = mol.getAtomWithIdx(0);
+        if (atom->getFormalCharge() != charge)
+        {
+            atom->setFormalCharge(charge);
+            atom->setNoImplicit(true);
+            atom->updatePropertyCache(false);
+        }
+        return;
+    }
+    determineConnectivity(mol, false, charge);
+    std::vector<std::pair<unsigned int, unsigned int>> ionic;
+    for (const auto bond : mol.bonds())
+    {
+        int q = 0;
+        for (const auto atom : { bond->getBeginAtom(), bond->getEndAtom() })
+        {
+            if (atom->getAtomicNum() != 2 && loneAtomCharge(atom->getAtomicNum(), &q))
+            {
+                ionic.emplace_back(bond->getBeginAtomIdx(), bond->getEndAtomIdx());
+                break;
+            }
+        }
+    }
+    for (const auto &[ai, aj] : ionic)
+    {
+        mol.removeBond(ai, aj);
+    }
+    if (!ionic.empty())
+    {
+        mol.updatePropertyCache(false);
+    }
+    bondOrdersWithLoneAtoms(mol, charge);
+}
+
 std::vector<int> wholeBondOrders(const std::vector<int>                 &atomicNumbers,
                                  const std::vector<gmx::RVec>           &coordinates,
                                  const std::vector<std::pair<int, int>> &bonds,
@@ -590,7 +750,7 @@ std::vector<int> wholeBondOrders(const std::vector<int>                 &atomicN
     }
     try
     {
-        determineBondOrders(mol, charge, true, false);
+        bondOrdersWithLoneAtoms(mol, charge, true, false);
     }
     catch (const std::exception &)
     {
@@ -685,7 +845,7 @@ static void importFile(MsgHandler                           *msg_handler,
                 {
                     msg_handler->writeDebug("PDB has no bonds; inferring connectivity and bond orders.");
                 }
-                determineBonds(*mol2, false, totalCharge());
+                bondsWithIons(*mol2, totalCharge());
             }
             else if (lacksBondOrders(*mol2))
             {
@@ -701,7 +861,7 @@ static void importFile(MsgHandler                           *msg_handler,
                     atom->setNumExplicitHs(0);
                 }
                 mol2->updatePropertyCache(false);
-                determineBondOrders(*mol2, totalCharge());
+                bondOrdersWithLoneAtoms(*mol2, totalCharge());
             }
             else
             {
@@ -726,7 +886,7 @@ static void importFile(MsgHandler                           *msg_handler,
             {
                 iqtot = RDKit::MolOps::getFormalCharge(*mol2);
             }
-            determineBonds(*mol2, false, iqtot);
+            bondsWithIons(*mol2, iqtot);
         }
         if (mol2)
         {

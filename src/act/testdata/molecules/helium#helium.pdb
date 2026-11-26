@@ -1,0 +1,4 @@
+TITLE     helium#helium
+ATOM      1 He   UNK     1       0.000   0.000   0.000  1.00  0.00          He
+ATOM      2 He   UNK     2       0.000   0.000   2.970  1.00  0.00          He
+END
