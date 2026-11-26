@@ -595,6 +595,51 @@ TEST_F(SecondVirialFlexibleTest, ClassicalFlexibleWater)
     EXPECT_LT(error, 25);
 }
 
+TEST_F(SecondVirialFlexibleTest, QuantumArgon)
+{
+    // An atom has no structure to sample, so its second virial tests the
+    // quantum mechanical part only: the ring polymers of two free atoms.
+    // The numbers are from an independent calculation for the buffered 14-7
+    // potential of this force field at 80 K, between 0.25 and 1.5 nm: the
+    // classical integral is -642.412 cm^3/mol, the first term of the
+    // Wigner-Kirkwood series 6.856, the second -0.109, and a path integral
+    // with 16 beads, in which the ring polymer of the distance vector is
+    // drawn from its normal distribution, gives -635.720 +/- 0.016.
+    auto rigid = options("argon-rigid", "noble-halgren14-7.xml", 8);
+    rigid.compounds.setFileName(fileManager().getInputFilePath("molecules/argon#argon.pdb"));
+    rigid.rerun.setTemperatures(80, 80, 10);
+    rigid.rerun.gendimers()->setDistances(0.25, 1.5, 251);
+    rigid.rerun.gendimers()->finishSettings();
+    auto one     = rigid;
+    one.jsonFile = fileManager().getTemporaryFilePath("argon-one.json");
+    one.rerun.setRingPolymers(1, 8, 0.00025, 0.05, 100, 10);
+    auto beads     = rigid;
+    beads.jsonFile = fileManager().getTemporaryFilePath("argon-beads.json");
+    beads.maxDimers = 2048;
+    beads.rerun.setRingPolymers(16, 2000, 0.00025, 0.05, 2000, 100);
+    const auto r = run(rigid);
+    const auto o = run(one);
+    const auto b = run(beads);
+    const std::string T("T = 80 K");
+    ASSERT_TRUE(r.contains(T) && o.contains(T) && b.contains(T));
+    double classical = jsonNumber(r[T]["B2(Classical)"]);
+    double force     = jsonNumber(r[T]["B2(Force)"]);
+    double oneBead   = jsonNumber(o[T]["B2(Total)"]);
+    double quantum   = jsonNumber(b[T]["B2(Total)"]);
+    double error     = jsonNumber(b[T]["Standard error"]);
+    EXPECT_NEAR(-642.412, classical, 0.05);
+    EXPECT_NEAR(6.856, force, 0.01);
+    // One bead of an atom does not move
+    EXPECT_NEAR(classical, oneBead, std::abs(classical)*(GMX_DOUBLE ? 1e-9 : 2e-3));
+    // The ring polymers depend on the random numbers of the standard
+    // library, the standard error is about 0.1.
+    EXPECT_NEAR(-635.72, quantum, 1.0);
+    // At this temperature the series converges, and the beads agree with it
+    EXPECT_NEAR(force - 0.109, quantum - classical, 1.0);
+    EXPECT_GT(error, 0);
+    EXPECT_LT(error, 0.5);
+}
+
 TEST_F(SecondVirialFlexibleTest, CommandLine)
 {
     const auto common = [this](gmx::test::CommandLine *cmd, const std::string &label)
