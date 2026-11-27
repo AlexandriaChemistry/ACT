@@ -199,7 +199,7 @@ protected:
                  const ForceField             *pd)
     {
         // Generate force array with zeroes
-        gmx::RVec                         fzero = { 0, 0, 0 };
+        const gmx::RVec                   fzero = { 0, 0, 0 };
         std::vector<gmx::RVec>            forces(coordinates->size(), fzero);
         // Energy map
         std::map<InteractionType, double> energies;
@@ -674,6 +674,7 @@ static const ForceComputerPotParams c_morseBondsPot   { "MORSE_BONDS",          
 static const ForceComputerPotParams c_harmAnglePot    { "HARMONIC_ANGLES",      Potential::HARMONIC_ANGLES,      makeAngleTop };
 static const ForceComputerPotParams c_ubAnglePot      { "UREY_BRADLEY_ANGLES",  Potential::UREY_BRADLEY_ANGLES,  makeAngleTop };
 static const ForceComputerPotParams c_linAnglePot     { "LINEAR_ANGLES",        Potential::LINEAR_ANGLES,        makeAngleTop };
+static const ForceComputerPotParams c_cbaAnglePot     { "CROSS_BOND_ANGLES",    Potential::CROSS_BOND_ANGLES,    makeAngleTop };
 static const ForceComputerPotParams c_harmDihPot      { "HARMONIC_DIHEDRALS",   Potential::HARMONIC_DIHEDRALS,   makeImproperTop };
 static const ForceComputerPotParams c_properDihPot    { "PROPER_DIHEDRALS",     Potential::PROPER_DIHEDRALS,     makeProperTop };
 static const ForceComputerPotParams c_fourierDihPot   { "FOURIER_DIHEDRALS",    Potential::FOURIER_DIHEDRALS,    makeProperTop };
@@ -734,6 +735,7 @@ static const ForceComputerParamParams c_morseBondsParams{ "", { 12, 100, 40, 0.6
 static const ForceComputerParamParams c_harmAngleParams { "", { 100, 100 } };     // kT, angle
 static const ForceComputerParamParams c_ubAngleParams   { "", { 100, 100, 0.33, 20 } };   // kT, angle, r13, kUB
 static const ForceComputerParamParams c_linAngleParams  { "", { 0.5, 10000 } };   // a, kLin
+static const ForceComputerParamParams c_cbaAngleParams  { "", { 0.19, 0.15, 0.3, -50000, 30000, 60000 } };   // r1e, r2e, r3e, krt, krr, kub
 static const ForceComputerParamParams c_harmDihParams   { "", { 10 } };           // kPhi
 static const ForceComputerParamParams c_properDihParams { "", { 30, 10, 4 } };    // angle, kP, mult
 static const ForceComputerParamParams c_fourierDihParams{ "", { 1, 2, -3, 4, -5, 6 } };
@@ -951,6 +953,12 @@ INSTANTIATE_TEST_CASE_P(LINEAR_ANGLES, ForceComputerImplementationTest,
                          ::testing::Combine(::testing::Values(c_linAnglePot),
                                             ::testing::Values(c_linAngleParams),
                                             ::testing::Values(c_linAngleCoord)),
+                         fcTestName);
+
+INSTANTIATE_TEST_CASE_P(CROSS_BOND_ANGLES, ForceComputerImplementationTest,
+                         ::testing::Combine(::testing::Values(c_cbaAnglePot),
+                                            ::testing::Values(c_cbaAngleParams),
+                                            ::testing::Values(c_angleCoord)),
                          fcTestName);
 
 // --- Dihedral potentials ---

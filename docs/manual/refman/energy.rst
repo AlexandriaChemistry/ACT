@@ -619,6 +619,29 @@ If the order of atoms is flipped  :math:`a` will change to :math:`1-a`. The pote
 
 with k :sub:`lin` the force constant :cite:p:`Spoel2020a`. 
 
+-------------------------------------
+Cross terms between bonds and angle
+-------------------------------------
+
+.. index::
+   single: bond-angle cross term
+   single: bond-bond cross term
+   single: angle; cross terms with the bonds
+   single: water; flexible TIP4P
+
+The potential CROSS_BOND_ANGLES couples the two bonds of an angle :math:`i,j,k`, with :math:`j` the central atom, to each other and to the distance between the outer atoms :math:`i` and :math:`k`. With the deviations from the equilibrium distances
+
+.. math:: d_1 ~=~ \left|\mathbf{x}_i-\mathbf{x}_j\right|-r_{1e}, \qquad d_2 ~=~ \left|\mathbf{x}_k-\mathbf{x}_j\right|-r_{2e}, \qquad d_3 ~=~ \left|\mathbf{x}_i-\mathbf{x}_k\right|-r_{3e}
+
+it is the sum of three terms
+
+.. math:: V_{cross} ~=~ k_{r\theta}\, d_3 \left(d_1 + d_2\right) + k_{rr'}\, d_1 d_2 + \frac{k_{UB}}{2}\, d_3^2
+   :label: crossba
+
+where :math:`r_{1e}` and :math:`r_{2e}` are the equilibrium lengths of the bonds :math:`i-j` and :math:`k-j`, and :math:`r_{3e}` is the equilibrium distance between :math:`i` and :math:`k`. The first term is the bond-angle cross term and the second the bond-bond cross term of GROMACS (angles of type 4 and 3), the third is a harmonic potential on the distance between the outer atoms, as in the Urey-Bradley potential. The force constants :math:`k_{r\theta}` and :math:`k_{rr'}` can be negative. In the force field file the parameters are called r1e, r2e, r3e, krt, krr and kub.
+
+Together with a Morse potential (:eq:`morse`) for the bonds this is the intramolecular potential of the flexible TIP4P model of water :cite:p:`Lawrence2003a`. The harmonic term is what keeps the angle in place: the two cross terms are zero for any angle as long as the bonds have their equilibrium lengths, and a molecule like water has no stable bent structure with these alone. In a GROMACS topology written by ACT the angle becomes up to three angles, of type 4, of type 3 and of type 5 (Urey-Bradley) without angle part, where the last two are left out if their force constant is zero.
+
 -----------------------
 Out-of-plane vibrations
 -----------------------

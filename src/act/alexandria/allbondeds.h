@@ -157,6 +157,10 @@ class JsonTree;
         real                                               kimp_      = 1;
         //! Default force constant for Urey-Bradley
         real                                               kub_       = 30000;
+        //! Default force constant for the bond-angle cross term
+        real                                               krt_       = -80000;
+        //! Default force constant for the bond-bond cross term
+        real                                               krr_       = 50000;
         //! Tolerance for warning about large sigma in bond-lengths (pm)
         real                                               bond_tol_  = 8;
         //! Tolerance for warning about large sigma in angles (degrees)

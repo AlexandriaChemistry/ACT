@@ -35,6 +35,7 @@
 #include <gtest/gtest.h>
 #include <map>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "act/alexandria/allbondeds.h"
@@ -207,15 +208,17 @@ TEST(AllBondedsVsiteTest, ExtractGeometries)
 }
 
 /*! \brief Make new bonded parameters from the compounds of molprop.xml
- * \param[in]  ffName       Force field in this directory
- * \param[in]  bondFunction Bond function to use instead of that of the force field
- * \param[in]  structures   Structure files in mols with more compounds
- * \param[out] pd           The force field with the new parameters
+ * \param[in]  ffName        Force field in this directory
+ * \param[in]  bondFunction  Bond function to use instead of that of the force field
+ * \param[in]  structures    Structure files in mols with more compounds
+ * \param[out] pd            The force field with the new parameters
+ * \param[in]  angleFunction Angle function to use instead of that of the force field
  */
 void updateBondeds(const std::string              &ffName,
                    const char                     *bondFunction,
                    const std::vector<std::string> &structures,
-                   ForceField                     *pd)
+                   ForceField                     *pd,
+                   const char                     *angleFunction = nullptr)
 {
     MsgHandler msghandler;
     msghandler.setPrintLevel(ACTStatus::Warning);
@@ -224,6 +227,10 @@ void updateBondeds(const std::string              &ffName,
     if (bondFunction)
     {
         pd->findForces(InteractionType::BONDS)->setFunction(bondFunction);
+    }
+    if (angleFunction)
+    {
+        pd->findForces(InteractionType::ANGLES)->setFunction(angleFunction);
     }
     std::vector<MolProp> mps;
     MolPropRead(&msghandler, fileManager.getInputFilePath("molprop/molprop.xml").c_str(), &mps);
@@ -307,6 +314,62 @@ TEST(AllBondedsUpdateTest, BondFunctions)
         }
         // None of the compounds is linear, the linear angles of the force field are removed
         EXPECT_TRUE(pd.findForcesConst(InteractionType::LINEAR_ANGLES).parametersConst().empty()) << fn.first;
+    }
+}
+
+/* Test: The cross terms of an angle get the lengths of the two bonds, the
+ * distance between the outer atoms at the average angle, which is that of
+ * the harmonic angle, and the default force constants, of which that of
+ * the bond-angle cross term is negative.
+ */
+TEST(AllBondedsUpdateTest, CrossBondAngles)
+{
+    ForceField pd, harmonic;
+    updateBondeds("forcefields/ACS-g1.xml", nullptr, {}, &pd, "CROSS_BOND_ANGLES");
+    updateBondeds("forcefields/ACS-g1.xml", nullptr, {}, &harmonic);
+    auto &bonds  = pd.findForcesConst(InteractionType::BONDS);
+    auto &angles = pd.findForcesConst(InteractionType::ANGLES);
+    auto &hangle = harmonic.findForcesConst(InteractionType::ANGLES);
+    ASSERT_EQ(Potential::CROSS_BOND_ANGLES, angles.potential());
+    ASSERT_EQ(Potential::HARMONIC_ANGLES, hangle.potential());
+    ASSERT_FALSE(angles.parametersConst().empty());
+    EXPECT_EQ(hangle.parametersConst().size(), angles.parametersConst().size());
+    for (const auto &a : angles.parametersConst())
+    {
+        EXPECT_EQ(6u, a.second.size()) << a.first.id();
+        auto atoms = a.first.atoms();
+        auto bo    = a.first.bondOrders();
+        const Identifier bij({ atoms[0], atoms[1] }, { bo[0] }, CanSwap::Yes);
+        const Identifier bkj({ atoms[2], atoms[1] }, { bo[1] }, CanSwap::Yes);
+        double r12   = bonds.findParameterTypeConst(bij, "bondlength").value();
+        double r23   = bonds.findParameterTypeConst(bkj, "bondlength").value();
+        ASSERT_TRUE(hangle.parameterExists(a.first)) << a.first.id();
+        double theta = hangle.findParameterTypeConst(a.first, "angle").value()*M_PI/180;
+        double r13   = std::sqrt(r12*r12 + r23*r23 - 2*r12*r23*std::cos(theta));
+        EXPECT_NEAR(r12, value(a.second, "r1e"), 1e-5*r12) << a.first.id();
+        EXPECT_NEAR(r23, value(a.second, "r2e"), 1e-5*r23) << a.first.id();
+        EXPECT_NEAR(r13, value(a.second, "r3e"), 1e-5*r13) << a.first.id();
+        const auto &krt = a.second.find("krt")->second;
+        EXPECT_EQ("kJ/mol/nm2", krt.unit()) << a.first.id();
+        EXPECT_EQ(-80000, krt.value()) << a.first.id();
+        EXPECT_LT(krt.minimum(), krt.value()) << a.first.id();
+        EXPECT_GT(krt.maximum(), krt.value()) << a.first.id();
+        EXPECT_LT(krt.maximum(), 0) << a.first.id();
+        for (const auto &kk : std::vector<std::pair<const char *, double>>{ { "krr", 50000 }, { "kub", 30000 } })
+        {
+            const auto &k = a.second.find(kk.first)->second;
+            EXPECT_EQ("kJ/mol/nm2", k.unit()) << a.first.id();
+            EXPECT_EQ(kk.second, k.value()) << a.first.id() << " " << kk.first;
+            EXPECT_LT(k.minimum(), k.value()) << a.first.id() << " " << kk.first;
+            EXPECT_GT(k.maximum(), k.value()) << a.first.id() << " " << kk.first;
+        }
+        for (const auto *name : { "r1e", "r2e", "r3e" })
+        {
+            const auto &len = a.second.find(name)->second;
+            EXPECT_EQ("pm", len.unit()) << a.first.id();
+            EXPECT_LT(len.minimum(), len.value()) << a.first.id();
+            EXPECT_GT(len.maximum(), len.value()) << a.first.id();
+        }
     }
 }
 

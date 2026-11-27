@@ -43,6 +43,7 @@ act_add_gpu_unit_test(
     forcecomputerutilsTest.cpp
     forceComputerImplementationTest.cpp
     computeTotalTest.cpp
+    crossBondAngleTest.cpp
     forceComputerTest.cpp
     forcesSimdTest.cpp
     physicsTest.cpp

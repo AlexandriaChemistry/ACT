@@ -197,6 +197,13 @@ TEST_F(GenFFTest, Options)
     }
 }
 
+// Test: The bond-angle cross term can be chosen for the angles
+TEST_F(GenFFTest, CrossBondAngles)
+{
+    const auto pd = generate({ { "-anglefn", "CROSS_BOND_ANGLES" } });
+    EXPECT_EQ(Potential::CROSS_BOND_ANGLES, pd.findForcesConst(InteractionType::ANGLES).potential());
+}
+
 // The force fields of the tool for several sets of options, as reference
 // data, such that a change in how the options reach the work shows
 

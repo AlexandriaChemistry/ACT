@@ -1437,6 +1437,75 @@ static ACT_ALWAYS_INLINE void ureyBradleyOne(gmx_unused MsgHandler *msghandler,
     }
 }
 
+/*! \brief Cross terms between the bonds and the angle, for one angle
+ *
+ * With j the central atom, and d1 = |r_i-r_j| - r1e, d2 = |r_k-r_j| - r2e
+ * and d3 = |r_i-r_k| - r3e, the energy is the sum of
+ * - the bond-angle cross term krt d3 (d1 + d2),
+ * - the bond-bond cross term krr d1 d2 and
+ * - the harmonic potential kub d3^2/2 on the distance between the
+ *   outer atoms,
+ * as the angles of type 4 and 3 in GROMACS and the distance part of the
+ * Urey-Bradley potential.
+ */
+template <typename I, typename X, typename F>
+static ACT_ALWAYS_INLINE void crossBondAngleOne(gmx_unused MsgHandler *msghandler,
+                                     const TopologyEntry   &a,
+                                     const I               &indices,
+                                     const X               &x,
+                                     F                     *forces,
+                                     double                *e)
+{
+    auto   &f    = *forces;
+    const  double half = 0.5;
+    // Get the parameters. We have to know their names to do this.
+    auto &params = a.params();
+    auto r1e     = params[cbaR1E];
+    auto r2e     = params[cbaR2E];
+    auto r3e     = params[cbaR3E];
+    auto krt     = params[cbaKRT];
+    auto krr     = params[cbaKRR];
+    auto kub     = params[cbaKUB];
+    // Get the atom indices
+    auto ai = indices[0];
+    auto aj = indices[1];
+    auto ak = indices[2];
+
+    dvec r_ij, r_kj, r_ik;
+    distanceVector(x[ai], x[aj], r_ij);
+    distanceVector(x[ak], x[aj], r_kj);
+    distanceVector(x[ai], x[ak], r_ik);
+    auto nrij2  = diprod(r_ij, r_ij);
+    auto nrkj2  = diprod(r_kj, r_kj);
+    auto nrik2  = diprod(r_ik, r_ik);
+    auto nrij_1 = gmx::invsqrt(nrij2);
+    auto nrkj_1 = gmx::invsqrt(nrkj2);
+    auto nrik_1 = gmx::invsqrt(nrik2);
+    // Deviations of the two bond lengths and of the distance between
+    // the outer atoms
+    auto d1     = nrij2*nrij_1 - r1e;
+    auto d2     = nrkj2*nrkj_1 - r2e;
+    auto d3     = nrik2*nrik_1 - r3e;
+    auto dbonds = d1 + d2;
+
+    e[0] += krt*d3*dbonds + krr*d1*d2 + half*kub*d3*d3;
+
+    // Minus the derivatives of the energy to the three distances,
+    // divided by the distance
+    auto fbi = -(krt*d3 + krr*d2)*nrij_1;
+    auto fbk = -(krt*d3 + krr*d1)*nrkj_1;
+    auto f13 = -(krt*dbonds + kub*d3)*nrik_1;
+#pragma unroll
+    for (auto m = 0; m < DIM; m++)
+    {
+        double f_i = fbi*r_ij[m] + f13*r_ik[m];
+        double f_k = fbk*r_kj[m] - f13*r_ik[m];
+        f[ai][m] += f_i;
+        f[aj][m] -= f_i + f_k;
+        f[ak][m] += f_k;
+    }
+}
+
 //! Polarization for one core-shell pair
 template <typename I, typename X, typename F>
 static ACT_ALWAYS_INLINE void polarizationOne(gmx_unused MsgHandler      *msghandler,
@@ -1821,6 +1890,7 @@ static const std::vector<InteractionType> &energyTypes(Potential mypot)
         return bonds;
     case Potential::HARMONIC_ANGLES:
     case Potential::UREY_BRADLEY_ANGLES:
+    case Potential::CROSS_BOND_ANGLES:
         return angles;
     case Potential::LINEAR_ANGLES:
         return linearAngles;
@@ -2103,6 +2173,9 @@ static bool dispatchPotential(Potential                   mypot,
     case Potential::UREY_BRADLEY_ANGLES:
         if constexpr (Pairs) { return false; } else { func.template operator()<3, true>(ONE_INTERACTION(ureyBradleyOne)); }
         break;
+    case Potential::CROSS_BOND_ANGLES:
+        if constexpr (Pairs) { return false; } else { func.template operator()<3, true>(ONE_INTERACTION(crossBondAngleOne)); }
+        break;
     case Potential::LJ12_6:
         func.template operator()<2, true>(ONE_INTERACTION(lj12_6One));
         break;
@@ -2289,6 +2362,7 @@ static double interactionFlops(Potential                   mypot,
     case Potential::HARMONIC_ANGLES:        return constant({ 83, 71 }, false);
     case Potential::LINEAR_ANGLES:          return constant({ 23, 18 }, false);
     case Potential::UREY_BRADLEY_ANGLES:    return constant({ 97, 102 }, false);
+    case Potential::CROSS_BOND_ANGLES:      return constant({ 70, 40 }, false);
     case Potential::HARMONIC_DIHEDRALS:     return constant({ 106, 71 }, false);
     case Potential::PROPER_DIHEDRALS:       return constant({ 132, 118 }, false);
     case Potential::POSITION_RESTRAINT:     return constant({ 17, 12 }, false);

@@ -73,6 +73,8 @@ namespace alexandria
 
     enum { ubKT, ubANGLE, ubR13, ubKUB, ubNR };
 
+    enum { cbaR1E, cbaR2E, cbaR3E, cbaKRT, cbaKRR, cbaKUB, cbaNR };
+
     enum { psANGLE, psRIJ0, psRJK0, psNR };
 
     enum { polALPHA, polRHYPER, polFCHYPER, polNR };

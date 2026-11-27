@@ -158,6 +158,10 @@ void AllBondeds::addOptions(std::vector<t_pargs> *pargs)
               "Improper dihedral angle force constant (kJ/mol/rad^2)" },
             { "-kub",   FALSE, etREAL, {&kub_},
               "Urey_Bradley force constant" },
+            { "-krt",   FALSE, etREAL, {&krt_},
+              "Force constant of the bond-angle cross term of CROSS_BOND_ANGLES (kJ/mol/nm^2), which can have either sign" },
+            { "-krr",   FALSE, etREAL, {&krr_},
+              "Force constant of the bond-bond cross term of CROSS_BOND_ANGLES (kJ/mol/nm^2), which can have either sign. The harmonic term of this potential on the distance between the outer atoms takes the force constant of [TT]-kub[tt]." },
             { "-bond_tol",   FALSE, etREAL, {&bond_tol_},
               "Tolerance for warning about large sigma in bond-lengths (pm)" },
             { "-angle_tol",   FALSE, etREAL, {&angle_tol_},
@@ -457,12 +461,18 @@ void AllBondeds::writeHistogram(const gmx_output_env_t *oenv)
     }
 }
 
-//! \return The Distance between the 1-3 atoms in an angle
-static real calc_r13(const ForceField    *pd,
-                     const Identifier &bondId,
-                     const real        angle)
+/*! \brief Look up the lengths of the two bonds of an angle
+ * \param[in]  pd     Force field
+ * \param[in]  bondId Identifier corresponding to angle, i.e. three atoms
+ * \param[out] r12    Length of the bond between the first two atoms (nm)
+ * \param[out] r23    Length of the bond between the last two atoms (nm)
+ * \return whether both bonds are in the force field
+ */
+static bool angleBondLengths(const ForceField *pd,
+                             const Identifier &bondId,
+                             double           *r12,
+                             double           *r23)
 {
-    double r12 = 0, r23 = 0, r13 = 0;
     auto atoms      = bondId.atoms();
     auto bondOrders = bondId.bondOrders();
     const Identifier aij ({atoms[0], atoms[1] }, { bondOrders[0] }, CanSwap::Yes);
@@ -475,16 +485,23 @@ static real calc_r13(const ForceField    *pd,
         const auto &bij = fs.findParameterTypeConst(aij, type);
         const auto &bkj = fs.findParameterTypeConst(akj, type);
 
-        r12 = convertToGromacs(bij.value(), bij.unit());
-        r23 = convertToGromacs(bkj.value(), bkj.unit());
-
-        r13 = std::sqrt((r12*r12) + (r23*r23) - (2*r12*r23*std::cos(DEG2RAD*angle)));
-
-        return r13;
+        *r12 = convertToGromacs(bij.value(), bij.unit());
+        *r23 = convertToGromacs(bkj.value(), bkj.unit());
+        return true;
     }
-    else
+    fprintf(stderr, "Cannot find one of %s or %s\n", aij.id().c_str(), akj.id().c_str());
+    return false;
+}
+
+//! \return The Distance between the 1-3 atoms in an angle
+static real calc_r13(const ForceField    *pd,
+                     const Identifier &bondId,
+                     const real        angle)
+{
+    double r12 = 0, r23 = 0;
+    if (angleBondLengths(pd, bondId, &r12, &r23))
     {
-        fprintf(stderr, "Cannot find one of %s or %s\n", aij.id().c_str(), akj.id().c_str());
+        return std::sqrt((r12*r12) + (r23*r23) - (2*r12*r23*std::cos(DEG2RAD*angle)));
     }
     return 0.0;
 }
@@ -645,11 +662,49 @@ void AllBondeds::updateForceField(gmx::TextWriter *tw,
             case InteractionType::ANGLES:
                 {
                     round_numbers(&av, &sig, 10);
-                    fs->addParameter(bondId, pname[angleANGLE],
-                                     ForceFieldParameter("degree", av, sig, N, av*afactor_,
-                                                         std::min<double>(180.0, av/afactor_), Mutability::Bounded, false, true));
-                    fs->addParameter(bondId, pname[angleKT],
-                                     ForceFieldParameter("kJ/mol/rad2", kt_, 0, 1, kt_*factor_, kt_/factor_, Mutability::Bounded, false, true));
+                    if (fType == Potential::CROSS_BOND_ANGLES)
+                    {
+                        // This potential has no angle: the equilibrium
+                        // lengths of the two bonds and the distance
+                        // between the outer atoms at the average angle.
+                        const std::string unit("pm");
+                        double r12 = 0, r23 = 0;
+                        angleBondLengths(pd, bondId, &r12, &r23);
+                        const std::vector<std::pair<int, double>> lengths = {
+                            { cbaR1E, convertFromGromacs(r12, unit) },
+                            { cbaR2E, convertFromGromacs(r23, unit) },
+                            { cbaR3E, convertFromGromacs(calc_r13(pd, bondId, av), unit) }
+                        };
+                        for (const auto &len : lengths)
+                        {
+                            fs->addParameter(bondId, pname[len.first],
+                                             ForceFieldParameter(unit, len.second, 0, N, len.second*bfactor_,
+                                                                 len.second/bfactor_, Mutability::Bounded, false, true));
+                        }
+                        // The force constants of the cross terms can be negative
+                        const std::vector<std::pair<int, real>> crossTerms = {
+                            { cbaKRT, krt_ }, { cbaKRR, krr_ }
+                        };
+                        for (const auto &ct : crossTerms)
+                        {
+                            fs->addParameter(bondId, pname[ct.first],
+                                             ForceFieldParameter("kJ/mol/nm2", ct.second, 0, 1,
+                                                                 std::min(ct.second*factor_, ct.second/factor_),
+                                                                 std::max(ct.second*factor_, ct.second/factor_),
+                                                                 Mutability::Bounded, false, false));
+                        }
+                        fs->addParameter(bondId, pname[cbaKUB],
+                                         ForceFieldParameter("kJ/mol/nm2", kub_, 0, 1, kub_*factor_, kub_/factor_,
+                                                             Mutability::Bounded, false, true));
+                    }
+                    else
+                    {
+                        fs->addParameter(bondId, pname[angleANGLE],
+                                         ForceFieldParameter("degree", av, sig, N, av*afactor_,
+                                                             std::min<double>(180.0, av/afactor_), Mutability::Bounded, false, true));
+                        fs->addParameter(bondId, pname[angleKT],
+                                         ForceFieldParameter("kJ/mol/rad2", kt_, 0, 1, kt_*factor_, kt_/factor_, Mutability::Bounded, false, true));
+                    }
                     tw->writeStringFormatted("angle-%s angle %g sigma %g (deg) N = %d%s%s\n",
                             bondId.id().c_str(), av, sig, static_cast<int>(N), (sig > angle_tol_) ? " WARNING" : "",
                             analyseDistribution(iType, i, av, sig, angle_tol_, true).c_str());
