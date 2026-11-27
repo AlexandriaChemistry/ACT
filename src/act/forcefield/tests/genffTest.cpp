@@ -178,6 +178,25 @@ TEST_F(GenFFTest, Defaults)
     EXPECT_DOUBLE_EQ(0.5, vs2a.maximum());
 }
 
+// Test: The rules for symmetric charges, among which the hydrogen atoms
+// of a methylene group, a methyl group and methane
+TEST_F(GenFFTest, SymmetricCharges)
+{
+    const auto pd = generate({});
+    std::vector<int> carbonHydrogen;
+    size_t           nrule = 0;
+    for (auto sc = pd.getSymchargesBegin(); sc != pd.getSymchargesEnd(); ++sc)
+    {
+        nrule++;
+        if ("C" == sc->getCentral() && "H" == sc->getAttached())
+        {
+            carbonHydrogen.push_back(sc->getNumattach());
+        }
+    }
+    EXPECT_EQ(15u, nrule);
+    EXPECT_EQ((std::vector<int>{ 4, 3, 2 }), carbonHydrogen);
+}
+
 // Test: Other functions, charge distribution and options
 TEST_F(GenFFTest, Options)
 {
