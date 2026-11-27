@@ -31,6 +31,7 @@
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
 
+#include <algorithm>
 #include <cmath>
 #include <cstddef>
 #include <cstdio>
@@ -51,10 +52,12 @@
 #include "act/forcefield/forcefield_parameter.h"
 #include "act/forcefield/forcefield_parametername.h"
 #include "act/forcefield/forcefield_xml.h"
+#include "act/forcefield/particletype.h"
 #include "act/forcefield/potential.h"
 #include "act/forces/forcecomputer.h"
 #include "act/import/import.h"
 #include "act/molprop/molprop.h"
+#include "act/molprop/topologyentry.h"
 #include "act/topology/actmol.h"
 #include "gromacs/math/vectypes.h"
 #include "gromacs/topology/ifunc.h"
@@ -164,16 +167,17 @@ struct Water
 };
 
 /*! \brief Make a water molecule
- * \param[in]  pd  The force field
- * \param[out] mol The molecule with its topology
+ * \param[in]  pd       The force field
+ * \param[out] mol      The molecule with its topology
+ * \param[in]  fileName The file in the test data, for another molecule
  */
-void makeMolecule(ForceField *pd, ACTMol *mol)
+void makeMolecule(ForceField *pd, ACTMol *mol, const std::string &fileName = "water.sdf")
 {
     MsgHandler msghandler;
     msghandler.setPrintLevel(ACTStatus::Warning);
     std::vector<MolProp> mps;
     double               qtot = 0;
-    importFile(&msghandler, pd, gmx::test::TestFileManager::getInputFilePath("molecules/water.sdf"),
+    importFile(&msghandler, pd, gmx::test::TestFileManager::getInputFilePath("molecules/" + fileName),
                &mps, "minimum", JobType::OPT, false, &qtot, true);
     ASSERT_TRUE(msghandler.ok());
     ASSERT_EQ(1u, mps.size());
@@ -648,6 +652,238 @@ TEST(CrossBondAngleTest, GromacsTopologyBondAngleOnly)
     ASSERT_EQ(1u, lines.size());
     EXPECT_EQ(4, lines[0].first);
     EXPECT_EQ(4u, lines[0].second.size());
+}
+
+/* The lengths r1e and r2e belong to the bonds in the order of the
+ * identifier of the angle. For an angle such as C-O-H the atoms can be in
+ * the reverse order in the molecule.
+ */
+
+//! The force constants of the angles of 1-butanol (kJ/mol nm^2)
+const double cButanolKrt = -80000, cButanolKrr = 50000, cButanolKub = 30000;
+
+/*! \brief Make 1-butanol with CROSS_BOND_ANGLES for its angles
+ *
+ * The lengths r1e and r2e of each angle are the bond lengths of the force
+ * field ACS-g2, such that they differ in an angle with different bonds.
+ * \param[out] pd  The force field
+ * \param[out] mol The molecule
+ */
+void makeButanol(ForceField *pd, ACTMol *mol)
+{
+    const std::string fileName("1-butanol.pdb");
+    readForceField(gmx::test::TestFileManager::getInputFilePath("forcefields/ACS-g2.xml"), pd);
+    std::vector<Identifier> angleIds;
+    {
+        ACTMol harmonic;
+        makeMolecule(pd, &harmonic, fileName);
+        ASSERT_TRUE(harmonic.topology()->hasEntry(InteractionType::ANGLES));
+        for (const auto &angle : harmonic.topology()->entry(InteractionType::ANGLES))
+        {
+            if (std::find(angleIds.begin(), angleIds.end(), angle->id()) == angleIds.end())
+            {
+                angleIds.push_back(angle->id());
+            }
+        }
+    }
+    const auto &bonds = pd->findForcesConst(InteractionType::BONDS);
+    auto       *fs    = pd->findForces(InteractionType::ANGLES);
+    fs->eraseParameter();
+    fs->setFunction("CROSS_BOND_ANGLES");
+    for (const auto &id : angleIds)
+    {
+        const auto atoms = id.atoms();
+        const auto bo    = id.bondOrders();
+        ASSERT_EQ(3u, atoms.size());
+        const Identifier bij({ atoms[0], atoms[1] }, { bo[0] }, CanSwap::Yes);
+        const Identifier bkj({ atoms[2], atoms[1] }, { bo[1] }, CanSwap::Yes);
+        ASSERT_TRUE(bonds.parameterExists(bij)) << bij.id();
+        ASSERT_TRUE(bonds.parameterExists(bkj)) << bkj.id();
+        const auto &lij = bonds.findParameterTypeConst(bij, "bondlength");
+        const auto &lkj = bonds.findParameterTypeConst(bkj, "bondlength");
+        ASSERT_EQ("pm", lij.unit());
+        const std::vector<std::pair<const char *, double>> lengths = {
+            { "r1e", lij.value() }, { "r2e", lkj.value() }, { "r3e", 0.8*(lij.value() + lkj.value()) }
+        };
+        for (const auto &len : lengths)
+        {
+            fs->addParameter(id, len.first,
+                             ForceFieldParameter("pm", len.second, 0, 1, 0.9*len.second, 1.1*len.second,
+                                                 Mutability::Bounded, true, true));
+        }
+        const std::vector<std::pair<const char *, double>> forceConstants = {
+            { "krt", cButanolKrt }, { "krr", cButanolKrr }, { "kub", cButanolKub }
+        };
+        for (const auto &fc : forceConstants)
+        {
+            fs->addParameter(id, fc.first,
+                             ForceFieldParameter("kJ/mol/nm2", fc.second, 0, 1, -200000, 200000,
+                                                 Mutability::Bounded, true, false));
+        }
+    }
+    makeMolecule(pd, mol, fileName);
+}
+
+/*! \brief Tell from the atoms whether an angle is in the reverse order of
+ * its identifier
+ * \param[in]  pd      The force field
+ * \param[in]  mol     The molecule
+ * \param[in]  angle   The angle
+ * \param[out] reverse Whether the first atom of the angle is the last one
+ *                     of the identifier
+ * \return whether the outer atoms differ, such that the order can be told
+ */
+bool angleOrder(const ForceField    &pd,
+                const ACTMol        &mol,
+                const TopologyEntry &angle,
+                bool                *reverse)
+{
+    const auto &atoms = mol.topology()->atoms();
+    const auto  bondType = [&](int index)
+    {
+        return pd.findParticleType(atoms[index].ffType())->interactionTypeToIdentifier(InteractionType::BONDS).id();
+    };
+    const auto idAtoms = angle.id().atoms();
+    *reverse = false;
+    if (idAtoms[0] == idAtoms[2])
+    {
+        return false;
+    }
+    const auto first = bondType(angle.atomIndex(0));
+    const auto last  = bondType(angle.atomIndex(2));
+    EXPECT_TRUE((first == idAtoms[0] && last == idAtoms[2]) ||
+                (first == idAtoms[2] && last == idAtoms[0])) << angle.id().id();
+    *reverse = (first == idAtoms[2]);
+    return true;
+}
+
+// Test: The energy of angles with different bonds, of which the atoms are
+// in the order of the identifier or in the reverse order, is that of the
+// equations with r1e for the bond of the first atom of the identifier
+TEST(CrossBondAngleTest, OrderOfTheAtoms)
+{
+    ForceField pd;
+    ACTMol     mol;
+    makeButanol(&pd, &mol);
+    if (::testing::Test::HasFatalFailure())
+    {
+        return;
+    }
+    auto         x        = mol.xOriginal();
+    const auto  &angles   = mol.topology()->entry(InteractionType::ANGLES);
+    double       expected = 0;
+    int          nForward = 0, nReverse = 0;
+    const auto   distance = [&](int i, int j)
+    {
+        double d2 = 0;
+        for (int m = 0; m < DIM; m++)
+        {
+            d2 += (x[i][m] - x[j][m])*(x[i][m] - x[j][m]);
+        }
+        return std::sqrt(d2);
+    };
+    for (const auto &angle : angles)
+    {
+        bool reverse = false;
+        if (angleOrder(pd, mol, *angle->self(), &reverse))
+        {
+            (reverse ? nReverse : nForward)++;
+        }
+        EXPECT_EQ(reverse, angle->swapped()) << angle->id().id();
+        const auto &params = angle->params();
+        ASSERT_EQ(static_cast<size_t>(cbaNR), params.size());
+        // The first atom of the identifier
+        const int    ai = angle->atomIndex(reverse ? 2 : 0);
+        const int    aj = angle->atomIndex(1);
+        const int    ak = angle->atomIndex(reverse ? 0 : 2);
+        const double d1 = distance(ai, aj) - params[cbaR1E];
+        const double d2 = distance(ak, aj) - params[cbaR2E];
+        const double d3 = distance(ai, ak) - params[cbaR3E];
+        expected += params[cbaKRT]*d3*(d1 + d2) + params[cbaKRR]*d1*d2 + 0.5*params[cbaKUB]*d3*d3;
+    }
+    // Both orders are there, with different lengths of the bonds
+    EXPECT_GT(nForward, 0);
+    EXPECT_GT(nReverse, 0);
+
+    MsgHandler msghandler;
+    msghandler.setPrintLevel(ACTStatus::Warning);
+    const ForceComputer               forceComp;
+    std::vector<gmx::RVec>            forces(x.size(), { 0, 0, 0 });
+    std::map<InteractionType, double> energies;
+    forceComp.compute(&msghandler, &pd, mol.topology(), &x, &forces, &energies);
+    ASSERT_TRUE(msghandler.ok());
+    ASSERT_EQ(1u, energies.count(InteractionType::ANGLES));
+    EXPECT_NEAR(expected, energies[InteractionType::ANGLES],
+                gmx::test::precisionTolerance(1e-9, 2e-3)*std::max(1.0, std::abs(expected)));
+}
+
+// Test: In a GROMACS topology the lengths of the bonds are in the order of
+// the atoms of each angle
+TEST(CrossBondAngleTest, GromacsTopologyOrderOfTheAtoms)
+{
+    ForceField pd;
+    ACTMol     mol;
+    makeButanol(&pd, &mol);
+    if (::testing::Test::HasFatalFailure())
+    {
+        return;
+    }
+    gmx::test::TestFileManager fileManager;
+    const auto topName = fileManager.getTemporaryFilePath("butanol.top");
+    {
+        MsgHandler msghandler;
+        msghandler.setPrintLevel(ACTStatus::Warning);
+        FILE *fp = fopen(topName.c_str(), "w");
+        ASSERT_NE(nullptr, fp);
+        write_top(&msghandler, fp, "butanol", mol.topology(), &pd);
+        fclose(fp);
+    }
+    const auto   &angles = mol.topology()->entry(InteractionType::ANGLES);
+    std::ifstream in(topName);
+    ASSERT_TRUE(in.good());
+    std::string   line;
+    bool          inAngles = false;
+    int           nForward = 0, nReverse = 0;
+    while (std::getline(in, line))
+    {
+        if (line.find('[') != std::string::npos)
+        {
+            inAngles = line.find("angles") != std::string::npos;
+            continue;
+        }
+        if (!inAngles || line.empty() || line[0] == ';')
+        {
+            continue;
+        }
+        std::istringstream iss(line.substr(0, line.find(';')));
+        int                ai, aj, ak, type;
+        double             r1, r2;
+        ASSERT_TRUE(static_cast<bool>(iss >> ai >> aj >> ak >> type >> r1 >> r2)) << line;
+        if (4 != type && 3 != type)
+        {
+            // The Urey-Bradley angle has no lengths of the bonds
+            continue;
+        }
+        bool found = false;
+        for (const auto &angle : angles)
+        {
+            if (angle->atomIndex(0) == ai - 1 && angle->atomIndex(1) == aj - 1 && angle->atomIndex(2) == ak - 1)
+            {
+                bool reverse = false;
+                if (angleOrder(pd, mol, *angle->self(), &reverse) && 4 == type)
+                {
+                    (reverse ? nReverse : nForward)++;
+                }
+                const auto &params = angle->params();
+                EXPECT_NEAR(params[reverse ? cbaR2E : cbaR1E], r1, 1e-8) << line;
+                EXPECT_NEAR(params[reverse ? cbaR1E : cbaR2E], r2, 1e-8) << line;
+                found = true;
+            }
+        }
+        EXPECT_TRUE(found) << line;
+    }
+    EXPECT_GT(nForward, 0);
+    EXPECT_GT(nReverse, 0);
 }
 
 } // namespace
