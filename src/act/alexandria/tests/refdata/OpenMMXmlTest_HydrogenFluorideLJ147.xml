@@ -31,7 +31,6 @@
   </HarmonicBondForce>
   <HarmonicAngleForce energy="0"/>
   <RBTorsionForce energy="0"/>
-  <PeriodicTorsionForce energy="0"/>
   <CustomNonbondedForce energy="select(epsilon*sigma,( epsilon*( ( (1+ delta)/((r/sigma)+ delta))^7 ) * ( ( (1+ gamma)/(((r/sigma)^7) +gamma )  ) -2 ) ),0)" bondCutoff="0">
     <GlobalParameter name="pot-LJ14_7" defaultValue="1"/>
     <GlobalParameter name="pot-COULOMB_GAUSSIAN" defaultValue="1"/>

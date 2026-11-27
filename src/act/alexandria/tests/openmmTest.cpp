@@ -352,6 +352,47 @@ TEST(OpenMMAngleForceTest, NoAngles)
     EXPECT_EQ(0u, count(text, "<Script>"));
 }
 
+// Test: A proper dihedral has the periodicity, the phase and the force
+// constant under the names that the PeriodicTorsionForce of OpenMM reads
+TEST(OpenMMDihedralTest, ProperDihedrals)
+{
+    const auto text = openMMText("ACS-g1", "acetone.sdf");
+    ASSERT_FALSE(text.empty());
+    const auto nproper = count(text, "<Proper ");
+    EXPECT_GT(nproper, 0u);
+    EXPECT_EQ(nproper, count(text, "\" periodicity1=\"3\" phase1=\""));
+    EXPECT_EQ(nproper, count(text, "\" k1=\"5\"/>"));
+    for (const auto &actName : { " phi0=\"", " kp=\"", " mult=\"" })
+    {
+        EXPECT_EQ(0u, count(text, actName)) << actName;
+    }
+}
+
+// Test: The harmonic improper dihedrals are a CustomTorsionForce with
+// their energy expression, and the central atom is the first one, also
+// if the identifier in the force field has it as the last one
+TEST(OpenMMDihedralTest, ImproperDihedrals)
+{
+    const auto text = openMMText("ACS-g1", "furan.sdf");
+    ASSERT_FALSE(text.empty());
+    EXPECT_EQ(1u, count(text, "<CustomTorsionForce energy=\"0.5*kimp*theta^2\" ordering=\"charmm\">"));
+    EXPECT_EQ(1u, count(text, "<PerTorsionParameter name=\"kimp\"/>"));
+    EXPECT_EQ(2u, count(text, "<Improper "));
+    // The carbon atoms next to the oxygen atom
+    EXPECT_EQ(1u, count(text, "<Improper class1=\"c2_b\" class2=\"h_b\" class3=\"c2_b\" class4=\"o2_b\" kimp=\""));
+    // The other two, of which the identifier is c2_b:c2_b~h_b:c2_b
+    EXPECT_EQ(1u, count(text, "<Improper class1=\"c2_b\" class2=\"h_b\" class3=\"c2_b\" class4=\"c2_b\" kimp=\""));
+}
+
+// Test: No force for improper dihedrals if the compound has none
+TEST(OpenMMDihedralTest, NoImproperDihedrals)
+{
+    const auto text = openMMText("ACS-g1", "acetonitrile.sdf");
+    ASSERT_FALSE(text.empty());
+    EXPECT_EQ(0u, count(text, "CustomTorsionForce"));
+    EXPECT_EQ(0u, count(text, "<Improper"));
+}
+
 // Test: The induction correction
 TEST_F(OpenMMXmlTest, WaterInductionCorrection)
 {

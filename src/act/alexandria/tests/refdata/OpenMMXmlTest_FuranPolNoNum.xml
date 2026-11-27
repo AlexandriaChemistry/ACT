@@ -70,10 +70,11 @@
     <Proper class1="c2_b" class2="c2_b" class3="o2_b" class4="c2_b" c0="0" c1="0" c2="0" c3="0" c4="0" c5="0"/>
     <Proper class1="c2_b" class2="c2_b" class3="c2_b" class4="c2_b" c0="0" c1="0" c2="0" c3="0" c4="0" c5="0"/>
   </RBTorsionForce>
-  <PeriodicTorsionForce energy="0">
+  <CustomTorsionForce energy="0.5*kimp*theta^2" ordering="charmm">
+    <PerTorsionParameter name="kimp"/>
     <Improper class1="c2_b" class2="h_b" class3="c2_b" class4="o2_b" kimp="1"/>
-    <Improper class1="c2_b" class2="c2_b" class3="h_b" class4="c2_b" kimp="1"/>
-  </PeriodicTorsionForce>
+    <Improper class1="c2_b" class2="h_b" class3="c2_b" class4="c2_b" kimp="1"/>
+  </CustomTorsionForce>
   <CustomNonbondedForce energy="select(epsilon*sigma,(((2*epsilon)/(1-(3/(gamma+3)))) * (1.0/(1.0+(r/sigma)^6)) * ((3/(gamma+3))*exp(gamma*(1-(r/sigma)))-1)),0)" bondCutoff="0">
     <GlobalParameter name="pot-WANG_BUCKINGHAM" defaultValue="1"/>
     <GlobalParameter name="pot-COULOMB_GAUSSIAN" defaultValue="1"/>
