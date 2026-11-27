@@ -332,6 +332,12 @@ private:
     std::map<std::string, std::string> residueNames_;
     //! Mapping from InteractionType to xml branch
     std::map<InteractionType, xmlNodePtr> xmlMap_;
+    //! The OpenMM class of each OpenMM atom type
+    std::map<std::string, std::string>    typeClass_;
+    /*! The classes of the angles with an energy expression that are not
+     * the same in both directions, in the order of their parameters
+     */
+    std::set<std::vector<std::string>>    orderedAngles_;
     //! Add a mass to a parent
     void addXmlElemMass(xmlNodePtr          parent,
                         const ForceField   *pd,
@@ -377,6 +383,19 @@ private:
      */
     void addXmlHyper(xmlNodePtr                        parent,
                      const std::vector<t_hyper_stuff> &stuff);
+    /*! \brief Finish the angle forces that have an energy expression, see
+     * customAngleForce(). Forces without angles are taken out. If there
+     * are any left, a python script is added that turns each of them into
+     * a CustomCompoundBondForce with the same energy expression,
+     * parameters and angles, since the CustomAngleForce of OpenMM cannot
+     * evaluate distances between the atoms. The script puts the atoms of
+     * each angle in the order of the parameters, which OpenMM does not do
+     * if it finds the parameters of an angle in the reverse direction.
+     * \param[in] parent The xml node to add the script to
+     * \param[in] pd     The force field
+     */
+    void addXmlAngleScript(xmlNodePtr        parent,
+                           const ForceField *pd);
     /*! \brief Add the Drude particle interaction energy parameters
      * \param[in] parent    The xml node to add to
      * \param[in] pd        The force field
@@ -592,6 +611,117 @@ void OpenMMWriter::addXmlHyper(xmlNodePtr                        parent,
     script += "#        print(f\"drude_parent {drude_parent} not found in ForceField\")\n";
     script += "if nhyper > 0:\n";
     script += "    sys.addForce(hyper)\n";
+    add_xml_child_val(parent, exml_names(xmlEntryOpenMM::SCRIPT), script.c_str());
+}
+
+/*! \brief Tell whether the angles of a potential are written as a
+ * CustomAngleForce with the energy expression of the potential. Since
+ * these expressions use the distances between the atoms, the forces are
+ * turned into a CustomCompoundBondForce by a script in the file.
+ * \param[in] p The potential
+ * \return true if so
+ */
+static bool customAngleForce(Potential p)
+{
+    return (Potential::LINEAR_ANGLES == p ||
+            Potential::UREY_BRADLEY_ANGLES == p);
+}
+
+void OpenMMWriter::addXmlAngleScript(xmlNodePtr        parent,
+                                     const ForceField *pd)
+{
+    bool present = false;
+    for (auto node = xmlMap_.begin(); node != xmlMap_.end(); )
+    {
+        if (!pd->interactionPresent(node->first) ||
+            !customAngleForce(pd->findForcesConst(node->first).potential()))
+        {
+            ++node;
+            continue;
+        }
+        bool haveAngles = false;
+        for (auto child = node->second->children; child && !haveAngles; child = child->next)
+        {
+            haveAngles = (XML_ELEMENT_NODE == child->type &&
+                          xmlStrEqual(child->name, BAD_CAST exml_names(xmlEntryOpenMM::ANGLE_CLASS)));
+        }
+        if (haveAngles)
+        {
+            present = true;
+            ++node;
+        }
+        else
+        {
+            // OpenMM cannot make sense of the expression of a force
+            // without angles either.
+            xmlUnlinkNode(node->second);
+            xmlFreeNode(node->second);
+            node = xmlMap_.erase(node);
+        }
+    }
+    if (!present)
+    {
+        return;
+    }
+    // The classes of the atom types in the angles that have a direction
+    std::set<std::string> classes;
+    for (const auto &oa : orderedAngles_)
+    {
+        classes.insert(oa.begin(), oa.end());
+    }
+    std::string script;
+    script += "import openmm\n";
+    script += "# The CustomAngleForce of OpenMM knows the angle theta only. The angle\n";
+    script += "# potentials that need the distances between the atoms are therefore\n";
+    script += "# turned into a CustomCompoundBondForce here, with the same energy\n";
+    script += "# expression, parameters and angles.\n";
+    script += "# OpenMM finds the parameters of an angle in either direction, but it\n";
+    script += "# keeps the order of the atoms. The angles below are not the same in\n";
+    script += "# both directions: their atoms have to be in this order of the classes.\n";
+    script += "atom_class = {\n";
+    for (const auto &tc : typeClass_)
+    {
+        if (classes.end() != classes.find(tc.second))
+        {
+            script += gmx::formatString("    \"%s\": \"%s\",\n", tc.first.c_str(), tc.second.c_str());
+        }
+    }
+    script += "}\n";
+    script += "ordered = [\n";
+    for (const auto &oa : orderedAngles_)
+    {
+        script += gmx::formatString("    ( \"%s\", \"%s\", \"%s\" ),\n",
+                                    oa[0].c_str(), oa[1].c_str(), oa[2].c_str());
+    }
+    script += "]\n";
+    script += "classes = [atom_class.get(data.atomType[atom], \"\") for atom in data.atoms]\n";
+    script += "for index in reversed(range(sys.getNumForces())):\n";
+    script += "    old = sys.getForce(index)\n";
+    script += "    if not isinstance(old, openmm.CustomAngleForce):\n";
+    script += "        continue\n";
+    script += "    energy = old.getEnergyFunction()\n";
+    script += "    if not \"distance(\" in energy:\n";
+    script += "        continue\n";
+    script += "    new = openmm.CustomCompoundBondForce(3, energy)\n";
+    script += "    new.setName(old.getName())\n";
+    script += "    for i in range(old.getNumGlobalParameters()):\n";
+    script += "        name = old.getGlobalParameterName(i)\n";
+    script += "        new.addGlobalParameter(name, old.getGlobalParameterDefaultValue(i))\n";
+    script += "        # The force gets the name of its potential\n";
+    script += "        if name.startswith(\"pot-\"):\n";
+    script += "            new.setName(name[4:])\n";
+    script += "    for i in range(old.getNumPerAngleParameters()):\n";
+    script += "        new.addPerBondParameter(old.getPerAngleParameterName(i))\n";
+    script += "    for i in range(old.getNumAngles()):\n";
+    script += "        p1, p2, p3, params = old.getAngleParameters(i)\n";
+    script += "        if ( classes[p3], classes[p2], classes[p1] ) in ordered:\n";
+    script += "            p1, p3 = p3, p1\n";
+    script += "        new.addBond([ p1, p2, p3 ], params)\n";
+    script += "    new.setForceGroup(old.getForceGroup())\n";
+    script += "    new.setUsesPeriodicBoundaryConditions(old.usesPeriodicBoundaryConditions())\n";
+    script += "    sys.removeForce(index)\n";
+    script += "    if new.getNumBonds() > 0:\n";
+    script += "        sys.addForce(new)\n";
     add_xml_child_val(parent, exml_names(xmlEntryOpenMM::SCRIPT), script.c_str());
 }
 
@@ -1114,12 +1244,19 @@ void OpenMMWriter::makeXmlMap(xmlNodePtr        parent,
             add_xml_double(fsPtr, "energy", 0);
             break;
         case Potential::LINEAR_ANGLES:
-            fsPtr = add_xml_child(parent, exml_names(xmlEntryOpenMM::CUSTOMANGLEFORCE));
-            add_xml_double(fsPtr, "energy", 0);
-            break;
         case Potential::UREY_BRADLEY_ANGLES:
-            fsPtr = add_xml_child(parent, exml_names(xmlEntryOpenMM::CUSTOMANGLEFORCE));
-            add_xml_double(fsPtr, "energy", 0);
+            {
+                // The energy expression with the parameters of each angle,
+                // see addXmlAngleScript.
+                fsPtr = add_xml_child(parent, exml_names(xmlEntryOpenMM::CUSTOMANGLEFORCE));
+                add_xml_char(fsPtr, "energy", energy.c_str());
+                add_potential(fsPtr, fs.second.potential());
+                for (const auto &pn : pname)
+                {
+                    auto grandchild0 = add_xml_child(fsPtr, exml_names(xmlEntryOpenMM::PERANGLEPARAMETER));
+                    add_xml_char(grandchild0, exml_names(xmlEntryOpenMM::NAME), pn);
+                }
+            }
             break;
         case Potential::FOURIER_DIHEDRALS:
             fsPtr = add_xml_child(parent, exml_names(xmlEntryOpenMM::RBTORSIONFORCE));
@@ -1207,6 +1344,14 @@ void OpenMMWriter::addTopologyEntries(MsgHandler                                
                 case Potential::LINEAR_ANGLES:
                     addXmlBond(xmlMap_[fs.first], xmlEntryOpenMM::ANGLE_CLASS,
                                atoms, pname, entry->params());
+                    if (Potential::UREY_BRADLEY_ANGLES != fs.second.potential() &&
+                        atoms.front() != atoms.back())
+                    {
+                        // The parameters belong to the atoms in this order,
+                        // which matters if the energy is not the same when
+                        // the outer atoms are swapped.
+                        orderedAngles_.insert(atoms);
+                    }
                     break;
                 case Potential::FOURIER_DIHEDRALS:
                 case Potential::PROPER_DIHEDRALS:
@@ -1412,6 +1557,7 @@ void OpenMMWriter::addXmlForceField(MsgHandler                *msghandler,
                     add_xml_char(newAtype, exml_names(xmlEntryOpenMM::NAME), openMMtype.c_str());
                     add_xml_char(newAtype, exml_names(xmlEntryOpenMM::CLASS), openMMclass.c_str());
                     addXmlElemMass(newAtype, pd, aType);
+                    typeClass_[openMMtype] = openMMclass;
                 }
                 int reali = tellme_RealAtom(i, myatoms);
 
@@ -1626,6 +1772,8 @@ void OpenMMWriter::addXmlForceField(MsgHandler                *msghandler,
             addTopologyEntries(msghandler, pd, &BondClassUsed, actmol.topology());
         }
     }
+    // The angle forces are complete now
+    addXmlAngleScript(parent, pd);
     if (msghandler->ok())
     {
         addXmlNonbonded(msghandler, parent, pd, fftypeGlobalMap);

@@ -44,7 +44,6 @@
     <Bond class1="hi_b" class2="i_b" k="300000" length="0.1621"/>
   </HarmonicBondForce>
   <HarmonicAngleForce energy="0"/>
-  <CustomAngleForce energy="0"/>
   <PeriodicTorsionForce energy="0"/>
   <PeriodicTorsionForce energy="0"/>
   <CustomNonbondedForce energy="4*epsilon*((sigma/r)^12 - (sigma/r)^6)" bondCutoff="0">

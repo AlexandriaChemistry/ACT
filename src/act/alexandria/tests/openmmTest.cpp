@@ -36,6 +36,7 @@
 #include <gtest/gtest.h>
 #include <map>
 #include <set>
+#include <sstream>
 #include <string>
 #include <vector>
 
@@ -47,6 +48,7 @@
 #include "act/forcefield/forcefield_xml.h"
 #include "act/testutils/actmol_util.h"
 #include "act/testutils/forcefield_utils.h"
+#include "gromacs/utility/stringutil.h"
 #include "testutils/cmdlinetest.h"
 #include "testutils/filematchers.h"
 #include "testutils/refdata.h"
@@ -219,6 +221,105 @@ TEST_F(OpenMMXmlTest, HydrogenFluorideLJ147)
 TEST_F(OpenMMXmlTest, AcetoneUreyBradley)
 {
     testOpenMM("ACS-g-dih", "acetone.sdf", true);
+}
+
+// Test: A linear angle, of which the parameter a depends on the direction
+TEST_F(OpenMMXmlTest, AcetonitrileLinearAngle)
+{
+    testOpenMM("ACS-g1", "acetonitrile.sdf", true);
+}
+
+/*! \brief Write the OpenMM force field file of a compound
+ * \param[in] forceField The name of the force field
+ * \param[in] fileName   The file with the compound in the test data
+ * \return the text of the file, empty if it could not be written
+ */
+static std::string openMMText(const std::string &forceField,
+                              const std::string &fileName)
+{
+    MsgHandler msghandler;
+    msghandler.setPrintLevel(ACTStatus::Fatal);
+    auto          ff = getForceField(forceField);
+    ForceComputer fcomp(1e-7, 25, 1.0);
+    std::vector<ACTMol> mps;
+    const auto dataName = gmx::test::TestFileManager::getInputFilePath("molecules/" + fileName);
+    initACTMol(&msghandler, dataName, ff, &fcomp, &mps);
+    EXPECT_TRUE(msghandler.ok());
+    gmx::test::TestFileManager tfm;
+    const auto tmpFile = tfm.getTemporaryFilePath("xml");
+    writeOpenMM(&msghandler, tmpFile, ff, mps, 0.1, 1, true);
+    EXPECT_TRUE(msghandler.ok());
+    const std::ifstream xml(tmpFile);
+    std::stringstream text;
+    text << xml.rdbuf();
+    return text.str();
+}
+
+//! \return how often a text is found in another text
+static size_t count(const std::string &text, const std::string &what)
+{
+    size_t n = 0;
+    for (auto pos = text.find(what); pos != std::string::npos; pos = text.find(what, pos + what.size()))
+    {
+        n++;
+    }
+    return n;
+}
+
+// Test: The linear angle has its energy expression and its parameters, and
+// a script turns the force into one that OpenMM can evaluate, with the
+// atoms in the order of the parameter a.
+TEST(OpenMMAngleForceTest, LinearAngle)
+{
+    const auto text = openMMText("ACS-g1", "acetonitrile.sdf");
+    ASSERT_FALSE(text.empty());
+    EXPECT_EQ(1u, count(text, "<CustomAngleForce energy=\"0.5*klin*(a*d12^2+(1-a)*d23^2-a*(1-a)*d13^2); "
+                        "d12=distance(p1,p2); d23=distance(p2,p3); d13=distance(p1,p3)\">"));
+    EXPECT_EQ(1u, count(text, "<GlobalParameter name=\"pot-LINEAR_ANGLES\" defaultValue=\"1\"/>"));
+    EXPECT_EQ(1u, count(text, "<PerAngleParameter name=\"a\"/>"));
+    EXPECT_EQ(1u, count(text, "<PerAngleParameter name=\"klin\"/>"));
+    EXPECT_EQ(1u, count(text, "<Angle class1=\"c3_b\" class2=\"c1_b\" class3=\"n1_b\" a=\""));
+    EXPECT_EQ(1u, count(text, "<Script>"));
+    EXPECT_EQ(1u, count(text, "openmm.CustomCompoundBondForce(3, energy)"));
+    EXPECT_EQ(1u, count(text, "( \"c3_b\", \"c1_b\", \"n1_b\" ),"));
+    for (const auto &type : { "c3_1", "c1_1", "n1_1" })
+    {
+        EXPECT_EQ(1u, count(text, gmx::formatString("    \"%s\": \"", type))) << type;
+    }
+    // The hydrogen atoms are not in an angle with a direction
+    EXPECT_EQ(0u, count(text, "    \"h_1\": \""));
+    // No force with an energy of zero
+    EXPECT_EQ(0u, count(text, "CustomAngleForce energy=\"0\""));
+}
+
+// Test: The Urey-Bradley angle has its energy expression and its
+// parameters. It is the same in both directions.
+TEST(OpenMMAngleForceTest, UreyBradley)
+{
+    const auto text = openMMText("ACS-g-dih", "acetone.sdf");
+    ASSERT_FALSE(text.empty());
+    EXPECT_EQ(1u, count(text, "<CustomAngleForce energy=\"0.5*kt*(angle(p1,p2,p3)-ub_angle)^2"
+                        "+0.5*kub*(distance(p1,p3)-r13)^2\">"));
+    EXPECT_EQ(1u, count(text, "<GlobalParameter name=\"pot-UREY_BRADLEY_ANGLES\" defaultValue=\"1\"/>"));
+    for (const auto &param : { "kt", "ub_angle", "r13", "kub" })
+    {
+        EXPECT_EQ(1u, count(text, gmx::formatString("<PerAngleParameter name=\"%s\"/>", param))) << param;
+    }
+    EXPECT_EQ(4u, count(text, " ub_angle=\""));
+    EXPECT_EQ(1u, count(text, "<Script>"));
+    EXPECT_EQ(1u, count(text, "ordered = [\n]"));
+    EXPECT_EQ(1u, count(text, "atom_class = {\n}"));
+}
+
+// Test: A force without angles is not written, and neither is the script
+// if no force needs it.
+TEST(OpenMMAngleForceTest, NoAngles)
+{
+    const auto text = openMMText("ACS-g1", "acetone.sdf");
+    ASSERT_FALSE(text.empty());
+    EXPECT_EQ(1u, count(text, "<HarmonicAngleForce"));
+    EXPECT_EQ(0u, count(text, "CustomAngleForce"));
+    EXPECT_EQ(0u, count(text, "<Script>"));
 }
 
 // Test: The induction correction
