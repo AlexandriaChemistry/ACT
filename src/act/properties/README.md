@@ -15,5 +15,6 @@ This directory calculates thermodynamic and structural molecular properties that
 - **velocityhandler.h / velocityhandler.cpp** — Assigns or scales atomic velocities for MD initialisation or kinetic-energy analysis.
 
 ### CLI commands
+- **pathintegralthermo.h / pathintegralthermo.cpp** — `pathIntegralThermochemistry`: internal energy, heat capacity, entropy and Gibbs energy of a compound from simulations with beads, next to the harmonic values of `ThermoChemistry`: correction for the number of beads with harmonic oscillators, and the entropy by thermodynamic integration over the temperature (classical anharmonicity) and over the constant of Planck (quantum effects) (`simulate -nbeads -thermo`).
 - **simulate.cpp** — Implementation of the `simulate` sub-command: runs a short MD or energy-minimisation trajectory, at constant energy or, with beads, at constant temperature.
 - **min_complex.cpp** — Implementation of the `min_complex` sub-command: energy-minimises a molecular complex and reports interaction energies.

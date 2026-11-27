@@ -57,6 +57,45 @@ With *-monomers* each compound is simulated alone as well, with the same setting
 
 where :math:`E` is the total energy and the last term is the change of :math:`pV` of ideal gases. At low temperature :math:`\Delta U` becomes :math:`-D_0`, the binding energy with zero point motion, which can be compared to the harmonic estimate from the energies of the minimized structures and the zero point energies of *alexandria nma* (:ref:`sec-nma`). The standard error is that of the simulations together. These numbers are those of a bound cluster only as long as the compounds stay together by themselves. A water dimer at room temperature does not: the compounds then are apart most of the time, the energies depend on the volume that the wall leaves them, and the second virial coefficient is the quantity to compute. The program reports the fraction of the steps in which the compounds were at the wall, and warns if they reached it.
 
+.. _sec-simulate-thermo:
+
+-------------------------------------------
+Thermochemistry from simulations with beads
+-------------------------------------------
+
+.. index::
+   single: thermochemistry; path integral
+   single: entropy; path integral
+   single: heat capacity; path integral
+   single: anharmonicity
+
+The normal mode analysis (:ref:`sec-nma`) gives the thermochemistry of a rigid rotor with harmonic oscillators. With the option *-thermo* the simulations with beads give the internal energy, the enthalpy, the heat capacity, the standard entropy and the Gibbs energy of one compound in the gas phase at the temperature *-temp* and 1 bar, without these approximations: with the anharmonicity of the model, the coupling between rotation and vibration, and all conformations that the simulation visits. The compound is minimized first, and the results are printed next to those of the normal mode analysis of the minimum. The energies are relative to that minimum. For example::
+
+  alexandria simulate -ff ff.xml -f hf.sdf -nbeads 32 -temp 298.15 -nsteps 4000000 -tau 0.01 -thermo
+
+The internal energy and the heat capacity are those of the simulation at that temperature, the heat capacity from the fluctuations of the energy. The entropy cannot be had from one simulation. It is computed by thermodynamic integration from the classical rigid rotor with harmonic oscillators, see :ref:`sec-pimd-thermo`, which needs 2 x *-nquad* more simulations, eight by default: classical ones at lower temperatures, which are longer, and ones with fewer beads in which the constant of Planck is scaled down. Together they take two to three times as long as the simulation itself. With *-nquad 0* they are left out and there is no entropy. With one bead the thermochemistry is that of the classical compound.
+
+A finite number of beads gives too low an energy and too high a heat capacity: for water at room temperature with 32 beads 1.8 kJ/mol and 11 J/mol K. The values of the simulation therefore include the difference between harmonic oscillators with infinitely many beads and with the beads of the simulation, which the program prints. What remains is the effect of the number of beads on the anharmonicity, which is small if that correction is small compared to the zero point energy.
+
+:numref:`tab-thermo-pimd` shows the result for hydrogen fluoride with an anharmonic bond, for which the exact values follow from the energy levels of the vibration and rotation in the same potential. The heat capacity needs the longest simulations, since it is a fluctuation.
+
+.. table:: Thermochemistry of hydrogen fluoride with the potential of Hua for the bond at 298.15 K, relative to the minimum: the normal mode analysis, simulations of 4 000 000 steps with 32 beads, and the energy levels of the vibration and rotation.
+   :name: tab-thermo-pimd
+
+   +-----------------------------+----------+--------------------+--------------+
+   | Property                    | Harmonic | Simulation         | Exact levels |
+   +=============================+==========+====================+==============+
+   | Internal energy (kJ/mol)    | 31.118   | 30.786 +/- 0.014   | 30.778       |
+   +-----------------------------+----------+--------------------+--------------+
+   | :math:`C_V` (J/mol K)       | 20.79    | 20.91 +/- 0.32     | 20.82        |
+   +-----------------------------+----------+--------------------+--------------+
+   | :math:`S^o` (J/mol K)       | 173.64   | 173.77 +/- 0.06    | 173.83       |
+   +-----------------------------+----------+--------------------+--------------+
+   | Gibbs energy (kJ/mol)       | -18.173  | -18.545 +/- 0.010  | -18.570      |
+   +-----------------------------+----------+--------------------+--------------+
+
+The identical nuclei of a compound are not exchanged in the simulation. As in the normal mode analysis, the rotational symmetry number accounts for them, which is correct unless the temperature is close to the rotational temperature, as for hydrogen below room temperature. The entropy is that of the conformations that the classical simulations reach from the minimum: for a compound with high barriers between conformations they have to be long enough to cross them.
+
 ========================
 The ACT-OpenMM interface
 ========================

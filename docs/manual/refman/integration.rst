@@ -229,3 +229,44 @@ In vacuum, compounds that move apart do not come back. With *-rwall* a wall keep
    :label: fragmentwall
 
 and zero otherwise, with the radius :math:`r_w` of *-rwall* and the force constant :math:`k_w` of *-kwall*. For more than two compounds :math:`R` is the distance of the center of mass of each compound to that of all compounds, and :math:`U_w` is the sum over the compounds. The force on a compound is divided over its atoms in proportion to their masses, and each bead of an atom gets the same force, which corresponds to a term :math:`P\,U_w` in Eqn. :eq:`ringpolymer`. The wall therefore does not change the structure or the orientation of the compounds, nor the spread of the beads, and it does not contribute to Eqn. :eq:`centroidvirial`. Its energy is a separate column of the energy file (WALL) and is not part of the potential or the total energy. The distance :math:`R` is written as well (DISTANCE; for more than two compounds the largest one). Without a wall the program warns when the distance has increased by more than 1 nm.
+
+.. _sec-pimd-thermo:
+
+-----------------------------------
+Thermochemistry from path integrals
+-----------------------------------
+
+.. index::
+   single: thermodynamic integration
+   single: heat capacity; estimator
+
+With the option *-thermo* the simulations give the thermochemistry of one compound, see :ref:`sec-simulate-thermo`. The internal energy :math:`E` is the average of the potential energy and Eqn. :eq:`centroidvirial`. The heat capacity follows from the fluctuations of the energy :cite:p:`Glaesemann2002a`
+
+.. math:: C_V = k_B\beta^2\left(\langle\epsilon_V\epsilon_T\rangle - \langle\epsilon_V\rangle\langle\epsilon_T\rangle\right) + \frac{3N}{2}k_B
+   :label: pimdcv
+
+where :math:`\epsilon_V` is the energy with the centroid virial estimator of the kinetic energy and :math:`\epsilon_T` the one with the primitive estimator, :math:`\frac{3NP}{2}k_BT` minus the energy of the springs of Eqn. :eq:`ringpolymer` divided by :math:`P`.
+
+A harmonic oscillator with the frequency :math:`\nu` has, as a ring polymer of :math:`P` beads, the energy and the heat capacity
+
+.. math:: E_P = k_BT\sum_{k=0}^{P-1} r_k, \quad C_P = k_B\sum_{k=0}^{P-1} r_k\left(2r_k-1\right), \quad r_k = \frac{(h\nu)^2}{(h\nu)^2 + \left(4\pi P k_BT\sin(\pi k/P)\right)^2}
+   :label: beadcorrection
+
+which go to those of the quantum oscillator for many beads, slowly. The differences between infinitely many beads and the beads of the simulation, summed over the normal modes of the minimized compound, are added to :math:`E` and :math:`C_V`.
+
+The entropy follows from the free energy, which is that of the classical rigid rotor with harmonic oscillators (RRHO) of the normal mode analysis plus two integrals:
+
+.. math:: S = S_{cl}^{RRHO} + \frac{E - E_{cl}^{RRHO} - \Delta F_{anh} - \Delta F_q}{T}
+   :label: pimdentropy
+
+The first is the effect of the anharmonicity on the classical compound, which becomes harmonic at low temperature,
+
+.. math:: \Delta F_{anh} = -T\int_0^T \frac{E_{cl}(T') - E_{cl}^{RRHO}(T')}{T'^2}dT'
+   :label: pimdanharmonic
+
+from the potential energies of classical simulations at the temperatures :math:`uT`, where :math:`u` are the points of a Gauss-Legendre quadrature between zero and one, *-nquad* of them. Since the energy is divided by the temperature squared, these simulations are longer by :math:`1/u`, at most sixteen times. The second is the difference between the quantum and the classical compound :cite:p:`Ceriotti2013a`,
+
+.. math:: \Delta F_q = \int_0^1 \frac{2}{g}\left(\langle K\rangle_g - \frac{3N}{2}k_BT\right)dg
+   :label: pimdquantum
+
+where :math:`\langle K\rangle_g` is the kinetic energy of Eqn. :eq:`centroidvirial` in a simulation in which the constant of Planck is :math:`g` times its value, which is the same as atoms that are heavier by :math:`1/g^2`. Such a simulation needs :math:`gP` beads, which is rounded down, and none if that is one bead. Of the integrand the kinetic energy of harmonic oscillators with the same beads is taken off, half of Eqn. :eq:`beadcorrection` with :math:`gh\nu`, and the integral for infinitely many beads added, :math:`k_BT\sum\ln(\sinh x/x)` with :math:`x=h\nu/2k_BT`. The integrand that remains is small and smooth, such that the same few points are enough, and the number of beads is corrected for as in the energy. The standard errors are those of the simulations, with the weights of the quadrature. In the Gibbs energy, :math:`E + k_BT - TS`, the energy of the simulation cancels.

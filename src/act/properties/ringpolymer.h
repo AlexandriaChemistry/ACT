@@ -70,6 +70,15 @@ struct RingPolymerSettings
     //! Whether to use the thermostat. Without it the Hamiltonian of the
     //! ring polymer is conserved, for testing.
     bool   thermostat  = true;
+    /*! \brief The factor by which the constant of Planck is scaled
+     *
+     * With a factor g the beads have the distribution of atoms that are
+     * heavier by 1/g^2, a factor that goes to zero gives classical
+     * statistics. The integral over g of the kinetic energy gives the
+     * difference in free energy between the quantum and the classical
+     * molecule, see pathIntegralThermochemistry.
+     */
+    double planckScale = 1;
 
     /*! \brief Check the settings
      * \throws gmx::InvalidInputError for settings that are out of range
@@ -252,6 +261,21 @@ public:
      * \return the kinetic energy in kJ/mol
      */
     double kineticEnergy() const;
+
+    /*! \brief The primitive estimator of the kinetic energy
+     * \f[ K = \frac{3NP}{2}k_B T - \sum_{k=1}^P\sum_i \frac{m_i P}{2\beta^2\hbar^2}
+     * ({\bf q}_{i,k}-{\bf q}_{i,k+1})^2 \f]
+     * which has the same average as the centroid virial estimator, see
+     * kineticEnergy, and much larger fluctuations. With the potential
+     * energy it is minus the derivative to \f$\beta\f$ of the logarithm
+     * of the weight of the configuration, which is what the heat capacity
+     * needs.
+     * \return the kinetic energy in kJ/mol
+     */
+    double primitiveKineticEnergy() const;
+
+    //! \return the number of coordinates of the particles with a mass, three for each
+    size_t ncoordinates() const { return mass_.size(); }
 
     /*! \brief The spread of the beads
      * \return the squared distance of the atoms to their centroid in nm^2,

@@ -55,6 +55,7 @@
 #include "act/molprop/molprop_xml.h"
 #include "act/properties/minimize.h"
 #include "act/properties/pathintegralmd.h"
+#include "act/properties/pathintegralthermo.h"
 #include "act/properties/secondvirial.h"
 #include "act/properties/velocityhandler.h"
 #include "act/topology/actmol.h"
@@ -72,6 +73,7 @@
 #include "gromacs/math/vectypes.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/exceptions.h"
+#include "gromacs/utility/futil.h"
 #include "gromacs/utility/real.h"
 #include "gromacs/utility/stringutil.h"
 #include "simulate.h"
@@ -135,10 +137,42 @@ void simulateWithBeads(MsgHandler                    *msghandler,
     files.progress   = fileOrNull(options.progressFile);
     files.histogram  = fileOrNull(options.histogramFile);
     files.oenv       = oenv;
+    // The thermochemistry is that of one compound, and starts from its
+    // normal modes: a structure that is no minimum is refused before the
+    // simulations
+    const bool        thermo = sch.thermochemistry() && tops.size() == 1;
+    HarmonicReference harmonic;
+    if (sch.thermochemistry() && !thermo)
+    {
+        msghandler->msg(ACTStatus::Warning,
+                        gmx::formatString("There are %zu compounds, the thermochemistry (-thermo) is that of one compound and is not computed.",
+                                          tops.size()));
+    }
+    if (thermo)
+    {
+        harmonic = harmonicReference(msghandler, pd, actmol, forceComp, x, sch.temperature());
+    }
     const auto all   = pathIntegralMD(msghandler, pd, actmol->topology(), atomStart, x,
                                       forceComp, sch, sch.seed(), files);
     JsonTree   tree("Simulation with beads");
     reportPathIntegral(msghandler, tops.size() > 1 ? "all compounds" : "the compound", all, &tree);
+    if (thermo && all.etot.n > 0)
+    {
+        // The simulations for the entropy write no files, a program that
+        // follows the progress gets a line after each
+        const auto progress = [&files](int done, int total)
+        {
+            if (files.progress)
+            {
+                FILE *fp = gmx_ffopen(files.progress, "a");
+                fprintf(fp, "{\"entropy\": {\"done\": %d, \"total\": %d}}\n", done, total);
+                gmx_ffclose(fp);
+            }
+        };
+        const auto result = pathIntegralThermochemistry(msghandler, pd, actmol, x, forceComp, sch,
+                                                        harmonic, all, progress);
+        reportThermochemistry(msghandler, result, &tree);
+    }
     if (sch.monomers() && tops.size() < 2)
     {
         msghandler->msg(ACTStatus::Warning, "There is one compound, hence no binding energy (-monomers).");
@@ -365,8 +399,9 @@ int runSimulate(MsgHandler                *msghandler,
                 }
             }
         }
-        else if (sch.minimize())
+        else if (sch.minimize() || (sch.thermochemistry() && sch.nbeads() > 0 && sch.nsteps() > 0))
         {
+            // The thermochemistry is relative to the minimum
             phase.next("Energy minimization");
             eMin = minimizeMolecule(msghandler, &pd, &forceComp, sch,
                                     fileOrNull(options.freezeFile),
@@ -519,7 +554,18 @@ int simulate(int argc, char *argv[])
         "meaning only as long as the compounds stay together without the",
         "wall: the program warns if they reach it. Please check the convergence",
         "with the number of beads, which has to increase when the temperature",
-        "decreases."
+        "decreases.[PAR]",
+        "With [TT]-thermo[tt] the thermochemistry of one compound is computed",
+        "from the simulations: the internal energy, the enthalpy, the heat",
+        "capacity, the standard entropy and the Gibbs energy at 1 bar, printed",
+        "next to those of the rigid rotor with harmonic oscillators of the",
+        "normal mode analysis ([TT]alexandria nma[tt]). The compound is",
+        "minimized first, and the energies are relative to the minimum. The",
+        "values include a correction for the finite number of beads. The",
+        "entropy is computed by thermodynamic integration, which takes",
+        "2 x [TT]-nquad[tt] more simulations: classical ones at lower",
+        "temperatures for the anharmonicity, and ones with beads in which",
+        "the constant of Planck is scaled down for the quantum effects."
     };
 
     std::vector<t_filenm>     fnm = {

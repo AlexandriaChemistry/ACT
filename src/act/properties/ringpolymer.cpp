@@ -93,6 +93,10 @@ void RingPolymerSettings::check() const
     {
         GMX_THROW(gmx::InvalidInputError(gmx::formatString("The time constant %g ps of the thermostat of the ring polymers should be more than zero", centroidTau)));
     }
+    if (!std::isfinite(planckScale) || planckScale <= 0)
+    {
+        GMX_THROW(gmx::InvalidInputError(gmx::formatString("The factor %g for the constant of Planck of the ring polymers should be more than zero", planckScale)));
+    }
 }
 
 RingPolymerSampler::RingPolymerSampler(const ForceField          *pd,
@@ -130,7 +134,7 @@ RingPolymerSampler::RingPolymerSampler(const ForceField          *pd,
         GMX_THROW(gmx::InvalidInputError("There are no particles with a mass for the ring polymer"));
     }
     kTP_    = BOLTZ*settings_.temperature*nbeads_;
-    omegaP_ = kTP_/hbar;
+    omegaP_ = kTP_/(settings_.planckScale*hbar);
     // The normal modes of the free ring polymer: the centroid, then
     // cosines up to half the number of beads and sines beyond
     size_t P = nbeads_;
@@ -546,6 +550,23 @@ double RingPolymerSampler::kineticEnergy() const
         }
     }
     return 0.5*n*kTP_/nbeads_ - 0.5*virial/nbeads_;
+}
+
+double RingPolymerSampler::primitiveKineticEnergy() const
+{
+    size_t n      = mass_.size();
+    double spring = 0;
+    for(size_t j = 0; j < nbeads_; j++)
+    {
+        size_t jn = (j + 1) % nbeads_;
+        for(size_t d = 0; d < n; d++)
+        {
+            double dq = q_[n*j + d] - q_[n*jn + d];
+            spring   += 0.5*mass_[d]*omegaP_*omegaP_*dq*dq;
+        }
+    }
+    // The springs are those of the ring polymer at P times the temperature
+    return 0.5*n*kTP_ - spring/nbeads_;
 }
 
 double RingPolymerSampler::gyration2() const
