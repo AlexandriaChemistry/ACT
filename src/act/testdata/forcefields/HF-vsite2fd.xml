@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!DOCTYPE alexandria_chemistry.dtd PUBLIC "alexandria_chemistry.dtd" "alexandria_chemistry.dtd">
+<alexandria_chemistry>
+  <version checksum="8f616a6fb79c59c7da947fe787243fc2" timestamp="2026-11-27 14:14:45"/>
+  <particletypes>
+    <option key="chargedistribution" value="Point"/>
+    <option key="epsilonr" value="1"/>
+    <option key="nexcl" value="1"/>
+    <particletype identifier="f" type="Atom" description="fluorine">
+      <option key="acmtype" value="f_z"/>
+      <option key="atomnumber" value="9"/>
+      <option key="bondtype" value="f_b"/>
+      <option key="element" value="F"/>
+      <option key="row" value="2"/>
+      <option key="vdwtype" value="f"/>
+      <parameter type="charge" unit="e" value="0.592" uncertainty="0" minimum="0" maximum="0.888" ntrain="1" mutability="Bounded" nonnegative="no"/>
+      <parameter type="mass" unit="Da" value="18.9984" uncertainty="0" minimum="18.9984" maximum="18.9984" ntrain="1" mutability="Fixed" nonnegative="yes"/>
+      <parameter type="zeta" unit="1/nm" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="1" mutability="Fixed" nonnegative="yes"/>
+    </particletype>
+    <particletype identifier="hf" type="Atom" description="hydrogen">
+      <option key="acmtype" value="h_z"/>
+      <option key="atomnumber" value="1"/>
+      <option key="bondtype" value="h_b"/>
+      <option key="element" value="H"/>
+      <option key="row" value="1"/>
+      <option key="vdwtype" value="h"/>
+      <parameter type="charge" unit="e" value="0.592" uncertainty="0" minimum="0" maximum="0.888" ntrain="1" mutability="Bounded" nonnegative="no"/>
+      <parameter type="mass" unit="Da" value="1.0079" uncertainty="0" minimum="1.0079" maximum="1.0079" ntrain="1" mutability="Fixed" nonnegative="yes"/>
+      <parameter type="zeta" unit="1/nm" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="1" mutability="Fixed" nonnegative="yes"/>
+    </particletype>
+    <particletype identifier="v2f" type="VSite" description="bond virtual site">
+      <option key="atomnumber" value="0"/>
+      <option key="bondtype" value="v2f"/>
+      <option key="element" value="VS"/>
+      <option key="row" value="0"/>
+      <option key="vdwtype" value="v2f"/>
+      <parameter type="charge" unit="e" value="-1.184" uncertainty="0" minimum="-1.776" maximum="0" ntrain="1" mutability="Bounded" nonnegative="no"/>
+      <parameter type="mass" unit="Da" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="1" mutability="Fixed" nonnegative="yes"/>
+      <parameter type="zeta" unit="1/nm" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="1" mutability="Fixed" nonnegative="yes"/>
+    </particletype>
+  </particletypes>
+  <interaction type="BONDS" function="HARMONIC_BONDS" canswap="true">
+    <parameterlist identifier="f_b~h_b">
+      <parameter type="bondenergy" unit="kJ/mol" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="1" mutability="Fixed" nonnegative="yes"/>
+      <parameter type="bondlength" unit="pm" value="97.3" uncertainty="0" minimum="46.2" maximum="184.8" ntrain="1" mutability="Bounded" nonnegative="yes"/>
+      <parameter type="kb" unit="kJ/mol/nm2" value="800000" uncertainty="0" minimum="150000" maximum="900000" ntrain="1" mutability="Bounded" nonnegative="yes"/>
+    </parameterlist>
+  </interaction>
+  <interaction type="ANGLES" function="HARMONIC_ANGLES" canswap="true"/>
+  <interaction type="LINEAR_ANGLES" function="LINEAR_ANGLES" canswap="linear"/>
+  <interaction type="PROPER_DIHEDRALS" function="FOURIER_DIHEDRALS" canswap="true"/>
+  <interaction type="IMPROPER_DIHEDRALS" function="HARMONIC_DIHEDRALS" canswap="idih"/>
+  <interaction type="VANDERWAALS" function="LJ12_6" canswap="true">
+    <combinationrule parameter="epsilon" rule="Geometric">
+      <parameter type="exponent" unit="" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="0" mutability="Fixed" nonnegative="no"/>
+    </combinationrule>
+    <combinationrule parameter="sigma" rule="Arithmetic">
+      <parameter type="exponent" unit="" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="0" mutability="Fixed" nonnegative="no"/>
+    </combinationrule>
+    <parameterlist identifier="f">
+      <parameter type="epsilon" unit="kJ/mol" value="0.498862" uncertainty="0" minimum="0.249431" maximum="0.748293" ntrain="1" mutability="Bounded" nonnegative="yes"/>
+      <parameter type="sigma" unit="nm" value="0.283" uncertainty="0" minimum="0.2264" maximum="0.3396" ntrain="1" mutability="Bounded" nonnegative="yes"/>
+    </parameterlist>
+    <parameterlist identifier="h">
+      <parameter type="epsilon" unit="kJ/mol" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="1" mutability="Fixed" nonnegative="yes"/>
+      <parameter type="sigma" unit="nm" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="1" mutability="Fixed" nonnegative="yes"/>
+    </parameterlist>
+    <parameterlist identifier="v2f">
+      <parameter type="epsilon" unit="kJ/mol" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="1" mutability="Fixed" nonnegative="yes"/>
+      <parameter type="sigma" unit="nm" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="1" mutability="Fixed" nonnegative="yes"/>
+    </parameterlist>
+  </interaction>
+  <interaction type="VSITE2" function="VSITE2" canswap="vsite2"/>
+  <interaction type="VSITE2FD" function="VSITE2FD" canswap="vsite2">
+    <parameterlist identifier="h_b~f_b!v2f">
+      <parameter type="vs2fd_a" unit="nm" value="0.0808" uncertainty="0" minimum="0" maximum="1" ntrain="1" mutability="Bounded" nonnegative="no"/>
+    </parameterlist>
+  </interaction>
+  <interaction type="VSITE3" function="VSITE3" canswap="vsite3"/>
+  <interaction type="VSITE3OUT" function="VSITE3OUT" canswap="false"/>
+  <interaction type="ELECTRONEGATIVITYEQUALIZATION" function="" canswap="true">
+    <parameterlist identifier="f_z">
+      <parameter type="chi" unit="eV" value="2" uncertainty="0" minimum="2" maximum="9" ntrain="1" mutability="Fixed" nonnegative="yes"/>
+      <parameter type="eta" unit="eV" value="8" uncertainty="0" minimum="6" maximum="24" ntrain="1" mutability="Fixed" nonnegative="yes"/>
+    </parameterlist>
+    <parameterlist identifier="h_z">
+      <parameter type="chi" unit="eV" value="2" uncertainty="0" minimum="2" maximum="2" ntrain="1" mutability="Fixed" nonnegative="yes"/>
+      <parameter type="eta" unit="eV" value="8" uncertainty="0" minimum="6" maximum="24" ntrain="1" mutability="Fixed" nonnegative="yes"/>
+    </parameterlist>
+  </interaction>
+  <symmetric_charges>
+    <sym_charge central="C" attached="H" numattach="3"/>
+    <sym_charge central="N" attached="H" numattach="3"/>
+    <sym_charge central="N" attached="H" numattach="2"/>
+    <sym_charge central="N" attached="O" numattach="2"/>
+    <sym_charge central="O" attached="H" numattach="2"/>
+    <sym_charge central="C" attached="F" numattach="3"/>
+    <sym_charge central="C" attached="Cl" numattach="3"/>
+    <sym_charge central="C" attached="Br" numattach="3"/>
+    <sym_charge central="C" attached="I" numattach="3"/>
+    <sym_charge central="Si" attached="H" numattach="3"/>
+    <sym_charge central="S" attached="O" numattach="4"/>
+    <sym_charge central="P" attached="O" numattach="4"/>
+  </symmetric_charges>
+</alexandria_chemistry>
