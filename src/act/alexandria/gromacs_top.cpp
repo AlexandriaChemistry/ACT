@@ -102,12 +102,48 @@ static void print_bondeds(MsgHandler                *msg_handler,
     int subtype = (F_FOURDIHS == ftype) ? 3 : get_subtype(d, ftype);
     for (auto &entry : entries)
     {
+        auto params = entry->params();
+        if (F_CROSS_BOND_ANGLES == ftype)
+        {
+            // One angle in ACT, up to three in GROMACS: the bond-angle
+            // cross term, the bond-bond cross term and a Urey-Bradley
+            // angle without angle part for the harmonic potential on the
+            // distance between the outer atoms. The cross term with the
+            // angle is always there, the others if they have a force
+            // constant.
+            const auto printAtoms = [&](int gmxFtype)
+            {
+                for (auto &j : entry->atomIndices())
+                {
+                    fprintf(out, "  %5d", 1+j);
+                }
+                fprintf(out, "  %5d", get_subtype(d, gmxFtype));
+            };
+            printAtoms(F_CROSS_BOND_ANGLES);
+            fprintf(out, "  %10g  %10g  %10g  %10g ; %s\n",
+                    params[cbaR1E], params[cbaR2E], params[cbaR3E], params[cbaKRT],
+                    entry->id().id().c_str());
+            if (params[cbaKRR] != 0)
+            {
+                printAtoms(F_CROSS_BOND_BONDS);
+                fprintf(out, "  %10g  %10g  %10g ; %s\n",
+                        params[cbaR1E], params[cbaR2E], params[cbaKRR],
+                        entry->id().id().c_str());
+            }
+            if (params[cbaKUB] != 0)
+            {
+                printAtoms(F_UREY_BRADLEY);
+                fprintf(out, "  %10g  %10g  %10g  %10g ; %s\n",
+                        0.0, 0.0, params[cbaR3E], params[cbaKUB],
+                        entry->id().id().c_str());
+            }
+            continue;
+        }
         for (auto &j : entry->atomIndices())
         {
             fprintf(out, "  %5d", 1+j);
         }
         fprintf(out, "  %5d", subtype);
-        auto params = entry->params();
         switch (ftype)
         {
         case F_BONDS:
@@ -136,14 +172,6 @@ static void print_bondeds(MsgHandler                *msg_handler,
                     params[ubKT],
                     params[ubR13],
                     params[ubKUB],
-                    entry->id().id().c_str());
-            break;
-        case F_CROSS_BOND_ANGLES:
-            fprintf(out, "  %10g  %10g  %10g  %10g ; %s\n",
-                    params[cbaR1E],
-                    params[cbaR2E],
-                    params[cbaR3E],
-                    params[cbaKRT],
                     entry->id().id().c_str());
             break;
         case F_LINEAR_ANGLES:

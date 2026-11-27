@@ -1081,8 +1081,10 @@ TEST_F(ForcesSimdTest, UreyBradleyAngles)
 
 TEST_F(ForcesSimdTest, CrossBondAngles)
 {
-    // Bond lengths, distance between the outer atoms and force constant
-    test(Potential::CROSS_BOND_ANGLES, angles({ 0.15, 0.14, 0.24, -80000 }));
+    // Bond lengths, distance between the outer atoms and the force
+    // constants of the bond-angle and bond-bond cross terms and of the
+    // harmonic potential
+    test(Potential::CROSS_BOND_ANGLES, angles({ 0.15, 0.14, 0.24, -80000, 50000, 100000 }));
 }
 
 TEST_F(ForcesSimdTest, ProperDihedrals)

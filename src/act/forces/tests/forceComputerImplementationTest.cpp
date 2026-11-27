@@ -735,7 +735,7 @@ static const ForceComputerParamParams c_morseBondsParams{ "", { 12, 100, 40, 0.6
 static const ForceComputerParamParams c_harmAngleParams { "", { 100, 100 } };     // kT, angle
 static const ForceComputerParamParams c_ubAngleParams   { "", { 100, 100, 0.33, 20 } };   // kT, angle, r13, kUB
 static const ForceComputerParamParams c_linAngleParams  { "", { 0.5, 10000 } };   // a, kLin
-static const ForceComputerParamParams c_cbaAngleParams  { "", { 0.19, 0.15, 0.3, -50000 } };   // r1e, r2e, r3e, krt
+static const ForceComputerParamParams c_cbaAngleParams  { "", { 0.19, 0.15, 0.3, -50000, 30000, 60000 } };   // r1e, r2e, r3e, krt, krr, kub
 static const ForceComputerParamParams c_harmDihParams   { "", { 10 } };           // kPhi
 static const ForceComputerParamParams c_properDihParams { "", { 30, 10, 4 } };    // angle, kP, mult
 static const ForceComputerParamParams c_fourierDihParams{ "", { 1, 2, -3, 4, -5, 6 } };

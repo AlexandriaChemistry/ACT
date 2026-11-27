@@ -35,6 +35,7 @@
 #include <gtest/gtest.h>
 #include <map>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "act/alexandria/allbondeds.h"
@@ -316,9 +317,10 @@ TEST(AllBondedsUpdateTest, BondFunctions)
     }
 }
 
-/* Test: The bond-angle cross term gets the lengths of the two bonds, the
+/* Test: The cross terms of an angle get the lengths of the two bonds, the
  * distance between the outer atoms at the average angle, which is that of
- * the harmonic angle, and a force constant that is negative.
+ * the harmonic angle, and the default force constants, of which that of
+ * the bond-angle cross term is negative.
  */
 TEST(AllBondedsUpdateTest, CrossBondAngles)
 {
@@ -334,7 +336,7 @@ TEST(AllBondedsUpdateTest, CrossBondAngles)
     EXPECT_EQ(hangle.parametersConst().size(), angles.parametersConst().size());
     for (const auto &a : angles.parametersConst())
     {
-        EXPECT_EQ(4u, a.second.size()) << a.first.id();
+        EXPECT_EQ(6u, a.second.size()) << a.first.id();
         auto atoms = a.first.atoms();
         auto bo    = a.first.bondOrders();
         const Identifier bij({ atoms[0], atoms[1] }, { bo[0] }, CanSwap::Yes);
@@ -353,6 +355,14 @@ TEST(AllBondedsUpdateTest, CrossBondAngles)
         EXPECT_LT(krt.minimum(), krt.value()) << a.first.id();
         EXPECT_GT(krt.maximum(), krt.value()) << a.first.id();
         EXPECT_LT(krt.maximum(), 0) << a.first.id();
+        for (const auto &kk : std::vector<std::pair<const char *, double>>{ { "krr", 50000 }, { "kub", 30000 } })
+        {
+            const auto &k = a.second.find(kk.first)->second;
+            EXPECT_EQ("kJ/mol/nm2", k.unit()) << a.first.id();
+            EXPECT_EQ(kk.second, k.value()) << a.first.id() << " " << kk.first;
+            EXPECT_LT(k.minimum(), k.value()) << a.first.id() << " " << kk.first;
+            EXPECT_GT(k.maximum(), k.value()) << a.first.id() << " " << kk.first;
+        }
         for (const auto *name : { "r1e", "r2e", "r3e" })
         {
             const auto &len = a.second.find(name)->second;

@@ -159,7 +159,9 @@ void AllBondeds::addOptions(std::vector<t_pargs> *pargs)
             { "-kub",   FALSE, etREAL, {&kub_},
               "Urey_Bradley force constant" },
             { "-krt",   FALSE, etREAL, {&krt_},
-              "Force constant of the bond-angle cross term CROSS_BOND_ANGLES (kJ/mol/nm^2), which can have either sign" },
+              "Force constant of the bond-angle cross term of CROSS_BOND_ANGLES (kJ/mol/nm^2), which can have either sign" },
+            { "-krr",   FALSE, etREAL, {&krr_},
+              "Force constant of the bond-bond cross term of CROSS_BOND_ANGLES (kJ/mol/nm^2), which can have either sign. The harmonic term of this potential on the distance between the outer atoms takes the force constant of [TT]-kub[tt]." },
             { "-bond_tol",   FALSE, etREAL, {&bond_tol_},
               "Tolerance for warning about large sigma in bond-lengths (pm)" },
             { "-angle_tol",   FALSE, etREAL, {&angle_tol_},
@@ -679,12 +681,21 @@ void AllBondeds::updateForceField(gmx::TextWriter *tw,
                                              ForceFieldParameter(unit, len.second, 0, N, len.second*bfactor_,
                                                                  len.second/bfactor_, Mutability::Bounded, false, true));
                         }
-                        // The force constant can be negative
-                        fs->addParameter(bondId, pname[cbaKRT],
-                                         ForceFieldParameter("kJ/mol/nm2", krt_, 0, 1,
-                                                             std::min(krt_*factor_, krt_/factor_),
-                                                             std::max(krt_*factor_, krt_/factor_),
-                                                             Mutability::Bounded, false, false));
+                        // The force constants of the cross terms can be negative
+                        const std::vector<std::pair<int, real>> crossTerms = {
+                            { cbaKRT, krt_ }, { cbaKRR, krr_ }
+                        };
+                        for (const auto &ct : crossTerms)
+                        {
+                            fs->addParameter(bondId, pname[ct.first],
+                                             ForceFieldParameter("kJ/mol/nm2", ct.second, 0, 1,
+                                                                 std::min(ct.second*factor_, ct.second/factor_),
+                                                                 std::max(ct.second*factor_, ct.second/factor_),
+                                                                 Mutability::Bounded, false, false));
+                        }
+                        fs->addParameter(bondId, pname[cbaKUB],
+                                         ForceFieldParameter("kJ/mol/nm2", kub_, 0, 1, kub_*factor_, kub_/factor_,
+                                                             Mutability::Bounded, false, true));
                     }
                     else
                     {
