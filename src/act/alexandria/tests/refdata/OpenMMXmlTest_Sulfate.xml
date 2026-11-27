@@ -31,7 +31,6 @@
   <HarmonicAngleForce energy="0">
     <Angle class1="o2_b" class2="s3_b" class3="o2_b" k="300" angle="1.99491133503"/>
   </HarmonicAngleForce>
-  <CustomAngleForce energy="0"/>
   <PeriodicTorsionForce energy="0"/>
   <PeriodicTorsionForce energy="0"/>
   <CustomNonbondedForce energy="4*epsilon*((sigma/r)^12 - (sigma/r)^6)" bondCutoff="0">
