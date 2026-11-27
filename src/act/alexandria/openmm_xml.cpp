@@ -335,9 +335,10 @@ private:
     //! The OpenMM class of each OpenMM atom type
     std::map<std::string, std::string>    typeClass_;
     /*! The classes of the angles with an energy expression that are not
-     * the same in both directions, in the order of their parameters
+     * the same in both directions, in the order of their parameters, for
+     * each potential
      */
-    std::set<std::vector<std::string>>    orderedAngles_;
+    std::map<Potential, std::set<std::vector<std::string>>> orderedAngles_;
     //! Add a mass to a parent
     void addXmlElemMass(xmlNodePtr          parent,
                         const ForceField   *pd,
@@ -666,9 +667,12 @@ void OpenMMWriter::addXmlAngleScript(xmlNodePtr        parent,
     }
     // The classes of the atom types in the angles that have a direction
     std::set<std::string> classes;
-    for (const auto &oa : orderedAngles_)
+    for (const auto &potential : orderedAngles_)
     {
-        classes.insert(oa.begin(), oa.end());
+        for (const auto &oa : potential.second)
+        {
+            classes.insert(oa.begin(), oa.end());
+        }
     }
     std::string script;
     script += "import openmm\n";
@@ -678,7 +682,8 @@ void OpenMMWriter::addXmlAngleScript(xmlNodePtr        parent,
     script += "# expression, parameters and angles.\n";
     script += "# OpenMM finds the parameters of an angle in either direction, but it\n";
     script += "# keeps the order of the atoms. The angles below are not the same in\n";
-    script += "# both directions: their atoms have to be in this order of the classes.\n";
+    script += "# both directions: their atoms have to be in this order of the classes,\n";
+    script += "# which are given for each potential.\n";
     script += "atom_class = {\n";
     for (const auto &tc : typeClass_)
     {
@@ -688,13 +693,18 @@ void OpenMMWriter::addXmlAngleScript(xmlNodePtr        parent,
         }
     }
     script += "}\n";
-    script += "ordered = [\n";
-    for (const auto &oa : orderedAngles_)
+    script += "ordered = {\n";
+    for (const auto &potential : orderedAngles_)
     {
-        script += gmx::formatString("    ( \"%s\", \"%s\", \"%s\" ),\n",
-                                    oa[0].c_str(), oa[1].c_str(), oa[2].c_str());
+        script += gmx::formatString("    \"%s\": [\n", potentialToString(potential.first).c_str());
+        for (const auto &oa : potential.second)
+        {
+            script += gmx::formatString("        ( \"%s\", \"%s\", \"%s\" ),\n",
+                                        oa[0].c_str(), oa[1].c_str(), oa[2].c_str());
+        }
+        script += "    ],\n";
     }
-    script += "]\n";
+    script += "}\n";
     script += "classes = [atom_class.get(data.atomType[atom], \"\") for atom in data.atoms]\n";
     script += "for index in reversed(range(sys.getNumForces())):\n";
     script += "    old = sys.getForce(index)\n";
@@ -713,9 +723,10 @@ void OpenMMWriter::addXmlAngleScript(xmlNodePtr        parent,
     script += "            new.setName(name[4:])\n";
     script += "    for i in range(old.getNumPerAngleParameters()):\n";
     script += "        new.addPerBondParameter(old.getPerAngleParameterName(i))\n";
+    script += "    order = ordered.get(new.getName(), [])\n";
     script += "    for i in range(old.getNumAngles()):\n";
     script += "        p1, p2, p3, params = old.getAngleParameters(i)\n";
-    script += "        if ( classes[p3], classes[p2], classes[p1] ) in ordered:\n";
+    script += "        if ( classes[p3], classes[p2], classes[p1] ) in order:\n";
     script += "            p1, p3 = p3, p1\n";
     script += "        new.addBond([ p1, p2, p3 ], params)\n";
     script += "    new.setForceGroup(old.getForceGroup())\n";
@@ -1381,7 +1392,7 @@ void OpenMMWriter::addTopologyEntries(MsgHandler                                
                         // The parameters belong to the atoms in this order,
                         // which matters if the energy is not the same when
                         // the outer atoms are swapped.
-                        orderedAngles_.insert(atoms);
+                        orderedAngles_[fs.second.potential()].insert(atoms);
                     }
                     break;
                 case Potential::FOURIER_DIHEDRALS:

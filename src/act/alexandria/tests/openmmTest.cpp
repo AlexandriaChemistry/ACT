@@ -288,7 +288,7 @@ TEST(OpenMMAngleForceTest, LinearAngle)
     EXPECT_EQ(1u, count(text, "<Angle class1=\"c3_b\" class2=\"c1_b\" class3=\"n1_b\" a=\""));
     EXPECT_EQ(1u, count(text, "<Script>"));
     EXPECT_EQ(1u, count(text, "openmm.CustomCompoundBondForce(3, energy)"));
-    EXPECT_EQ(1u, count(text, "( \"c3_b\", \"c1_b\", \"n1_b\" ),"));
+    EXPECT_EQ(1u, count(text, "    \"LINEAR_ANGLES\": [\n        ( \"c3_b\", \"c1_b\", \"n1_b\" ),\n    ],\n"));
     for (const auto &type : { "c3_1", "c1_1", "n1_1" })
     {
         EXPECT_EQ(1u, count(text, gmx::formatString("    \"%s\": \"", type))) << type;
@@ -314,7 +314,7 @@ TEST(OpenMMAngleForceTest, UreyBradley)
     }
     EXPECT_EQ(4u, count(text, " ub_angle=\""));
     EXPECT_EQ(1u, count(text, "<Script>"));
-    EXPECT_EQ(1u, count(text, "ordered = [\n]"));
+    EXPECT_EQ(1u, count(text, "ordered = {\n}"));
     EXPECT_EQ(1u, count(text, "atom_class = {\n}"));
 }
 
@@ -338,7 +338,7 @@ TEST(OpenMMAngleForceTest, CrossBondAngles)
                         "krr=\"52995.1\" kub=\"103098.98\"/>"));
     EXPECT_EQ(1u, count(text, "<Script>"));
     EXPECT_EQ(1u, count(text, "openmm.CustomCompoundBondForce(3, energy)"));
-    EXPECT_EQ(1u, count(text, "ordered = [\n]"));
+    EXPECT_EQ(1u, count(text, "ordered = {\n}"));
 }
 
 // Test: A force without angles is not written, and neither is the script

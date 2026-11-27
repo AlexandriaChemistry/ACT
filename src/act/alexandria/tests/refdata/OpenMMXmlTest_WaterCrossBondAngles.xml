@@ -52,11 +52,12 @@
 # expression, parameters and angles.
 # OpenMM finds the parameters of an angle in either direction, but it
 # keeps the order of the atoms. The angles below are not the same in
-# both directions: their atoms have to be in this order of the classes.
+# both directions: their atoms have to be in this order of the classes,
+# which are given for each potential.
 atom_class = {
 }
-ordered = [
-]
+ordered = {
+}
 classes = [atom_class.get(data.atomType[atom], "") for atom in data.atoms]
 for index in reversed(range(sys.getNumForces())):
     old = sys.getForce(index)
@@ -75,9 +76,10 @@ for index in reversed(range(sys.getNumForces())):
             new.setName(name[4:])
     for i in range(old.getNumPerAngleParameters()):
         new.addPerBondParameter(old.getPerAngleParameterName(i))
+    order = ordered.get(new.getName(), [])
     for i in range(old.getNumAngles()):
         p1, p2, p3, params = old.getAngleParameters(i)
-        if ( classes[p3], classes[p2], classes[p1] ) in ordered:
+        if ( classes[p3], classes[p2], classes[p1] ) in order:
             p1, p3 = p3, p1
         new.addBond([ p1, p2, p3 ], params)
     new.setForceGroup(old.getForceGroup())
