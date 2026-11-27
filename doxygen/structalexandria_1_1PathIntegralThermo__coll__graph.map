@@ -1,0 +1,7 @@
+<map id="alexandria::PathIntegralThermo" name="alexandria::PathIntegralThermo">
+<area shape="rect" id="Node000001" title="The thermochemistry of a compound from simulations with beads, see pathIntegralThermochemistry." alt="" coords="146,240,322,285"/>
+<area shape="rect" id="Node000002" href="$structalexandria_1_1HarmonicReference.xhtml" title="What the normal mode analysis of the minimized compound gives." alt="" coords="5,5,233,33"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="134,45,226,239,221,240,130,49"/>
+<area shape="rect" id="Node000003" href="$structalexandria_1_1AverageError.xhtml" title="An average with its standard error." alt="" coords="257,5,440,33"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="346,46,328,128,311,174,288,218,265,242,263,237,283,214,306,172,323,126,342,50"/>
+</map>

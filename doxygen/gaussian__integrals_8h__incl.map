@@ -1,0 +1,9 @@
+<map id="src/act/coulombintegrals/gaussian_integrals.h" name="src/act/coulombintegrals/gaussian_integrals.h">
+<area shape="rect" id="Node000001" title="Provides routines for computing Coulomb integrals analytically. The Slater based code depends on the ..." alt="" coords="96,5,278,50"/>
+<area shape="rect" id="Node000002" title=" " alt="" coords="5,98,68,126"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="149,53,75,93,72,88,146,48"/>
+<area shape="rect" id="Node000003" title=" " alt="" coords="92,98,283,126"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="189,48,189,84,185,81,185,52"/>
+<area shape="rect" id="Node000004" title=" " alt="" coords="307,98,542,126"/>
+<area shape="poly" id="edge3_Node000001_Node000004" title=" " alt="" coords="251,48,375,92,370,93,250,53"/>
+</map>

@@ -1,0 +1,186 @@
+\documentclass{article}
+\usepackage{iftex}
+\usepackage{ifthen}
+\usepackage{epsfig}
+\usepackage[utf8]{inputenc}
+\usepackage{xcolor}
+\color{white}
+\pagecolor{black}
+\ifPDFTeX
+\usepackage{newunicodechar}
+  \makeatletter
+    \def\doxynewunicodechar#1#2{%
+    \@tempswafalse
+    \edef\nuc@tempa{\detokenize{#1}}%
+    \if\relax\nuc@tempa\relax
+      \nuc@emptyargerr
+    \else
+      \edef\@tempb{\expandafter\@car\nuc@tempa\@nil}%
+      \nuc@check
+      \if@tempswa
+        \@namedef{u8:\nuc@tempa}{#2}%
+      \fi
+    \fi
+  }
+  \makeatother
+  \doxynewunicodechar{⁻}{${}^{-}$}% Superscript minus
+  \doxynewunicodechar{²}{${}^{2}$}% Superscript two
+  \doxynewunicodechar{³}{${}^{3}$}% Superscript three
+
+\fi
+\pagestyle{empty}
+\begin{document}
+$ \chi^2 $
+\pagebreak
+
+$ \chi_2 $
+\pagebreak
+
+$k = q_s^2/(4\pi\varepsilon_0\alpha)$
+\pagebreak
+
+$q_s$
+\pagebreak
+
+$\alpha$
+\pagebreak
+
+$\alpha = q_s^2/(4\pi\varepsilon_0 k)$
+\pagebreak
+
+$q_s = \pm\sqrt{4\pi\varepsilon_0 k\alpha}$
+\pagebreak
+
+$ [0, 1] $
+\pagebreak
+
+$ i $
+\pagebreak
+
+\[     p_i = \frac { 1 / \left( \varepsilon + f_i \right) } { \sum \limits_{ j=1 }^{ n } 1 / \left( \varepsilon + f_j \right) },
+\]
+\pagebreak
+
+$ f_i $
+\pagebreak
+
+$ n $
+\pagebreak
+
+\[     p_i = \frac{ e^{ f_i^* / T } }{ \sum \limits_{ j=1 }^{ n } e^{ f_j^* / T } },
+\]
+\pagebreak
+
+$ T \in \mathbb{R} $
+\pagebreak
+
+$ f_i^* $
+\pagebreak
+
+\[     f_i^* = 1 / \left( \varepsilon + f_i \right),
+\]
+\pagebreak
+
+$ R $
+\pagebreak
+
+\[     p_i = \frac{R - i + 1}{ R \left( R+1 \right) / 2 }
+\]
+\pagebreak
+
+$ e^{f_i^*} $
+\pagebreak
+
+$\geq$
+\pagebreak
+
+\[ W(r) = -k_B T \ln\left(1 + f(r)\right) \]
+\pagebreak
+
+\[ U = \frac{k}{2}(R - r_w)^2 \quad\mbox{for}\quad R > r_w \]
+\pagebreak
+
+$C_V = k_B\beta^2(\langle\epsilon_V\epsilon_T\rangle -
+\langle\epsilon_V\rangle\langle\epsilon_T\rangle) + \frac{3N}{2}k_B$
+\pagebreak
+
+$\epsilon_V$
+\pagebreak
+
+$\epsilon_T$
+\pagebreak
+
+$\nu$
+\pagebreak
+
+\[ E_P = k_BT\sum_{k=0}^{P-1} r_k,\quad
+r_k = \frac{(gh\nu)^2}{(gh\nu)^2 + (4\pi P k_BT\sin(\pi k/P))^2} \]
+\pagebreak
+
+$k_B\sum_k r_k(2r_k-1)$
+\pagebreak
+
+$\frac{gh\nu}{2}\coth x$
+\pagebreak
+
+$k_B(x/\sinh x)^2$
+\pagebreak
+
+$x = gh\nu/2k_BT$
+\pagebreak
+
+\[ k_BT\sum_i \ln\frac{\sinh x_i}{x_i},\quad x_i = \frac{h\nu_i}{2k_BT} \]
+\pagebreak
+
+$E$
+\pagebreak
+
+$T$
+\pagebreak
+
+\[ S = S_{cl}^{RRHO} + \frac{E - E_{cl}^{RRHO} - \Delta F_{anh} - \Delta F_q}{T} \]
+\pagebreak
+
+\[ \Delta F_{anh} = -T\int_0^T \frac{E_{cl}(T') - E_{cl}^{RRHO}(T')}{T'^2}dT' \]
+\pagebreak
+
+\[ \Delta F_q = \int_0^1 \frac{2}{g}\left(\langle K\rangle_g - \frac{3N}{2}k_BT\right)dg \]
+\pagebreak
+
+$g$
+\pagebreak
+
+$1/g^2$
+\pagebreak
+
+$\omega_P = P k_B T/\hbar$
+\pagebreak
+
+\[ H_P = \sum_{k=1}^P \left[ \sum_i \frac{{\bf p}_{i,k}^2}{2m_i} +
+\frac{m_i\omega_P^2}{2}({\bf q}_{i,k}-{\bf q}_{i,k+1})^2 + V({\bf q}_k) \right] \]
+\pagebreak
+
+$\bar{\bf q}$
+\pagebreak
+
+$P U(\bar{\bf q})$
+\pagebreak
+
+\[ K = \frac{3N}{2}k_B T - \frac{1}{2P}\sum_{k=1}^P\sum_i
+({\bf q}_{i,k}-\bar{\bf q}_i)\cdot{\bf F}_{i,k} \]
+\pagebreak
+
+$\bar{\bf q}_i$
+\pagebreak
+
+\[ K = \frac{3NP}{2}k_B T - \sum_{k=1}^P\sum_i \frac{m_i P}{2\beta^2\hbar^2}
+({\bf q}_{i,k}-{\bf q}_{i,k+1})^2 \]
+\pagebreak
+
+$\beta$
+\pagebreak
+
+$H_P$
+\pagebreak
+
+\end{document}

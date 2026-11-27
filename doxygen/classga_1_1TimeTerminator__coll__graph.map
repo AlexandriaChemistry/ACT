@@ -1,0 +1,5 @@
+<map id="ga::TimeTerminator" name="ga::TimeTerminator">
+<area shape="rect" id="Node000001" title="Terminator which stops evolution when the wall time is up." alt="" coords="5,81,154,109"/>
+<area shape="rect" id="Node000002" href="$classga_1_1Terminator.xhtml" title="Abstract class to check for evolution termination conditions." alt="" coords="22,5,137,33"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="81,47,82,81,77,80,78,51"/>
+</map>

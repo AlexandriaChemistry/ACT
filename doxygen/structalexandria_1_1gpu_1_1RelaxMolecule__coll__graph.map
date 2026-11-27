@@ -1,0 +1,13 @@
+<map id="alexandria::gpu::RelaxMolecule" name="alexandria::gpu::RelaxMolecule">
+<area shape="rect" id="Node000001" title="The conformations of a molecule whose shells are relaxed, see relaxShells The layout is that of compu..." alt="" coords="650,89,876,117"/>
+<area shape="rect" id="Node000002" href="$structalexandria_1_1gpu_1_1ForceShell.xhtml" title="A shell whose force is part of the convergence criterion, see shellForces2 in forcecomputer...." alt="" coords="295,5,492,33"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="508,30,627,53,680,69,729,89,724,89,678,74,625,58,508,35"/>
+<area shape="rect" id="Node000003" href="$structalexandria_1_1gpu_1_1MovingShell.xhtml" title="A shell that is moved, see ForceComputer::updateShells." alt="" coords="289,61,499,89"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="514,82,652,94,647,95,514,87"/>
+<area shape="rect" id="Node000004" href="$structalexandria_1_1gpu_1_1ShellFragment.xhtml" title="The shells of a monomer, which converge together." alt="" coords="282,117,506,145"/>
+<area shape="poly" id="edge3_Node000001_Node000004" title=" " alt="" coords="521,126,626,120,674,117,669,118,626,125,521,132"/>
+<area shape="rect" id="Node000005" href="$structalexandria_1_1gpu_1_1PairBlock.xhtml" title="The interactions of one potential of a molecule, see RelaxMolecule." alt="" coords="299,173,489,201"/>
+<area shape="poly" id="edge4_Node000001_Node000005" title=" " alt="" coords="504,177,565,169,625,156,683,137,730,118,736,117,685,142,627,161,566,174,505,182"/>
+<area shape="rect" id="Node000006" href="$structalexandria_1_1gpu_1_1PairEntry.xhtml" title="A pair interaction with prepared parameters, see PairKernel For the potentials other than Coulomb,..." alt="" coords="5,173,194,201"/>
+<area shape="poly" id="edge5_Node000005_Node000006" title=" " alt="" coords="209,185,301,187,295,187,209,190"/>
+</map>

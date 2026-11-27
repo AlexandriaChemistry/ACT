@@ -1,0 +1,5 @@
+<map id="alexandria::PathIntegralResults" name="alexandria::PathIntegralResults">
+<area shape="rect" id="Node000001" title="The results of a simulation with ring polymers, see pathIntegralMD." alt="" coords="8,240,185,285"/>
+<area shape="rect" id="Node000002" href="$structalexandria_1_1AverageError.xhtml" title="An average with its standard error." alt="" coords="5,5,188,33"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="99,48,99,240,94,239,94,49"/>
+</map>

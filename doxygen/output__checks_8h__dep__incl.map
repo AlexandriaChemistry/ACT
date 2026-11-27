@@ -1,0 +1,7 @@
+<map id="src/act/testutils/output_checks.h" name="src/act/testutils/output_checks.h">
+<area shape="rect" id="Node000001" title="Helpers for tests that keep what a tool writes as reference data: the JSON output,..." alt="" coords="107,5,274,50"/>
+<area shape="rect" id="Node000002" href="$minimizeTest_8cpp.xhtml" title="Tests of the alexandria minimize tool, in particular of the JSON output that the Python interface and..." alt="" coords="5,98,181,143"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="159,59,118,100,115,95,154,62"/>
+<area shape="rect" id="Node000003" href="$output__checks_8cpp.xhtml" title="Implements the helpers of output_checks.h." alt="" coords="205,98,373,143"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="226,58,268,98,263,97,224,63"/>
+</map>

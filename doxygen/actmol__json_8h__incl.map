@@ -1,0 +1,9 @@
+<map id="src/act/topology/actmol_json.h" name="src/act/topology/actmol_json.h">
+<area shape="rect" id="Node000001" title="Declares functions that describe a molecule in a JsonTree, for programs that read the output of the a..." alt="" coords="31,5,206,50"/>
+<area shape="rect" id="Node000002" title=" " alt="" coords="5,98,64,126"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="99,49,61,89,57,85,94,52"/>
+<area shape="rect" id="Node000003" title=" " alt="" coords="87,98,150,126"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="120,48,121,83,116,81,117,52"/>
+<area shape="rect" id="Node000004" title=" " alt="" coords="174,98,364,126"/>
+<area shape="poly" id="edge3_Node000001_Node000004" title=" " alt="" coords="159,48,235,90,229,91,158,53"/>
+</map>

@@ -1,0 +1,15 @@
+<map id="src/act/testutils/output_checks.h" name="src/act/testutils/output_checks.h">
+<area shape="rect" id="Node000001" title="Helpers for tests that keep what a tool writes as reference data: the JSON output,..." alt="" coords="226,5,394,50"/>
+<area shape="rect" id="Node000002" title=" " alt="" coords="5,98,151,126"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="251,52,130,95,129,90,246,50"/>
+<area shape="rect" id="Node000003" title=" " alt="" coords="175,98,216,126"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="282,50,227,91,225,86,277,51"/>
+<area shape="rect" id="Node000004" title=" " alt="" coords="240,98,298,126"/>
+<area shape="poly" id="edge3_Node000001_Node000004" title=" " alt="" coords="301,49,284,86,280,82,297,52"/>
+<area shape="rect" id="Node000005" title=" " alt="" coords="322,98,384,126"/>
+<area shape="poly" id="edge4_Node000001_Node000005" title=" " alt="" coords="323,48,341,85,336,83,320,53"/>
+<area shape="rect" id="Node000006" title=" " alt="" coords="408,98,545,126"/>
+<area shape="poly" id="edge5_Node000001_Node000006" title=" " alt="" coords="355,48,439,91,434,91,354,53"/>
+<area shape="rect" id="Node000007" title=" " alt="" coords="569,98,731,126"/>
+<area shape="poly" id="edge6_Node000001_Node000007" title=" " alt="" coords="394,47,584,94,578,94,394,52"/>
+</map>

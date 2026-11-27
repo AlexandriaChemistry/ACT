@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>2.5. MD Simulations with Alexandria Force Fields &#8212; ACT 1.95 documentation</title>
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=03e43079" />
+    <link rel="stylesheet" type="text/css" href="../_static/classic.css?v=2bf1fcf8" />
+    <link rel="stylesheet" type="text/css" href="../_static/mystnb.11b39860a7a0cbfd473a3ad8a317855267ff0bd372690045ca344a6b62be495e.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="../_static/togglebutton.css?v=9c3e77be" />
+    <link rel="stylesheet" type="text/css" href="../_static/sphinx_lesson.css?v=e9df6548" />
+    <link rel="stylesheet" type="text/css" href="../_static/term_role_formatting.css?v=4194e21c" />
+    <link rel="stylesheet" type="text/css" href="../_static/sphinx_rtd_theme_ext_color_contrast.css?v=01954304" />
+    
+    <script src="../_static/documentation_options.js?v=7647bf48"></script>
+    <script src="../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="../_static/copybutton.js?v=6dbb43f8"></script>
+    <script src="../_static/minipres.js?v=a0d29692"></script>
+    <script>let toggleHintShow = 'Click to show';</script>
+    <script>let toggleHintHide = 'Click to hide';</script>
+    <script>let toggleOpenOnPrint = 'true';</script>
+    <script src="../_static/togglebutton.js?v=b8b12719"></script>
+    <script>var togglebuttonSelector = '.toggle, .admonition.dropdown';</script>
+    <script>window.MathJax = {"options": {"processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
+    <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="2.6. Predicting Molecular Properties" href="properties.html" />
+    <link rel="prev" title="2.4. Getting the best performance from ACT" href="performance.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="Related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="properties.html" title="2.6. Predicting Molecular Properties"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="performance.html" title="2.4. Getting the best performance from ACT"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">ACT 1.95 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="header.html" accesskey="U"><span class="section-number">2. </span>User Manual</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href=""><span class="section-number">2.5. </span>MD Simulations with Alexandria Force Fields</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <section id="md-simulations-with-alexandria-force-fields">
+<span id="sec-simulations"></span><h1><span class="section-number">2.5. </span>MD Simulations with Alexandria Force Fields<a class="headerlink" href="#md-simulations-with-alexandria-force-fields" title="Link to this heading">¶</a></h1>
+<section id="using-act-simulate">
+<span id="index-0"></span><h2><span class="section-number">2.5.1. </span>Using ACT simulate<a class="headerlink" href="#using-act-simulate" title="Link to this heading">¶</a></h2>
+<span class="target" id="index-8"></span><p id="index-1">The command <em>alexandria simulate</em> will perform a simulation in the gas phase, i.e. without periodic boundary conditions. This obviously limits the usefulness but the OpenMM software can be used for condensed-phase simulations using ACT force fields <span class="bibtex-citation" id="id1">[<a class="reference internal" href="../references.html#id146" title="David van der Spoel, Julián Marrades, Kristian Kříž, A. Najla Hosseini, Alfred T. Nordman, João Paulo Ataide Martins, Marie-Madeleine Walz, Paul J. van Maaren, and Mohammad M. Ghahremanpour. Evolutionary machine learning of physics-based force fields in high-dimensional parameter-space. Digit. Discovery, 4:1925-1935, 2025. doi:10.1039/d5dd00178a.">1</a>, <a class="reference internal" href="../references.html#id82" title="Kristian Kříž, Paul J. van Maaren, and David van der Spoel. Impact of combination rules, level of theory and potential function on the modelling of gas and condensed phase properties of noble gases. J. Chem. Theory Comput., 20:2362-2376, 2024. doi:10.1021/acs.jctc.3c01257.">25</a>]</span>.
+The <em>alexandria simulate</em> utility is aimed for validation of the potentials, for instance by evaluating whether the total energy is conserved, it can be verified that the force is the derivative of the potential. The integration algorithm and the relaxation of shells are described in <a class="reference internal" href="../refman/integration.html#sec-integration"><span class="std std-ref">Shell Relaxation and Integration</span></a>.</p>
+<span class="target" id="index-9"></span><p>The energy of a molecule or small cluster can be minimized using <em>alexandria minimize</em>:</p>
+<span class="target" id="index-10"></span><div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">alexandria</span> <span class="n">minimize</span> <span class="o">-</span><span class="n">ff</span> <span class="n">actff</span><span class="o">.</span><span class="n">xml</span> <span class="o">-</span><span class="n">f</span> <span class="n">coords</span><span class="o">.</span><span class="n">pdb</span>
+<span class="o">-</span><span class="n">charges</span> <span class="n">mp2</span><span class="o">.</span><span class="n">xml</span> <span class="o">-</span><span class="n">c</span> <span class="n">afterem</span><span class="o">.</span><span class="n">pdb</span> <span class="o">-</span><span class="n">g</span> <span class="n">minimize</span><span class="o">.</span><span class="n">log</span>
+</pre></div>
+</div>
+<span class="target" id="index-11"></span><p>where <em>actff.xml</em> is the force field file, <em>coords.pdb</em> is a structure file (<em>xyz</em> and <em>sdf</em>
+are supported as well). The <em>-charges mp2.xml</em> option indicates a molprop file (database) with monomeric (optimized) structures used for generating charges. The files <em>afterem.pdb</em> and <em>minimize.log</em> are output files. The minimization algorithm is selected with <em>-minalg</em>, atoms can be frozen using an index file with <em>-freeze</em> and bond lengths or angles can be constrained with <em>-constrain</em>, see <a class="reference internal" href="../refman/integration.html#sec-constraints"><span class="std std-ref">Constraints</span></a>. The same minimization can be done using <em>alexandria simulate -minimize</em>, which can in addition run a simulation starting from the minimized structure.</p>
+<section id="simulations-at-constant-temperature-and-zero-point-energy">
+<span id="sec-simulate-beads"></span><h3><span class="section-number">2.5.1.1. </span>Simulations at constant temperature and zero point energy<a class="headerlink" href="#simulations-at-constant-temperature-and-zero-point-energy" title="Link to this heading">¶</a></h3>
+<span class="target" id="index-12"></span><p id="index-2">By default <em>alexandria simulate</em> conserves the energy. With the option <em>-nbeads</em> the simulation is at the constant temperature <em>-temp</em> instead. With one bead it is classical molecular dynamics with a thermostat. With more beads it is path integral molecular dynamics, in which each atom is a ring polymer of beads, and which gives the nuclear quantum effects on the energies and the structure, such as the zero point energy, for any model, also with shells and virtual sites. The algorithm is described in <a class="reference internal" href="../refman/integration.html#sec-pimd"><span class="std std-ref">Constant temperature and path integrals</span></a>, the same ring polymers are used for the second virial coefficient of flexible molecules (<a class="reference internal" href="properties.html#sec-b2-flexible"><span class="std std-ref">Flexible molecules and path integrals</span></a>). The charges are those of the input structure. For example, a water dimer at 100 K:</p>
+<span class="target" id="index-13"></span><div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">alexandria</span> <span class="n">simulate</span> <span class="o">-</span><span class="n">ff</span> <span class="n">actff</span><span class="o">.</span><span class="n">xml</span> <span class="o">-</span><span class="n">f</span> <span class="n">dimer</span><span class="o">.</span><span class="n">pdb</span> <span class="o">-</span><span class="n">charges</span> <span class="n">mp2</span><span class="o">.</span><span class="n">xml</span>
+<span class="o">-</span><span class="n">minimize</span> <span class="o">-</span><span class="n">nbeads</span> <span class="mi">64</span> <span class="o">-</span><span class="n">temp</span> <span class="mi">100</span> <span class="o">-</span><span class="n">nsteps</span> <span class="mi">400000</span> <span class="o">-</span><span class="n">deltat</span> <span class="mf">0.00025</span>
+<span class="o">-</span><span class="n">nstener</span> <span class="mi">20</span> <span class="o">-</span><span class="n">nstxout</span> <span class="mi">1000</span> <span class="o">-</span><span class="n">monomers</span>
+</pre></div>
+</div>
+<p>The number of beads that is needed is a few times <span class="math notranslate nohighlight">\(\hbar\omega/k_BT\)</span> for the highest frequency <span class="math notranslate nohighlight">\(\omega\)</span> in the system: for water 32 beads at room temperature, and proportionally more at lower temperatures. Energies converge more slowly with the number of beads than the second virial coefficient does, please check the convergence. The time step of 0.25 fs suits flexible water, the default of 0.2 fs is safe.</p>
+<span class="target" id="index-14"></span><p>The log file, and the JSON file if <em>-json</em> is given, have the averages of the potential, kinetic and total energy, of the energy terms, and of the spread of the beads, over the steps after the first <em>-equil</em> steps, a tenth of the simulation by default. The standard errors are from eight consecutive blocks of the simulation. They are too small if the simulation is not much longer than the slowest motion, for instance compounds that bind and separate. The kinetic energy includes the translation of the center of mass, see Eqn. <a class="reference internal" href="../refman/integration.html#equation-centroidvirial">(3.67)</a>, such that the total energy is that of the compound or cluster in the gas phase. The energy file, the progress file and the trajectory, which has the centroids of the beads, are written as without beads. Since the thermostat changes the motion of the atoms, the time dependence has no meaning, only the averages have.</p>
+<span class="target" id="index-15"></span><p>Two or more compounds in vacuum that move apart do not come back. The program warns when that happens. A wall on the distance between the centers of mass of the compounds keeps them together, with the radius <em>-rwall</em> (nm) and the force constant <em>-kwall</em>, see Eqn. <a class="reference internal" href="../refman/integration.html#equation-fragmentwall">(3.68)</a>. The wall acts on the centers of mass only. For two compounds the option <em>-hist</em> writes the distribution of that distance, and the potential of mean force along it, <span class="math notranslate nohighlight">\(W(R) = -k_BT\ln\left[p(R)/R^2\right]\)</span>, shifted to zero at its minimum. The potential of mean force at all distances, without a simulation of the dimer, is given by <em>alexandria b2 -pmf</em>, see <a class="reference internal" href="properties.html#sec-b2-flexible"><span class="std std-ref">Flexible molecules and path integrals</span></a>. At low temperature the simulation is the better source close to the minimum, since in <em>alexandria b2</em> few orientations then dominate the average.</p>
+<p>With <em>-monomers</em> each compound is simulated alone as well, with the same settings, and the program prints the energy and the enthalpy of binding of <span class="math notranslate nohighlight">\(n\)</span> compounds</p>
+<div class="math notranslate nohighlight" id="equation-bindingenergy">
+<span class="eqno">(2.1)<a class="headerlink" href="#equation-bindingenergy" title="Link to this equation">¶</a></span>\[\Delta U(T) ~=~ \left&lt;E\right&gt;_{all} - \sum_{c=1}^{n}\left&lt;E\right&gt;_c, \qquad \Delta H(T) ~=~ \Delta U(T) - (n-1)\,k_BT,\]</div>
+<span class="target" id="index-16"></span><p>where <span class="math notranslate nohighlight">\(E\)</span> is the total energy and the last term is the change of <span class="math notranslate nohighlight">\(pV\)</span> of ideal gases. At low temperature <span class="math notranslate nohighlight">\(\Delta U\)</span> becomes <span class="math notranslate nohighlight">\(-D_0\)</span>, the binding energy with zero point motion, which can be compared to the harmonic estimate from the energies of the minimized structures and the zero point energies of <em>alexandria nma</em> (<a class="reference internal" href="properties.html#sec-nma"><span class="std std-ref">Normal Mode Analysis</span></a>). The standard error is that of the simulations together. These numbers are those of a bound cluster only as long as the compounds stay together by themselves. A water dimer at room temperature does not: the compounds then are apart most of the time, the energies depend on the volume that the wall leaves them, and the second virial coefficient is the quantity to compute. The program reports the fraction of the steps in which the compounds were at the wall, and warns if they reached it.</p>
+</section>
+<section id="thermochemistry-from-simulations-with-beads">
+<span id="sec-simulate-thermo"></span><h3><span class="section-number">2.5.1.2. </span>Thermochemistry from simulations with beads<a class="headerlink" href="#thermochemistry-from-simulations-with-beads" title="Link to this heading">¶</a></h3>
+<span class="target" id="index-17"></span><p id="index-3">The normal mode analysis (<a class="reference internal" href="properties.html#sec-nma"><span class="std std-ref">Normal Mode Analysis</span></a>) gives the thermochemistry of a rigid rotor with harmonic oscillators. With the option <em>-thermo</em> the simulations with beads give the internal energy, the enthalpy, the heat capacity, the standard entropy and the Gibbs energy of one compound in the gas phase at the temperature <em>-temp</em> and 1 bar, without these approximations: with the anharmonicity of the model, the coupling between rotation and vibration, and all conformations that the simulation visits. The compound is minimized first, and the results are printed next to those of the normal mode analysis of the minimum. The energies are relative to that minimum. For example:</p>
+<span class="target" id="index-18"></span><div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">alexandria</span> <span class="n">simulate</span> <span class="o">-</span><span class="n">ff</span> <span class="n">ff</span><span class="o">.</span><span class="n">xml</span> <span class="o">-</span><span class="n">f</span> <span class="n">hf</span><span class="o">.</span><span class="n">sdf</span> <span class="o">-</span><span class="n">nbeads</span> <span class="mi">32</span> <span class="o">-</span><span class="n">temp</span> <span class="mf">298.15</span> <span class="o">-</span><span class="n">nsteps</span> <span class="mi">4000000</span> <span class="o">-</span><span class="n">tau</span> <span class="mf">0.01</span> <span class="o">-</span><span class="n">thermo</span>
+</pre></div>
+</div>
+<span class="target" id="index-19"></span><p>The internal energy and the heat capacity are those of the simulation at that temperature, the heat capacity from the fluctuations of the energy. The entropy cannot be had from one simulation. It is computed by thermodynamic integration from the classical rigid rotor with harmonic oscillators, see <a class="reference internal" href="../refman/integration.html#sec-pimd-thermo"><span class="std std-ref">Thermochemistry from path integrals</span></a>, which needs 2 x <em>-nquad</em> more simulations, eight by default: classical ones at lower temperatures, which are longer, and ones with fewer beads in which the constant of Planck is scaled down. Together they take two to three times as long as the simulation itself. With <em>-nquad 0</em> they are left out and there is no entropy. With one bead the thermochemistry is that of the classical compound.</p>
+<p>A finite number of beads gives too low an energy and too high a heat capacity: for water at room temperature with 32 beads 1.8 kJ/mol and 11 J/mol K. The values of the simulation therefore include the difference between harmonic oscillators with infinitely many beads and with the beads of the simulation, which the program prints. What remains is the effect of the number of beads on the anharmonicity, which is small if that correction is small compared to the zero point energy.</p>
+<p><a class="reference internal" href="#tab-thermo-pimd"><span class="std std-numref">Table 2.8</span></a> shows the result for hydrogen fluoride with an anharmonic bond, for which the exact values follow from the energy levels of the vibration and rotation in the same potential. The heat capacity needs the longest simulations, since it is a fluctuation.</p>
+<table class="docutils align-default" id="tab-thermo-pimd">
+<caption><span class="caption-number">Table 2.8 </span><span class="caption-text">Thermochemistry of hydrogen fluoride with the potential of Hua for the bond at 298.15 K, relative to the minimum: the normal mode analysis, simulations of 4 000 000 steps with 32 beads, and the energy levels of the vibration and rotation.</span><a class="headerlink" href="#tab-thermo-pimd" title="Link to this table">¶</a></caption>
+<thead>
+<tr class="row-odd"><th class="head"><p>Property</p></th>
+<th class="head"><p>Harmonic</p></th>
+<th class="head"><p>Simulation</p></th>
+<th class="head"><p>Exact levels</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>Internal energy (kJ/mol)</p></td>
+<td><p>31.118</p></td>
+<td><p>30.786 +/- 0.014</p></td>
+<td><p>30.778</p></td>
+</tr>
+<tr class="row-odd"><td><p><span class="math notranslate nohighlight">\(C_V\)</span> (J/mol K)</p></td>
+<td><p>20.79</p></td>
+<td><p>20.91 +/- 0.32</p></td>
+<td><p>20.82</p></td>
+</tr>
+<tr class="row-even"><td><p><span class="math notranslate nohighlight">\(S^o\)</span> (J/mol K)</p></td>
+<td><p>173.64</p></td>
+<td><p>173.77 +/- 0.06</p></td>
+<td><p>173.83</p></td>
+</tr>
+<tr class="row-odd"><td><p>Gibbs energy (kJ/mol)</p></td>
+<td><p>-18.173</p></td>
+<td><p>-18.545 +/- 0.010</p></td>
+<td><p>-18.570</p></td>
+</tr>
+</tbody>
+</table>
+<p>The identical nuclei of a compound are not exchanged in the simulation. As in the normal mode analysis, the rotational symmetry number accounts for them, which is correct unless the temperature is close to the rotational temperature, as for hydrogen below room temperature. The entropy is that of the conformations that the classical simulations reach from the minimum: for a compound with high barriers between conformations they have to be long enough to cross them.</p>
+</section>
+</section>
+<section id="the-act-openmm-interface">
+<h2><span class="section-number">2.5.2. </span>The ACT-OpenMM interface<a class="headerlink" href="#the-act-openmm-interface" title="Link to this heading">¶</a></h2>
+<p id="index-4">The OpenMM <span class="bibtex-citation" id="id2">[<a class="reference internal" href="../references.html#id39" title="Peter Eastman, Raimondas Galvelis, Raúl P. Peláez, Charlles R. A. Abreu, Stephen E. Farr, Emilio Gallicchio, Anton Gorenko, Michael M. Henry, Frank Hu, Jing Huang, Andreas Krämer, Julien Michel, Joshua A. Mitchell, Vijay S. Pande, João PGLM Rodrigues, Jaime Rodriguez-Guerra, Andrew C. Simmonett, Sukrit Singh, Jason Swails, Philip Turner, Yuanqing Wang, Ivy Zhang, John D. Chodera, Gianni De Fabritiis, and Thomas E. Markland. Openmm 8: molecular dynamics simulation with machine learning potentials. J. Phys. Chem. B., 128:109-116, 2024. doi:10.1021/acs.jpcb.3c06662.">29</a>]</span> software in its native form is controlled from Python scripts. This allows users great control over the simulations. OpenMM allows to specify user-defined energy functions, which we use to implement both Gaussian-distributed charges <span class="bibtex-citation" id="id3">[<a class="reference internal" href="../references.html#id161" title="Marie Madeleine Walz, Mohammad M. Ghahremanpour, Paul J. van Maaren, and David van der Spoel. Phase-transferable force field for alkali halides. J. Chem. Theory Comput., 14:5933-5948, 2018. doi:10.1021/acs.jctc.8b00507.">19</a>, <a class="reference internal" href="../references.html#id49" title="Mohammad Mehdi Ghahremanpour, Paul J. van Maaren, Carl Caleman, Geoffrey R. Hutchison, and David van der Spoel. Polarizable drude model with s-type gaussian or slater charge density for general molecular mechanics force fields. J. Chem. Theory Comput., 14:5553-5566, 2018. doi:10.1021/acs.jctc.8b00430.">30</a>]</span> and many Van der Waals potentials <span class="bibtex-citation" id="id4">[<a class="reference internal" href="../references.html#id82" title="Kristian Kříž, Paul J. van Maaren, and David van der Spoel. Impact of combination rules, level of theory and potential function on the modelling of gas and condensed phase properties of noble gases. J. Chem. Theory Comput., 20:2362-2376, 2024. doi:10.1021/acs.jctc.3c01257.">25</a>]</span> (see Section <a class="reference internal" href="../refman/energy.html#sec-energy"><span class="std std-ref">Energy Function</span></a>).
+To facilitate this, a special python code was implemented that makes it relatively easy for the user to run simulations and minimization. The first step is to convert an ACT force field file (<em>actff.xml}) to one compatible with OpenMM (*openmmff.xml</em>):</p>
+<span class="target" id="index-20"></span><div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">alexandria</span> <span class="n">gentop</span> <span class="o">-</span><span class="n">ff</span> <span class="n">actff</span><span class="o">.</span><span class="n">xml</span> <span class="o">-</span><span class="n">openmm</span> <span class="n">openmmff</span><span class="o">.</span><span class="n">xml</span>
+<span class="o">-</span><span class="n">charges</span> <span class="n">mp2</span><span class="o">.</span><span class="n">xml</span> <span class="o">-</span><span class="n">db</span> <span class="s2">"water methanol"</span>
+</pre></div>
+</div>
+<p>with two additional arguments. First, flag <em>-charges mp2.xml</em> indicates a molprop file (database) with monomeric (optimized) structures used for generating charges and, second, the flag <em>-db “water methanol”</em> instruct the code to produce an OpenMM topology for those compounds. If one or more of the compounds is not present in the database, a warning will be issued.</p>
+<span class="target" id="index-21"></span><p>Each compound becomes a residue in the OpenMM force field file. With the flag <em>-c conf.pdb</em>, gentop writes a PDB file with the same residue and atom names, such as C1, H2 and so on. The residue names can be given with <em>-resnames “water=SOH methanol=MOH”</em>, or <em>-resnames “SOH MOH”</em> for the compounds in the order of the input. A name has at most four letters or digits, and cannot be a residue that OpenMM knows itself, such as HOH or SOL. Compounds without a name get one made from their IUPAC name. A simulation box made from these PDB files, for instance with packmol, should keep the residue and atom names. Then the ACT python interface tells OpenMM the bonds of the residues from the force field file, and the PDB file does not need CONECT records.</p>
+<p>The angle potentials that depend on the distances between the atoms, the linear angles (Eqn. <a class="reference internal" href="../refman/energy.html#equation-vlin">(3.45)</a>), the Urey-Bradley angles and the cross terms between the bonds and the angle (Eqn. <a class="reference internal" href="../refman/energy.html#equation-crossba">(3.46)</a>), are written as a <em>CustomAngleForce</em> with their energy expression and the parameters of each angle. Since the <em>CustomAngleForce</em> of OpenMM can evaluate the angle only, the file has a script for these that OpenMM runs when it makes the system. It replaces each such force by a <em>CustomCompoundBondForce</em> with the same expression, parameters and angles, named after the potential, for instance LINEAR_ANGLES. Nothing has to be done for this by the user. Proper dihedrals become a <em>PeriodicTorsionForce</em>, or an <em>RBTorsionForce</em> for the Fourier dihedrals, and the harmonic improper dihedrals a <em>CustomTorsionForce</em> with the central atom first. OpenMM applies an improper dihedral to every atom with three neighbours of the classes in the file, whereas ACT only makes one for an atom that is planar in the input structure.</p>
+<section id="gromacs-topologies">
+<h3><span class="section-number">2.5.2.1. </span>GROMACS topologies<a class="headerlink" href="#gromacs-topologies" title="Link to this heading">¶</a></h3>
+<span class="target" id="index-22"></span><p id="index-5">For force fields that GROMACS can represent, <em>alexandria gentop</em> writes a GROMACS topology as well:</p>
+<span class="target" id="index-23"></span><div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">alexandria</span> <span class="n">gentop</span> <span class="o">-</span><span class="n">ff</span> <span class="n">actff</span><span class="o">.</span><span class="n">xml</span> <span class="o">-</span><span class="n">f</span> <span class="n">dimer</span><span class="o">.</span><span class="n">pdb</span> <span class="o">-</span><span class="n">p</span> <span class="n">topol</span><span class="o">.</span><span class="n">top</span> <span class="o">-</span><span class="n">c</span> <span class="n">conf</span><span class="o">.</span><span class="n">pdb</span> <span class="o">-</span><span class="n">ws</span>
+</pre></div>
+</div>
+<p>GROMACS has the force field as it is if the charges are point charges, the Van der Waals potential is Lennard-Jones 12-6 and the bonded potentials are ones that GROMACS has (harmonic and Morse bonds, harmonic, Urey-Bradley, quartic and linear angles, proper, Fourier and improper dihedrals). The comment at the top of the topology says what is missing otherwise: Gaussian or Slater charges become point charges, other Van der Waals potentials are left out, and a bond potential that GROMACS lacks is written without parameters, such that GROMACS does not accept the topology. The Lennard-Jones parameters of all pairs of particle types are given explicitly, which reproduces any combination rule.</p>
+<p>Shells are written with their polarization, and virtual sites in the definitions of GROMACS, where the site comes first. A virtual site on four atoms is written as a center of weights, which GROMACS has for weights that are not negative only. Each compound in the input is a molecule in the topology, and compounds that are the same, with the same charges, share a molecule type. The flag <em>-ws</em> puts the shells and virtual sites in the structure file, which GROMACS needs, with the same names and in the same order as in the topology.</p>
+<p>The energy of GROMACS differs by a constant from that of ACT if the bonds have an energy at their minimum, which is noted in the topology. Apart from that, GROMACS gives the energies and forces of ACT.</p>
+</section>
+<section id="md-simulations-using-openmm">
+<h3><span class="section-number">2.5.2.2. </span>MD simulations using OpenMM<a class="headerlink" href="#md-simulations-using-openmm" title="Link to this heading">¶</a></h3>
+<p id="index-6">It is easy to perform simulations based on an Alexandria force field. For this, we rely on the <a class="reference external" href="https://openmm.org/">OpenMM</a> software that you need to install separately. Then you can use the ACT python interface to OpenMM, as in this simple script, that we will call run.py:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="ch">#!/usr/bin/env python3</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">act_openmm</span><span class="w"> </span><span class="kn">import</span> <span class="n">ActOpenMMSim</span>
+
+<span class="n">sim</span> <span class="o">=</span> <span class="n">ActOpenMMSim</span><span class="p">(</span><span class="n">pdbfile</span><span class="o">=</span><span class="s2">"file.pdb"</span><span class="p">,</span>
+                   <span class="n">datfile</span><span class="o">=</span><span class="s2">"dimer.dat"</span><span class="p">,</span>
+                   <span class="n">xmlfile</span><span class="o">=</span><span class="s2">"ff.xml"</span><span class="p">,</span>
+                   <span class="n">txtfile</span><span class="o">=</span><span class="s2">"output2.txt"</span><span class="p">,</span>
+                   <span class="n">verbose</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="n">sim</span><span class="o">.</span><span class="n">run</span><span class="p">()</span>
+<span class="n">sim</span><span class="o">.</span><span class="n">log_to_xvg</span><span class="p">(</span><span class="s2">"energy.xvg"</span><span class="p">,</span> <span class="p">[</span> <span class="s2">"Potential Energy (kJ/mole)"</span><span class="p">])</span>
+<span class="n">sim</span><span class="o">.</span><span class="n">log_to_xvg</span><span class="p">(</span><span class="s2">"temperature.xvg"</span><span class="p">,</span> <span class="p">[</span> <span class="s2">"Temperature (K)"</span> <span class="p">])</span>
+<span class="n">sim</span><span class="o">.</span><span class="n">log_to_xvg</span><span class="p">(</span><span class="s2">"density.xvg"</span><span class="p">,</span> <span class="p">[</span> <span class="s2">"Density (g/mL)"</span> <span class="p">])</span>
+</pre></div>
+</div>
+<p>Here, we first instantiate an ActOpenMMSim object, and pass it a structure file <em>file.pdb</em>, a simulation parameter file <em>dimer.dat</em> and a force field file <em>ff.xml</em>. We also instruct the code that output should be written to <em>output2.txt</em> and that we want a lot of information in that file.
+Then we can run it, that’s all! The last three lines are for convenience of plotting the results. We can run this script using:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">python</span> <span class="o">./</span><span class="n">run</span><span class="o">.</span><span class="n">py</span>
+</pre></div>
+</div>
+<p>or submitted to a cluster, preferably with GPUs available.</p>
+</section>
+<section id="energy-minimization-using-openmm">
+<h3><span class="section-number">2.5.2.3. </span>Energy Minimization using OpenMM<a class="headerlink" href="#energy-minimization-using-openmm" title="Link to this heading">¶</a></h3>
+<p id="index-7">An energy minimization of the input structure can be done using this script:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="ch">#!/usr/bin/env python3</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">act_openmm</span><span class="w"> </span><span class="kn">import</span> <span class="n">ActOpenMMSim</span>
+
+<span class="n">sim</span> <span class="o">=</span> <span class="n">ActOpenMMSim</span><span class="p">(</span><span class="n">pdbfile</span><span class="o">=</span><span class="s2">"file.pdb"</span><span class="p">,</span>
+                   <span class="n">datfile</span><span class="o">=</span><span class="s2">"dimer.dat"</span><span class="p">,</span>
+                   <span class="n">xmlfile</span><span class="o">=</span><span class="s2">"ff.xml"</span><span class="p">,</span>
+                   <span class="n">txtfile</span><span class="o">=</span><span class="s2">"output2.txt"</span><span class="p">,</span>
+                   <span class="n">verbose</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="n">sim</span><span class="o">.</span><span class="n">setup</span><span class="p">()</span>
+<span class="n">sim</span><span class="o">.</span><span class="n">minimize</span><span class="p">()</span>
+<span class="n">sim</span><span class="o">.</span><span class="n">write_coordinates</span><span class="p">(</span><span class="s2">"final.pdb"</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>which is run here using the same flags as the simulation. Note that details about simulations and minimization can be specified in the <em>dimer.dat</em> file.</p>
+</section>
+</section>
+</section>
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../index.html">
+              <img class="logo" src="../_static/AClogo.png" alt="Logo of ACT"/>
+            </a></p>
+<h3><a href="../index.html">Table of Contents</a></h3>
+<p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../preface/preface.html">1. Preface</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="header.html">2. User Manual</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="installation.html">2.1. Installation of the ACT</a></li>
+<li class="toctree-l2"><a class="reference internal" href="verification.html">2.2. Verifying changes to ACT</a></li>
+<li class="toctree-l2"><a class="reference internal" href="using.html">2.3. Using the ACT</a></li>
+<li class="toctree-l2"><a class="reference internal" href="performance.html">2.4. Getting the best performance from ACT</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">2.5. MD Simulations with Alexandria Force Fields</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#using-act-simulate">2.5.1. Using ACT simulate</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#simulations-at-constant-temperature-and-zero-point-energy">2.5.1.1. Simulations at constant temperature and zero point energy</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#thermochemistry-from-simulations-with-beads">2.5.1.2. Thermochemistry from simulations with beads</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#the-act-openmm-interface">2.5.2. The ACT-OpenMM interface</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#gromacs-topologies">2.5.2.1. GROMACS topologies</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#md-simulations-using-openmm">2.5.2.2. MD simulations using OpenMM</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#energy-minimization-using-openmm">2.5.2.3. Energy Minimization using OpenMM</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="properties.html">2.6. Predicting Molecular Properties</a></li>
+<li class="toctree-l2"><a class="reference internal" href="python.html">2.7. Using ACT from Python</a></li>
+<li class="toctree-l2"><a class="reference internal" href="python_api.html">2.8. Reference of the Python package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="gui.html">2.9. The graphical user interface</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../refman/header.html">3. Reference Manual</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../jupyter/header.html">4. Interactive Notebooks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../devman/header.html">5. Developer Manual</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../references.html">6. References</a></li>
+</ul>
+
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/userman/simulation.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<search id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="Related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="properties.html" title="2.6. Predicting Molecular Properties"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="performance.html" title="2.4. Getting the best performance from ACT"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">ACT 1.95 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="header.html" ><span class="section-number">2. </span>User Manual</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href=""><span class="section-number">2.5. </span>MD Simulations with Alexandria Force Fields</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+    &#169; Copyright 2026, ACT development team.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 8.2.3.
+    </div>
+  </body>
+</html>

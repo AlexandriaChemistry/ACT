@@ -1,0 +1,27 @@
+var classalexandria_1_1CompoundReader =
+[
+    [ "CompoundReader", "classalexandria_1_1CompoundReader.xhtml#ae5ab744f202eee94c41b06993cf31b1f", null ],
+    [ "addOptions", "classalexandria_1_1CompoundReader.xhtml#ac1650c19e5cf135fdf6c160b2c476041", null ],
+    [ "algorithm", "classalexandria_1_1CompoundReader.xhtml#a556498bbee0314cd9b60893a09ec0fc9", null ],
+    [ "chargeFile", "classalexandria_1_1CompoundReader.xhtml#a7d0e2d64d4b974858791a8915ed4330e", null ],
+    [ "chargeMap", "classalexandria_1_1CompoundReader.xhtml#a9706d8029a5e3adf5d020546aa1a3f66", null ],
+    [ "chargeMapConst", "classalexandria_1_1CompoundReader.xhtml#a8bd709276b20f8650f2fd17799b45ae9", null ],
+    [ "customCharges", "classalexandria_1_1CompoundReader.xhtml#aae590b7bac4887461682e7c0eca5a739", null ],
+    [ "dbName", "classalexandria_1_1CompoundReader.xhtml#a7e4bf637494b563f87b2f57be01a13bc", null ],
+    [ "fileName", "classalexandria_1_1CompoundReader.xhtml#ae44b6dfcecb9704cb7623ea06e36fac0", null ],
+    [ "molselect", "classalexandria_1_1CompoundReader.xhtml#a438c9f5698a4d9e8a32274a106946121", null ],
+    [ "oneH", "classalexandria_1_1CompoundReader.xhtml#af9ea30f31e1a97165f0dd8bbeef5879c", null ],
+    [ "optionsFinished", "classalexandria_1_1CompoundReader.xhtml#ac707e67d5b56e97d0eb5b23c23969590", null ],
+    [ "qread", "classalexandria_1_1CompoundReader.xhtml#a07d9f13989cc7b3a35fad795bc3e774a", null ],
+    [ "read", "classalexandria_1_1CompoundReader.xhtml#a5d788acfd1813d3e249c96245a87bb35", null ],
+    [ "readFile", "classalexandria_1_1CompoundReader.xhtml#a102e8efa50e9a1433492b42bf4be1c21", null ],
+    [ "setAlgorithm", "classalexandria_1_1CompoundReader.xhtml#abea6d2cbdcfad61a2ea32bd6cbed90d8", null ],
+    [ "setCharges", "classalexandria_1_1CompoundReader.xhtml#a2bde6669beb105671a2d7ffccb63b908", null ],
+    [ "setFileName", "classalexandria_1_1CompoundReader.xhtml#ac4254ddbdcb5320c61690e659cd9214b", null ],
+    [ "setOneH", "classalexandria_1_1CompoundReader.xhtml#a0047c819c62b87a81655dee09ab3b83b", null ],
+    [ "setSmiles", "classalexandria_1_1CompoundReader.xhtml#a7ba183ae654e6c2e9b43e0175c0d0db9", null ],
+    [ "setTotalCharge", "classalexandria_1_1CompoundReader.xhtml#a506cf79a8f7c48bbf835aa7507e5a8a7", null ],
+    [ "smiles", "classalexandria_1_1CompoundReader.xhtml#ac630b2bc6cf0404e4839c04dd312b814", null ],
+    [ "totalCharge", "classalexandria_1_1CompoundReader.xhtml#a498469bc216505a421088f75fb2a5adb", null ],
+    [ "userQtot", "classalexandria_1_1CompoundReader.xhtml#af4f49cc10f6b599b298fd92c8767ba75", null ]
+];

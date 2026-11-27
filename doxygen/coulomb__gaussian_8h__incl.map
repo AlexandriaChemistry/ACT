@@ -1,0 +1,13 @@
+<map id="src/act/coulombintegrals/coulomb_gaussian.h" name="src/act/coulombintegrals/coulomb_gaussian.h">
+<area shape="rect" id="Node000001" title="Provides routines for computing Coulomb integrals analytically. The Slater based code depends on the ..." alt="" coords="188,5,370,50"/>
+<area shape="rect" id="Node000002" href="$gaussian__integrals_8h.xhtml" title="Provides routines for computing Coulomb integrals analytically. The Slater based code depends on the ..." alt="" coords="108,98,267,143"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="260,49,221,89,218,85,255,52"/>
+<area shape="rect" id="Node000006" title=" " alt="" coords="291,106,451,134"/>
+<area shape="poly" id="edge5_Node000001_Node000006" title=" " alt="" coords="302,48,349,95,344,95,300,53"/>
+<area shape="rect" id="Node000003" title=" " alt="" coords="5,191,68,218"/>
+<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="149,145,75,185,72,181,146,141"/>
+<area shape="rect" id="Node000004" title=" " alt="" coords="92,191,283,218"/>
+<area shape="poly" id="edge3_Node000002_Node000004" title=" " alt="" coords="189,141,189,176,185,174,185,145"/>
+<area shape="rect" id="Node000005" title=" " alt="" coords="307,191,542,218"/>
+<area shape="poly" id="edge4_Node000002_Node000005" title=" " alt="" coords="251,141,375,185,370,186,250,146"/>
+</map>

@@ -1,0 +1,9 @@
+<map id="alexandria::gpu::ChainView" name="alexandria::gpu::ChainView">
+<area shape="rect" id="Node000001" title="The device data of the chain, for its kernels, see createChain." alt="" coords="335,61,534,89"/>
+<area shape="rect" id="Node000002" href="$structalexandria_1_1gpu_1_1ChainMolecule.xhtml" title="A molecule of the Monte Carlo chain on the GPU, see ChainSystem." alt="" coords="5,5,232,33"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="237,33,311,46,373,60,368,61,310,51,237,39"/>
+<area shape="rect" id="Node000003" href="$structalexandria_1_1gpu_1_1ChainBound.xhtml" title="The bound of the charge of a particle and those that are added to it." alt="" coords="14,61,223,89"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="238,73,337,75,332,76,239,78"/>
+<area shape="rect" id="Node000004" href="$structalexandria_1_1gpu_1_1ChainTerm.xhtml" title="A term of the total chi squared, in the order of the fitting targets." alt="" coords="19,117,218,145"/>
+<area shape="poly" id="edge3_Node000001_Node000004" title=" " alt="" coords="233,115,310,103,378,90,383,89,311,108,234,121"/>
+</map>
