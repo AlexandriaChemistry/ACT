@@ -107,6 +107,10 @@ void put_in_box(int natom, matrix box, const rvec x[], real dbox);
 void calc_rotmatrix(const rvec target_vec, const rvec ref_vec, matrix rotmatrix);
 
 /*! \brief Compute atomization energy for a molecule
+ *
+ * The sum over the atoms of the enthalpy of formation of the atom at
+ * the temperature and of H(T) - H(0 K) of the element in its standard
+ * state.
  * \param[in] msghandler For debug output, may be nullptr
  * \param[in] atoms The atom elements etc.
  * \param[in] atomenergy Table of components of the atomization energy
@@ -117,6 +121,22 @@ double computeAtomizationEnergy(MsgHandler                 *msghandler,
                                 const std::vector<ActAtom> &atoms,
                                 const AtomizationEnergy    &atomenergy,
                                 double                      temperature);
+
+/*! \brief Enthalpy that the elements of a molecule gain from zero K
+ *
+ * The sum over the atoms of H(T) - H(0 K) of the corresponding
+ * elements in their standard states, per atom. The temperature has to
+ * be one of those in the table, otherwise the result is zero.
+ * \param[in] msghandler For debug output, may be nullptr
+ * \param[in] atoms The atom elements etc.
+ * \param[in] atomenergy Table of components of the atomization energy
+ * \param[in] temperature The temperature (K)
+ * \return The enthalpy (kJ/mol)
+ */
+double computeElementEnthalpy(MsgHandler                 *msghandler,
+                              const std::vector<ActAtom> &atoms,
+                              const AtomizationEnergy    &atomenergy,
+                              double                      temperature);
 
 //! \brief Short-cut for property-dependent statistics
 using qtStats = std::map<qPropertyType, gmx_stats>;
