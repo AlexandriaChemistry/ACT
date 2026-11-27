@@ -250,8 +250,11 @@ TEST(MolpropStreamTest, WrittenAsRead)
     }
     // Comments around and between the compounds and the experiments, and
     // no line breaks between them
-    std::string odd = text;
-    for (const std::string &element : { "<molecules>", "<molecule ", "<experiment ", "</molecule>", "</molecules>" })
+    std::string                    odd      = text;
+    const std::vector<std::string> elements = {
+        "<molecules>", "<molecule ", "<experiment ", "</molecule>", "</molecules>"
+    };
+    for (const auto &element : elements)
     {
         size_t at = 0;
         while ((at = odd.find(element, at)) != std::string::npos)
