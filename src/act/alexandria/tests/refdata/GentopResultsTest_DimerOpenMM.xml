@@ -71,9 +71,8 @@ TER
  <Angle class1="h_b" class2="o3_b" class3="h_b" k="285" angle="1.897172896918"/>
  </HarmonicAngleForce>
  <PeriodicTorsionForce energy="0">
- <Proper class1="h_b" class2="c3_b" class3="o3_b" class4="h_b" phi0="0" kp="5" mult="3"/>
+ <Proper class1="h_b" class2="c3_b" class3="o3_b" class4="h_b" periodicity1="3" phase1="0" k1="5"/>
  </PeriodicTorsionForce>
- <PeriodicTorsionForce energy="0"/>
  <CustomNonbondedForce energy="4*epsilon*((sigma/r)^12 - (sigma/r)^6)" bondCutoff="0">
  <GlobalParameter name="pot-LJ12_6" defaultValue="1"/>
  <GlobalParameter name="pot-COULOMB_GAUSSIAN" defaultValue="1"/>

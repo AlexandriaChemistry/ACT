@@ -52,12 +52,13 @@
     <Angle class1="c3_b" class2="c2_b" class3="c3_b" k="300" angle="2.010619298297"/>
   </HarmonicAngleForce>
   <PeriodicTorsionForce energy="0">
-    <Proper class1="h_b" class2="c3_b" class3="c2_b" class4="o2_b" phi0="2.094395102393" kp="5" mult="3"/>
-    <Proper class1="c3_b" class2="c2_b" class3="c3_b" class4="h_b" phi0="0" kp="5" mult="3"/>
+    <Proper class1="h_b" class2="c3_b" class3="c2_b" class4="o2_b" periodicity1="3" phase1="2.094395102393" k1="5"/>
+    <Proper class1="c3_b" class2="c2_b" class3="c3_b" class4="h_b" periodicity1="3" phase1="0" k1="5"/>
   </PeriodicTorsionForce>
-  <PeriodicTorsionForce energy="0">
+  <CustomTorsionForce energy="0.5*kimp*theta^2" ordering="charmm">
+    <PerTorsionParameter name="kimp"/>
     <Improper class1="c2_b" class2="c3_b" class3="c3_b" class4="o2_b" kimp="1"/>
-  </PeriodicTorsionForce>
+  </CustomTorsionForce>
   <CustomNonbondedForce energy="4*epsilon*((sigma/r)^12 - (sigma/r)^6)" bondCutoff="0">
     <GlobalParameter name="pot-LJ12_6" defaultValue="1"/>
     <GlobalParameter name="pot-COULOMB_GAUSSIAN" defaultValue="1"/>

@@ -119,7 +119,8 @@ std::map<Potential, PotentialProperties> potprops = {
     { Potential::UREY_BRADLEY_ANGLES,
       { "UREY_BRADLEY_ANGLES", F_UREY_BRADLEY, { "kt", "ub_angle", "r13", "kub" },
         "0.5*kt*(angle(p1,p2,p3)-ub_angle)^2+0.5*kub*(distance(p1,p3)-r13)^2", "" } },
-    { Potential::HARMONIC_DIHEDRALS, { "HARMONIC_DIHEDRALS", F_IDIHS, { "kimp" }, "0", "" } },
+    // The angle theta of a CustomTorsionForce of OpenMM
+    { Potential::HARMONIC_DIHEDRALS, { "HARMONIC_DIHEDRALS", F_IDIHS, { "kimp" }, "0.5*kimp*theta^2", "" } },
     { Potential::FOURIER_DIHEDRALS, { "FOURIER_DIHEDRALS", F_FOURDIHS, { "c0", "c1", "c2", "c3", "c4", "c5" }, "0", "" } },
     { Potential::PROPER_DIHEDRALS, { "PROPER_DIHEDRALS", F_PDIHS, { "phi0", "kp", "mult" }, "0", "" } },
     { Potential::POLARIZATION, { "POLARIZATION", F_POLARIZATION, { "alpha", "rhyper", "fchyper" }, "0", "" } },

@@ -55,7 +55,6 @@
     <Angle class1="h_b" class2="o3_b" class3="h_b" k="300" angle="1.860520982626"/>
   </HarmonicAngleForce>
   <RBTorsionForce energy="0"/>
-  <PeriodicTorsionForce energy="0"/>
   <CustomNonbondedForce energy="select(epsilon*rmin*gamma,( epsilon*((delta + 2*gamma + 6)/(2*gamma)) * (1/(1+((r/rmin)^6))) * (  ((6+delta)/(delta + 2*gamma + 6)) * exp(gamma*(1-(r/rmin))) -1 ) - (epsilon/(1+(r/rmin)^delta)) ),0)" bondCutoff="0">
     <GlobalParameter name="pot-GENERALIZED_BUCKINGHAM" defaultValue="1"/>
     <GlobalParameter name="pot-COULOMB_GAUSSIAN" defaultValue="1"/>
