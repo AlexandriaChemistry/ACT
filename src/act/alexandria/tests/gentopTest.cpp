@@ -300,8 +300,9 @@ protected:
     }
 
     /*! \brief Run gentop
-     * \param[in] ffName  Force field in this directory
-     * \param[in] input   Options that are passed as they are
+     * \param[in] ffName  Force field in this directory, or the absolute path of one
+     * \param[in] input   Options that are passed as they are, those
+     *                    without value are flags
      * \param[in] options Output files, the file names are made temporary
      * \return the exit status of gentop
      */
@@ -310,10 +311,19 @@ protected:
     {
         gmx::test::CommandLine cmd;
         cmd.append("gentop");
-        cmd.addOption("-ff", fileManager().getInputFilePath(ffName));
+        // A force field made by a test has an absolute path
+        cmd.addOption("-ff", ffName[0] == '/' ? ffName : fileManager().getInputFilePath(ffName));
         for (const auto &i : input)
         {
-            cmd.addOption(i.first.c_str(), i.second);
+            if (i.second.empty())
+            {
+                // A flag
+                cmd.append(i.first);
+            }
+            else
+            {
+                cmd.addOption(i.first.c_str(), i.second);
+            }
         }
         cmd.addOption("-g", fileManager().getTemporaryFilePath("gentop.log"));
         for (auto &f : *files)
@@ -608,12 +618,605 @@ TEST_F(GentopTest, ChargesNone)
     std::map<std::string, std::string> files = { { "-p", "water.top" } };
     run("forcefields/SPCE.xml",
         { { "-f", fileManager().getInputFilePath("molecules/water_dimer.pdb") }, { "-qalg", "None" } }, &files);
-    std::vector<double> expected = { -0.8476, 0.4238, 0.4238, -0.8476, 0.4238, 0.4238 };
-    auto charges = atomCharges(readTopology(files["-p"]));
+    // The two molecules are the same and share a molecule type
+    std::vector<double> expected = { -0.8476, 0.4238, 0.4238 };
+    const auto top = readTopology(files["-p"]);
+    auto charges = atomCharges(top);
     ASSERT_EQ(expected.size(), charges.size());
     for (size_t i = 0; i < charges.size(); i++)
     {
         EXPECT_NEAR(expected[i], charges[i], 1e-6) << "atom " << i;
+    }
+    const auto molecules = section(top, "molecules");
+    ASSERT_EQ(1u, molecules.size());
+    EXPECT_EQ("2", molecules[0].fields[1]);
+}
+
+//! A particle in a PDB file
+struct PdbParticle
+{
+    //! The name
+    std::string name;
+    //! The position (nm)
+    double      x[3];
+};
+
+//! \return the particles of a PDB file
+std::vector<PdbParticle> readPdbParticles(const std::string &fileName)
+{
+    std::vector<PdbParticle> particles;
+    std::ifstream            in(fileName);
+    std::string              line;
+    while (std::getline(in, line))
+    {
+        if (line.size() >= 54 && (line.compare(0, 4, "ATOM") == 0 || line.compare(0, 6, "HETATM") == 0))
+        {
+            PdbParticle p;
+            std::istringstream name(line.substr(12, 4));
+            name >> p.name;
+            for (int m = 0; m < 3; m++)
+            {
+                p.x[m] = 0.1*std::stod(line.substr(30 + 8*m, 8));
+            }
+            particles.push_back(p);
+        }
+    }
+    return particles;
+}
+
+//! A molecule type of a topology
+struct MoleculeType
+{
+    //! The name
+    std::string                                 name;
+    //! The names of the particles
+    std::vector<std::string>                    atoms;
+    //! The lines of each section with virtual sites
+    std::map<std::string, std::vector<TopLine>> vsites;
+};
+
+//! \return the molecule types of a topology
+std::vector<MoleculeType> moleculeTypes(const Topology &top)
+{
+    std::vector<MoleculeType> types;
+    for (const auto &s : top)
+    {
+        if (s.first == "moleculetype")
+        {
+            MoleculeType mt;
+            if (!s.second.empty())
+            {
+                mt.name = s.second[0].fields[0];
+            }
+            types.push_back(mt);
+        }
+        else if (types.empty())
+        {
+            continue;
+        }
+        else if (s.first == "atoms")
+        {
+            for (const auto &a : s.second)
+            {
+                types.back().atoms.push_back(a.fields[4]);
+            }
+        }
+        else if (s.first.compare(0, 13, "virtual_sites") == 0)
+        {
+            auto &lines = types.back().vsites[s.first];
+            lines.insert(lines.end(), s.second.begin(), s.second.end());
+        }
+    }
+    return types;
+}
+
+/*! \brief Construct a virtual site as GROMACS does
+ *
+ * The equations of the GROMACS reference manual for the virtual sites
+ * on one, two and three atoms and for the center of weights.
+ * \param[in]  directive The section of the topology
+ * \param[in]  line      The line of the site
+ * \param[in]  x         The particles of the molecule
+ * \param[out] site      The index of the site in the molecule
+ * \param[out] xs        The position (nm)
+ * \return whether the line could be used
+ */
+bool constructGromacsSite(const std::string              &directive,
+                          const TopLine                  &line,
+                          const std::vector<PdbParticle> &x,
+                          size_t                         *site,
+                          double                          xs[3])
+{
+    const auto &f = line.fields;
+    const auto atom = [&](size_t field) { return x[std::stoul(f[field]) - 1].x; };
+    *site = std::stoul(f[0]) - 1;
+    if (directive == "virtual_sitesn")
+    {
+        // The site, function 3 for the center of weights, pairs of atom and weight
+        if (f.size() < 4 || f[1] != "3" || f.size() % 2 != 0)
+        {
+            return false;
+        }
+        double wsum = 0;
+        xs[0] = xs[1] = xs[2] = 0;
+        for (size_t k = 2; k < f.size(); k += 2)
+        {
+            double w = std::stod(f[k + 1]);
+            wsum    += w;
+            for (int m = 0; m < 3; m++)
+            {
+                xs[m] += w*atom(k)[m];
+            }
+        }
+        for (int m = 0; m < 3; m++)
+        {
+            xs[m] /= wsum;
+        }
+        return true;
+    }
+    size_t nat = directive.back() - '0';
+    if (nat < 1 || nat > 3 || f.size() < nat + 2)
+    {
+        return false;
+    }
+    int  func  = std::stoi(f[nat + 1]);
+    std::vector<double> p;
+    for (size_t k = nat + 2; k < f.size(); k++)
+    {
+        p.push_back(std::stod(f[k]));
+    }
+    const double *xi = atom(1);
+    if (nat == 1 && func == 1)
+    {
+        for (int m = 0; m < 3; m++)
+        {
+            xs[m] = xi[m];
+        }
+        return true;
+    }
+    const double *xj = atom(2);
+    double        rij[3];
+    for (int m = 0; m < 3; m++)
+    {
+        rij[m] = xj[m] - xi[m];
+    }
+    if (nat == 2 && p.size() == 1)
+    {
+        // The second function has a distance from the first atom
+        double scale = func == 1 ? p[0] : p[0]/std::sqrt(rij[0]*rij[0] + rij[1]*rij[1] + rij[2]*rij[2]);
+        for (int m = 0; m < 3; m++)
+        {
+            xs[m] = xi[m] + scale*rij[m];
+        }
+        return func == 1 || func == 2;
+    }
+    if (nat != 3)
+    {
+        return false;
+    }
+    const double *xk = atom(3);
+    double        rik[3], rjk[3];
+    for (int m = 0; m < 3; m++)
+    {
+        rik[m] = xk[m] - xi[m];
+        rjk[m] = xk[m] - xj[m];
+    }
+    if (func == 1 && p.size() == 2)
+    {
+        for (int m = 0; m < 3; m++)
+        {
+            xs[m] = xi[m] + p[0]*rij[m] + p[1]*rik[m];
+        }
+        return true;
+    }
+    if (func == 2 && p.size() == 2)
+    {
+        // At a distance from the first atom, towards a point between the other two
+        double t[3], t2 = 0;
+        for (int m = 0; m < 3; m++)
+        {
+            t[m] = rij[m] + p[0]*rjk[m];
+            t2  += t[m]*t[m];
+        }
+        for (int m = 0; m < 3; m++)
+        {
+            xs[m] = xi[m] + p[1]*t[m]/std::sqrt(t2);
+        }
+        return true;
+    }
+    if (func == 4 && p.size() == 3)
+    {
+        // Out of the plane of the three atoms
+        const double cross[3] = { rij[1]*rik[2] - rij[2]*rik[1],
+                                  rij[2]*rik[0] - rij[0]*rik[2],
+                                  rij[0]*rik[1] - rij[1]*rik[0] };
+        for (int m = 0; m < 3; m++)
+        {
+            xs[m] = xi[m] + p[0]*rij[m] + p[1]*rik[m] + p[2]*cross[m];
+        }
+        return true;
+    }
+    return false;
+}
+
+/*! \brief Check the virtual sites of a topology against the structure of ACT
+ *
+ * Each site of each molecule is constructed as GROMACS does it, from the
+ * atoms in the structure, and has to be where ACT put a site of that
+ * molecule. Sites of the same type in a molecule may be numbered
+ * differently in ACT.
+ * \param[in] top The topology
+ * \param[in] x   The particles of the structure, with the virtual sites
+ * \return the number of sites of each section
+ */
+std::map<std::string, size_t> checkVirtualSites(const Topology                 &top,
+                                                const std::vector<PdbParticle> &x)
+{
+    std::map<std::string, size_t> nsites;
+    const auto types  = moleculeTypes(top);
+    size_t     offset = 0;
+    for (const auto &mol : section(top, "molecules"))
+    {
+        const MoleculeType *mt = nullptr;
+        for (const auto &t : types)
+        {
+            if (t.name == mol.fields[0])
+            {
+                mt = &t;
+            }
+        }
+        if (nullptr == mt)
+        {
+            ADD_FAILURE() << "No molecule type " << mol.fields[0];
+            return nsites;
+        }
+        for (int n = 0; n < std::stoi(mol.fields[1]); n++)
+        {
+            if (offset + mt->atoms.size() > x.size())
+            {
+                ADD_FAILURE() << "More particles in the topology than in the structure";
+                return nsites;
+            }
+            const std::vector<PdbParticle> xmol(x.begin() + offset, x.begin() + offset + mt->atoms.size());
+            std::set<size_t>               used;
+            for (const auto &vs : mt->vsites)
+            {
+                for (const auto &line : vs.second)
+                {
+                    size_t site;
+                    double xs[3];
+                    if (!constructGromacsSite(vs.first, line, xmol, &site, xs))
+                    {
+                        ADD_FAILURE() << "Site without function of GROMACS in " << vs.first << " of " << mt->name;
+                        continue;
+                    }
+                    nsites[vs.first] += 1;
+                    // The site of ACT with this name that is closest
+                    double dmin  = 1e9;
+                    size_t found = site;
+                    for (size_t k = 0; k < xmol.size(); k++)
+                    {
+                        if (mt->atoms[k] != mt->atoms[site] || used.count(k) > 0)
+                        {
+                            continue;
+                        }
+                        double d2 = 0;
+                        for (int m = 0; m < 3; m++)
+                        {
+                            d2 += (xmol[k].x[m] - xs[m])*(xmol[k].x[m] - xs[m]);
+                        }
+                        if (d2 < dmin)
+                        {
+                            dmin  = d2;
+                            found = k;
+                        }
+                    }
+                    used.insert(found);
+                    // The structure has three decimals in Angstrom
+                    EXPECT_LT(std::sqrt(dmin), 3e-4) << vs.first << " site " << site + 1 << " of " << mt->name;
+                }
+            }
+            offset += mt->atoms.size();
+        }
+    }
+    EXPECT_EQ(x.size(), offset);
+    return nsites;
+}
+
+// Test: The virtual sites in the topology are where ACT has them, when
+// constructed as GROMACS does it: out of the plane of water (TIP5P), on
+// the bisector with a shell (SWM4-NDP), at a fixed distance from the
+// oxygen atom, and on one and on two atoms of hydrogen halides. The
+// names of the particles are those in the structure file.
+TEST_F(GentopTest, GromacsTopologyVirtualSites)
+{
+    struct Case
+    {
+        //! Force field
+        std::string                   ff;
+        //! Structure
+        std::string                   molecule;
+        //! Without generating charges
+        bool                          qalgNone;
+        //! The number of sites of each section
+        std::map<std::string, size_t> nsites;
+    };
+    const std::vector<Case> cases = {
+        { "forcefields/TIP5P.xml", "water_dimer.pdb", true, { { "virtual_sites3", 4 } } },
+        { "forcefields/SWM4-NDP.xml", "water_dimer.pdb", true, { { "virtual_sites3", 2 } } },
+        { "forcefields/ACS-v3fds.xml", "water_dimer.pdb", false, { { "virtual_sites3", 2 } } },
+        { "forcefields/HF-vsite2fd.xml", "hydrogen-fluoride#hydrogen-fluoride.pdb", true, { { "virtual_sites2", 2 } } },
+        { "forcefields/hh-intra.xml", "hydrogen-bromide#hydrogen-fluoride.pdb", false,
+          { { "virtual_sites1", 4 }, { "virtual_sites2", 2 } } }
+    };
+    for (const auto &c : cases)
+    {
+        std::map<std::string, std::string> files = { { "-p", "sites.top" }, { "-c", "sites.pdb" } };
+        std::vector<std::pair<std::string, std::string>> input = {
+            { "-f", fileManager().getInputFilePath("molecules/" + c.molecule) }, { "-ws", "" }
+        };
+        if (c.qalgNone)
+        {
+            input.emplace_back("-qalg", "None");
+        }
+        run(c.ff, input, &files);
+        const auto top = readTopology(files["-p"]);
+        const auto x   = readPdbParticles(files["-c"]);
+        EXPECT_EQ(c.nsites, checkVirtualSites(top, x)) << c.ff;
+        // The names, in the order of the particles
+        size_t i = 0;
+        const auto types = moleculeTypes(top);
+        for (const auto &mol : section(top, "molecules"))
+        {
+            for (const auto &t : types)
+            {
+                for (int n = 0; t.name == mol.fields[0] && n < std::stoi(mol.fields[1]); n++)
+                {
+                    for (const auto &name : t.atoms)
+                    {
+                        ASSERT_LT(i, x.size()) << c.ff;
+                        EXPECT_EQ(x[i].name, name) << c.ff << " particle " << i + 1;
+                        EXPECT_LE(name.size(), 4u) << c.ff;
+                        i++;
+                    }
+                }
+            }
+        }
+        EXPECT_EQ(x.size(), i) << c.ff;
+    }
+}
+
+// Test: The functions and parameters of the virtual sites. In ACT the
+// site is the last particle and the central atom of three the second, in
+// GROMACS the site is first, followed by the central atom.
+TEST_F(GentopTest, GromacsTopologyVirtualSiteFunctions)
+{
+    {
+        // Issue 297: a site at a fixed distance from the first of two
+        // atoms is function 2
+        std::map<std::string, std::string> files = { { "-p", "hf.top" } };
+        run("forcefields/HF-vsite2fd.xml",
+            { { "-f", fileManager().getInputFilePath("molecules/hydrogen-fluoride.sdf") }, { "-qalg", "None" } }, &files);
+        const auto vs = section(readTopology(files["-p"]), "virtual_sites2");
+        ASSERT_EQ(1u, vs.size());
+        ASSERT_EQ(5u, vs[0].fields.size());
+        // The site is the third particle, on H towards F
+        EXPECT_EQ("3", vs[0].fields[0]);
+        EXPECT_EQ("2", vs[0].fields[3]);
+        EXPECT_NEAR(0.0808, std::stod(vs[0].fields[4]), 1e-9);
+    }
+    {
+        // Out of the plane: function 4 with the oxygen atom first and both
+        // signs of the last parameter
+        std::map<std::string, std::string> files = { { "-p", "tip5p.top" } };
+        run("forcefields/TIP5P.xml",
+            { { "-f", fileManager().getInputFilePath("molecules/water.sdf") }, { "-qalg", "None" } }, &files);
+        const auto top = readTopology(files["-p"]);
+        const auto vs  = section(top, "virtual_sites3");
+        ASSERT_EQ(2u, vs.size());
+        const auto atoms = section(top, "atoms");
+        double     csum  = 0;
+        for (const auto &v : vs)
+        {
+            ASSERT_EQ(8u, v.fields.size());
+            EXPECT_EQ("4", v.fields[4]);
+            EXPECT_EQ("ow", atoms[std::stoi(v.fields[1]) - 1].fields[1]);
+            EXPECT_EQ(v.fields[5], v.fields[6]);
+            EXPECT_GT(std::abs(std::stod(v.fields[7])), 1);
+            csum += std::stod(v.fields[7]);
+        }
+        EXPECT_NEAR(0, csum, 1e-9);
+    }
+}
+
+// Test: A site on four atoms is the center of weights of GROMACS, which
+// has no negative weights: with those the topology has the site without
+// parameters, such that GROMACS does not accept it.
+TEST_F(GentopTest, GromacsTopologyVirtualSiteFourAtoms)
+{
+    for (double a : { 0.2, -0.2 })
+    {
+        // Ammonia needs a bond and an angle that the force field lacks
+        ForceField pd;
+        readForceField(fileManager().getInputFilePath("forcefields/ACS-pg-vs3.xml"), &pd);
+        const auto morse = [](double value)
+        {
+            return ForceFieldParameter(value == 101 ? "pm" : (value == 20 ? "1/nm" : "kJ/mol"), value, 0, 1,
+                                       0, 2*value + 1, Mutability::Bounded, true, true);
+        };
+        auto *bonds = pd.findForces(InteractionType::BONDS);
+        const Identifier nh({ "h_b", "n3_b" }, { 1 }, CanSwap::Yes);
+        bonds->addParameter(nh, "D0", morse(0));
+        bonds->addParameter(nh, "De", morse(400));
+        bonds->addParameter(nh, "beta", morse(20));
+        bonds->addParameter(nh, "bondlength", morse(101));
+        auto *angles = pd.findForces(InteractionType::ANGLES);
+        const Identifier hnh({ "h_b", "n3_b", "h_b" }, { 1, 1 }, CanSwap::Yes);
+        angles->addParameter(hnh, "angle",
+                             ForceFieldParameter("degree", 107, 0, 1, 90, 120, Mutability::Bounded, true, true));
+        angles->addParameter(hnh, "kt",
+                             ForceFieldParameter("kJ/mol/rad2", 300, 0, 1, 100, 500, Mutability::Bounded, true, true));
+        auto *vs4 = pd.findForces(InteractionType::VSITE4S3);
+        ASSERT_EQ(1u, vs4->parametersConst().size());
+        const auto id = vs4->parametersConst().begin()->first;
+        vs4->findParameterType(id, "vs4s3a")->setValue(a);
+        const auto ffName = fileManager().getTemporaryFilePath(gmx::formatString("ammonia%d.xml", a > 0 ? 1 : 0));
+        writeForceField(ffName, &pd);
+
+        std::map<std::string, std::string> files = { { "-p", "ammonia.top" }, { "-c", "ammonia.pdb" } };
+        run(ffName, { { "-f", fileManager().getInputFilePath("molecules/ammonia.sdf") }, { "-ws", "" } }, &files);
+        const auto top = readTopology(files["-p"]);
+        if (a > 0)
+        {
+            const auto vs = section(top, "virtual_sitesn");
+            ASSERT_EQ(1u, vs.size());
+            ASSERT_EQ(10u, vs[0].fields.size());
+            // The central atom has what the three hydrogen atoms leave
+            const auto atoms = section(top, "atoms");
+            for (size_t k = 2; k < vs[0].fields.size(); k += 2)
+            {
+                bool nitrogen = atoms[std::stoi(vs[0].fields[k]) - 1].fields[4][0] == 'N';
+                EXPECT_NEAR(nitrogen ? 1 - 3*a : a, std::stod(vs[0].fields[k + 1]), 1e-9);
+            }
+            const std::map<std::string, size_t> expected = { { "virtual_sitesn", 1 } };
+            EXPECT_EQ(expected, checkVirtualSites(top, readPdbParticles(files["-c"])));
+        }
+        else
+        {
+            EXPECT_TRUE(section(top, "virtual_sitesn").empty());
+            const auto vs = section(top, "virtual_sites3");
+            ASSERT_EQ(1u, vs.size());
+            EXPECT_EQ(1u, vs[0].fields.size());
+        }
+    }
+}
+
+// Test: The polarization of the shells: the polarizability of the force
+// field in nm^3 for core and shell, and with a force constant for the
+// anharmonic term the anharmonic polarization of GROMACS
+TEST_F(GentopTest, GromacsTopologyPolarization)
+{
+    {
+        std::map<std::string, std::string> files = { { "-p", "swm4.top" } };
+        run("forcefields/SWM4-NDP.xml",
+            { { "-f", fileManager().getInputFilePath("molecules/water.sdf") }, { "-qalg", "None" } }, &files);
+        const auto top = readTopology(files["-p"]);
+        const auto pol = section(top, "polarization");
+        ASSERT_EQ(1u, pol.size());
+        ASSERT_EQ(4u, pol[0].fields.size());
+        EXPECT_EQ("1", pol[0].fields[2]);
+        // 0.978253 A^3 in the force field
+        EXPECT_NEAR(0.000978253, std::stod(pol[0].fields[3]), 1e-12);
+        const auto atoms = section(top, "atoms");
+        EXPECT_EQ('O', atoms[std::stoi(pol[0].fields[0]) - 1].fields[4][0]);
+        // The shell has no mass
+        EXPECT_EQ(0, std::stod(atoms[std::stoi(pol[0].fields[1]) - 1].fields[7]));
+    }
+    {
+        std::map<std::string, std::string> files = { { "-p", "hyper.top" } };
+        run("forcefields/water_hyperpol1.xml", "water.sdf", &files);
+        const auto pol = section(readTopology(files["-p"]), "polarization");
+        ASSERT_FALSE(pol.empty());
+        for (const auto &p : pol)
+        {
+            ASSERT_EQ(6u, p.fields.size());
+            EXPECT_EQ("2", p.fields[2]);
+            EXPECT_GT(std::stod(p.fields[3]), 0);
+            EXPECT_GT(std::stod(p.fields[5]), 0);
+        }
+    }
+}
+
+// Test: Each compound is a molecule: two compounds that differ get a
+// molecule type each, named after the compounds, and compounds that are
+// the same molecule with different charges as well.
+TEST_F(GentopTest, GromacsTopologyCompounds)
+{
+    {
+        std::map<std::string, std::string> files = { { "-p", "mixed.top" } };
+        run("forcefields/hh-intra.xml",
+            { { "-f", fileManager().getInputFilePath("molecules/hydrogen-bromide#hydrogen-fluoride.pdb") } }, &files);
+        const auto top       = readTopology(files["-p"]);
+        const auto types     = moleculeTypes(top);
+        const auto molecules = section(top, "molecules");
+        ASSERT_EQ(2u, types.size());
+        ASSERT_EQ(2u, molecules.size());
+        for (size_t i = 0; i < types.size(); i++)
+        {
+            EXPECT_EQ(types[i].name, molecules[i].fields[0]);
+            EXPECT_EQ("1", molecules[i].fields[1]);
+            EXPECT_EQ(5u, types[i].atoms.size());
+        }
+        EXPECT_NE(types[0].name, types[1].name);
+        // The residues are numbered from one in each molecule type
+        for (const auto &a : section(top, "atoms"))
+        {
+            EXPECT_EQ("1", a.fields[2]);
+        }
+    }
+    {
+        // The charges of the two molecules of a water dimer are not the
+        // same in this force field
+        std::map<std::string, std::string> files = { { "-p", "dimer.top" } };
+        run("forcefields/ACS-g1.xml", "water_dimer.pdb", &files);
+        const auto top       = readTopology(files["-p"]);
+        const auto types     = moleculeTypes(top);
+        const auto molecules = section(top, "molecules");
+        ASSERT_EQ(2u, types.size());
+        ASSERT_EQ(2u, molecules.size());
+        EXPECT_NE(types[0].name, types[1].name);
+        EXPECT_EQ(6u, section(top, "atoms").size());
+    }
+    {
+        // An include topology has the molecule types only
+        std::map<std::string, std::string> files = { { "-oi", "dimer.itp" } };
+        run("forcefields/SPCE.xml",
+            { { "-f", fileManager().getInputFilePath("molecules/water_dimer.pdb") }, { "-qalg", "None" } }, &files);
+        const auto top = readTopology(files["-oi"]);
+        EXPECT_EQ(1u, moleculeTypes(top).size());
+        EXPECT_TRUE(section(top, "molecules").empty());
+        EXPECT_TRUE(section(top, "defaults").empty());
+    }
+}
+
+//! \return the comment lines at the top of a topology
+std::string topologyHeader(const std::string &fileName)
+{
+    std::ifstream in(fileName);
+    std::string   header, line;
+    while (std::getline(in, line) && !line.empty() && line[0] == ';')
+    {
+        header += line + "\n";
+    }
+    return header;
+}
+
+// Test: The header says what GROMACS does not have of the force field, and
+// a bond function that GROMACS lacks is written without parameters, such
+// that GROMACS does not accept the topology
+TEST_F(GentopTest, GromacsTopologySupport)
+{
+    {
+        std::map<std::string, std::string> files = { { "-p", "spce.top" } };
+        run("forcefields/SPCE.xml",
+            { { "-f", fileManager().getInputFilePath("molecules/water.sdf") }, { "-qalg", "None" } }, &files);
+        const auto header = topologyHeader(files["-p"]);
+        EXPECT_EQ(std::string::npos, header.find("WARNING")) << header;
+        EXPECT_NE(std::string::npos, header.find("GROMACS has all the interactions")) << header;
+        checkBondeds(readTopology(files["-p"]));
+    }
+    {
+        std::map<std::string, std::string> files = { { "-p", "hua.top" } };
+        run("forcefields/hh-intra.xml", "hydrogen-fluoride.sdf", &files);
+        const auto header = topologyHeader(files["-p"]);
+        EXPECT_NE(std::string::npos, header.find("WARNING")) << header;
+        for (const char *what : { "COULOMB_GAUSSIAN", "WANG_BUCKINGHAM", "HUA_BONDS" })
+        {
+            EXPECT_NE(std::string::npos, header.find(what)) << header;
+        }
+        const auto bonds = section(readTopology(files["-p"]), "bonds");
+        ASSERT_EQ(1u, bonds.size());
+        EXPECT_EQ(3u, bonds[0].fields.size());
     }
 }
 

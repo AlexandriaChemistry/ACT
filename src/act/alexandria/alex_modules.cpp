@@ -64,7 +64,7 @@ void registerAlexandriaModules(gmx::CommandLineModuleManager *manager)
 {
     // Modules from this directory
     registerModule(manager, &alexandria::gentop, "gentop",
-                   "Generate a molecular topology and coordinates based on structure files or quantum chemistry output from Gaussian. Only inputs for OpenMM can be generated at this point in time.");
+                   "Generate a molecular topology and coordinates based on structure files or quantum chemistry output from Gaussian, as input for OpenMM or GROMACS.");
     registerModule(manager, &alexandria::simulate, "simulate",
                    "Perform a MD simulation and generate a trajectory.");
     registerModule(manager, &alexandria::minimize, "minimize",
