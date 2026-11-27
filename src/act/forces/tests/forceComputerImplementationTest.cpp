@@ -669,12 +669,14 @@ static const ForceComputerPotParams c_macdanielPot    { "MACDANIEL_SCHMIDT",    
 static const ForceComputerPotParams c_polPot          { "POLARIZATION",         Potential::POLARIZATION,         makePairTop };
 static const ForceComputerPotParams c_harmBondsPot    { "HARMONIC_BONDS",       Potential::HARMONIC_BONDS,       makePairTop };
 static const ForceComputerPotParams c_cubicBondsPot   { "CUBIC_BONDS",          Potential::CUBIC_BONDS,          makePairTop };
+static const ForceComputerPotParams c_quarticBondsPot { "QUARTIC_BONDS",        Potential::QUARTIC_BONDS,        makePairTop };
 static const ForceComputerPotParams c_huaBondsPot     { "HUA_BONDS",            Potential::HUA_BONDS,            makePairTop };
 static const ForceComputerPotParams c_morseBondsPot   { "MORSE_BONDS",          Potential::MORSE_BONDS,          makePairTop };
 static const ForceComputerPotParams c_harmAnglePot    { "HARMONIC_ANGLES",      Potential::HARMONIC_ANGLES,      makeAngleTop };
 static const ForceComputerPotParams c_ubAnglePot      { "UREY_BRADLEY_ANGLES",  Potential::UREY_BRADLEY_ANGLES,  makeAngleTop };
 static const ForceComputerPotParams c_linAnglePot     { "LINEAR_ANGLES",        Potential::LINEAR_ANGLES,        makeAngleTop };
 static const ForceComputerPotParams c_cbaAnglePot     { "CROSS_BOND_ANGLES",    Potential::CROSS_BOND_ANGLES,    makeAngleTop };
+static const ForceComputerPotParams c_quarticAnglePot { "QUARTIC_ANGLES",       Potential::QUARTIC_ANGLES,       makeAngleTop };
 static const ForceComputerPotParams c_harmDihPot      { "HARMONIC_DIHEDRALS",   Potential::HARMONIC_DIHEDRALS,   makeImproperTop };
 static const ForceComputerPotParams c_properDihPot    { "PROPER_DIHEDRALS",     Potential::PROPER_DIHEDRALS,     makeProperTop };
 static const ForceComputerPotParams c_fourierDihPot   { "FOURIER_DIHEDRALS",    Potential::FOURIER_DIHEDRALS,    makeProperTop };
@@ -736,6 +738,8 @@ static const ForceComputerParamParams c_harmAngleParams { "", { 100, 100 } };   
 static const ForceComputerParamParams c_ubAngleParams   { "", { 100, 100, 0.33, 20 } };   // kT, angle, r13, kUB
 static const ForceComputerParamParams c_linAngleParams  { "", { 0.5, 10000 } };   // a, kLin
 static const ForceComputerParamParams c_cbaAngleParams  { "", { 0.19, 0.15, 0.3, -50000, 30000, 60000 } };   // r1e, r2e, r3e, krt, krr, kub
+static const ForceComputerParamParams c_quarticBondsParams{ "", { 0.4, 10, -200, 50000, -400000, 3000000 } };   // length, C0 to C4
+static const ForceComputerParamParams c_quarticAngleParams{ "", { 1.9, 2, -5, 50, -40, 100 } };   // angle (rad), C0 to C4
 static const ForceComputerParamParams c_harmDihParams   { "", { 10 } };           // kPhi
 static const ForceComputerParamParams c_properDihParams { "", { 30, 10, 4 } };    // angle, kP, mult
 static const ForceComputerParamParams c_fourierDihParams{ "", { 1, 2, -3, 4, -5, 6 } };
@@ -924,6 +928,12 @@ INSTANTIATE_TEST_CASE_P(CUBIC_BONDS, ForceComputerImplementationTest,
                                             ::testing::ValuesIn(c_stdPairCoords)),
                          fcTestName);
 
+INSTANTIATE_TEST_CASE_P(QUARTIC_BONDS, ForceComputerImplementationTest,
+                         ::testing::Combine(::testing::Values(c_quarticBondsPot),
+                                            ::testing::Values(c_quarticBondsParams),
+                                            ::testing::ValuesIn(c_stdPairCoords)),
+                         fcTestName);
+
 INSTANTIATE_TEST_CASE_P(HUA_BONDS, ForceComputerImplementationTest,
                          ::testing::Combine(::testing::Values(c_huaBondsPot),
                                             ::testing::Values(c_huaBondsParams),
@@ -958,6 +968,12 @@ INSTANTIATE_TEST_CASE_P(LINEAR_ANGLES, ForceComputerImplementationTest,
 INSTANTIATE_TEST_CASE_P(CROSS_BOND_ANGLES, ForceComputerImplementationTest,
                          ::testing::Combine(::testing::Values(c_cbaAnglePot),
                                             ::testing::Values(c_cbaAngleParams),
+                                            ::testing::Values(c_angleCoord)),
+                         fcTestName);
+
+INSTANTIATE_TEST_CASE_P(QUARTIC_ANGLES, ForceComputerImplementationTest,
+                         ::testing::Combine(::testing::Values(c_quarticAnglePot),
+                                            ::testing::Values(c_quarticAngleParams),
                                             ::testing::Values(c_angleCoord)),
                          fcTestName);
 

@@ -204,6 +204,14 @@ TEST_F(GenFFTest, CrossBondAngles)
     EXPECT_EQ(Potential::CROSS_BOND_ANGLES, pd.findForcesConst(InteractionType::ANGLES).potential());
 }
 
+// Test: The quartic potentials can be chosen for the bonds and the angles
+TEST_F(GenFFTest, QuarticBondsAndAngles)
+{
+    const auto pd = generate({ { "-bondfn", "QUARTIC_BONDS" }, { "-anglefn", "QUARTIC_ANGLES" } });
+    EXPECT_EQ(Potential::QUARTIC_BONDS, pd.findForcesConst(InteractionType::BONDS).potential());
+    EXPECT_EQ(Potential::QUARTIC_ANGLES, pd.findForcesConst(InteractionType::ANGLES).potential());
+}
+
 // The force fields of the tool for several sets of options, as reference
 // data, such that a change in how the options reach the work shows
 

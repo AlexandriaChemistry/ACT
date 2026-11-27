@@ -578,6 +578,23 @@ It is given by:
 
 where :math:`D_e` is the well-depth, :math:`r_e` the equilibrium bond length, and :math:`b` and :math:`c` are constants with :math:`\|c\| < 1`. 
 
+----------------------
+Quartic bond potential
+----------------------
+
+.. index::
+   single: quartic bond potential
+   single: bond; quartic potential
+
+The potential QUARTIC_BONDS is a polynomial of the fourth order in the deviation of the bond length from a reference length :math:`r_{ij}^0`
+
+.. math:: V_{qb}(r_{ij}) ~=~ \sum_{n=0}^4 C_n \left(r_{ij}-r_{ij}^0\right)^n
+   :label: quartic_bond
+
+which has the same form as the quartic angle potential (:eq:`quartic_angle`). In the force field file the reference length is called bondlength and the coefficients cb0 to cb4, with units from kJ/mol for :math:`C_0` to kJ/mol/nm\ :sup:`4` for :math:`C_4`. The constant :math:`C_0` is the energy of the bond at the reference length, as the bond energy of the harmonic potential, and with :math:`C_2` only the potential is the harmonic one (:eq:`harmonic_bond`) with :math:`k^b = 2 C_2`. A linear term moves the minimum away from the reference length. The potential has no lower bound if :math:`C_4` is negative, or if it is zero and :math:`C_3` is not.
+
+When *alexandria geometry_ff* makes the parameters, :math:`C_1` is zero and fixed and the other coefficients are those of the expansion of a Morse potential (:eq:`morse`) around its minimum, :math:`C_2 = k^b/2`, :math:`C_3 = -\beta C_2` and :math:`C_4 = 7\beta^2 C_2/12`, with the default force constant of the harmonic bond and the steepness :math:`\beta` of the option *-beta*. GROMACS has no such potential: in a GROMACS topology written by ACT these bonds have no parameters.
+
 ---------------
 Angle potential
 ---------------
@@ -592,6 +609,23 @@ Angle vibrations are described using a harmonic term based on the angle :math:`\
    :label: harmonic_angle
 
 where :math:`k_{ijk}^{\theta}` is the force constant, and :math:`\theta_{ijk}^0` is the equilibrium angle. 
+
+-----------------------
+Quartic angle potential
+-----------------------
+
+.. index::
+   single: quartic angle potential
+   single: angle; quartic potential
+
+The potential QUARTIC_ANGLES is a polynomial of the fourth order in the deviation of the angle from a reference angle :math:`\theta_{ijk}^0`
+
+.. math:: V_q(\theta_{ijk}) ~=~ \sum_{n=0}^4 C_n \left(\theta_{ijk}-\theta_{ijk}^0\right)^n
+   :label: quartic_angle
+
+as the quartic angle potential of GROMACS (angle of type 6), which is what it becomes in a GROMACS topology written by ACT. In the force field file the reference angle is called angle, in degrees, and the coefficients ct0 to ct4, with units from kJ/mol for :math:`C_0` to kJ/mol/rad\ :sup:`4` for :math:`C_4`. With :math:`C_2` only the potential is the harmonic one (:eq:`harmonic_angle`) with :math:`k^{\theta} = 2 C_2`. A linear term moves the minimum away from the reference angle, and the potential has no lower bound if :math:`C_4` is negative, or if it is zero and :math:`C_3` is not.
+
+When *alexandria geometry_ff* makes the parameters the potential starts as the harmonic one: :math:`C_2` is half the force constant of the option *-kt*, :math:`C_0` and :math:`C_1` are zero and fixed, and :math:`C_3` and :math:`C_4` are zero and can be trained, where :math:`C_3` can get either sign and :math:`C_4` cannot become negative.
 
 ------------------------------------
 Angle potential for linear compounds

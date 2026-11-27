@@ -47,6 +47,7 @@ act_add_gpu_unit_test(
     forceComputerTest.cpp
     forcesSimdTest.cpp
     physicsTest.cpp
+    quarticTest.cpp
     simdMathTest.cpp
     vsiteTest.cpp
     # pseudo-library for code for alexandria

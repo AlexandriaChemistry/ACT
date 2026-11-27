@@ -1064,9 +1064,30 @@ TEST_F(ForcesSimdTest, HuaBonds)
     test(Potential::HUA_BONDS, bonds({ 400, 20, 0.15, 0.1 }));
 }
 
+TEST_F(ForcesSimdTest, QuarticBonds)
+{
+    // Bond length and the coefficients of the powers 0 to 4 of the deviation
+    test(Potential::QUARTIC_BONDS, bonds({ 0.15, -400, 150, 100000, -2000000, 25000000 }));
+}
+
 TEST_F(ForcesSimdTest, HarmonicAngles)
 {
     test(Potential::HARMONIC_ANGLES, angles({ 400, 1.9 }));
+}
+
+TEST_F(ForcesSimdTest, QuarticAngles)
+{
+    // Angle and the coefficients of the powers 0 to 4 of the deviation
+    test(Potential::QUARTIC_ANGLES, angles({ 1.9, 2, -5, 200, -150, 400 }));
+    // With the quadratic term only it is the harmonic angle
+    const auto harmonic = energies(Potential::HARMONIC_ANGLES, angles({ 400, 1.9 }), atoms_);
+    const auto quartic  = energies(Potential::QUARTIC_ANGLES, angles({ 1.9, 0, 0, 200, 0, 0 }), atoms_);
+    ASSERT_EQ(harmonic.size(), quartic.size());
+    for (size_t c = 0; c < harmonic.size(); c++)
+    {
+        EXPECT_NEAR(harmonic[c], quartic[c], gmx::test::precisionTolerance(1e-10, 1e-5)*(1 + harmonic[c]))
+            << "conformation " << c;
+    }
 }
 
 TEST_F(ForcesSimdTest, LinearAngles)

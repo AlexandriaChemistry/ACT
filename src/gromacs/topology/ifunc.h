@@ -125,6 +125,7 @@ enum
     F_MORSE,
     F_HUA,
     F_CUBICBONDS,
+    F_QUARTIC_BONDS,
     F_CONNBONDS,
     F_HARMONIC,
     F_FENEBONDS,

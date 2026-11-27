@@ -240,7 +240,8 @@ void Constrainer::makeConstraintList(MsgHandler                   *msghandler,
                                   { { Potential::HUA_BONDS, huaLENGTH },
                                     { Potential::MORSE_BONDS, morseLENGTH },
                                     { Potential::HARMONIC_BONDS, bondLENGTH },
-                                    { Potential::CUBIC_BONDS, cubicLENGTH } });
+                                    { Potential::CUBIC_BONDS, cubicLENGTH },
+                                    { Potential::QUARTIC_BONDS, qbLENGTH } });
     for (const auto &b : top->entry(InteractionType::BONDS))
     {
         auto &indices = b->atomIndices();
@@ -257,7 +258,8 @@ void Constrainer::makeConstraintList(MsgHandler                   *msghandler,
     auto thIndex = parameterIndex(msghandler,
                                   pd->findForcesConst(InteractionType::ANGLES).potential(),
                                   { { Potential::HARMONIC_ANGLES, angleANGLE },
-                                    { Potential::UREY_BRADLEY_ANGLES, ubANGLE } });
+                                    { Potential::UREY_BRADLEY_ANGLES, ubANGLE },
+                                    { Potential::QUARTIC_ANGLES, qaANGLE } });
     auto &angles = top->entry(InteractionType::ANGLES);
     // Number of bonded neighbours and sum of the reference angles per central atom
     std::vector<int>    nbonded(invmass_.size(), 0);
