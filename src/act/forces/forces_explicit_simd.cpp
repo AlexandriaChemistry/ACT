@@ -815,6 +815,33 @@ struct CubicBond
     }
 };
 
+//! Quartic bond, a polynomial of the fourth order in the deviation from the bond length
+struct QuarticBond
+{
+    //! \copydoc LJ12_6::prepare
+    template <typename E>
+    static bool prepare(const E &b, const std::vector<ActAtom> &, double, double *p)
+    {
+        auto &params = b.params();
+        p[0] = params[qbLENGTH];
+        p[1] = params[qbC0];
+        p[2] = params[qbC1];
+        p[3] = params[qbC2];
+        p[4] = params[qbC3];
+        p[5] = params[qbC4];
+        return true;
+    }
+    //! \copydoc LJ12_6::compute
+    template <typename S>
+    static void compute(const double *p, S rsq, S *e, S *fscal)
+    {
+        S rinv = simd::invsqrt(rsq);
+        S dr   = rsq*rinv - p[0];
+        e[0]  += p[1] + dr*(p[2] + dr*(p[3] + dr*(p[4] + dr*p[5])));
+        *fscal = -(p[2] + dr*(2*p[3] + dr*(3*p[4] + dr*(4*p[5]))))*rinv;
+    }
+};
+
 //! Morse bond
 struct MorseBond
 {
@@ -1088,22 +1115,25 @@ void computePairs(const Range                &entries,
     }
 }
 
-//! A harmonic angle with prepared parameters
+//! A harmonic or quartic angle with prepared parameters
 struct AngleParams
 {
     //! Offsets of the coordinates of the three atoms
     size_t i, j, k;
     //! The reference angle
     double theta0;
-    //! The force constant
+    //! The force constant of a harmonic angle
     double kt;
+    //! The coefficients of a quartic angle, that of the constant term first
+    double c[5];
 };
 
-/*! \brief Compute harmonic angles for all conformations
+/*! \brief Compute harmonic or quartic angles for all conformations
  * As angles_simd in GROMACS, the cosine of the angle is computed from the
  * vectors and the angle with a SIMD arc cosine. The formulas are those of
- * angleOne in forces_simd.cpp.
+ * angleOne and quarticAngleOne in forces_simd.cpp.
  * \tparam       Forces   Whether to compute forces
+ * \tparam       Quartic  Whether the angles are quartic instead of harmonic
  * \param[in]    entries  The interactions
  * \param[in]    stride   Distance between the rows of the arrays
  * \param[in]    nslot    Number of slots to compute, a multiple of the SIMD width, at most stride
@@ -1111,7 +1141,7 @@ struct AngleParams
  * \param[inout] f        Forces, not used if Forces is false
  * \param[inout] energies Energies
  */
-template <bool Forces, typename T>
+template <bool Forces, bool Quartic, typename T>
 void computeAngles(TopologyEntryRange         entries,
                    size_t                     stride,
                    size_t                     nslot,
@@ -1127,12 +1157,22 @@ void computeAngles(TopologyEntryRange         entries,
     {
         const TopologyEntry &entry   = *b.operator->();
         auto                &indices = entry.atomIndices();
-        angles.push_back({ DIM*indices[0]*stride, DIM*indices[1]*stride, DIM*indices[2]*stride,
-                           entry.params()[angleANGLE], entry.params()[angleKT] });
+        auto                &params  = entry.params();
+        if constexpr (Quartic)
+        {
+            angles.push_back({ DIM*indices[0]*stride, DIM*indices[1]*stride, DIM*indices[2]*stride,
+                               params[qaANGLE], 0.0,
+                               { params[qaC0], params[qaC1], params[qaC2], params[qaC3], params[qaC4] } });
+        }
+        else
+        {
+            angles.push_back({ DIM*indices[0]*stride, DIM*indices[1]*stride, DIM*indices[2]*stride,
+                               params[angleANGLE], params[angleKT], { 0.0, 0.0, 0.0, 0.0, 0.0 } });
+        }
     }
     for (const auto &a : angles)
     {
-        double halfk = 0.5*a.kt;
+        [[maybe_unused]] double halfk = 0.5*a.kt;
         for (size_t c = 0; c < nslot; c += simd::SimdTraits<T>::width)
         {
             S rij[DIM], rkj[DIM];
@@ -1150,13 +1190,30 @@ void computeAngles(TopologyEntryRange         entries,
             S costh = simd::select(ipab > 0.0, ip*simd::invsqrt(ipab), 1.0);
             costh            = simd::min(simd::max(costh, -1.0), 1.0);
             const S dth   = simd::acos(costh) - a.theta0;
-            fmaEnergy(energies + c, S(halfk), dth*dth);
+            if constexpr (Quartic)
+            {
+                addEnergy(energies + c, a.c[0] + dth*(a.c[1] + dth*(a.c[2] + dth*(a.c[3] + dth*a.c[4]))));
+            }
+            else
+            {
+                fmaEnergy(energies + c, S(halfk), dth*dth);
+            }
             if constexpr (Forces)
             {
+                // Minus the derivative of the energy to the angle
+                S fangle;
+                if constexpr (Quartic)
+                {
+                    fangle = -(a.c[1] + dth*(2*a.c[2] + dth*(3*a.c[3] + dth*(4*a.c[4]))));
+                }
+                else
+                {
+                    fangle = -a.kt*dth;
+                }
                 // There is no force for angles of 0 and 180 degrees
                 const S costh2 = costh*costh;
                 const S st     = simd::select(costh2 < 1.0,
-                                                       (-a.kt*dth)*simd::invsqrt(1.0 - costh2), 0.0);
+                                                       fangle*simd::invsqrt(1.0 - costh2), 0.0);
                 const S sth    = st*costh;
                 const S nrij_1 = simd::invsqrt(ipa);
                 const S nrkj_1 = simd::invsqrt(ipb);
@@ -1492,14 +1549,25 @@ bool computeExplicitSimdT(Potential                   mypot,
         case Potential::CUBIC_BONDS:          return pairs(CubicBond{});
         case Potential::MORSE_BONDS:          return pairs(MorseBond{});
         case Potential::HUA_BONDS:            return pairs(HuaBond{});
+        case Potential::QUARTIC_BONDS:        return pairs(QuarticBond{});
         case Potential::HARMONIC_ANGLES:
             if (forces)
             {
-                computeAngles<true>(entries, stride, nslot, x, f, energies);
+                computeAngles<true, false>(entries, stride, nslot, x, f, energies);
             }
             else
             {
-                computeAngles<false>(entries, stride, nslot, x, f, energies);
+                computeAngles<false, false>(entries, stride, nslot, x, f, energies);
+            }
+            return true;
+        case Potential::QUARTIC_ANGLES:
+            if (forces)
+            {
+                computeAngles<true, true>(entries, stride, nslot, x, f, energies);
+            }
+            else
+            {
+                computeAngles<false, true>(entries, stride, nslot, x, f, energies);
             }
             return true;
         case Potential::FOURIER_DIHEDRALS:

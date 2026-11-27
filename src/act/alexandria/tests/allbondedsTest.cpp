@@ -317,6 +317,106 @@ TEST(AllBondedsUpdateTest, BondFunctions)
     }
 }
 
+/* Test: A quartic bond starts as the expansion of a Morse potential with
+ * the default force constant and steepness: half the force constant for
+ * the quadratic term, that times -beta for the cubic and times
+ * 7 beta^2/12 for the quartic term. There is no linear term, and the
+ * constant is the bond energy of the harmonic bond.
+ */
+TEST(AllBondedsUpdateTest, QuarticBonds)
+{
+    ForceField pd, harmonic;
+    updateBondeds("forcefields/ACS-g1.xml", "QUARTIC_BONDS", {}, &pd);
+    updateBondeds("forcefields/ACS-g1.xml", "HARMONIC_BONDS", {}, &harmonic);
+    auto &bonds  = pd.findForcesConst(InteractionType::BONDS);
+    auto &hbonds = harmonic.findForcesConst(InteractionType::BONDS);
+    ASSERT_EQ(Potential::QUARTIC_BONDS, bonds.potential());
+    ASSERT_FALSE(bonds.parametersConst().empty());
+    EXPECT_EQ(hbonds.parametersConst().size(), bonds.parametersConst().size());
+    const double kb = 300000, beta = 20;
+    for (const auto &b : bonds.parametersConst())
+    {
+        EXPECT_EQ(6u, b.second.size()) << b.first.id();
+        ASSERT_TRUE(hbonds.parameterExists(b.first)) << b.first.id();
+        EXPECT_EQ(hbonds.findParameterTypeConst(b.first, "bondlength").value(), value(b.second, "bondlength")) << b.first.id();
+        EXPECT_EQ(hbonds.findParameterTypeConst(b.first, "bondenergy").value(), value(b.second, "cb0")) << b.first.id();
+        const std::vector<std::pair<const char *, std::pair<const char *, double>>> expected = {
+            { "cb1", { "kJ/mol/nm", 0 } },
+            { "cb2", { "kJ/mol/nm2", kb/2 } },
+            { "cb3", { "kJ/mol/nm3", -beta*kb/2 } },
+            { "cb4", { "kJ/mol/nm4", 7*beta*beta*kb/24 } }
+        };
+        for (const auto &e : expected)
+        {
+            const auto &c = b.second.find(e.first)->second;
+            EXPECT_EQ(e.second.first, c.unit()) << b.first.id() << " " << e.first;
+            EXPECT_NEAR(e.second.second, c.value(), 1e-9*std::abs(e.second.second)) << b.first.id() << " " << e.first;
+            EXPECT_LE(c.minimum(), c.value()) << b.first.id() << " " << e.first;
+            EXPECT_GE(c.maximum(), c.value()) << b.first.id() << " " << e.first;
+        }
+        // The linear term would move the minimum: it is not trained
+        EXPECT_EQ(Mutability::Fixed, b.second.find("cb1")->second.mutability()) << b.first.id();
+        // The cubic coefficient stays negative, the quartic one positive
+        EXPECT_LT(b.second.find("cb3")->second.maximum(), 0) << b.first.id();
+        EXPECT_GT(b.second.find("cb4")->second.minimum(), 0) << b.first.id();
+        EXPECT_LT(b.second.find("cb2")->second.minimum(), b.second.find("cb2")->second.maximum()) << b.first.id();
+    }
+}
+
+/* Test: A quartic angle starts as the harmonic angle: the same angle, half
+ * the force constant for the quadratic term and no other terms. The cubic
+ * coefficient can become negative, the quartic one cannot.
+ */
+TEST(AllBondedsUpdateTest, QuarticAngles)
+{
+    ForceField pd, harmonic;
+    updateBondeds("forcefields/ACS-g1.xml", nullptr, {}, &pd, "QUARTIC_ANGLES");
+    updateBondeds("forcefields/ACS-g1.xml", nullptr, {}, &harmonic);
+    auto &angles = pd.findForcesConst(InteractionType::ANGLES);
+    auto &hangle = harmonic.findForcesConst(InteractionType::ANGLES);
+    ASSERT_EQ(Potential::QUARTIC_ANGLES, angles.potential());
+    ASSERT_EQ(Potential::HARMONIC_ANGLES, hangle.potential());
+    ASSERT_FALSE(angles.parametersConst().empty());
+    EXPECT_EQ(hangle.parametersConst().size(), angles.parametersConst().size());
+    for (const auto &a : angles.parametersConst())
+    {
+        EXPECT_EQ(6u, a.second.size()) << a.first.id();
+        ASSERT_TRUE(hangle.parameterExists(a.first)) << a.first.id();
+        const auto &angle = a.second.find("angle")->second;
+        EXPECT_EQ("degree", angle.unit()) << a.first.id();
+        EXPECT_EQ(hangle.findParameterTypeConst(a.first, "angle").value(), angle.value()) << a.first.id();
+        EXPECT_GT(angle.ntrain(), 0u) << a.first.id();
+        const double kt = hangle.findParameterTypeConst(a.first, "kt").value();
+        EXPECT_EQ(300, kt) << a.first.id();
+        const std::vector<std::pair<const char *, std::pair<const char *, double>>> expected = {
+            { "ct0", { "kJ/mol", 0 } },
+            { "ct1", { "kJ/mol/rad", 0 } },
+            { "ct2", { "kJ/mol/rad2", kt/2 } },
+            { "ct3", { "kJ/mol/rad3", 0 } },
+            { "ct4", { "kJ/mol/rad4", 0 } }
+        };
+        for (const auto &e : expected)
+        {
+            const auto &c = a.second.find(e.first)->second;
+            EXPECT_EQ(e.second.first, c.unit()) << a.first.id() << " " << e.first;
+            EXPECT_EQ(e.second.second, c.value()) << a.first.id() << " " << e.first;
+        }
+        EXPECT_EQ(Mutability::Fixed, a.second.find("ct0")->second.mutability()) << a.first.id();
+        EXPECT_EQ(Mutability::Fixed, a.second.find("ct1")->second.mutability()) << a.first.id();
+        const auto &ct2 = a.second.find("ct2")->second;
+        EXPECT_LT(ct2.minimum(), ct2.value()) << a.first.id();
+        EXPECT_GT(ct2.maximum(), ct2.value()) << a.first.id();
+        const auto &ct3 = a.second.find("ct3")->second;
+        EXPECT_EQ(Mutability::Bounded, ct3.mutability()) << a.first.id();
+        EXPECT_LT(ct3.minimum(), 0) << a.first.id();
+        EXPECT_GT(ct3.maximum(), 0) << a.first.id();
+        const auto &ct4 = a.second.find("ct4")->second;
+        EXPECT_EQ(Mutability::Bounded, ct4.mutability()) << a.first.id();
+        EXPECT_EQ(0, ct4.minimum()) << a.first.id();
+        EXPECT_GT(ct4.maximum(), 0) << a.first.id();
+    }
+}
+
 /* Test: The cross terms of an angle get the lengths of the two bonds, the
  * distance between the outer atoms at the average angle, which is that of
  * the harmonic angle, and the default force constants, of which that of

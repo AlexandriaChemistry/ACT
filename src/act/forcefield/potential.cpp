@@ -107,6 +107,11 @@ std::map<Potential, PotentialProperties> potprops = {
     { Potential::HUA_BONDS,
       { "HUA_BONDS", F_HUA, { "De", "b", "bondlength", "c" },
         "(De*(((1-myexp)/(1-c*myexp))^2 -1));myexp=exp(-b*(r-bondlength))", "" } },
+    // A polynomial of the fourth order in the deviation from the bond
+    // length, with the parameters in the order of the quartic angle
+    { Potential::QUARTIC_BONDS,
+      { "QUARTIC_BONDS", F_QUARTIC_BONDS, { "bondlength", "cb0", "cb1", "cb2", "cb3", "cb4" },
+        "(cb0+dr*(cb1+dr*(cb2+dr*(cb3+dr*cb4))));dr=r-bondlength", "" } },
     // The energy expressions of the angles that need the distances between
     // the atoms are in the language of the CustomCompoundBondForce of
     // OpenMM, since its CustomAngleForce knows the angle theta only.
@@ -125,6 +130,10 @@ std::map<Potential, PotentialProperties> potprops = {
     { Potential::CROSS_BOND_ANGLES,
       { "CROSS_BOND_ANGLES", F_CROSS_BOND_ANGLES, { "r1e", "r2e", "r3e", "krt", "krr", "kub" },
         "krt*(d13-r3e)*(d12-r1e+d23-r2e)+krr*(d12-r1e)*(d23-r2e)+0.5*kub*(d13-r3e)^2; d12=distance(p1,p2); d23=distance(p2,p3); d13=distance(p1,p3)", "" } },
+    // The quartic angle with its parameters in the order of GROMACS
+    { Potential::QUARTIC_ANGLES,
+      { "QUARTIC_ANGLES", F_QUARTIC_ANGLES, { "angle", "ct0", "ct1", "ct2", "ct3", "ct4" },
+        "(ct0+dt*(ct1+dt*(ct2+dt*(ct3+dt*ct4))));dt=theta-angle", "" } },
     { Potential::HARMONIC_DIHEDRALS, { "HARMONIC_DIHEDRALS", F_IDIHS, { "kimp" }, "0", "" } },
     { Potential::FOURIER_DIHEDRALS, { "FOURIER_DIHEDRALS", F_FOURDIHS, { "c0", "c1", "c2", "c3", "c4", "c5" }, "0", "" } },
     { Potential::PROPER_DIHEDRALS, { "PROPER_DIHEDRALS", F_PDIHS, { "phi0", "kp", "mult" }, "0", "" } },

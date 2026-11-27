@@ -1240,9 +1240,34 @@ void OpenMMWriter::makeXmlMap(xmlNodePtr        parent,
                 }
             }
             break;
+        case Potential::QUARTIC_BONDS:
+            {
+                fsPtr = add_xml_child(parent, exml_names(xmlEntryOpenMM::CUSTOMBONDFORCE));
+                add_xml_char(fsPtr, "energy", energy.c_str());
+                add_global(fsPtr, "pot-QUARTIC-BONDS", 1);
+                // Specify the per bond parameters
+                for(int i = 0; i < qbNR; i++)
+                {
+                    auto grandchild0 = add_xml_child(fsPtr, exml_names(xmlEntryOpenMM::PERBONDPARAMETER));
+                    add_xml_char(grandchild0, exml_names(xmlEntryOpenMM::NAME), pname[i]);
+                }
+            }
+            break;
         case Potential::HARMONIC_ANGLES:
             fsPtr = add_xml_child(parent, exml_names(xmlEntryOpenMM::HARMONICANGLEFORCE));
             add_xml_double(fsPtr, "energy", 0);
+            break;
+        case Potential::QUARTIC_ANGLES:
+            {
+                // The angle theta of OpenMM is in radians, as the parameters
+                fsPtr = add_xml_child(parent, exml_names(xmlEntryOpenMM::CUSTOMANGLEFORCE));
+                add_xml_char(fsPtr, "energy", energy.c_str());
+                for(int i = 0; i < qaNR; i++)
+                {
+                    auto grandchild0 = add_xml_child(fsPtr, exml_names(xmlEntryOpenMM::PERANGLEPARAMETER));
+                    add_xml_char(grandchild0, exml_names(xmlEntryOpenMM::NAME), pname[i]);
+                }
+            }
             break;
         case Potential::LINEAR_ANGLES:
         case Potential::UREY_BRADLEY_ANGLES:
@@ -1332,6 +1357,7 @@ void OpenMMWriter::addTopologyEntries(MsgHandler                                
                 case Potential::CUBIC_BONDS:
                 case Potential::MORSE_BONDS:
                 case Potential::HUA_BONDS:
+                case Potential::QUARTIC_BONDS:
                     addXmlBond(xmlMap_[fs.first], xmlEntryOpenMM::BOND_RES,
                                atoms, pname, entry->params());
                     break;
@@ -1345,9 +1371,11 @@ void OpenMMWriter::addTopologyEntries(MsgHandler                                
                 case Potential::UREY_BRADLEY_ANGLES:
                 case Potential::LINEAR_ANGLES:
                 case Potential::CROSS_BOND_ANGLES:
+                case Potential::QUARTIC_ANGLES:
                     addXmlBond(xmlMap_[fs.first], xmlEntryOpenMM::ANGLE_CLASS,
                                atoms, pname, entry->params());
-                    if (Potential::UREY_BRADLEY_ANGLES != fs.second.potential() &&
+                    if ((Potential::LINEAR_ANGLES == fs.second.potential() ||
+                         Potential::CROSS_BOND_ANGLES == fs.second.potential()) &&
                         atoms.front() != atoms.back())
                     {
                         // The parameters belong to the atoms in this order,
