@@ -159,7 +159,7 @@ In total, well over 80 parameter categories can be trained using the ACT.
    +------------------------+---------------------+---------------------------------------+
    | LINEAR_ANGLES          |:eq:`linang`         | klin a                                |
    +------------------------+---------------------+---------------------------------------+
-   | CROSS_BOND_ANGLES      |:eq:`crossba`        | krt r1e r2e r3e                       |
+   | CROSS_BOND_ANGLES      |:eq:`crossba`        | krt krr kub r1e r2e r3e               |
    +------------------------+---------------------+---------------------------------------+
    | HARMONIC_DIHEDRALS     |:eq:`vimproper`      | kimp                                  |
    +------------------------+---------------------+---------------------------------------+
