@@ -75,6 +75,10 @@ namespace alexandria
 
     enum { cbaR1E, cbaR2E, cbaR3E, cbaKRT, cbaKRR, cbaKUB, cbaNR };
 
+    enum { qbLENGTH, qbC0, qbC1, qbC2, qbC3, qbC4, qbNR };
+
+    enum { qaANGLE, qaC0, qaC1, qaC2, qaC3, qaC4, qaNR };
+
     enum { psANGLE, psRIJ0, psRJK0, psNR };
 
     enum { polALPHA, polRHYPER, polFCHYPER, polNR };

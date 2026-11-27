@@ -37,6 +37,7 @@
 #include <cstdio>
 #include <map>
 #include <string>
+#include <tuple>
 #include <utility>
 #include <vector>
 
@@ -147,9 +148,9 @@ void AllBondeds::addOptions(std::vector<t_pargs> *pargs)
             { "-De",    FALSE, etREAL, {&De_},
               "Dissociation energy (kJ/mol). Ignore if the [TT]-dissoc[tt] option is used." },
             { "-beta",    FALSE, etREAL, {&beta_},
-              "Steepness of the Morse or Hua potential (1/nm)" },
+              "Steepness of the Morse or Hua potential (1/nm). For QUARTIC_BONDS the coefficients of the cubic and the quartic term are those of the expansion of a Morse potential with this steepness around its minimum." },
             { "-kt",    FALSE, etREAL, {&kt_},
-              "Angle force constant (kJ/mol/rad^2)" },
+              "Angle force constant (kJ/mol/rad^2). QUARTIC_ANGLES start as the harmonic angle with this force constant, with half of it as the coefficient of the quadratic term." },
             { "-klin",  FALSE, etREAL, {&klin_},
               "Linear angle force constant (kJ/mol/nm^2)" },
             { "-kp",    FALSE, etREAL, {&kp_},
@@ -626,6 +627,37 @@ void AllBondeds::updateForceField(gmx::TextWriter *tw,
                                      ForceFieldParameter("kJ/mol", De_, 0, 1, De_*factor_, De_/factor_, Mutability::Bounded, true, true));
                 }
                 break;
+            case Potential::QUARTIC_BONDS:
+                {
+                    fs->addParameter(bondId, pname[qbLENGTH],
+                                     ForceFieldParameter("pm", av, sig, N, av*bfactor_, av/bfactor_,
+                                                         Mutability::Bounded, false, true));
+                    // The bond energy is negative, as for the harmonic bond
+                    double D0 = -200;
+                    fs->addParameter(bondId, pname[qbC0],
+                                     ForceFieldParameter("kJ/mol", D0, 0, 1, D0*5, D0/5, Mutability::Bounded, false, false));
+                    // A linear term would move the minimum away from the bond length
+                    fs->addParameter(bondId, pname[qbC1],
+                                     ForceFieldParameter("kJ/mol/nm", 0, 0, 1, 0, 0, Mutability::Fixed, false, false));
+                    // The harmonic bond, and the next two terms of the
+                    // expansion of a Morse potential with the same force
+                    // constant and steepness beta: kb/2 times -beta and
+                    // 7 beta^2/12. The cubic coefficient is negative.
+                    const std::vector<std::tuple<int, const char *, double>> coefficients = {
+                        { qbC2, "kJ/mol/nm2", 0.5*kb_ },
+                        { qbC3, "kJ/mol/nm3", -0.5*kb_*beta_ },
+                        { qbC4, "kJ/mol/nm4", 0.5*kb_*beta_*beta_*7.0/12.0 }
+                    };
+                    for (const auto &[index, unit, value] : coefficients)
+                    {
+                        fs->addParameter(bondId, pname[index],
+                                         ForceFieldParameter(unit, value, 0, 1,
+                                                             std::min(value*factor_, value/factor_),
+                                                             std::max(value*factor_, value/factor_),
+                                                             Mutability::Bounded, false, value >= 0));
+                    }
+                }
+                break;
             default: // gmx_fatal called
                 gmx_fatal(FARGS, "Don't know what to do for ftype %s", potentialToString(fType).c_str());
             }
@@ -695,6 +727,30 @@ void AllBondeds::updateForceField(gmx::TextWriter *tw,
                         }
                         fs->addParameter(bondId, pname[cbaKUB],
                                          ForceFieldParameter("kJ/mol/nm2", kub_, 0, 1, kub_*factor_, kub_/factor_,
+                                                             Mutability::Bounded, false, true));
+                    }
+                    else if (fType == Potential::QUARTIC_ANGLES)
+                    {
+                        fs->addParameter(bondId, pname[qaANGLE],
+                                         ForceFieldParameter("degree", av, sig, N, av*afactor_,
+                                                             std::min<double>(180.0, av/afactor_), Mutability::Bounded, false, true));
+                        // No constant, and no linear term, which would
+                        // move the minimum away from the angle
+                        fs->addParameter(bondId, pname[qaC0],
+                                         ForceFieldParameter("kJ/mol", 0, 0, 1, 0, 0, Mutability::Fixed, false, false));
+                        fs->addParameter(bondId, pname[qaC1],
+                                         ForceFieldParameter("kJ/mol/rad", 0, 0, 1, 0, 0, Mutability::Fixed, false, false));
+                        // The harmonic angle to start with. The cubic
+                        // coefficient can have either sign.
+                        const real c2 = 0.5*kt_;
+                        fs->addParameter(bondId, pname[qaC2],
+                                         ForceFieldParameter("kJ/mol/rad2", c2, 0, 1, c2*factor_, c2/factor_,
+                                                             Mutability::Bounded, false, true));
+                        fs->addParameter(bondId, pname[qaC3],
+                                         ForceFieldParameter("kJ/mol/rad3", 0, 0, 1, -kt_, kt_,
+                                                             Mutability::Bounded, false, false));
+                        fs->addParameter(bondId, pname[qaC4],
+                                         ForceFieldParameter("kJ/mol/rad4", 0, 0, 1, 0, kt_,
                                                              Mutability::Bounded, false, true));
                     }
                     else

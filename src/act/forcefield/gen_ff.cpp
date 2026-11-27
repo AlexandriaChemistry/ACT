@@ -442,14 +442,15 @@ ChargeDistributionType distributionOf(const char *name)
 const std::vector<Potential> &genFFBondPotentials()
 {
     static const std::vector<Potential> potentials = { Potential::HARMONIC_BONDS, Potential::MORSE_BONDS,
-                                                       Potential::CUBIC_BONDS, Potential::HUA_BONDS };
+                                                       Potential::CUBIC_BONDS, Potential::HUA_BONDS,
+                                                       Potential::QUARTIC_BONDS };
     return potentials;
 }
 
 const std::vector<Potential> &genFFAnglePotentials()
 {
     static const std::vector<Potential> potentials = { Potential::HARMONIC_ANGLES, Potential::UREY_BRADLEY_ANGLES,
-                                                       Potential::CROSS_BOND_ANGLES };
+                                                       Potential::CROSS_BOND_ANGLES, Potential::QUARTIC_ANGLES };
     return potentials;
 }
 

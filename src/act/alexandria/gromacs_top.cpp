@@ -67,7 +67,7 @@ namespace alexandria
  * \param[in] d     The directive, bonds, angles or dihedrals
  * \param[in] ftype The function type
  * \return the number, or 1 if GROMACS has no such function for this
- * directive, as for the Hua bonds of ACT
+ * directive, as for the Hua and the quartic bonds of ACT
  */
 static int get_subtype(directive d, int ftype)
 {
@@ -211,6 +211,15 @@ static void print_bondeds(MsgHandler                *msg_handler,
                     params[linangA],
                     params[linangKLIN],
                     entry->id().id().c_str());
+            break;
+        case F_QUARTIC_ANGLES:
+            // The angle in degrees and the five coefficients, as in ACT
+            fprintf(out, "  %12.9g", params[qaANGLE]*RAD2DEG);
+            for (int k = qaC0; k < qaNR; k++)
+            {
+                fprintf(out, "  %12.9g", params[k]);
+            }
+            fprintf(out, " ; %s\n", entry->id().id().c_str());
             break;
         case F_PDIHS:
             fprintf(out, "  %12.9g  %12.9g  %d ; %s\n",
@@ -924,7 +933,8 @@ void print_top_header(MsgHandler                     *msg_handler,
         // Potentials without a counterpart, for interactions in this topology
         const auto pot = fs.second.potential();
         if (topology->hasEntry(fs.first) && !topology->entry(fs.first).empty() &&
-            (Potential::HUA_BONDS == pot || Potential::CUBIC_BONDS == pot))
+            (Potential::HUA_BONDS == pot || Potential::CUBIC_BONDS == pot ||
+             Potential::QUARTIC_BONDS == pot))
         {
             missing.push_back(gmx::formatString("%s, GROMACS will not accept this topology",
                                                 potentialToString(pot).c_str()));

@@ -1,0 +1,18 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Real Name="ANGLES-0">20.765216892647786</Real>
+  <Real Name="EPOT-0">20.765216892647786</Real>
+  <Real Name="ANGLES-1">19.214703699614041</Real>
+  <Real Name="EPOT-1">19.214703699614041</Real>
+  <Real Name="ANGLES-2">12.370661327365816</Real>
+  <Real Name="EPOT-2">12.370661327365816</Real>
+  <Real Name="ANGLES-3">7.4869836375501899</Real>
+  <Real Name="EPOT-3">7.4869836375501899</Real>
+  <Real Name="ANGLES-4">13.544170320225572</Real>
+  <Real Name="EPOT-4">13.544170320225572</Real>
+  <Real Name="ANGLES-5">17.372077070640579</Real>
+  <Real Name="EPOT-5">17.372077070640579</Real>
+  <Real Name="ANGLES-6">20.336546689575833</Real>
+  <Real Name="EPOT-6">20.336546689575833</Real>
+</ReferenceData>

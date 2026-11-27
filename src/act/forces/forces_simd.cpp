@@ -1173,6 +1173,50 @@ static ACT_ALWAYS_INLINE void cubicOne(gmx_unused MsgHandler *msghandler,
     pairforces(fbond, dx, indices, forces);
 }
 
+/*! \brief Polynomial of the fourth order and minus its derivative
+ * \param[in]  c  The five coefficients, that of the constant term first
+ * \param[in]  dx The deviation from the reference position or angle
+ * \param[out] V  The energy, the sum over n of c[n] dx^n
+ * \param[out] F  The scalar force, minus the derivative of the energy to dx
+ */
+static ACT_ALWAYS_INLINE void quartic(const double c[5], double dx, double *V, double *F)
+{
+    *V = c[0] + dx*(c[1] + dx*(c[2] + dx*(c[3] + dx*c[4])));
+    *F = -(c[1] + dx*(2*c[2] + dx*(3*c[3] + dx*4*c[4])));
+}
+
+/*! \brief Quartic bond for one bond
+ * The energy is the sum over n from 0 to 4 of C_n (r - bondlength)^n, as
+ * the quartic angle below.
+ */
+template <typename I, typename X, typename F>
+static ACT_ALWAYS_INLINE void quarticBondOne(gmx_unused MsgHandler *msghandler,
+                                  const TopologyEntry   &b,
+                                  const I               &indices,
+                                  const X               &x,
+                                  F                     *forces,
+                                  double                *e)
+{
+    // Get the parameters. We have to know their names to do this.
+    auto &params    = b.params();
+    auto bondlength = params[qbLENGTH];
+    const double c[5] = { params[qbC0], params[qbC1], params[qbC2], params[qbC3], params[qbC4] };
+
+    dvec dx;
+    distanceVector(x[indices[0]], x[indices[1]], dx);
+    auto dr2        = diprod(dx, dx);
+    auto r_1        = gmx::invsqrt(dr2);
+    auto r1         = dr2*r_1;
+
+    double vB, fbond;
+    quartic(c, r1 - bondlength, &vB, &fbond);
+
+    fbond *= r_1;
+    e[0]  += vB;
+
+    pairforces(fbond, dx, indices, forces);
+}
+
 //! Morse bond for one bond
 template <typename I, typename X, typename F>
 static ACT_ALWAYS_INLINE void morseOne(gmx_unused MsgHandler *msghandler,
@@ -1294,6 +1338,67 @@ static ACT_ALWAYS_INLINE double bondAngle(const V &xi,
     th     = std::acos(*costh);
 
     return th;
+}
+
+/*! \brief Quartic angle for one angle
+ * The energy is the sum over n from 0 to 4 of C_n (theta - theta0)^n,
+ * the quartic angle of GROMACS (angle of type 6). The forces follow from
+ * minus the derivative to the angle as in angleOne.
+ */
+template <typename I, typename X, typename F>
+static ACT_ALWAYS_INLINE void quarticAngleOne(gmx_unused MsgHandler *msghandler,
+                                   const TopologyEntry   &a,
+                                   const I               &indices,
+                                   const X               &x,
+                                   F                     *forces,
+                                   double                *e)
+{
+    double costh = 0;
+    auto   &f    = *forces;
+    // Get the parameters. We have to know their names to do this.
+    auto &params    = a.params();
+    auto theta0     = params[qaANGLE];
+    const double c[5] = { params[qaC0], params[qaC1], params[qaC2], params[qaC3], params[qaC4] };
+
+    dvec r_ij, r_kj;
+    auto theta = bondAngle(x[indices[0]], x[indices[1]], x[indices[2]],
+                           r_ij, r_kj, &costh);
+
+    double vA, fangle;
+    quartic(c, theta - theta0, &vA, &fangle);
+    e[0] += vA;
+
+    auto costh2 = gmx::square(costh);
+    if (costh2 < 1)
+    {
+        double st, sth;
+        double cik, cii, ckk;
+        double nrkj2, nrij2;
+        double nrkj_1, nrij_1;
+
+        st    = fangle*gmx::invsqrt(1 - costh2);
+        sth   = st*costh;
+
+        nrij2 = diprod(r_ij, r_ij);
+        nrkj2 = diprod(r_kj, r_kj);
+
+        nrij_1 = gmx::invsqrt(nrij2);
+        nrkj_1 = gmx::invsqrt(nrkj2);
+
+        cik = st*nrij_1*nrkj_1;
+        cii = sth*nrij_1*nrij_1;
+        ckk = sth*nrkj_1*nrkj_1;
+#pragma unroll
+        for (auto m = 0; m < DIM; m++)
+        {
+            auto f_im    = -(cik*r_kj[m] - cii*r_ij[m]);
+            auto f_km    = -(cik*r_ij[m] - ckk*r_kj[m]);
+            auto f_jm    = -f_im - f_km;
+            f[indices[0]][m] += f_im;
+            f[indices[1]][m] += f_jm;
+            f[indices[2]][m] += f_km;
+        }
+    }
 }
 
 //! Harmonic angle for one angle
@@ -1887,10 +1992,12 @@ static const std::vector<InteractionType> &energyTypes(Potential mypot)
     case Potential::MORSE_BONDS:
     case Potential::HUA_BONDS:
     case Potential::CUBIC_BONDS:
+    case Potential::QUARTIC_BONDS:
         return bonds;
     case Potential::HARMONIC_ANGLES:
     case Potential::UREY_BRADLEY_ANGLES:
     case Potential::CROSS_BOND_ANGLES:
+    case Potential::QUARTIC_ANGLES:
         return angles;
     case Potential::LINEAR_ANGLES:
         return linearAngles;
@@ -2164,6 +2271,9 @@ static bool dispatchPotential(Potential                   mypot,
     case Potential::CUBIC_BONDS:
         if constexpr (Pairs) { return false; } else { func.template operator()<2, true>(ONE_INTERACTION(cubicOne)); }
         break;
+    case Potential::QUARTIC_BONDS:
+        if constexpr (Pairs) { return false; } else { func.template operator()<2, true>(ONE_INTERACTION(quarticBondOne)); }
+        break;
     case Potential::HARMONIC_ANGLES:
         if constexpr (Pairs) { return false; } else { func.template operator()<3, true>(ONE_INTERACTION(angleOne)); }
         break;
@@ -2175,6 +2285,9 @@ static bool dispatchPotential(Potential                   mypot,
         break;
     case Potential::CROSS_BOND_ANGLES:
         if constexpr (Pairs) { return false; } else { func.template operator()<3, true>(ONE_INTERACTION(crossBondAngleOne)); }
+        break;
+    case Potential::QUARTIC_ANGLES:
+        if constexpr (Pairs) { return false; } else { func.template operator()<3, true>(ONE_INTERACTION(quarticAngleOne)); }
         break;
     case Potential::LJ12_6:
         func.template operator()<2, true>(ONE_INTERACTION(lj12_6One));
@@ -2359,10 +2472,12 @@ static double interactionFlops(Potential                   mypot,
     case Potential::CUBIC_BONDS:            return constant({ 18, 6 }, true);
     case Potential::MORSE_BONDS:            return constant({ 43, 8 }, true);
     case Potential::HUA_BONDS:              return constant({ 49, 13 }, true);
+    case Potential::QUARTIC_BONDS:          return constant({ 20, 7 }, true);
     case Potential::HARMONIC_ANGLES:        return constant({ 83, 71 }, false);
     case Potential::LINEAR_ANGLES:          return constant({ 23, 18 }, false);
     case Potential::UREY_BRADLEY_ANGLES:    return constant({ 97, 102 }, false);
     case Potential::CROSS_BOND_ANGLES:      return constant({ 70, 40 }, false);
+    case Potential::QUARTIC_ANGLES:         return constant({ 89, 76 }, false);
     case Potential::HARMONIC_DIHEDRALS:     return constant({ 106, 71 }, false);
     case Potential::PROPER_DIHEDRALS:       return constant({ 132, 118 }, false);
     case Potential::POSITION_RESTRAINT:     return constant({ 17, 12 }, false);

@@ -107,12 +107,21 @@ std::map<Potential, PotentialProperties> potprops = {
     { Potential::HUA_BONDS,
       { "HUA_BONDS", F_HUA, { "De", "b", "bondlength", "c" },
         "(De*(((1-myexp)/(1-c*myexp))^2 -1));myexp=exp(-b*(r-bondlength))", "" } },
+    // A polynomial of the fourth order in the deviation from the bond
+    // length, with the parameters in the order of the quartic angle
+    { Potential::QUARTIC_BONDS,
+      { "QUARTIC_BONDS", F_QUARTIC_BONDS, { "bondlength", "cb0", "cb1", "cb2", "cb3", "cb4" },
+        "(cb0+dr*(cb1+dr*(cb2+dr*(cb3+dr*cb4))));dr=r-bondlength", "" } },
     { Potential::LINEAR_ANGLES, { "LINEAR_ANGLES", F_LINEAR_ANGLES, { "a", "klin" }, "0", "" } },
     { Potential::UREY_BRADLEY_ANGLES, { "UREY_BRADLEY_ANGLES", F_UREY_BRADLEY, { "kt", "ub_angle", "r13", "kub" }, "0", "" } },
     // The bond-angle cross term with its parameters in the order of GROMACS,
     // followed by the force constants of the bond-bond cross term and of
     // the harmonic potential on the distance between the outer atoms
     { Potential::CROSS_BOND_ANGLES, { "CROSS_BOND_ANGLES", F_CROSS_BOND_ANGLES, { "r1e", "r2e", "r3e", "krt", "krr", "kub" }, "0", "" } },
+    // The quartic angle with its parameters in the order of GROMACS
+    { Potential::QUARTIC_ANGLES,
+      { "QUARTIC_ANGLES", F_QUARTIC_ANGLES, { "angle", "ct0", "ct1", "ct2", "ct3", "ct4" },
+        "(ct0+dt*(ct1+dt*(ct2+dt*(ct3+dt*ct4))));dt=theta-angle", "" } },
     { Potential::HARMONIC_DIHEDRALS, { "HARMONIC_DIHEDRALS", F_IDIHS, { "kimp" }, "0", "" } },
     { Potential::FOURIER_DIHEDRALS, { "FOURIER_DIHEDRALS", F_FOURDIHS, { "c0", "c1", "c2", "c3", "c4", "c5" }, "0", "" } },
     { Potential::PROPER_DIHEDRALS, { "PROPER_DIHEDRALS", F_PDIHS, { "phi0", "kp", "mult" }, "0", "" } },
