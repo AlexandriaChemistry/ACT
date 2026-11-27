@@ -114,4 +114,16 @@ xmlNodePtr add_xml_comment(xmlDocPtr   doc,
  */
 xmlDocPtr readXmlFile(const std::string &fileName, std::string *error);
 
+/*! \brief The options with which the files of ACT are parsed
+ * \returns options for the parser of libxml2: nothing is printed, and a
+ * file that is compressed is unpacked
+ */
+int xmlParseOptions();
+
+/*! \brief What the parser of libxml2 found wrong last
+ * \returns the message of the parser and the line in the file, or that
+ * the file is not XML if the parser left no message
+ */
+std::string lastXmlError();
+
 #endif

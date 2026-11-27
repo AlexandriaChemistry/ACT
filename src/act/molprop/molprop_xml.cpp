@@ -34,8 +34,13 @@
 
 #include <cstdlib>
 #include <cstring>
+#include <functional>
+#include <libxml/encoding.h>
 #include <libxml/parser.h>
 #include <libxml/tree.h>
+#include <libxml/xmlerror.h>
+#include <libxml/xmlIO.h>
+#include <libxml/xmlreader.h>
 #include <libxml/xmlstring.h>
 #include <map>
 #include <memory>
@@ -488,11 +493,19 @@ static void get_polarizability(std::map<MolPropXml, std::string> *xbuf,
                  MolPropXml::UNIT, MolPropXml::ERROR });
 }
 
-//! \brief Process a complete XML tree to fill a MolProp vector
+/*! \brief Process an XML tree to fill a MolProp vector
+ * \param[in]    msg_handler For info and debugging, may be nullptr
+ * \param[in]    tree        The first node to process
+ * \param[inout] molprops    The compounds, to the last of which what is read is added
+ * \param[inout] xbuf        What was read and is not used yet
+ * \param[in]    siblings    Whether the nodes that follow the first one at the same
+ *                           level are processed as well
+ */
 static void mp_process_tree(MsgHandler                        *msg_handler,
                             xmlNodePtr                         tree,
                             std::vector<MolProp>              *molprops,
-                            std::map<MolPropXml, std::string> *xbuf)
+                            std::map<MolPropXml, std::string> *xbuf,
+                            bool                               siblings = true)
 {
     const auto &xmltype = xmltypes();
     const std::string qm_type("electronic");
@@ -865,15 +878,107 @@ static void mp_process_tree(MsgHandler                        *msg_handler,
                 }
             }
         }
+        if (!siblings)
+        {
+            break;
+        }
         tree = tree->next;
     }
+}
+
+/*! \brief Read a molprop file one piece at a time
+ * The file is a long list of compounds, each with a list of experiments.
+ * An XML tree takes many times the memory of the text it is made from.
+ * Therefore only the part of the file that describes one experiment, or
+ * another part of a compound, is in memory as a tree, instead of the whole
+ * file. What mp_process_tree does for the list and for a compound before
+ * and after it goes through what is in them, is done here.
+ * \param[in]    msg_handler For info and debugging, may be nullptr
+ * \param[in]    reader      The file
+ * \param[inout] molprops    The compounds
+ * \returns whether the file was read to the end without an error of the parser
+ */
+static bool mp_process_reader(MsgHandler           *msg_handler,
+                              xmlTextReaderPtr      reader,
+                              std::vector<MolProp> *molprops)
+{
+    std::map<MolPropXml, std::string> xbuf;
+    // Whether the reader is in the list of compounds, and in a compound of it
+    bool                              inList     = false;
+    bool                              inCompound = false;
+    int                               status     = xmlTextReaderRead(reader);
+    while (status == 1)
+    {
+        const int type = xmlTextReaderNodeType(reader);
+        if (type == XML_READER_TYPE_END_ELEMENT)
+        {
+            // Only the list and the compounds are left this way, what is
+            // in them is skipped as a whole, see below.
+            if (inCompound)
+            {
+                clean_xbuf(&xbuf, { MolPropXml::MOLECULE });
+                inCompound = false;
+            }
+            else if (inList)
+            {
+                clean_xbuf(&xbuf, { MolPropXml::MOLECULES });
+                inList = false;
+            }
+        }
+        if (type != XML_READER_TYPE_ELEMENT)
+        {
+            status = xmlTextReaderRead(reader);
+            continue;
+        }
+        xmlNodePtr node = xmlTextReaderCurrentNode(reader);
+        if (node == nullptr)
+        {
+            return false;
+        }
+        const auto iter    = xmlxxx.find(reinterpret_cast<const char *>(node->name));
+        const bool known   = iter != xmlxxx.end();
+        const bool hasMore = xmlTextReaderIsEmptyElement(reader) == 0;
+        if (hasMore && known && !inList && xmlTextReaderDepth(reader) == 0 &&
+            iter->second == MolPropXml::MOLECULES)
+        {
+            // The list itself: go on with what is in it
+            get_attributes(msg_handler, node->properties, &xbuf);
+            inList = true;
+            status = xmlTextReaderRead(reader);
+        }
+        else if (hasMore && known && inList && !inCompound &&
+                 iter->second == MolPropXml::MOLECULE)
+        {
+            // A compound: go on with what is in it
+            get_attributes(msg_handler, node->properties, &xbuf);
+            MolProp mp;
+            get_molecule_attributes(&xbuf, &mp);
+            molprops->push_back(std::move(mp));
+            inCompound = true;
+            status     = xmlTextReaderRead(reader);
+        }
+        else
+        {
+            // An experiment or another part of a compound, or whatever
+            // else is in the file: the whole of it is read, processed and
+            // left behind. Since the parser may have started on what
+            // follows, only this node.
+            node = xmlTextReaderExpand(reader);
+            if (node == nullptr)
+            {
+                return false;
+            }
+            mp_process_tree(msg_handler, node, molprops, &xbuf, false);
+            status = xmlTextReaderNext(reader);
+        }
+    }
+    return status == 0;
 }
 
 void MolPropRead(MsgHandler           *msg_handler,
                  const char           *fn,
                  std::vector<MolProp> *mpt)
 {
-    xmlDocPtr     doc;
     const char   *db          = "alexandria.ff/molprops.dat";
     std::string   mpfile;
 
@@ -893,22 +998,40 @@ void MolPropRead(MsgHandler           *msg_handler,
     {
         msg_handler->writeDebug(memory_usage());
     }
-    std::string xmlError;
-    if ((doc = readXmlFile(mpfile, &xmlError)) == nullptr)
-    {
-        GMX_THROW(gmx::FileIOError(gmx::formatString("Error reading compounds from XML file '%s': %s",
-                                                     mpfile.c_str(), xmlError.c_str())));
-    }
-    if (msg_handler)
-    {
-        msg_handler->writeDebug(memory_usage());
-    }
     if (msg_handler)
     {
         msg_handler->writeDebug(gmx::formatString("Reading library file %s\n", fn));
     }
-    std::map<MolPropXml, std::string>  xbuf;
-    mp_process_tree(msg_handler, doc->children, mpt, &xbuf);
+    // The file is read as a stream, see mp_process_reader
+    xmlResetLastError();
+    xmlTextReaderPtr reader = xmlReaderForFile(mpfile.c_str(), nullptr, xmlParseOptions());
+    const size_t     before = mpt->size();
+    bool             done   = false;
+    if (reader != nullptr)
+    {
+        try
+        {
+            done = mp_process_reader(msg_handler, reader, mpt);
+        }
+        catch (...)
+        {
+            xmlFreeTextReader(reader);
+            throw;
+        }
+    }
+    if (!done)
+    {
+        // The message before the reader is freed, and no compounds of half a file
+        const std::string xmlError = lastXmlError();
+        if (reader != nullptr)
+        {
+            xmlFreeTextReader(reader);
+        }
+        mpt->erase(mpt->begin() + before, mpt->end());
+        GMX_THROW(gmx::FileIOError(gmx::formatString("Error reading compounds from XML file '%s': %s",
+                                                     mpfile.c_str(), xmlError.c_str())));
+    }
+    xmlFreeTextReader(reader);
     for(auto mp = mpt->begin(); mp < mpt->end(); ++mp)
     {
         if (!mp->renumberResidues())
@@ -922,7 +1045,6 @@ void MolPropRead(MsgHandler           *msg_handler,
             mpt->erase(mp);
         }
     }
-    xmlFreeDoc(doc);
     if (msg_handler)
     {
         msg_handler->writeDebug(memory_usage());
@@ -1086,12 +1208,22 @@ static void add_properties(xmlNodePtr        exp,
  * \param[in] parent The XML tree
  * \param[in] mp     The molprop to add
  */
-static void add_xml_molprop(xmlNodePtr     parent,
-                            const MolProp &mp)
+/*! \brief Add a compound to an XML tree
+ * \param[in] parent The list of compounds
+ * \param[in] mp     The compound
+ * \param[in] done   Called with the compound in the tree before there
+ *                   is anything in it, and each time an experiment was
+ *                   added to it, such that what is there can be written
+ *                   and removed, see MolPropWrite
+ */
+static void add_xml_molprop(xmlNodePtr                             parent,
+                            const MolProp                         &mp,
+                            const std::function<void(xmlNodePtr)> &done)
 {
     xmlNodePtr ptr = add_xml_child(parent, rmap[MolPropXml::MOLECULE]);
     add_xml_string(ptr, rmap[MolPropXml::MOLNAME], mp.getMolname());
-    
+    done(ptr);
+
     xmlNodePtr child = add_xml_child(ptr, rmap[MolPropXml::FRAGMENTS]);
     for(const auto &f : mp.fragments())
     {
@@ -1168,6 +1300,7 @@ static void add_xml_molprop(xmlNodePtr     parent,
                 //add_xml_string(atomptr, rmap[MolPropXml::TYPE], qTypeName(q.first));
             }
         }
+        done(ptr);
     }
     for (auto &s : mp.categoryConst())
     {
@@ -1185,6 +1318,7 @@ void MolPropWrite(const char                 *fn,
     xmlDtdPtr                   dtd;
     xmlNodePtr                  myroot;
     xmlChar                    *libdtdname, *dtdname, *gmx;
+    const char                 *encoding = "ISO-8859-1";
 
     gmx        = (xmlChar *) "molecules";
     dtdname    = (xmlChar *) "molprops.dtd";
@@ -1209,14 +1343,101 @@ void MolPropWrite(const char                 *fn,
     dtd->next    = myroot;
     myroot->prev = (xmlNodePtr) dtd;
 
-    /* Add molecule definitions */
-    for (auto &mp : mpt)
+    // The file is written one piece at a time, as xmlSaveFormatFileEnc
+    // writes a document with all the compounds: an XML tree takes many
+    // times the memory of its text, so only the tree of one experiment, or
+    // of the other parts of a compound, is made at a time.
+    // The encoding of the document decides how characters are written.
+    doc->encoding = xmlStrdup(reinterpret_cast<const xmlChar *>(encoding));
+    xmlCharEncodingHandlerPtr encoder = xmlFindCharEncodingHandler(encoding);
+    xmlOutputBufferPtr        out     = xmlOutputBufferCreateFilename(fn, encoder, bCompress ? 1 : 0);
+    if (out == nullptr)
     {
-        add_xml_molprop(myroot, mp);
+        if (encoder != nullptr)
+        {
+            xmlCharEncCloseFunc(encoder);
+        }
+        xmlFreeDoc(doc);
+        GMX_THROW(gmx::FileIOError(gmx::formatString("Cannot write the molprop file %s", fn)));
     }
-    xmlSetDocCompressMode(doc, (int)bCompress);
+    xmlOutputBufferWriteString(out, gmx::formatString("<?xml version=\"1.0\" encoding=\"%s\"?>\n",
+                                                      encoding).c_str());
+    xmlNodeDumpOutput(out, doc, reinterpret_cast<xmlNodePtr>(dtd), 0, 1, encoding);
+    xmlOutputBufferWriteString(out, "\n");
+    const char *rootName = reinterpret_cast<const char *>(gmx);
+    if (mpt.empty())
+    {
+        xmlOutputBufferWriteString(out, gmx::formatString("<%s/>\n", rootName).c_str());
+    }
+    else
+    {
+        xmlOutputBufferWriteString(out, gmx::formatString("<%s>\n", rootName).c_str());
+        // Whether the start of the compound that is written is there
+        bool started = false;
+        // Write what there is of a compound and remove it from the tree
+        const auto writeParts = [&](xmlNodePtr molecule)
+        {
+            if (!started)
+            {
+                // The start of the element, when there is nothing in it
+                // yet: as an element without content is written, but for
+                // the end of that. It is written to memory first, with
+                // the same rules for the characters.
+                xmlOutputBufferPtr text = xmlAllocOutputBuffer(nullptr);
+                std::string        tag;
+                if (text != nullptr && molecule->children == nullptr)
+                {
+                    xmlNodeDumpOutput(text, doc, molecule, 1, 0, encoding);
+                    tag.assign(reinterpret_cast<const char *>(xmlOutputBufferGetContent(text)),
+                               xmlOutputBufferGetSize(text));
+                }
+                if (text != nullptr)
+                {
+                    xmlOutputBufferClose(text);
+                }
+                if (tag.size() < 2 || tag.compare(tag.size()-2, 2, "/>") != 0)
+                {
+                    GMX_THROW(gmx::InternalError(gmx::formatString("Cannot write a compound to %s", fn)));
+                }
+                tag.resize(tag.size()-2);
+                xmlOutputBufferWriteString(out, ("  " + tag + ">\n").c_str());
+                started = true;
+            }
+            while (molecule->children != nullptr)
+            {
+                xmlNodePtr part = molecule->children;
+                xmlOutputBufferWriteString(out, "    ");
+                xmlNodeDumpOutput(out, doc, part, 2, 1, encoding);
+                xmlOutputBufferWriteString(out, "\n");
+                xmlUnlinkNode(part);
+                xmlFreeNode(part);
+            }
+        };
+        /* Add molecule definitions */
+        try
+        {
+            for (auto &mp : mpt)
+            {
+                started = false;
+                add_xml_molprop(myroot, mp, writeParts);
+                xmlNodePtr molecule = myroot->last;
+                writeParts(molecule);
+                xmlOutputBufferWriteString(out, gmx::formatString("  </%s>\n",
+                                                                  rmap[MolPropXml::MOLECULE].c_str()).c_str());
+                xmlUnlinkNode(molecule);
+                xmlFreeNode(molecule);
+            }
+        }
+        catch (...)
+        {
+            xmlOutputBufferClose(out);
+            xmlFreeDoc(doc);
+            throw;
+        }
+        xmlOutputBufferWriteString(out, gmx::formatString("</%s>\n", rootName).c_str());
+    }
     // The number of bytes written, -1 if the file cannot be written
-    const int written = xmlSaveFormatFileEnc(fn, doc, "ISO-8859-1", 1);
+    const int written = xmlOutputBufferClose(out);
     xmlFreeDoc(doc);
     if (written <= 0)
     {
