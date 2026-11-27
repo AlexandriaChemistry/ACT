@@ -224,6 +224,109 @@ TEST(MolpropCopyTest, CopiesAreDeep)
     EXPECT_EQ(contents(original), contents(copied));
 }
 
+// Test: A file is written and read one piece at a time. What is written
+// is what is read, also when a file is not laid out as ACT writes it
+TEST(MolpropStreamTest, WrittenAsRead)
+{
+    const auto                 mps = testCompounds();
+    gmx::test::TestFileManager fileManager;
+    const std::string          first  = fileManager.getTemporaryFilePath("first.xml");
+    const std::string          second = fileManager.getTemporaryFilePath("second.xml");
+    MolPropWrite(first.c_str(), mps, false);
+    const std::string text = contents(first);
+    const std::string head = "<?xml version=\"1.0\" encoding=\"ISO-8859-1\"?>\n"
+                             "<!DOCTYPE molprops.dtd PUBLIC \"molprops.dtd\" \"molprops.dtd\">\n"
+                             "<molecules>\n  <molecule molname=\"";
+    const std::string tail = "\n  </molecule>\n</molecules>\n";
+    ASSERT_GT(text.size(), head.size() + tail.size());
+    EXPECT_EQ(head, text.substr(0, head.size()));
+    EXPECT_EQ(tail, text.substr(text.size() - tail.size()));
+    {
+        std::vector<MolProp> again;
+        MolPropRead(nullptr, first.c_str(), &again);
+        ASSERT_EQ(mps.size(), again.size());
+        MolPropWrite(second.c_str(), again, false);
+        EXPECT_EQ(text, contents(second));
+    }
+    // Comments around and between the compounds and the experiments, and
+    // no line breaks between them
+    std::string odd = text;
+    for (const std::string &element : { "<molecules>", "<molecule ", "<experiment ", "</molecule>", "</molecules>" })
+    {
+        size_t at = 0;
+        while ((at = odd.find(element, at)) != std::string::npos)
+        {
+            const std::string note = "<!-- a note -->";
+            odd.insert(at, note);
+            at += note.size() + element.size();
+        }
+    }
+    size_t at = 0;
+    while ((at = odd.find(">\n", at)) != std::string::npos)
+    {
+        odd.erase(at + 1, 1);
+    }
+    {
+        std::ofstream out(second);
+        out << odd;
+    }
+    {
+        std::vector<MolProp> again;
+        MolPropRead(nullptr, second.c_str(), &again);
+        ASSERT_EQ(mps.size(), again.size());
+        MolPropWrite(second.c_str(), again, false);
+        EXPECT_EQ(text, contents(second));
+    }
+}
+
+// Test: A file without compounds, and names with characters that XML and
+// the encoding of the file cannot have as they are
+TEST(MolpropStreamTest, EmptyAndSpecial)
+{
+    gmx::test::TestFileManager fileManager;
+    const std::string          none = fileManager.getTemporaryFilePath("none.xml");
+    MolPropWrite(none.c_str(), {}, false);
+    EXPECT_NE(std::string::npos, contents(none).find("<molecules/>")) << contents(none);
+    std::vector<MolProp> again;
+    EXPECT_NO_THROW(MolPropRead(nullptr, none.c_str(), &again));
+    EXPECT_TRUE(again.empty());
+
+    auto              mps  = testCompounds();
+    const std::string name = "caf\xc3\xa9 \xce\xb2 & <x> \"q\" 's";
+    mps[0].SetMolname(name);
+    const std::string special = fileManager.getTemporaryFilePath("special.xml");
+    MolPropWrite(special.c_str(), mps, false);
+    MolPropRead(nullptr, special.c_str(), &again);
+    ASSERT_EQ(mps.size(), again.size());
+    EXPECT_EQ(name, again[0].getMolname());
+    EXPECT_EQ(mps[1].getMolname(), again[1].getMolname());
+}
+
+// Test: Of a file that ends halfway nothing is kept, and what was there stays
+TEST(MolpropStreamTest, HalfAFileAddsNothing)
+{
+    gmx::test::TestFileManager fileManager;
+    auto                       mps    = testCompounds();
+    const size_t               before = mps.size();
+    const std::string          whole  = fileManager.getTemporaryFilePath("whole.xml");
+    MolPropWrite(whole.c_str(), mps, false);
+    const std::string text = contents(whole);
+    // The end is in the last compound, after others were read
+    const std::string half = fileManager.getTemporaryFilePath("most.xml");
+    {
+        std::ofstream out(half);
+        out << text.substr(0, text.size() - 200);
+    }
+    {
+        const gmx::ThrowOnFatalError library;
+        EXPECT_THROW(MolPropRead(nullptr, half.c_str(), &mps), gmx::FileIOError);
+    }
+    EXPECT_EQ(before, mps.size());
+    // Reading adds to what is there
+    MolPropRead(nullptr, whole.c_str(), &mps);
+    EXPECT_EQ(2*before, mps.size());
+}
+
 } // namespace
 
 } // namespace alexandria
