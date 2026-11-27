@@ -601,7 +601,7 @@ protected:
         computePotential(nullptr, mypot, entries, atoms_, &cInner, epsilonr, true);
 #if GMX_DOUBLE
         // Vector math libraries may differ from the scalar ones in the last bits
-        auto   tolSame  = gmx::test::relativeToleranceAsFloatingPoint(1, 1e-12);
+        const auto tolSame  = gmx::test::relativeToleranceAsFloatingPoint(1, 1e-12);
         double h        = 1e-6;
         double tolFD    = 1e-5;
 #else
@@ -1077,6 +1077,12 @@ TEST_F(ForcesSimdTest, LinearAngles)
 TEST_F(ForcesSimdTest, UreyBradleyAngles)
 {
     test(Potential::UREY_BRADLEY_ANGLES, angles({ 400, 1.9, 0.24, 20000 }));
+}
+
+TEST_F(ForcesSimdTest, CrossBondAngles)
+{
+    // Bond lengths, distance between the outer atoms and force constant
+    test(Potential::CROSS_BOND_ANGLES, angles({ 0.15, 0.14, 0.24, -80000 }));
 }
 
 TEST_F(ForcesSimdTest, ProperDihedrals)

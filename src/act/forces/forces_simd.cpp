@@ -1437,6 +1437,64 @@ static ACT_ALWAYS_INLINE void ureyBradleyOne(gmx_unused MsgHandler *msghandler,
     }
 }
 
+/*! \brief Bond-angle cross term for one angle
+ *
+ * The energy is krt (|r_i-r_k| - r3e) (|r_i-r_j| - r1e + |r_k-r_j| - r2e)
+ * with j the central atom, as in GROMACS (angle type 4).
+ */
+template <typename I, typename X, typename F>
+static ACT_ALWAYS_INLINE void crossBondAngleOne(gmx_unused MsgHandler *msghandler,
+                                     const TopologyEntry   &a,
+                                     const I               &indices,
+                                     const X               &x,
+                                     F                     *forces,
+                                     double                *e)
+{
+    auto   &f    = *forces;
+    // Get the parameters. We have to know their names to do this.
+    auto &params = a.params();
+    auto r1e     = params[cbaR1E];
+    auto r2e     = params[cbaR2E];
+    auto r3e     = params[cbaR3E];
+    auto krt     = params[cbaKRT];
+    // Get the atom indices
+    auto ai = indices[0];
+    auto aj = indices[1];
+    auto ak = indices[2];
+
+    dvec r_ij, r_kj, r_ik;
+    distanceVector(x[ai], x[aj], r_ij);
+    distanceVector(x[ak], x[aj], r_kj);
+    distanceVector(x[ai], x[ak], r_ik);
+    auto nrij2  = diprod(r_ij, r_ij);
+    auto nrkj2  = diprod(r_kj, r_kj);
+    auto nrik2  = diprod(r_ik, r_ik);
+    auto nrij_1 = gmx::invsqrt(nrij2);
+    auto nrkj_1 = gmx::invsqrt(nrkj2);
+    auto nrik_1 = gmx::invsqrt(nrik2);
+    // Deviations of the distance between the outer atoms and of the
+    // sum of the bond lengths
+    auto d13    = nrik2*nrik_1 - r3e;
+    auto dbonds = nrij2*nrij_1 - r1e + nrkj2*nrkj_1 - r2e;
+
+    e[0] += krt*d13*dbonds;
+
+    // Minus the derivatives of the energy to the three distances,
+    // divided by the distance
+    auto fbi = -krt*d13*nrij_1;
+    auto fbk = -krt*d13*nrkj_1;
+    auto f13 = -krt*dbonds*nrik_1;
+#pragma unroll
+    for (auto m = 0; m < DIM; m++)
+    {
+        double f_i = fbi*r_ij[m] + f13*r_ik[m];
+        double f_k = fbk*r_kj[m] - f13*r_ik[m];
+        f[ai][m] += f_i;
+        f[aj][m] -= f_i + f_k;
+        f[ak][m] += f_k;
+    }
+}
+
 //! Polarization for one core-shell pair
 template <typename I, typename X, typename F>
 static ACT_ALWAYS_INLINE void polarizationOne(gmx_unused MsgHandler      *msghandler,
@@ -1821,6 +1879,7 @@ static const std::vector<InteractionType> &energyTypes(Potential mypot)
         return bonds;
     case Potential::HARMONIC_ANGLES:
     case Potential::UREY_BRADLEY_ANGLES:
+    case Potential::CROSS_BOND_ANGLES:
         return angles;
     case Potential::LINEAR_ANGLES:
         return linearAngles;
@@ -2103,6 +2162,9 @@ static bool dispatchPotential(Potential                   mypot,
     case Potential::UREY_BRADLEY_ANGLES:
         if constexpr (Pairs) { return false; } else { func.template operator()<3, true>(ONE_INTERACTION(ureyBradleyOne)); }
         break;
+    case Potential::CROSS_BOND_ANGLES:
+        if constexpr (Pairs) { return false; } else { func.template operator()<3, true>(ONE_INTERACTION(crossBondAngleOne)); }
+        break;
     case Potential::LJ12_6:
         func.template operator()<2, true>(ONE_INTERACTION(lj12_6One));
         break;
@@ -2289,6 +2351,7 @@ static double interactionFlops(Potential                   mypot,
     case Potential::HARMONIC_ANGLES:        return constant({ 83, 71 }, false);
     case Potential::LINEAR_ANGLES:          return constant({ 23, 18 }, false);
     case Potential::UREY_BRADLEY_ANGLES:    return constant({ 97, 102 }, false);
+    case Potential::CROSS_BOND_ANGLES:      return constant({ 64, 34 }, false);
     case Potential::HARMONIC_DIHEDRALS:     return constant({ 106, 71 }, false);
     case Potential::PROPER_DIHEDRALS:       return constant({ 132, 118 }, false);
     case Potential::POSITION_RESTRAINT:     return constant({ 17, 12 }, false);

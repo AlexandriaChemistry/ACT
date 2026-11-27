@@ -138,6 +138,14 @@ static void print_bondeds(MsgHandler                *msg_handler,
                     params[ubKUB],
                     entry->id().id().c_str());
             break;
+        case F_CROSS_BOND_ANGLES:
+            fprintf(out, "  %10g  %10g  %10g  %10g ; %s\n",
+                    params[cbaR1E],
+                    params[cbaR2E],
+                    params[cbaR3E],
+                    params[cbaKRT],
+                    entry->id().id().c_str());
+            break;
         case F_LINEAR_ANGLES:
             fprintf(out, "  %10g  %10g ; %s\n",
                     params[linangA],

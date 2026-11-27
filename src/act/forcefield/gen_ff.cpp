@@ -448,7 +448,8 @@ const std::vector<Potential> &genFFBondPotentials()
 
 const std::vector<Potential> &genFFAnglePotentials()
 {
-    static const std::vector<Potential> potentials = { Potential::HARMONIC_ANGLES, Potential::UREY_BRADLEY_ANGLES };
+    static const std::vector<Potential> potentials = { Potential::HARMONIC_ANGLES, Potential::UREY_BRADLEY_ANGLES,
+                                                       Potential::CROSS_BOND_ANGLES };
     return potentials;
 }
 
