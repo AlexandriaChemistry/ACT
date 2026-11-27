@@ -396,6 +396,11 @@ private:
      */
     void addXmlAngleScript(xmlNodePtr        parent,
                            const ForceField *pd);
+    /*! \brief Take out the force for the harmonic improper dihedrals if
+     * the compounds have none
+     * \param[in] pd The force field
+     */
+    void removeEmptyImpropers(const ForceField *pd);
     /*! \brief Add the Drude particle interaction energy parameters
      * \param[in] parent    The xml node to add to
      * \param[in] pd        The force field
@@ -723,6 +728,30 @@ void OpenMMWriter::addXmlAngleScript(xmlNodePtr        parent,
     script += "    if new.getNumBonds() > 0:\n";
     script += "        sys.addForce(new)\n";
     add_xml_child_val(parent, exml_names(xmlEntryOpenMM::SCRIPT), script.c_str());
+}
+
+void OpenMMWriter::removeEmptyImpropers(const ForceField *pd)
+{
+    for (auto node = xmlMap_.begin(); node != xmlMap_.end(); )
+    {
+        bool remove = (pd->interactionPresent(node->first) &&
+                       Potential::HARMONIC_DIHEDRALS == pd->findForcesConst(node->first).potential());
+        for (auto child = node->second->children; child && remove; child = child->next)
+        {
+            remove = !(XML_ELEMENT_NODE == child->type &&
+                       xmlStrEqual(child->name, BAD_CAST exml_names(xmlEntryOpenMM::IMPROPER)));
+        }
+        if (remove)
+        {
+            xmlUnlinkNode(node->second);
+            xmlFreeNode(node->second);
+            node = xmlMap_.erase(node);
+        }
+        else
+        {
+            ++node;
+        }
+    }
 }
 
 //! \brief Add global parameter
@@ -1267,8 +1296,20 @@ void OpenMMWriter::makeXmlMap(xmlNodePtr        parent,
             add_xml_double(fsPtr, "energy", 0);
             break;
         case Potential::HARMONIC_DIHEDRALS:
-            fsPtr = add_xml_child(parent, exml_names(xmlEntryOpenMM::PERIODICTORSIONFORCE));
-            add_xml_double(fsPtr, "energy", 0);
+            {
+                // OpenMM has no harmonic dihedral, hence the energy
+                // expression. With the ordering of CHARMM the atoms of
+                // an improper dihedral are in the order of the classes,
+                // the central atom first, as in ACT.
+                fsPtr = add_xml_child(parent, exml_names(xmlEntryOpenMM::CUSTOMTORSIONFORCE));
+                add_xml_char(fsPtr, "energy", energy.c_str());
+                add_xml_char(fsPtr, "ordering", "charmm");
+                for (const auto &pn : pname)
+                {
+                    auto grandchild0 = add_xml_child(fsPtr, exml_names(xmlEntryOpenMM::PERTORSIONPARAMETER));
+                    add_xml_char(grandchild0, exml_names(xmlEntryOpenMM::NAME), pn);
+                }
+            }
             break;
         default:
             // Do nothing
@@ -1354,14 +1395,49 @@ void OpenMMWriter::addTopologyEntries(MsgHandler                                
                     }
                     break;
                 case Potential::FOURIER_DIHEDRALS:
-                case Potential::PROPER_DIHEDRALS:
                     addXmlBond(xmlMap_[fs.first], xmlEntryOpenMM::PROPER,
                                atoms, pname, entry->params());
                     break;
-                    
+                case Potential::PROPER_DIHEDRALS:
+                    {
+                        // The PeriodicTorsionForce of OpenMM is
+                        // k1*(1+cos(periodicity1*theta-phase1)), with a
+                        // whole number for the periodicity.
+                        const auto &params = entry->params();
+                        const long  mult   = std::lround(params[pdihMULT]);
+                        if (std::abs(params[pdihMULT] - mult) > 1e-6)
+                        {
+                            msghandler->msg(ACTStatus::Error,
+                                            gmx::formatString("OpenMM needs a whole number for the multiplicity of dihedral %s, not %g.",
+                                                              bondId.c_str(), params[pdihMULT]));
+                        }
+                        auto proper = add_xml_child(xmlMap_[fs.first], exml_names(xmlEntryOpenMM::PROPER));
+                        addBondAtoms(proper, atoms);
+                        add_xml_int(proper, "periodicity1", static_cast<int>(mult));
+                        add_xml_double(proper, "phase1", params[pdihANGLE]);
+                        add_xml_double(proper, "k1", params[pdihKP]);
+                    }
+                    break;
                 case Potential::HARMONIC_DIHEDRALS:
-                    addXmlBond(xmlMap_[fs.first], xmlEntryOpenMM::IMPROPER,
-                               atoms, pname, entry->params());
+                    {
+                        // The classes in the order of the atoms of the
+                        // improper dihedral, the central atom first, as
+                        // OpenMM wants it. That is the order in which the
+                        // dihedral angle is computed in ACT. The identifier
+                        // can have the central atom last, or the other
+                        // atoms in another order, depending on how the
+                        // force field allows them to be swapped.
+                        const std::string        btype("bondtype");
+                        std::vector<std::string> classes;
+                        for (const auto ai : entry->atomIndices())
+                        {
+                            const auto &ffType = topology->atoms()[ai].ffType();
+                            const auto  aType  = pd->findParticleType(ffType);
+                            classes.push_back(aType->hasOption(btype) ? aType->optionValue(btype) : ffType);
+                        }
+                        addXmlBond(xmlMap_[fs.first], xmlEntryOpenMM::IMPROPER,
+                                   classes, pname, entry->params());
+                    }
                     break;
                     
                 case Potential::COULOMB_POINT:
@@ -1774,6 +1850,7 @@ void OpenMMWriter::addXmlForceField(MsgHandler                *msghandler,
     }
     // The angle forces are complete now
     addXmlAngleScript(parent, pd);
+    removeEmptyImpropers(pd);
     if (msghandler->ok())
     {
         addXmlNonbonded(msghandler, parent, pd, fftypeGlobalMap);
