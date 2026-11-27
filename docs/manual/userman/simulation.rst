@@ -43,6 +43,24 @@ with two additional arguments. First, flag *-charges mp2.xml* indicates a molpro
 
 Each compound becomes a residue in the OpenMM force field file. With the flag *-c conf.pdb*, gentop writes a PDB file with the same residue and atom names, such as C1, H2 and so on. The residue names can be given with *-resnames "water=SOH methanol=MOH"*, or *-resnames "SOH MOH"* for the compounds in the order of the input. A name has at most four letters or digits, and cannot be a residue that OpenMM knows itself, such as HOH or SOL. Compounds without a name get one made from their IUPAC name. A simulation box made from these PDB files, for instance with packmol, should keep the residue and atom names. Then the ACT python interface tells OpenMM the bonds of the residues from the force field file, and the PDB file does not need CONECT records.
 
+-------------------
+GROMACS topologies
+-------------------
+
+.. index::
+   single: GROMACS; topology
+   single: gentop; GROMACS topology
+
+For force fields that GROMACS can represent, *alexandria gentop* writes a GROMACS topology as well::
+
+    alexandria gentop -ff actff.xml -f dimer.pdb -p topol.top -c conf.pdb -ws
+
+GROMACS has the force field as it is if the charges are point charges, the Van der Waals potential is Lennard-Jones 12-6 and the bonded potentials are ones that GROMACS has (harmonic and Morse bonds, harmonic, Urey-Bradley and linear angles, proper, Fourier and improper dihedrals). The comment at the top of the topology says what is missing otherwise: Gaussian or Slater charges become point charges, other Van der Waals potentials are left out, and a bond potential that GROMACS lacks is written without parameters, such that GROMACS does not accept the topology. The Lennard-Jones parameters of all pairs of particle types are given explicitly, which reproduces any combination rule.
+
+Shells are written with their polarization, and virtual sites in the definitions of GROMACS, where the site comes first. A virtual site on four atoms is written as a center of weights, which GROMACS has for weights that are not negative only. Each compound in the input is a molecule in the topology, and compounds that are the same, with the same charges, share a molecule type. The flag *-ws* puts the shells and virtual sites in the structure file, which GROMACS needs, with the same names and in the same order as in the topology.
+
+The energy of GROMACS differs by a constant from that of ACT if the bonds have an energy at their minimum, which is noted in the topology. Apart from that, GROMACS gives the energies and forces of ACT.
+
 ---------------------------
 MD simulations using OpenMM
 ---------------------------
