@@ -1433,12 +1433,33 @@ void ACTMol::PrintTopology(MsgHandler                   *msg_handler,
     printmol.nr = 1;
     auto commercials = generateCommercials(msg_handler, pd, forceComp, coords);
 
-    //! \todo write a replacement for this function
     print_top_header(msg_handler, fp, pd, &topology_, commercials, bITP);
-    write_top(msg_handler, fp, printmol.name, &topology_, pd);
-    if (!bITP)
+    // With more than one compound each is a molecule in GROMACS. Their
+    // names are those in the name of the system, separated by #, or
+    // else the names or formulae of the compounds.
+    bool        written   = false;
+    const auto &compounds = fraghandler_.topologies();
+    if (compounds.size() > 1)
     {
-        print_top_mols(fp, printmol.name, 1, &printmol);
+        auto names = gmx::splitDelimitedString(printmol.name, '#');
+        if (names.size() != compounds.size())
+        {
+            names.clear();
+            for (const auto &f : fragments())
+            {
+                names.push_back(f.iupac().empty() ? f.formula() : f.iupac());
+            }
+        }
+        written = write_top_compounds(msg_handler, fp, printmol.name, names, compounds,
+                                      &topology_, pd, !bITP);
+    }
+    if (!written)
+    {
+        write_top(msg_handler, fp, printmol.name, &topology_, pd);
+        if (!bITP)
+        {
+            print_top_mols(fp, printmol.name, 1, &printmol);
+        }
     }
     if (msg_handler->verbose())
     {

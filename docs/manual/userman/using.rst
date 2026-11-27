@@ -45,8 +45,7 @@ the output of which is given in :numref:`tab-act-commands` .
    | gen_ff      | Generate a force field file from a user specification.     |
    +-------------+------------------------------------------------------------+
    | gentop      | Generate a molecular topology and coordinates based on     |
-   |             | structure files. Only inputs for OpenMM can be generated   |
-   |             | at this point in time.                                     |
+   |             | structure files, as input for OpenMM or GROMACS.           |
    +-------------+------------------------------------------------------------+
    | geometry_ff | Deduce bond/angle/dihedral distributions from a set of     |
    |             | structures and add those to a force field file.            |

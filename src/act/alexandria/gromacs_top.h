@@ -45,6 +45,7 @@ struct t_mols;
 namespace alexandria
 {
 
+class ActAtom;
 class ForceField;
 class Topology;
 class MsgHandler;
@@ -72,18 +73,57 @@ void print_top_header(MsgHandler                     *msg_handler,
                       const std::vector<std::string> &commercials,
                       bool                            bItp);
 
-/*! \brief Write a gromacs topology
- * \param[in] msg_handler For warnings etc.
- * \param[in] out         The file to print to
- * \param[in] molname     The molecule name
- * \param[in] topology    ACT structure
- * \param[in] pd          The force field
+/*! \brief Write a molecule type of a gromacs topology
+ *
+ * The bonded interactions, the polarization of shells, the virtual
+ * sites, in the definitions of GROMACS, and the exclusions.
+ * \param[in] msg_handler  For warnings etc.
+ * \param[in] out          The file to print to
+ * \param[in] molname      The molecule name
+ * \param[in] topology     ACT structure
+ * \param[in] pd           The force field
+ * \param[in] atoms        The particles, with their charges and residues,
+ *                         if not those of the topology: for the topology
+ *                         of one compound of several, the particles of
+ *                         that compound in the complete system
+ * \param[in] residueNames The residue names that the residue numbers of
+ *                         atoms refer to, if not those of the topology
  */
-void write_top(MsgHandler          *msg_handler,
-               FILE                *out,
-               const char          *molname,
-               const Topology      *topology,
-               const ForceField    *pd);
+void write_top(MsgHandler                     *msg_handler,
+               FILE                           *out,
+               const char                     *molname,
+               const Topology                 *topology,
+               const ForceField               *pd,
+               const std::vector<ActAtom>     *atoms = nullptr,
+               const std::vector<std::string> *residueNames = nullptr);
+
+/*! \brief Write the molecule types and the molecules of a system of compounds
+ *
+ * Each compound becomes a molecule of GROMACS. Compounds that are the
+ * same, that is with the same particles, charges, interactions and
+ * parameters, share a molecule type, and the molecules are listed in
+ * the order of the particles in the system.
+ * \param[in] msg_handler    For warnings etc.
+ * \param[in] out            The file to print to
+ * \param[in] title          The name of the system
+ * \param[in] names          A name for each compound, the molecule types
+ *                           are named after these
+ * \param[in] compounds      The topology of each compound, in the order
+ *                           of the particles in the system
+ * \param[in] topology       The system, of which the charges are taken
+ * \param[in] pd             The force field
+ * \param[in] printMolecules Whether to print the system and its molecules
+ * \return whether the topology was written. It is not, and nothing is
+ * printed, if the compounds do not make up the system.
+ */
+bool write_top_compounds(MsgHandler                     *msg_handler,
+                         FILE                           *out,
+                         const char                     *title,
+                         const std::vector<std::string> &names,
+                         const std::vector<Topology>    &compounds,
+                         const Topology                 *topology,
+                         const ForceField               *pd,
+                         bool                            printMolecules);
 
 } // namespace alexandria
 
