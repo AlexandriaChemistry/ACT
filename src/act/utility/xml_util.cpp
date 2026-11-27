@@ -100,7 +100,9 @@ void add_xml_char(xmlNodePtr ptr, const std::string &name, const char *val)
 
 void add_xml_string(xmlNodePtr ptr, const std::string &name, const std::string &val)
 {
-    if (xmlSetProp(ptr, xmlCharStrdup(name.c_str()), xmlCharStrdup(val.c_str())) == nullptr)
+    // xmlSetProp copies the name and the value
+    if (xmlSetProp(ptr, reinterpret_cast<const xmlChar *>(name.c_str()),
+                   reinterpret_cast<const xmlChar *>(val.c_str())) == nullptr)
     {
         gmx_fatal(FARGS, "XML problem setting %s to %s", name.c_str(), val.c_str());
     }
@@ -152,10 +154,8 @@ xmlNodePtr add_xml_comment(xmlDocPtr   doc,
     return comm;
 }
 
-xmlDocPtr readXmlFile(const std::string &fileName, std::string *error)
+int xmlParseOptions()
 {
-    error->clear();
-    xmlResetLastError();
     // As xmlParseFile, but silent
     int options = XML_PARSE_NOERROR | XML_PARSE_NOWARNING;
 #if LIBXML_VERSION >= 21400
@@ -163,28 +163,37 @@ xmlDocPtr readXmlFile(const std::string &fileName, std::string *error)
     // The files of ACT may be compressed, see writeForceField and MolPropWrite.
     options |= XML_PARSE_UNZIP;
 #endif
-    xmlDocPtr doc = xmlReadFile(fileName.c_str(), nullptr, options);
+    return options;
+}
+
+std::string lastXmlError()
+{
+    const auto *last = xmlGetLastError();
+    if (last == nullptr || last->message == nullptr)
+    {
+        return "the file is not XML";
+    }
+    // The message of the parser ends with a new line
+    std::string text(last->message);
+    while (!text.empty() && (text.back() == '\n' || text.back() == '\r' || text.back() == ' '))
+    {
+        text.pop_back();
+    }
+    if (last->line > 0)
+    {
+        text += gmx::formatString(" (line %d)", last->line);
+    }
+    return text;
+}
+
+xmlDocPtr readXmlFile(const std::string &fileName, std::string *error)
+{
+    error->clear();
+    xmlResetLastError();
+    xmlDocPtr doc = xmlReadFile(fileName.c_str(), nullptr, xmlParseOptions());
     if (doc == nullptr)
     {
-        const auto *last = xmlGetLastError();
-        if (last != nullptr && last->message != nullptr)
-        {
-            // The message of the parser ends with a new line
-            std::string text(last->message);
-            while (!text.empty() && (text.back() == '\n' || text.back() == '\r' || text.back() == ' '))
-            {
-                text.pop_back();
-            }
-            *error = text;
-            if (last->line > 0)
-            {
-                *error += gmx::formatString(" (line %d)", last->line);
-            }
-        }
-        else
-        {
-            *error = "the file is not XML";
-        }
+        *error = lastXmlError();
     }
     return doc;
 }

@@ -50,11 +50,9 @@ namespace alexandria
  * Write a vector of molprops to an XML file
  *
  * Function that uses the libxml2 library to store an array of molprops
- * to file.
- *
- * \todo Implement using a serialized protocol rather than reading the
- * whole file into memory. Since we have a vector of molprops this should
- * be straightforward.
+ * to file. The file is written one piece at a time, an experiment of a
+ * compound or the rest of it, such that there is no XML tree of the whole
+ * file in memory, which would take many times the size of the file.
  * \param[in] fn         The file name to write to
  * \param[in] mpt        The vector of MolProp
  * \param[in] bCompress  Determines whether zlib compression is used when writing
@@ -67,15 +65,16 @@ void MolPropWrite(const char                 *fn,
 /*! \brief
  * Reads a vector of molprops from an XML file
  *
- * Function that uses the libxml2 library to store an array of molprops
- * to file.
- *
- * \todo Implement using a serialized protocol rather than reading the
- * whole file into memory. Since we have a vector of molprops this should
- * be straightforward.
- * \param[in]  msg_handler For info and debugging
- * \param[in]  fn          The file name to read from
- * \param[out] mpt         The vector of MolProp
+ * Function that uses the libxml2 library to read an array of molprops
+ * from file. The file is read as a stream, one experiment of a compound
+ * or other part of it at a time, such that there is no XML tree of the
+ * whole file in memory, which would take many times the size of the file.
+ * The compounds are added to those that are there. If the file cannot be
+ * read to the end, none of its compounds are added.
+ * \param[in]    msg_handler For info and debugging
+ * \param[in]    fn          The file name to read from
+ * \param[inout] mpt         The vector of MolProp
+ * \throws gmx::FileIOError if the file is not there or is not XML
  * \ingroup group_molprop
  */
 void MolPropRead(MsgHandler           *msg_handler,
