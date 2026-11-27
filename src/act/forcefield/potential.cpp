@@ -107,8 +107,18 @@ std::map<Potential, PotentialProperties> potprops = {
     { Potential::HUA_BONDS,
       { "HUA_BONDS", F_HUA, { "De", "b", "bondlength", "c" },
         "(De*(((1-myexp)/(1-c*myexp))^2 -1));myexp=exp(-b*(r-bondlength))", "" } },
-    { Potential::LINEAR_ANGLES, { "LINEAR_ANGLES", F_LINEAR_ANGLES, { "a", "klin" }, "0", "" } },
-    { Potential::UREY_BRADLEY_ANGLES, { "UREY_BRADLEY_ANGLES", F_UREY_BRADLEY, { "kt", "ub_angle", "r13", "kub" }, "0", "" } },
+    // The energy expressions of the angles that need the distances between
+    // the atoms are in the language of the CustomCompoundBondForce of
+    // OpenMM, since its CustomAngleForce knows the angle theta only.
+    // The square of the distance of the central atom from the point
+    // a*x1+(1-a)*x3 on the line through the outer atoms follows from the
+    // three distances between the atoms (Stewart's theorem).
+    { Potential::LINEAR_ANGLES,
+      { "LINEAR_ANGLES", F_LINEAR_ANGLES, { "a", "klin" },
+        "0.5*klin*(a*d12^2+(1-a)*d23^2-a*(1-a)*d13^2); d12=distance(p1,p2); d23=distance(p2,p3); d13=distance(p1,p3)", "" } },
+    { Potential::UREY_BRADLEY_ANGLES,
+      { "UREY_BRADLEY_ANGLES", F_UREY_BRADLEY, { "kt", "ub_angle", "r13", "kub" },
+        "0.5*kt*(angle(p1,p2,p3)-ub_angle)^2+0.5*kub*(distance(p1,p3)-r13)^2", "" } },
     { Potential::HARMONIC_DIHEDRALS, { "HARMONIC_DIHEDRALS", F_IDIHS, { "kimp" }, "0", "" } },
     { Potential::FOURIER_DIHEDRALS, { "FOURIER_DIHEDRALS", F_FOURDIHS, { "c0", "c1", "c2", "c3", "c4", "c5" }, "0", "" } },
     { Potential::PROPER_DIHEDRALS, { "PROPER_DIHEDRALS", F_PDIHS, { "phi0", "kp", "mult" }, "0", "" } },

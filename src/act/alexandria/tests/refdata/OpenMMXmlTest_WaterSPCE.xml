@@ -25,7 +25,6 @@
   <HarmonicAngleForce energy="0">
     <Angle class1="h_b" class2="o3_b" class3="h_b" k="400" angle="1.910611932158"/>
   </HarmonicAngleForce>
-  <CustomAngleForce energy="0"/>
   <RBTorsionForce energy="0"/>
   <PeriodicTorsionForce energy="0"/>
   <NonbondedForce coulomb14scale="1" lj14scale="1">
