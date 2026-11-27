@@ -333,7 +333,30 @@ and similarly,
 Thermochemical properties are computed automatically by the *alexandria nma* command. For more details, please see Van der Spoel *et al.*  :cite:p:`Spoel2018a`.
 
 The *alexandria nma* used above to generate the infrared spectrum in :numref:`fig-ethanol`  computes the thermochemical variables as well (:numref:`tab-thermo`).
-Information on calculation of the enthalpy of formation will be pubslished in the near future.
+
+The values are given at 0 K and at 298.15 K. The internal energy of the vibrations includes the zero point energy
+
+.. math:: E_{\mathrm ZPE} = \frac{1}{2}\sum_i h \nu_i
+
+at all temperatures, so that at 0 K the internal energy is the zero point energy, while the entropy and the heat capacity are zero there. An atom has translational contributions only.
+
+.. index::
+   single: enthalpy of formation
+   single: zero point energy
+
+The enthalpy of formation follows Ochterski :cite:p:`Ochterski2000a`. At 0 K it is the enthalpy of formation of the gaseous atoms :math:`X` minus the energy needed to take the compound :math:`M` apart
+
+.. math:: \Delta_f H^o(M, 0) = \sum_X \Delta_f H^o(X, 0) + \epsilon_M + E_{\mathrm ZPE}
+   :label: dhform0
+
+where :math:`\epsilon_M` is the potential energy of the minimized compound. At temperature :math:`T` the enthalpy that the compound gains is added, and the enthalpy that the elements in their standard states gain is subtracted
+
+.. math:: \Delta_f H^o(M, T) = \Delta_f H^o(M, 0) + \left[ E(T) - E_{\mathrm ZPE} + RT \right] - \sum_X \left[ H^o_X(T) - H^o_X(0) \right]
+   :label: dhformT
+
+The values for the atoms and the elements are taken from the `NIST-JANAF`_ tables. Eqn. :eq:`dhform0` has no term for the energy of the atoms: the enthalpy of formation is meaningful only for a force field in which the potential energy is relative to the separated atoms, that is, one with bonds that can dissociate and that was trained on such energies.
+
+.. _NIST-JANAF: https://janaf.nist.gov
 
 .. table:: Thermochemical values for ethanol at 298.15 K based on the OPLS2020 force field.
    :name: tab-thermo
