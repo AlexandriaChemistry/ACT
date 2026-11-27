@@ -87,7 +87,8 @@ libc++ feature of a newer macOS. If it does, raise `c_stdlib_version` in
   the GPU at run time, so **no CUDA compiler is needed at build time**,
   only `acpp` and its LLVM. One binary then runs on any NVIDIA GPU, and
   without a GPU on the processor. This is why one package is enough.
-- Host dependency `adaptivecpp=*=cuda*`. Its `run_exports` pin the run-time
+- Host dependency `adaptivecpp >=25.10 cuda*`, with a lower bound such that
+  the solver cannot fall back to an old build that lacks its compiler. Its `run_exports` pin the run-time
   libraries and the `cuda-version`. The NVIDIA driver (`libcuda.so`) comes
   from the system. Add the virtual package `__cuda` only as a constraint
   (`run_constrained`), so the package also installs on machines without a

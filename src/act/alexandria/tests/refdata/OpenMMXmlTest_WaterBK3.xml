@@ -38,7 +38,6 @@
     <Angle class1="h_b" class2="ow_b" class3="h_b" k="836.8" angle="1.824218134184"/>
   </HarmonicAngleForce>
   <RBTorsionForce energy="0"/>
-  <PeriodicTorsionForce energy="0"/>
   <CustomNonbondedForce energy="Abh*exp(-bbh*r) - c6bh/(r^6)" bondCutoff="0">
     <GlobalParameter name="pot-BUCKINGHAM" defaultValue="1"/>
     <GlobalParameter name="pot-COULOMB_GAUSSIAN" defaultValue="1"/>

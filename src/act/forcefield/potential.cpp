@@ -134,7 +134,8 @@ std::map<Potential, PotentialProperties> potprops = {
     { Potential::QUARTIC_ANGLES,
       { "QUARTIC_ANGLES", F_QUARTIC_ANGLES, { "angle", "ct0", "ct1", "ct2", "ct3", "ct4" },
         "(ct0+dt*(ct1+dt*(ct2+dt*(ct3+dt*ct4))));dt=theta-angle", "" } },
-    { Potential::HARMONIC_DIHEDRALS, { "HARMONIC_DIHEDRALS", F_IDIHS, { "kimp" }, "0", "" } },
+    // The angle theta of a CustomTorsionForce of OpenMM
+    { Potential::HARMONIC_DIHEDRALS, { "HARMONIC_DIHEDRALS", F_IDIHS, { "kimp" }, "0.5*kimp*theta^2", "" } },
     { Potential::FOURIER_DIHEDRALS, { "FOURIER_DIHEDRALS", F_FOURDIHS, { "c0", "c1", "c2", "c3", "c4", "c5" }, "0", "" } },
     { Potential::PROPER_DIHEDRALS, { "PROPER_DIHEDRALS", F_PDIHS, { "phi0", "kp", "mult" }, "0", "" } },
     { Potential::POLARIZATION, { "POLARIZATION", F_POLARIZATION, { "alpha", "rhyper", "fchyper" }, "0", "" } },

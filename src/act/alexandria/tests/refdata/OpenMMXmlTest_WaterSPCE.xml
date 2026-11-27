@@ -26,7 +26,6 @@
     <Angle class1="h_b" class2="o3_b" class3="h_b" k="400" angle="1.910611932158"/>
   </HarmonicAngleForce>
   <RBTorsionForce energy="0"/>
-  <PeriodicTorsionForce energy="0"/>
   <NonbondedForce coulomb14scale="1" lj14scale="1">
     <UseAttributeFromResidue name="charge"/>
     <Atom type="hw_1" sigma="0.225" epsilon="0"/>

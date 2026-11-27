@@ -44,7 +44,6 @@
     <Angle class1="c3_b" class2="c1_b" class3="n1_b" a="0.44121" klin="20000"/>
   </CustomAngleForce>
   <PeriodicTorsionForce energy="0"/>
-  <PeriodicTorsionForce energy="0"/>
   <Script>import openmm
 # The CustomAngleForce of OpenMM knows the angle theta only. The angle
 # potentials that need the distances between the atoms are therefore
