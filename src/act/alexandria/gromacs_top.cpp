@@ -151,15 +151,19 @@ static void print_bondeds(MsgHandler                *msg_handler,
                 }
                 fprintf(out, "  %5d", get_subtype(d, gmxFtype));
             };
+            // The lengths of the bonds are in the order of the identifier,
+            // which can be the reverse of that of the atoms
+            const auto r1e = params[entry->swapped() ? cbaR2E : cbaR1E];
+            const auto r2e = params[entry->swapped() ? cbaR1E : cbaR2E];
             printAtoms(F_CROSS_BOND_ANGLES);
             fprintf(out, "  %12.9g  %12.9g  %12.9g  %12.9g ; %s\n",
-                    params[cbaR1E], params[cbaR2E], params[cbaR3E], params[cbaKRT],
+                    r1e, r2e, params[cbaR3E], params[cbaKRT],
                     entry->id().id().c_str());
             if (params[cbaKRR] != 0)
             {
                 printAtoms(F_CROSS_BOND_BONDS);
                 fprintf(out, "  %12.9g  %12.9g  %12.9g ; %s\n",
-                        params[cbaR1E], params[cbaR2E], params[cbaKRR],
+                        r1e, r2e, params[cbaKRR],
                         entry->id().id().c_str());
             }
             if (params[cbaKUB] != 0)

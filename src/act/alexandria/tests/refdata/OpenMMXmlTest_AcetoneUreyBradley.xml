@@ -50,13 +50,17 @@
     <Bond class1="c3_b" class2="h_b" beta="20" De="400" D0="400" bondlength="0.109"/>
     <Bond class1="c2_b" class2="c3_b" beta="20" De="400" D0="400" bondlength="0.1513"/>
   </CustomBondForce>
-  <CustomAngleForce energy="0">
+  <CustomAngleForce energy="0.5*kt*(angle(p1,p2,p3)-ub_angle)^2+0.5*kub*(distance(p1,p3)-r13)^2">
+    <GlobalParameter name="pot-UREY_BRADLEY_ANGLES" defaultValue="1"/>
+    <PerAngleParameter name="kt"/>
+    <PerAngleParameter name="ub_angle"/>
+    <PerAngleParameter name="r13"/>
+    <PerAngleParameter name="kub"/>
     <Angle class1="c3_b" class2="c2_b" class3="o2_b" kt="300" ub_angle="2.124065699677" r13="0.238438" kub="30000"/>
     <Angle class1="c2_b" class2="c3_b" class3="h_b" kt="300" ub_angle="1.921607506446" r13="0.214727" kub="30000"/>
     <Angle class1="h_b" class2="c3_b" class3="h_b" kt="300" ub_angle="1.897172896918" r13="0.177145" kub="30000"/>
     <Angle class1="c3_b" class2="c2_b" class3="c3_b" kt="300" ub_angle="2.033308578573" r13="0.257317" kub="30000"/>
   </CustomAngleForce>
-  <CustomAngleForce energy="0"/>
   <RBTorsionForce energy="0">
     <Proper class1="h_b" class2="c3_b" class3="c2_b" class4="o2_b" c0="1" c1="1" c2="1" c3="1" c4="0" c5="0"/>
     <Proper class1="c3_b" class2="c2_b" class3="c3_b" class4="h_b" c0="1" c1="1" c2="1" c3="1" c4="0" c5="0"/>
@@ -64,6 +68,49 @@
   <PeriodicTorsionForce energy="0">
     <Improper class1="c2_b" class2="o2_b" class3="c3_b" class4="c3_b" kimp="1"/>
   </PeriodicTorsionForce>
+  <Script>import openmm
+# The CustomAngleForce of OpenMM knows the angle theta only. The angle
+# potentials that need the distances between the atoms are therefore
+# turned into a CustomCompoundBondForce here, with the same energy
+# expression, parameters and angles.
+# OpenMM finds the parameters of an angle in either direction, but it
+# keeps the order of the atoms. The angles below are not the same in
+# both directions: their atoms have to be in this order of the classes,
+# which are given for each potential.
+atom_class = {
+}
+ordered = {
+}
+classes = [atom_class.get(data.atomType[atom], "") for atom in data.atoms]
+for index in reversed(range(sys.getNumForces())):
+    old = sys.getForce(index)
+    if not isinstance(old, openmm.CustomAngleForce):
+        continue
+    energy = old.getEnergyFunction()
+    if not "distance(" in energy:
+        continue
+    new = openmm.CustomCompoundBondForce(3, energy)
+    new.setName(old.getName())
+    for i in range(old.getNumGlobalParameters()):
+        name = old.getGlobalParameterName(i)
+        new.addGlobalParameter(name, old.getGlobalParameterDefaultValue(i))
+        # The force gets the name of its potential
+        if name.startswith("pot-"):
+            new.setName(name[4:])
+    for i in range(old.getNumPerAngleParameters()):
+        new.addPerBondParameter(old.getPerAngleParameterName(i))
+    order = ordered.get(new.getName(), [])
+    for i in range(old.getNumAngles()):
+        p1, p2, p3, params = old.getAngleParameters(i)
+        if ( classes[p3], classes[p2], classes[p1] ) in order:
+            p1, p3 = p3, p1
+        new.addBond([ p1, p2, p3 ], params)
+    new.setForceGroup(old.getForceGroup())
+    new.setUsesPeriodicBoundaryConditions(old.usesPeriodicBoundaryConditions())
+    sys.removeForce(index)
+    if new.getNumBonds() &gt; 0:
+        sys.addForce(new)
+</Script>
   <CustomNonbondedForce energy="select(epsilon*sigma,(((2*epsilon)/(1-(3/(gamma+3)))) * (1.0/(1.0+(r/sigma)^6)) * ((3/(gamma+3))*exp(gamma*(1-(r/sigma)))-1)),0)" bondCutoff="0">
     <GlobalParameter name="pot-WANG_BUCKINGHAM" defaultValue="1"/>
     <GlobalParameter name="pot-COULOMB_GAUSSIAN" defaultValue="1"/>

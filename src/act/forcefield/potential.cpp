@@ -112,12 +112,24 @@ std::map<Potential, PotentialProperties> potprops = {
     { Potential::QUARTIC_BONDS,
       { "QUARTIC_BONDS", F_QUARTIC_BONDS, { "bondlength", "cb0", "cb1", "cb2", "cb3", "cb4" },
         "(cb0+dr*(cb1+dr*(cb2+dr*(cb3+dr*cb4))));dr=r-bondlength", "" } },
-    { Potential::LINEAR_ANGLES, { "LINEAR_ANGLES", F_LINEAR_ANGLES, { "a", "klin" }, "0", "" } },
-    { Potential::UREY_BRADLEY_ANGLES, { "UREY_BRADLEY_ANGLES", F_UREY_BRADLEY, { "kt", "ub_angle", "r13", "kub" }, "0", "" } },
+    // The energy expressions of the angles that need the distances between
+    // the atoms are in the language of the CustomCompoundBondForce of
+    // OpenMM, since its CustomAngleForce knows the angle theta only.
+    // The square of the distance of the central atom from the point
+    // a*x1+(1-a)*x3 on the line through the outer atoms follows from the
+    // three distances between the atoms (Stewart's theorem).
+    { Potential::LINEAR_ANGLES,
+      { "LINEAR_ANGLES", F_LINEAR_ANGLES, { "a", "klin" },
+        "0.5*klin*(a*d12^2+(1-a)*d23^2-a*(1-a)*d13^2); d12=distance(p1,p2); d23=distance(p2,p3); d13=distance(p1,p3)", "" } },
+    { Potential::UREY_BRADLEY_ANGLES,
+      { "UREY_BRADLEY_ANGLES", F_UREY_BRADLEY, { "kt", "ub_angle", "r13", "kub" },
+        "0.5*kt*(angle(p1,p2,p3)-ub_angle)^2+0.5*kub*(distance(p1,p3)-r13)^2", "" } },
     // The bond-angle cross term with its parameters in the order of GROMACS,
     // followed by the force constants of the bond-bond cross term and of
     // the harmonic potential on the distance between the outer atoms
-    { Potential::CROSS_BOND_ANGLES, { "CROSS_BOND_ANGLES", F_CROSS_BOND_ANGLES, { "r1e", "r2e", "r3e", "krt", "krr", "kub" }, "0", "" } },
+    { Potential::CROSS_BOND_ANGLES,
+      { "CROSS_BOND_ANGLES", F_CROSS_BOND_ANGLES, { "r1e", "r2e", "r3e", "krt", "krr", "kub" },
+        "krt*(d13-r3e)*(d12-r1e+d23-r2e)+krr*(d12-r1e)*(d23-r2e)+0.5*kub*(d13-r3e)^2; d12=distance(p1,p2); d23=distance(p2,p3); d13=distance(p1,p3)", "" } },
     // The quartic angle with its parameters in the order of GROMACS
     { Potential::QUARTIC_ANGLES,
       { "QUARTIC_ANGLES", F_QUARTIC_ANGLES, { "angle", "ct0", "ct1", "ct2", "ct3", "ct4" },

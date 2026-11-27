@@ -51,7 +51,6 @@
     <Angle class1="h_b" class2="c3_b" class3="h_b" k="300" angle="1.879719604398"/>
     <Angle class1="c3_b" class2="c2_b" class3="c3_b" k="300" angle="2.010619298297"/>
   </HarmonicAngleForce>
-  <CustomAngleForce energy="0"/>
   <PeriodicTorsionForce energy="0">
     <Proper class1="h_b" class2="c3_b" class3="c2_b" class4="o2_b" phi0="2.094395102393" kp="5" mult="3"/>
     <Proper class1="c3_b" class2="c2_b" class3="c3_b" class4="h_b" phi0="0" kp="5" mult="3"/>

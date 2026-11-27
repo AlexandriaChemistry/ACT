@@ -1,0 +1,127 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <String Name="Contents"><![CDATA[
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!DOCTYPE ForceField.dtd PUBLIC "ForceField.dtd" "ForceField.dtd">
+<ForceField>
+  <AtomTypes>
+    <Type name="c3_1" class="c3_b" element="C" mass="12.0107"/>
+    <Type name="h_1" class="h_b" element="H" mass="1.0079"/>
+    <Type name="h_2" class="h_b" element="H" mass="1.0079"/>
+    <Type name="h_3" class="h_b" element="H" mass="1.0079"/>
+    <Type name="c1_1" class="c1_b" element="C" mass="12.0107"/>
+    <Type name="n1_1" class="n1_b" element="N" mass="14.0067"/>
+  </AtomTypes>
+  <Residues>
+    <Residue name="AC1">
+      <Atom name="C1" type="c3_1" charge="-0.1853959521986"/>
+      <Atom name="H2" type="h_1" charge="0.09799791139143"/>
+      <Atom name="H3" type="h_2" charge="0.09799791139143"/>
+      <Atom name="H4" type="h_3" charge="0.09799791139143"/>
+      <Atom name="C5" type="c1_1" charge="-0.06527861910872"/>
+      <Atom name="N6" type="n1_1" charge="-0.04331916286698"/>
+      <Bond atomName1="C1" atomName2="C5"/>
+      <Bond atomName1="C1" atomName2="H4"/>
+      <Bond atomName1="H2" atomName2="C1"/>
+      <Bond atomName1="H3" atomName2="C1"/>
+      <Bond atomName1="N6" atomName2="C5"/>
+    </Residue>
+  </Residues>
+  <HarmonicBondForce>
+    <Bond class1="c1_b" class2="c3_b" k="300000" length="0.1459"/>
+    <Bond class1="c3_b" class2="h_b" k="230000" length="0.1091"/>
+    <Bond class1="c1_b" class2="n1_b" k="300000" length="0.1152"/>
+  </HarmonicBondForce>
+  <HarmonicAngleForce energy="0">
+    <Angle class1="c1_b" class2="c3_b" class3="h_b" k="300" angle="1.909390201682"/>
+    <Angle class1="h_b" class2="c3_b" class3="h_b" k="300" angle="1.879719604398"/>
+  </HarmonicAngleForce>
+  <CustomAngleForce energy="0.5*klin*(a*d12^2+(1-a)*d23^2-a*(1-a)*d13^2); d12=distance(p1,p2); d23=distance(p2,p3); d13=distance(p1,p3)">
+    <GlobalParameter name="pot-LINEAR_ANGLES" defaultValue="1"/>
+    <PerAngleParameter name="a"/>
+    <PerAngleParameter name="klin"/>
+    <Angle class1="c3_b" class2="c1_b" class3="n1_b" a="0.44121" klin="20000"/>
+  </CustomAngleForce>
+  <PeriodicTorsionForce energy="0"/>
+  <PeriodicTorsionForce energy="0"/>
+  <Script>import openmm
+# The CustomAngleForce of OpenMM knows the angle theta only. The angle
+# potentials that need the distances between the atoms are therefore
+# turned into a CustomCompoundBondForce here, with the same energy
+# expression, parameters and angles.
+# OpenMM finds the parameters of an angle in either direction, but it
+# keeps the order of the atoms. The angles below are not the same in
+# both directions: their atoms have to be in this order of the classes,
+# which are given for each potential.
+atom_class = {
+    "c1_1": "c1_b",
+    "c3_1": "c3_b",
+    "n1_1": "n1_b",
+}
+ordered = {
+    "LINEAR_ANGLES": [
+        ( "c3_b", "c1_b", "n1_b" ),
+    ],
+}
+classes = [atom_class.get(data.atomType[atom], "") for atom in data.atoms]
+for index in reversed(range(sys.getNumForces())):
+    old = sys.getForce(index)
+    if not isinstance(old, openmm.CustomAngleForce):
+        continue
+    energy = old.getEnergyFunction()
+    if not "distance(" in energy:
+        continue
+    new = openmm.CustomCompoundBondForce(3, energy)
+    new.setName(old.getName())
+    for i in range(old.getNumGlobalParameters()):
+        name = old.getGlobalParameterName(i)
+        new.addGlobalParameter(name, old.getGlobalParameterDefaultValue(i))
+        # The force gets the name of its potential
+        if name.startswith("pot-"):
+            new.setName(name[4:])
+    for i in range(old.getNumPerAngleParameters()):
+        new.addPerBondParameter(old.getPerAngleParameterName(i))
+    order = ordered.get(new.getName(), [])
+    for i in range(old.getNumAngles()):
+        p1, p2, p3, params = old.getAngleParameters(i)
+        if ( classes[p3], classes[p2], classes[p1] ) in order:
+            p1, p3 = p3, p1
+        new.addBond([ p1, p2, p3 ], params)
+    new.setForceGroup(old.getForceGroup())
+    new.setUsesPeriodicBoundaryConditions(old.usesPeriodicBoundaryConditions())
+    sys.removeForce(index)
+    if new.getNumBonds() &gt; 0:
+        sys.addForce(new)
+</Script>
+  <CustomNonbondedForce energy="4*epsilon*((sigma/r)^12 - (sigma/r)^6)" bondCutoff="0">
+    <GlobalParameter name="pot-LJ12_6" defaultValue="1"/>
+    <GlobalParameter name="pot-COULOMB_GAUSSIAN" defaultValue="1"/>
+    <GlobalParameter name="cr-epsilon_Geometric" defaultValue="1"/>
+    <GlobalParameter name="cr-sigma_Geometric" defaultValue="1"/>
+    <GlobalParameter name="nexcl" defaultValue="2"/>
+    <GlobalParameter name="prefactor-" defaultValue="1"/>
+    <UseAttributeFromResidue name="charge"/>
+    <PerParticleParameter name="sigma"/>
+    <PerParticleParameter name="epsilon"/>
+    <PerParticleParameter name="charge"/>
+    <PerParticleParameter name="zeta"/>
+    <Atom type="c1_1" sigma="0.375" epsilon="0.75" zeta="12"/>
+    <Atom type="c3_1" sigma="0.2" epsilon="0.55" zeta="12"/>
+    <Atom type="h_1" sigma="0.005" epsilon="0.065" zeta="13"/>
+    <Atom type="h_2" sigma="0.005" epsilon="0.065" zeta="13"/>
+    <Atom type="h_3" sigma="0.005" epsilon="0.065" zeta="13"/>
+    <Atom type="n1_1" sigma="0.375" epsilon="0.55" zeta="12.5"/>
+  </CustomNonbondedForce>
+  <NonbondedForce coulomb14scale="1" lj14scale="1">
+    <UseAttributeFromResidue name="charge"/>
+    <Atom type="c1_1" sigma="0.375" epsilon="0.75"/>
+    <Atom type="c3_1" sigma="0.2" epsilon="0.55"/>
+    <Atom type="h_1" sigma="0.005" epsilon="0.065"/>
+    <Atom type="h_2" sigma="0.005" epsilon="0.065"/>
+    <Atom type="h_3" sigma="0.005" epsilon="0.065"/>
+    <Atom type="n1_1" sigma="0.375" epsilon="0.55"/>
+  </NonbondedForce>
+</ForceField>
+]]></String>
+</ReferenceData>

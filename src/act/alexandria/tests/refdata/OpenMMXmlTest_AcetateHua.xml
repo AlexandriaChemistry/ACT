@@ -47,7 +47,6 @@
     <Angle class1="c3_b" class2="c2_b" class3="o2_b" k="300" angle="2.033308578573"/>
     <Angle class1="o2_b" class2="c2_b" class3="o2_b" k="300" angle="2.185152223497"/>
   </HarmonicAngleForce>
-  <CustomAngleForce energy="0"/>
   <RBTorsionForce energy="0">
     <Proper class1="hc_b" class2="c3_b" class3="c2_b" class4="o2_b" c0="1" c1="1" c2="1" c3="1" c4="1" c5="1"/>
   </RBTorsionForce>

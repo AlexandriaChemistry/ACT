@@ -194,8 +194,9 @@ public:
 
     /*! \return whether the atoms of the identifier are in the reverse order
      * of the atoms of this entry, which happens if they can be swapped.
-     * Parameters that belong to one of the atoms, rather than to the pair,
-     * are then in the reverse order too.
+     * Parameters that belong to one of the atoms or to one of the bonds,
+     * such as the bond lengths of CROSS_BOND_ANGLES, are then in the
+     * reverse order too.
      */
     bool swapped() const { return swapped_; }
 

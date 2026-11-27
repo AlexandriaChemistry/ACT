@@ -30,7 +30,6 @@
     <Bond class1="f_b" class2="hf_b" k="300000" length="0.0937"/>
   </HarmonicBondForce>
   <HarmonicAngleForce energy="0"/>
-  <CustomAngleForce energy="0"/>
   <RBTorsionForce energy="0"/>
   <PeriodicTorsionForce energy="0"/>
   <CustomNonbondedForce energy="select(epsilon*sigma,( epsilon*( ( (1+ delta)/((r/sigma)+ delta))^7 ) * ( ( (1+ gamma)/(((r/sigma)^7) +gamma )  ) -2 ) ),0)" bondCutoff="0">

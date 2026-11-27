@@ -1551,7 +1551,9 @@ static ACT_ALWAYS_INLINE void ureyBradleyOne(gmx_unused MsgHandler *msghandler,
  * - the harmonic potential kub d3^2/2 on the distance between the
  *   outer atoms,
  * as the angles of type 4 and 3 in GROMACS and the distance part of the
- * Urey-Bradley potential.
+ * Urey-Bradley potential. The lengths r1e and r2e belong to the bonds in
+ * the order of the identifier, which can be the reverse of the order of
+ * the atoms of the angle.
  */
 template <typename I, typename X, typename F>
 static ACT_ALWAYS_INLINE void crossBondAngleOne(gmx_unused MsgHandler *msghandler,
@@ -1565,8 +1567,8 @@ static ACT_ALWAYS_INLINE void crossBondAngleOne(gmx_unused MsgHandler *msghandle
     const  double half = 0.5;
     // Get the parameters. We have to know their names to do this.
     auto &params = a.params();
-    auto r1e     = params[cbaR1E];
-    auto r2e     = params[cbaR2E];
+    auto r1e     = params[a.swapped() ? cbaR2E : cbaR1E];
+    auto r2e     = params[a.swapped() ? cbaR1E : cbaR2E];
     auto r3e     = params[cbaR3E];
     auto krt     = params[cbaKRT];
     auto krr     = params[cbaKRR];

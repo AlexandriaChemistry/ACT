@@ -2130,7 +2130,10 @@ void Topology::setEntryIdentifiers(MsgHandler       *msghandler,
             else
             {
                 const Identifier id(btype, (*topentry)->bondOrders(), fs.canSwap());
-                (*topentry)->setSwapped(id.atoms() != btype);
+                // With the same atom at both ends, the bond orders tell
+                // whether the identifier is in the reverse order.
+                (*topentry)->setSwapped(id.atoms() != btype ||
+                                        id.bondOrders() != (*topentry)->bondOrders());
                 (*topentry)->setId(id);
             }
         }
