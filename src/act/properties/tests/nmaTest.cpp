@@ -44,6 +44,7 @@
 #include "act/alexandria/alex_modules.h"
 #include "act/basics/atomization_energy.h"
 #include "act/basics/msg_handler.h"
+#include "act/import/import.h"
 #include "act/molprop/molprop.h"
 #include "act/molprop/molprop_xml.h"
 #include "act/properties/normalmodes.h"
@@ -87,6 +88,22 @@ const double cRoomT  = 298.15;
 const std::map<std::string, double> elementMass = {
     { "H", 1.008 }, { "C", 12.011 }, { "N", 14.007 },
     { "O", 15.999 }, { "S", 32.06 }, { "Cl", 35.45 }
+};
+
+/*! Enthalpy of formation of the gaseous atoms at 0 K (kJ/mol) by element,
+ * from the JANAF tables.
+ */
+const std::map<std::string, double> atomDHform0 = {
+    { "H", 216.035 }, { "C", 711.185 }, { "N", 470.820 },
+    { "O", 246.790 }, { "S", 274.735 }, { "Cl", 119.621 }
+};
+
+/*! Enthalpy that the elements in their standard states gain from 0 K to
+ * 298.15 K (kJ/mol) per atom, from the JANAF tables.
+ */
+const std::map<std::string, double> elementH298 = {
+    { "H", 4.2335 }, { "C", 1.051 }, { "N", 4.335 },
+    { "O", 4.3415 }, { "S", 4.412 }, { "Cl", 4.5905 }
 };
 
 //! An atom from a pdb file
@@ -430,14 +447,33 @@ eturn The exit status of the tool
             // Each of the four numbers is rounded in the JSON
             EXPECT_NEAR(sum, jsonValue(prop->at("Total")), relTol(sum, 1e-5) + 1.8e-3);
         }
-        // At T = 0 there is no thermal energy and no vibrational entropy
-        // or heat capacity.
+        // At T = 0 the internal energy is the zero point energy and there
+        // is no entropy or heat capacity.
+        EXPECT_EQ(0, jsonValue(t0.at("Internal energy").at("Translation")));
+        EXPECT_EQ(0, jsonValue(t0.at("Internal energy").at("Rotation")));
+        EXPECT_NEAR(zpe, jsonValue(t0.at("Internal energy").at("Vibration")), relTol(zpe, 1e-5));
+        EXPECT_NEAR(zpe, jsonValue(t0.at("Internal energy").at("Total")), relTol(zpe, 1e-5));
         for(const auto *comp : { "Translation", "Rotation", "Vibration", "Total" })
         {
-            EXPECT_EQ(0, jsonValue(t0.at("Internal energy").at(comp))) << comp;
+            EXPECT_EQ(0, jsonValue(t0.at("Standard entropy").at(comp))) << comp;
+            EXPECT_EQ(0, jsonValue(t0.at("Heat capacity cV").at(comp))) << comp;
         }
-        EXPECT_EQ(0, jsonValue(t0.at("Standard entropy").at("Vibration")));
-        EXPECT_EQ(0, jsonValue(t0.at("Heat capacity cV").at("Vibration")));
+        // The enthalpy of formation (Ochterski, Thermochemistry in Gaussian,
+        // 2000): at 0 K that of the atoms minus the atomization energy, at
+        // room temperature what the compound gains in enthalpy minus what
+        // the elements gain is added.
+        double dhfAtoms = 0, dhElements = 0;
+        for(const auto &a : atoms)
+        {
+            dhfAtoms   += atomDHform0.at(a.element);
+            dhElements += elementH298.at(a.element);
+        }
+        double dhf0     = dhfAtoms + jsonValue(thermo.at("Epot")) + zpe;
+        double thermal  = (1.5*cR + cvRot + cR)*cRoomT/1000 + vib.E - zpe;
+        // The terms are rounded in the JSON
+        double dhfToler = relTol(dhfAtoms, 2e-5) + 2e-3;
+        EXPECT_NEAR(dhf0, jsonValue(t0.at("Delta H formation")), dhfToler);
+        EXPECT_NEAR(dhf0 + thermal - dhElements, jsonValue(rt.at("Delta H formation")), dhfToler);
     }
 
     //! Run the nma and check everything for one molecule
@@ -1295,6 +1331,100 @@ TEST_F(ThermoChemistryTest, Pressure)
     // Other components do not depend on pressure
     EXPECT_DOUBLE_EQ(tc1.S0(TCComponent::Rotation), tc10.S0(TCComponent::Rotation));
     EXPECT_DOUBLE_EQ(tc1.S0(TCComponent::Vibration), tc10.S0(TCComponent::Vibration));
+}
+
+// Test: At zero temperature the internal energy is the zero point energy
+// and there is no entropy or heat capacity
+TEST_F(ThermoChemistryTest, ZeroTemperature)
+{
+    const auto tc = thermo({ 1600, 3700, 3800 }, 0);
+    EXPECT_GT(tc.ZPE(), 50);
+    EXPECT_EQ(0, tc.Einternal(TCComponent::Translation));
+    EXPECT_EQ(0, tc.Einternal(TCComponent::Rotation));
+    EXPECT_DOUBLE_EQ(tc.ZPE(), tc.Einternal(TCComponent::Vibration));
+    EXPECT_DOUBLE_EQ(tc.ZPE(), tc.Einternal(TCComponent::Total));
+    for(const auto &tcc : tccmap())
+    {
+        EXPECT_EQ(0, tc.S0(tcc.first)) << tcc.second;
+        EXPECT_EQ(0, tc.cv(tcc.first)) << tcc.second;
+    }
+}
+
+// Test: The zero point energy is part of the internal energy at low
+// temperature as well, where the vibrations are not excited
+TEST_F(ThermoChemistryTest, LowTemperature)
+{
+    // The lowest vibrational temperature is 2300 K
+    for(double T : { 1.0, 10.0, 30.0 })
+    {
+        const auto tc = thermo({ 1600, 3700, 3800 }, T);
+        EXPECT_NEAR(tc.ZPE(), tc.Einternal(TCComponent::Vibration), 1e-9) << "T = " << T;
+        EXPECT_NEAR(tc.ZPE() + 3*cR*T/1000, tc.Einternal(TCComponent::Total), 1e-9) << "T = " << T;
+        EXPECT_NEAR(0, tc.cv(TCComponent::Vibration), 1e-9) << "T = " << T;
+        EXPECT_NEAR(0, tc.S0(TCComponent::Vibration), 1e-9) << "T = " << T;
+    }
+}
+
+// Test: The enthalpy of formation at zero K is that of the atoms minus the
+// atomization energy, here with a potential energy of zero
+TEST_F(ThermoChemistryTest, EnthalpyOfFormationZeroK)
+{
+    const auto tc = thermo({ 1600, 3700, 3800 }, 0);
+    EXPECT_NEAR(2*atomDHform0.at("H") + atomDHform0.at("O") + tc.ZPE(), tc.DHform(), 1e-6);
+}
+
+// Test: The change of the enthalpy of formation with temperature
+TEST_F(ThermoChemistryTest, EnthalpyOfFormationRoomTemperature)
+{
+    // Fundamental frequencies of water
+    const std::vector<double> freq = { 1595, 3657, 3756 };
+    const auto tc0  = thermo(freq, 0);
+    const auto tcRT = thermo(freq, cRoomT);
+    double     RT   = cR*cRoomT/1000;
+    // The compound gains the thermal energy and kT, the elements what is
+    // in the tables. The zero point energy counts once.
+    double thermal  = tcRT.Einternal(TCComponent::Total) - tcRT.ZPE() + RT;
+    EXPECT_NEAR(4*RT, thermal, 0.01);
+    EXPECT_NEAR(thermal - 2*elementH298.at("H") - elementH298.at("O"),
+                tcRT.DHform() - tc0.DHform(), 1e-6);
+    // Experiment (JANAF): -241.826 kJ/mol at 298.15 K, -238.921 kJ/mol at 0 K
+    EXPECT_NEAR(-241.826 + 238.921, tcRT.DHform() - tc0.DHform(), 0.05);
+}
+
+// Test: An atom has neither rotations nor vibrations, also if it has a
+// shell, and the enthalpy of formation of a noble gas is zero
+TEST_F(ThermoChemistryTest, Atom)
+{
+    for(const auto *ff : { "ACM-g2", "ACM-pg2" })
+    {
+        auto                 pd = getForceField(ff);
+        std::vector<MolProp> mps;
+        double               qtot = 0;
+        importFile(&msghandler_, pd, fileManager().getInputFilePath("molecules/helium-4.sdf"),
+                   &mps, "minimum", JobType::OPT, false, &qtot, false);
+        ASSERT_TRUE(msghandler_.ok()) << ff;
+        ASSERT_EQ(1u, mps.size()) << ff;
+        ACTMol helium;
+        helium.Merge(&mps[0]);
+        helium.GenerateTopology(&msghandler_, pd, missingParameters::Ignore);
+        ASSERT_TRUE(msghandler_.ok()) << ff;
+        const ThermoChemistry tc(&msghandler_, &helium, helium.xOriginal(), atomenergy_,
+                                 {}, 0.0, cRoomT, 1, 1);
+        EXPECT_EQ(1, tc.symmetryNumber()) << ff;
+        for(const auto tcc : { TCComponent::Rotation, TCComponent::Vibration })
+        {
+            EXPECT_EQ(0, tc.Einternal(tcc)) << ff;
+            EXPECT_EQ(0, tc.cv(tcc)) << ff;
+            EXPECT_EQ(0, tc.S0(tcc)) << ff;
+        }
+        EXPECT_NEAR(1.5*cR, tc.cv(TCComponent::Total), 1e-6) << ff;
+        EXPECT_NEAR(1.5*cR*cRoomT/1000, tc.Einternal(TCComponent::Total), 1e-6) << ff;
+        EXPECT_NEAR(sackurTetrode(4.002602, cRoomT), tc.S0(TCComponent::Total), 1e-3) << ff;
+        // Experiment (JANAF) at 298.15 K and 1 bar
+        EXPECT_NEAR(126.15, tc.S0(TCComponent::Total), 0.01) << ff;
+        // The gas gains 2.5 RT, which is what the table has for the element
+        EXPECT_NEAR(0, tc.DHform(), 1e-3) << ff;
+    }
 }
 
 // Test: Without frequencies there are no vibrational contributions

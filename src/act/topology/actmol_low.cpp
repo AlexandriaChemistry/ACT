@@ -224,6 +224,32 @@ double computeAtomizationEnergy(MsgHandler                 *msghandler,
     return atomizationEnergy;
 }
 
+double computeElementEnthalpy(MsgHandler                 *msghandler,
+                              const std::vector<ActAtom> &atoms,
+                              const AtomizationEnergy    &atomenergy,
+                              double                      temperature)
+{
+    double            enthalpy = 0;
+    const std::string H0("H(0)-H(T)");
+    for (auto &a : atoms)
+    {
+        if (a.pType() == ActParticle::Atom)
+        {
+            std::string h0unit;
+            double h0_hT = atomenergy.term(a.element(), 0, "exp",
+                                           H0, temperature, &h0unit, nullptr);
+            if (msghandler && msghandler->debug())
+            {
+                msghandler->writeDebug(gmx::formatString("Found enthalpy of the element %2s at T = %g K. %s: %g (%s)\n",
+                                                         a.element().c_str(), temperature,
+                                                         H0.c_str(), h0_hT, h0unit.c_str()));
+            }
+            enthalpy += convertToGromacs(h0_hT, h0unit);
+        }
+    }
+    return enthalpy;
+}
+
 void analyse_multipoles(MsgHandler                                *msg_handler,
                         const ACTMol                              *mol,
                         const std::map<MolPropObservable, double> &toler,

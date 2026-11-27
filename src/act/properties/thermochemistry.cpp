@@ -107,12 +107,6 @@ void ThermoChemistry::calcVibrationalProperties(MsgHandler                *msgha
                                                 double                     temperature,
                                                 double                     scale_factor)
 {
-    if (temperature == 0)
-    {
-        return;
-    }
-    real T_1 = 1.0/temperature;
-    //double hbar  = PLANCK1 / (2 * M_PI);
     for (size_t i = 0; i < frequencies.size(); i++)
     {
         if (frequencies[i] > 0)
@@ -128,13 +122,19 @@ void ThermoChemistry::calcVibrationalProperties(MsgHandler                *msgha
                                                          convertFromGromacs(sf, mpo_unit2(MolPropObservable::FREQUENCY)),
                                                          theta));
             }
-            // Prevent overflow by checking for unreasonably large numbers.
-            real tt = theta * T_1;
-            if (tt < 100)
+            // The zero point energy is part of the internal energy at
+            // all temperatures, including zero.
+            E_[TCComponent::Vibration] += 0.5 * BOLTZ * theta;
+            if (temperature > 0)
             {
-                E_[TCComponent::Vibration]  += BOLTZ * theta * (0.5 + 1.0 / (std::expm1(tt)));
-                cv_[TCComponent::Vibration] += KILO * BOLTZ * std::exp(tt) * gmx::square(tt / std::expm1(tt));
-                S0_[TCComponent::Vibration] += KILO * BOLTZ *  (tt/ std::expm1(tt) - std::log1p(-std::exp(-tt)));
+                double tt = theta / temperature;
+                // For larger numbers the thermal contributions are nil.
+                if (tt < 100)
+                {
+                    E_[TCComponent::Vibration]  += BOLTZ * theta / std::expm1(tt);
+                    cv_[TCComponent::Vibration] += KILO * BOLTZ * std::exp(tt) * gmx::square(tt / std::expm1(tt));
+                    S0_[TCComponent::Vibration] += KILO * BOLTZ *  (tt/ std::expm1(tt) - std::log1p(-std::exp(-tt)));
+                }
             }
         }
     }
@@ -144,20 +144,20 @@ double ThermoChemistry::translationalEntropy(double mass,
                                              double temperature,
                                              double pressure)
 {
-    double ST = 2.5;
-    if (temperature > 0)
+    if (temperature <= 0)
     {
-        double kT = BOLTZ * temperature;
-        
-        GMX_RELEASE_ASSERT(mass > 0, "Molecular mass should be larger than zero");
-        GMX_RELEASE_ASSERT(pressure > 0, "Pressure should be larger than zero");
-        // Convert bar to Pascal
-        double P   = pressure * 1e5;
-        double qT  = (std::pow(2 * M_PI * mass * kT / gmx::square(PLANCK), 1.5) * (kT / P)
-                      * (1e30 / AVOGADRO));
-        ST        += std::log(qT);
+        // The equation for the ideal gas does not hold here
+        return 0;
     }
-    return universalGasConstant * ST;
+    double kT = BOLTZ * temperature;
+
+    GMX_RELEASE_ASSERT(mass > 0, "Molecular mass should be larger than zero");
+    GMX_RELEASE_ASSERT(pressure > 0, "Pressure should be larger than zero");
+    // Convert bar to Pascal
+    double P   = pressure * 1e5;
+    double qT  = (std::pow(2 * M_PI * mass * kT / gmx::square(PLANCK), 1.5) * (kT / P)
+                  * (1e30 / AVOGADRO));
+    return universalGasConstant * (2.5 + std::log(qT));
 }
 
 double ThermoChemistry::rotationalEntropy(double      temperature,
@@ -166,33 +166,22 @@ double ThermoChemistry::rotationalEntropy(double      temperature,
                                           const rvec &theta,
                                           double      sigma_r)
 {
-    double SR = 1.5;
+    if (temperature <= 0 || natom <= 1)
+    {
+        // The equation for the rigid rotor does not hold at zero
+        // temperature, and an atom does not rotate.
+        return 0;
+    }
+    GMX_RELEASE_ASSERT(sigma_r > 0, "Symmetry factor should be larger than zero");
     if (linear)
     {
-        SR = 1;
+        GMX_RELEASE_ASSERT(theta[0] > 0, "Theta should be larger than zero");
+        return universalGasConstant * (1 + std::log(temperature / (sigma_r * theta[0])));
     }
-    if (temperature > 0)
-    {
-        GMX_RELEASE_ASSERT(sigma_r > 0, "Symmetry factor should be larger than zero");
-        
-        if (natom > 1)
-        {
-            double qR;
-            if (linear)
-            {
-                GMX_RELEASE_ASSERT(theta[0] > 0, "Theta should be larger than zero");
-                qR  = temperature / (sigma_r * theta[0]);
-            }
-            else
-            {
-                double Q = theta[XX] * theta[YY] * theta[ZZ];
-                GMX_RELEASE_ASSERT(Q > 0, "Q should be larger than zero");
-                qR  = std::sqrt(M_PI * std::pow(temperature, 3) / Q) / sigma_r;
-            }
-            SR += std::log(qR);
-        }
-    }
-    return universalGasConstant * SR;
+    double Q = theta[XX] * theta[YY] * theta[ZZ];
+    GMX_RELEASE_ASSERT(Q > 0, "Q should be larger than zero");
+    double qR = std::sqrt(M_PI * std::pow(temperature, 3) / Q) / sigma_r;
+    return universalGasConstant * (1.5 + std::log(qR));
 }
 
 //! \brief Compute rotational constants
@@ -321,17 +310,46 @@ ThermoChemistry::ThermoChemistry(MsgHandler                   *msghandler,
                                  double                        pressure,
                                  double                        scale_factor)
 {
-    rvec   theta;
-    calcTheta(msghandler, actmol, coords, theta);
+    // Shells and virtual sites are not atoms
+    int natom = 0;
+    for(const auto &a : actmol->atomsConst())
+    {
+        if (a.pType() == ActParticle::Atom)
+        {
+            natom += 1;
+        }
+    }
+    // An atom does not rotate
+    bool rotates = natom > 1;
+    rvec theta   = { 0, 0, 0 };
+    if (rotates)
+    {
+        calcTheta(msghandler, actmol, coords, theta);
+    }
     symmetryNumber_ = symmetryNumberFromStructure(msghandler, actmol, coords, temperature > 0);
     double sigma_r  = symmetryNumber_;
     zpe_ = zeroPointEnergy(frequencies, scale_factor);
-    cv_[TCComponent::Translation]  = 1.5*RGAS;
-    cv_[TCComponent::Rotation]     = actmol->linearMolecule() ? RGAS : 1.5*RGAS;
-    E_[TCComponent::Translation]   = 1.5*RGAS*temperature/KILO;
-    E_[TCComponent::Rotation]      = (actmol->linearMolecule() ? RGAS : 1.5*RGAS) * temperature/KILO;
+    for(const auto &tc: tccmap())
+    {
+        cv_[tc.first] = 0;
+        S0_[tc.first] = 0;
+        E_[tc.first]  = 0;
+    }
+    // The classical heat capacities of translation and rotation do
+    // not hold at zero temperature, where there is no entropy either.
+    if (temperature > 0)
+    {
+        double cvRot = actmol->linearMolecule() ? RGAS : 1.5*RGAS;
+        cv_[TCComponent::Translation] = 1.5*RGAS;
+        E_[TCComponent::Translation]  = 1.5*RGAS*temperature/KILO;
+        if (rotates)
+        {
+            cv_[TCComponent::Rotation] = cvRot;
+            E_[TCComponent::Rotation]  = cvRot*temperature/KILO;
+        }
+    }
     S0_[TCComponent::Translation]  = translationalEntropy(actmol->totalMass(), temperature, pressure);
-    S0_[TCComponent::Rotation]     = rotationalEntropy(temperature, actmol->NAtom(), actmol->linearMolecule(),
+    S0_[TCComponent::Rotation]     = rotationalEntropy(temperature, natom, actmol->linearMolecule(),
                                                        theta, sigma_r);
     // Compute componenents of thermochemistry
     calcVibrationalProperties(msghandler, frequencies, temperature, scale_factor);
@@ -345,19 +363,20 @@ ThermoChemistry::ThermoChemistry(MsgHandler                   *msghandler,
             E_[TCComponent::Total]  += E_[tc.first];
         }
     }
-    // Using the equations from Ochterski2000a
+    // Using the equations from Ochterski2000a. The energy of the atoms
+    // is zero, that is the potential energy has to be relative to the
+    // separated atoms.
     double sumAtomicEps0 = 0;
     double D0M           = sumAtomicEps0 - epot - zpe_;
+    // Enthalpy of formation of the atoms at zero K
     double sumAtomicH0   = computeAtomizationEnergy(msghandler, actmol->atomsConst(), atomenergy, 0);
     double dhF0          = sumAtomicH0 - D0M;
-    if (temperature == 0)
-    {
-        dhForm_ = dhF0;
-    }
-    else
-    {
-        dhForm_ = dhF0 + E_[TCComponent::Total] - (computeAtomizationEnergy(msghandler, actmol->atomsConst(), atomenergy, temperature) - sumAtomicH0);
-    }
+    // What the enthalpy of the compound gains from zero K to this
+    // temperature. The internal energy includes the zero point energy.
+    double dHcompound    = E_[TCComponent::Total] - zpe_ + BOLTZ*temperature;
+    // And the same for the elements in their standard states
+    double dHelements    = computeElementEnthalpy(msghandler, actmol->atomsConst(), atomenergy, temperature);
+    dhForm_ = dhF0 + dHcompound - dHelements;
 }
 
 }
