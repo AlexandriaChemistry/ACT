@@ -3,43 +3,43 @@
 <ReferenceData>
   <Sequence Name="Frequencies">
     <Int Name="Length">1</Int>
-    <Real>2883.1610174026118</Real>
+    <Real>2883.1610160600358</Real>
   </Sequence>
   <Sequence Name="Intensities">
     <Int Name="Length">1</Int>
     <Real>0.014869320723596962</Real>
   </Sequence>
-  <Real Name="Epot">4.7041285707405334e-25</Real>
+  <Real Name="Epot">0</Real>
   <Thermochemistry Name="T=0">
-    <Real Name="Zero point energy">17.245131025243584</Real>
-    <Real Name="Delta H formation">352.90113102524361</Real>
-    <Real Name="Standard entropy Translation">20.786156545383101</Real>
-    <Real Name="Standard entropy Rotation">8.3144626181532395</Real>
+    <Real Name="Zero point energy">17.245131017213197</Real>
+    <Real Name="Delta H formation">352.90113101721317</Real>
+    <Real Name="Standard entropy Translation">0</Real>
+    <Real Name="Standard entropy Rotation">0</Real>
     <Real Name="Standard entropy Vibration">0</Real>
-    <Real Name="Standard entropy Total">29.10061916353634</Real>
-    <Real Name="Heat capacity cV Translation">12.471693927229859</Real>
-    <Real Name="Heat capacity cV Rotation">8.3144626181532395</Real>
+    <Real Name="Standard entropy Total">0</Real>
+    <Real Name="Heat capacity cV Translation">0</Real>
+    <Real Name="Heat capacity cV Rotation">0</Real>
     <Real Name="Heat capacity cV Vibration">0</Real>
-    <Real Name="Heat capacity cV Total">20.786156545383101</Real>
+    <Real Name="Heat capacity cV Total">0</Real>
     <Real Name="Internal energy Translation">0</Real>
     <Real Name="Internal energy Rotation">0</Real>
-    <Real Name="Internal energy Vibration">0</Real>
-    <Real Name="Internal energy Total">0</Real>
+    <Real Name="Internal energy Vibration">17.245131017213197</Real>
+    <Real Name="Internal energy Total">17.245131017213197</Real>
   </Thermochemistry>
   <Thermochemistry Name="T=298.15">
-    <Real Name="Zero point energy">17.245131025243584</Real>
-    <Real Name="Delta H formation">363.87468590432445</Real>
+    <Real Name="Zero point energy">17.245131017213197</Real>
+    <Real Name="Delta H formation">352.753511900653</Real>
     <Real Name="Standard entropy Translation">153.70652041123782</Real>
-    <Real Name="Standard entropy Rotation">33.15174758102355</Real>
-    <Real Name="Standard entropy Vibration">0.00011245359853135747</Real>
-    <Real Name="Standard entropy Total">186.85838044585989</Real>
+    <Real Name="Standard entropy Rotation">33.151747581023322</Real>
+    <Real Name="Standard entropy Vibration">0.00011245359921107371</Real>
+    <Real Name="Standard entropy Total">186.85838044586035</Real>
     <Real Name="Heat capacity cV Translation">12.471693927229859</Real>
     <Real Name="Heat capacity cV Rotation">8.3144626181532395</Real>
-    <Real Name="Heat capacity cV Vibration">0.0014596793936049242</Real>
-    <Real Name="Heat capacity cV Total">20.787616224776706</Real>
+    <Real Name="Heat capacity cV Vibration">0.0014596794017025471</Real>
+    <Real Name="Heat capacity cV Total">20.787616224784802</Real>
     <Real Name="Internal energy Translation">3.7184355444035821</Real>
     <Real Name="Internal energy Rotation">2.478957029602388</Real>
-    <Real Name="Internal energy Vibration">17.245162305074849</Real>
-    <Real Name="Internal energy Total">23.44255487908082</Real>
+    <Real Name="Internal energy Vibration">17.245162297044647</Real>
+    <Real Name="Internal energy Total">23.442554871050618</Real>
   </Thermochemistry>
 </ReferenceData>

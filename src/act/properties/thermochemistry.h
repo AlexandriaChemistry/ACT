@@ -87,7 +87,7 @@ private:
     std::map<TCComponent, double> cv_;
     //! Standard entropy per component (J/mol K)
     std::map<TCComponent, double> S0_;
-    //! Internal energy per component (kJ/mol)
+    //! Internal energy per component (kJ/mol), that of the vibrations includes the zero point energy
     std::map<TCComponent, double> E_;
 
     /*! \brief Compute zero point energy from an array of eigenvalues.
@@ -105,6 +105,7 @@ private:
     /*! \brief Compute properties due to vibrational motion
      *
      * Results for cv, S0 and E are stored in internal variables.
+     * The zero point energy is part of the energy at all temperatures.
      * \param[in] msghandler   MsgHandler for output and debugging, may be nullptr
      * \param[in] frequencies  The vibrational frequencies in 1/ps
      * \param[in] temperature  Temperature (K)
@@ -124,7 +125,7 @@ private:
      * \param[in] mass         Molecular mass (Dalton)
      * \param[in] temperature  Temperature (K)
      * \param[in] pressure     Pressure (bar) at which to compute
-     * \returns The translational entropy (J/mol K)
+     * \returns The translational entropy (J/mol K), zero at zero temperature
      */
     double translationalEntropy(double mass,
                                 double temperature,
@@ -137,11 +138,11 @@ private:
      * Pitssburg PA
      *
      * \param[in] temperature  Temperature (K)
-     * \param[in] natom        Number of atoms
+     * \param[in] natom        Number of atoms, without shells and virtual sites
      * \param[in] linear       TRUE if this is a linear molecule
      * \param[in] theta        The principal moments of inertia (unit of Energy)
      * \param[in] sigma_r      Symmetry factor, should be >= 1
-     * \returns The rotational entropy (J/mol K)
+     * \returns The rotational entropy (J/mol K), zero for an atom and at zero temperature
      */
     double rotationalEntropy(double      temperature,
                              int         natom,
@@ -151,6 +152,14 @@ private:
     
 public:
     /*! \brief Constructor that computes everything at once
+     *
+     * At zero temperature there is no entropy or heat capacity, and
+     * the internal energy is the zero point energy. An atom has no
+     * rotational contributions. The enthalpy of formation follows
+     * Ochterski, Thermochemistry in Gaussian (2000): it needs a
+     * potential energy relative to the separated atoms, and a
+     * temperature for which the enthalpies of the elements are in
+     * the table of atomization energies.
      * \param[in] msghandler   MsgHandler for output and debugging, may be nullptr
      * \param[in] actmol       Molecule info
      * \param[in] coords       The coordinates
@@ -177,7 +186,7 @@ public:
     //! return the heat capacity
     double cv(TCComponent tcc) const { return cv_.find(tcc)->second; }
     
-    //! return the internal energy
+    //! return the internal energy, including the zero point energy
     double Einternal(TCComponent tcc) const { return E_.find(tcc)->second; }
     
     //! return the standard entropy
