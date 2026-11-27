@@ -1,0 +1,98 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <String Name="Contents"><![CDATA[
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!DOCTYPE ForceField.dtd PUBLIC "ForceField.dtd" "ForceField.dtd">
+<ForceField>
+  <AtomTypes>
+    <Type name="hw_1" class="h_b" element="H" mass="1.0079"/>
+    <Type name="ow_1" class="ow_b" element="O" mass="15.9994"/>
+    <Type name="hw_2" class="h_b" element="H" mass="1.0079"/>
+    <Type name="v3bw_1" class="v3bw" mass="0"/>
+  </AtomTypes>
+  <Residues>
+    <Residue name="OXI">
+      <Atom name="H1" type="hw_1" charge="0.52"/>
+      <Atom name="O2" type="ow_1" charge="0"/>
+      <Atom name="H3" type="hw_2" charge="0.52"/>
+      <Atom name="v3bw4" type="v3bw_1" charge="-1.04"/>
+      <VirtualSite type="average3" siteName="v3bw4" atomName1="H1" atomName2="O2" atomName3="H3" weight1="0.12801207" weight2="0.74397587" weight3="0.12801207"/>
+      <Bond atomName1="v3bw4" atomName2="H1"/>
+      <Bond atomName1="v3bw4" atomName2="O2"/>
+      <Bond atomName1="v3bw4" atomName2="H3"/>
+      <Bond atomName1="H1" atomName2="O2"/>
+      <Bond atomName1="O2" atomName2="H3"/>
+    </Residue>
+  </Residues>
+  <CustomBondForce energy="(De*((1 - exp(-beta*(r-bondlength)))^2-1)+D0)">
+    <GlobalParameter name="pot-MORSE-BONDS" defaultValue="1"/>
+    <PerBondParameter name="beta"/>
+    <PerBondParameter name="De"/>
+    <PerBondParameter name="D0"/>
+    <PerBondParameter name="bondlength"/>
+    <Bond class1="h_b" class2="ow_b" beta="25.67" De="426.367" D0="426.367" bondlength="0.09347"/>
+  </CustomBondForce>
+  <CustomAngleForce energy="krt*(d13-r3e)*(d12-r1e+d23-r2e)+krr*(d12-r1e)*(d23-r2e)+0.5*kub*(d13-r3e)^2; d12=distance(p1,p2); d23=distance(p2,p3); d13=distance(p1,p3)">
+    <GlobalParameter name="pot-CROSS_BOND_ANGLES" defaultValue="1"/>
+    <PerAngleParameter name="r1e"/>
+    <PerAngleParameter name="r2e"/>
+    <PerAngleParameter name="r3e"/>
+    <PerAngleParameter name="krt"/>
+    <PerAngleParameter name="krr"/>
+    <PerAngleParameter name="kub"/>
+    <Angle class1="h_b" class2="ow_b" class3="h_b" r1e="0.09347" r2e="0.09347" r3e="0.1526" krt="-81901.5" krr="52995.1" kub="103098.98"/>
+  </CustomAngleForce>
+  <RBTorsionForce energy="0"/>
+  <PeriodicTorsionForce energy="0"/>
+  <Script>import openmm
+# The CustomAngleForce of OpenMM knows the angle theta only. The angle
+# potentials that need the distances between the atoms are therefore
+# turned into a CustomCompoundBondForce here, with the same energy
+# expression, parameters and angles.
+# OpenMM finds the parameters of an angle in either direction, but it
+# keeps the order of the atoms. The angles below are not the same in
+# both directions: their atoms have to be in this order of the classes.
+atom_class = {
+}
+ordered = [
+]
+classes = [atom_class.get(data.atomType[atom], "") for atom in data.atoms]
+for index in reversed(range(sys.getNumForces())):
+    old = sys.getForce(index)
+    if not isinstance(old, openmm.CustomAngleForce):
+        continue
+    energy = old.getEnergyFunction()
+    if not "distance(" in energy:
+        continue
+    new = openmm.CustomCompoundBondForce(3, energy)
+    new.setName(old.getName())
+    for i in range(old.getNumGlobalParameters()):
+        name = old.getGlobalParameterName(i)
+        new.addGlobalParameter(name, old.getGlobalParameterDefaultValue(i))
+        # The force gets the name of its potential
+        if name.startswith("pot-"):
+            new.setName(name[4:])
+    for i in range(old.getNumPerAngleParameters()):
+        new.addPerBondParameter(old.getPerAngleParameterName(i))
+    for i in range(old.getNumAngles()):
+        p1, p2, p3, params = old.getAngleParameters(i)
+        if ( classes[p3], classes[p2], classes[p1] ) in ordered:
+            p1, p3 = p3, p1
+        new.addBond([ p1, p2, p3 ], params)
+    new.setForceGroup(old.getForceGroup())
+    new.setUsesPeriodicBoundaryConditions(old.usesPeriodicBoundaryConditions())
+    sys.removeForce(index)
+    if new.getNumBonds() &gt; 0:
+        sys.addForce(new)
+</Script>
+  <NonbondedForce coulomb14scale="1" lj14scale="1">
+    <UseAttributeFromResidue name="charge"/>
+    <Atom type="hw_1" sigma="0" epsilon="0"/>
+    <Atom type="hw_2" sigma="0" epsilon="0"/>
+    <Atom type="ow_1" sigma="0.315365" epsilon="0.64852"/>
+    <Atom type="v3bw_1" sigma="0" epsilon="0"/>
+  </NonbondedForce>
+</ForceField>
+]]></String>
+</ReferenceData>

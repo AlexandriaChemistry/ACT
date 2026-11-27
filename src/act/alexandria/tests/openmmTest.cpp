@@ -229,6 +229,13 @@ TEST_F(OpenMMXmlTest, AcetonitrileLinearAngle)
     testOpenMM("ACS-g1", "acetonitrile.sdf", true);
 }
 
+// Test: Flexible TIP4P water with the cross terms between the bonds and
+// the angle
+TEST_F(OpenMMXmlTest, WaterCrossBondAngles)
+{
+    testOpenMM("TIP4P-Flex", "water.sdf", true);
+}
+
 /*! \brief Write the OpenMM force field file of a compound
  * \param[in] forceField The name of the force field
  * \param[in] fileName   The file with the compound in the test data
@@ -309,6 +316,29 @@ TEST(OpenMMAngleForceTest, UreyBradley)
     EXPECT_EQ(1u, count(text, "<Script>"));
     EXPECT_EQ(1u, count(text, "ordered = [\n]"));
     EXPECT_EQ(1u, count(text, "atom_class = {\n}"));
+}
+
+// Test: The cross terms between the bonds and the angle of flexible TIP4P
+// water have their energy expression and the six parameters of the angle.
+// The angle of water is the same in both directions.
+TEST(OpenMMAngleForceTest, CrossBondAngles)
+{
+    const auto text = openMMText("TIP4P-Flex", "water.sdf");
+    ASSERT_FALSE(text.empty());
+    EXPECT_EQ(1u, count(text, "<CustomAngleForce energy=\"krt*(d13-r3e)*(d12-r1e+d23-r2e)"
+                        "+krr*(d12-r1e)*(d23-r2e)+0.5*kub*(d13-r3e)^2; "
+                        "d12=distance(p1,p2); d23=distance(p2,p3); d13=distance(p1,p3)\">"));
+    EXPECT_EQ(1u, count(text, "<GlobalParameter name=\"pot-CROSS_BOND_ANGLES\" defaultValue=\"1\"/>"));
+    for (const auto &param : { "r1e", "r2e", "r3e", "krt", "krr", "kub" })
+    {
+        EXPECT_EQ(1u, count(text, gmx::formatString("<PerAngleParameter name=\"%s\"/>", param))) << param;
+    }
+    // Lengths in nm and force constants in kJ/mol nm^2, as OpenMM has them
+    EXPECT_EQ(1u, count(text, "r1e=\"0.09347\" r2e=\"0.09347\" r3e=\"0.1526\" krt=\"-81901.5\" "
+                        "krr=\"52995.1\" kub=\"103098.98\"/>"));
+    EXPECT_EQ(1u, count(text, "<Script>"));
+    EXPECT_EQ(1u, count(text, "openmm.CustomCompoundBondForce(3, energy)"));
+    EXPECT_EQ(1u, count(text, "ordered = [\n]"));
 }
 
 // Test: A force without angles is not written, and neither is the script

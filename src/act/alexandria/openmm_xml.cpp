@@ -624,7 +624,8 @@ void OpenMMWriter::addXmlHyper(xmlNodePtr                        parent,
 static bool customAngleForce(Potential p)
 {
     return (Potential::LINEAR_ANGLES == p ||
-            Potential::UREY_BRADLEY_ANGLES == p);
+            Potential::UREY_BRADLEY_ANGLES == p ||
+            Potential::CROSS_BOND_ANGLES == p);
 }
 
 void OpenMMWriter::addXmlAngleScript(xmlNodePtr        parent,
@@ -1245,6 +1246,7 @@ void OpenMMWriter::makeXmlMap(xmlNodePtr        parent,
             break;
         case Potential::LINEAR_ANGLES:
         case Potential::UREY_BRADLEY_ANGLES:
+        case Potential::CROSS_BOND_ANGLES:
             {
                 // The energy expression with the parameters of each angle,
                 // see addXmlAngleScript.
@@ -1342,6 +1344,7 @@ void OpenMMWriter::addTopologyEntries(MsgHandler                                
                     break;
                 case Potential::UREY_BRADLEY_ANGLES:
                 case Potential::LINEAR_ANGLES:
+                case Potential::CROSS_BOND_ANGLES:
                     addXmlBond(xmlMap_[fs.first], xmlEntryOpenMM::ANGLE_CLASS,
                                atoms, pname, entry->params());
                     if (Potential::UREY_BRADLEY_ANGLES != fs.second.potential() &&

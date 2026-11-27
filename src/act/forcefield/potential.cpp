@@ -122,7 +122,9 @@ std::map<Potential, PotentialProperties> potprops = {
     // The bond-angle cross term with its parameters in the order of GROMACS,
     // followed by the force constants of the bond-bond cross term and of
     // the harmonic potential on the distance between the outer atoms
-    { Potential::CROSS_BOND_ANGLES, { "CROSS_BOND_ANGLES", F_CROSS_BOND_ANGLES, { "r1e", "r2e", "r3e", "krt", "krr", "kub" }, "0", "" } },
+    { Potential::CROSS_BOND_ANGLES,
+      { "CROSS_BOND_ANGLES", F_CROSS_BOND_ANGLES, { "r1e", "r2e", "r3e", "krt", "krr", "kub" },
+        "krt*(d13-r3e)*(d12-r1e+d23-r2e)+krr*(d12-r1e)*(d23-r2e)+0.5*kub*(d13-r3e)^2; d12=distance(p1,p2); d23=distance(p2,p3); d13=distance(p1,p3)", "" } },
     { Potential::HARMONIC_DIHEDRALS, { "HARMONIC_DIHEDRALS", F_IDIHS, { "kimp" }, "0", "" } },
     { Potential::FOURIER_DIHEDRALS, { "FOURIER_DIHEDRALS", F_FOURDIHS, { "c0", "c1", "c2", "c3", "c4", "c5" }, "0", "" } },
     { Potential::PROPER_DIHEDRALS, { "PROPER_DIHEDRALS", F_PDIHS, { "phi0", "kp", "mult" }, "0", "" } },
