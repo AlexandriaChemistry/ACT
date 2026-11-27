@@ -33,11 +33,22 @@
 
 #include "actpre.h"
 
+#include <cstddef>
 #include <gtest/gtest.h>
+#include <map>
+#include <string>
 #include <vector>
 
+#include "act/basics/interactiontype.h"
+#include "act/basics/msg_handler.h"
+#include "act/forcefield/forcefield.h"
+#include "act/forcefield/forcefield_xml.h"
+#include "act/import/import.h"
+#include "act/molprop/molprop.h"
+#include "act/topology/actmol.h"
 #include "act/topology/symmetrize_charges.h"
 #include "gromacs/utility/exceptions.h"
+#include "testutils/testfilemanager.h"
 
 
 namespace alexandria
@@ -127,6 +138,110 @@ TEST(SymmetrizeChargesTest, ApplySymmetrizedChargesPreservesTotal)
     apply_symmetrized_charges(&q, sym);
     double totalAfter = q[0] + q[1] + q[2];
     EXPECT_NEAR(totalAfter, totalBefore, 1e-10);
+}
+
+/*! \brief The symmetry of the charges of 1-butanol
+ * \param[in]  methylene Whether the force field has the rule for a carbon
+ *                       atom with two hydrogen atoms
+ * \param[out] elements  The elements of the atoms
+ * \param[out] carbon    For each atom the carbon atom it is bound to, -1
+ *                       if there is none or if it is a carbon atom itself
+ * \param[out] sym       For each atom the atom of which it has the charge
+ */
+void butanolSymmetry(bool                      methylene,
+                     std::vector<std::string> *elements,
+                     std::vector<int>         *carbon,
+                     std::vector<int>         *sym)
+{
+    ForceField pd;
+    readForceField(gmx::test::TestFileManager::getInputFilePath("forcefields/ACS-g1.xml"), &pd);
+    if (methylene)
+    {
+        pd.addSymcharges("C", "H", 2);
+    }
+    MsgHandler msghandler;
+    msghandler.setPrintLevel(ACTStatus::Warning);
+    std::vector<MolProp> mps;
+    double               qtot = 0;
+    importFile(&msghandler, &pd, gmx::test::TestFileManager::getInputFilePath("molecules/1-butanol.pdb"),
+               &mps, "minimum", JobType::OPT, false, &qtot, true);
+    ASSERT_TRUE(msghandler.ok());
+    ASSERT_EQ(1u, mps.size());
+    ACTMol mol;
+    mol.Merge(&mps[0]);
+    mol.GenerateTopology(&msghandler, &pd, missingParameters::Ignore);
+    ASSERT_TRUE(msghandler.ok());
+    const auto &atoms = mol.topology()->atoms();
+    for (const auto &atom : atoms)
+    {
+        elements->push_back(atom.element());
+    }
+    carbon->assign(atoms.size(), -1);
+    ASSERT_TRUE(mol.topology()->hasEntry(InteractionType::BONDS));
+    for (const auto &bond : mol.topology()->entry(InteractionType::BONDS))
+    {
+        const int ai = bond->atomIndex(0);
+        const int aj = bond->atomIndex(1);
+        if ("C" == (*elements)[ai] && "C" != (*elements)[aj])
+        {
+            (*carbon)[aj] = ai;
+        }
+        else if ("C" == (*elements)[aj] && "C" != (*elements)[ai])
+        {
+            (*carbon)[ai] = aj;
+        }
+    }
+    get_symmetrized_charges(mol.topology(), &pd, nullptr, sym);
+    ASSERT_EQ(atoms.size(), sym->size());
+}
+
+// Test: With the rule for a carbon atom with two hydrogen atoms, the
+// hydrogen atoms of each methylene group of 1-butanol get the same charge,
+// as those of the methyl group, which have it without that rule too.
+// OpenMM gives the atoms of a residue the charges of its template by the
+// bonds, not by the names of the atoms, such that atoms that cannot be told
+// apart from the bonds should have the same charge.
+TEST(SymmetrizeChargesTest, MethyleneHydrogens)
+{
+    for (bool methylene : { false, true })
+    {
+        std::vector<std::string> elements;
+        std::vector<int>         carbon, sym;
+        butanolSymmetry(methylene, &elements, &carbon, &sym);
+        if (::testing::Test::HasFatalFailure())
+        {
+            return;
+        }
+        // The hydrogen atoms on each carbon atom
+        std::map<int, std::vector<int>> hydrogens;
+        for (size_t i = 0; i < elements.size(); i++)
+        {
+            if ("H" == elements[i] && carbon[i] >= 0)
+            {
+                hydrogens[carbon[i]].push_back(i);
+            }
+            else
+            {
+                // Other atoms keep their own charge
+                EXPECT_EQ(static_cast<int>(i), sym[i]) << elements[i] << " " << i;
+            }
+        }
+        int nMethyl = 0, nMethylene = 0;
+        for (const auto &ch : hydrogens)
+        {
+            const auto &hs = ch.second;
+            ASSERT_TRUE(hs.size() == 2 || hs.size() == 3);
+            const bool same = (3 == hs.size() || methylene);
+            (3 == hs.size() ? nMethyl : nMethylene)++;
+            for (const auto h : hs)
+            {
+                EXPECT_EQ(same ? hs[0] : h, sym[h]) << "carbon " << ch.first << " hydrogen " << h
+                                                    << " methylene rule " << methylene;
+            }
+        }
+        EXPECT_EQ(1, nMethyl);
+        EXPECT_EQ(3, nMethylene);
+    }
 }
 
 } // namespace
