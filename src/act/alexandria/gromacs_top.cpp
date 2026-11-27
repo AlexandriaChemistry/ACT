@@ -120,20 +120,20 @@ static void print_bondeds(MsgHandler                *msg_handler,
                 fprintf(out, "  %5d", get_subtype(d, gmxFtype));
             };
             printAtoms(F_CROSS_BOND_ANGLES);
-            fprintf(out, "  %10g  %10g  %10g  %10g ; %s\n",
+            fprintf(out, "  %12.9g  %12.9g  %12.9g  %12.9g ; %s\n",
                     params[cbaR1E], params[cbaR2E], params[cbaR3E], params[cbaKRT],
                     entry->id().id().c_str());
             if (params[cbaKRR] != 0)
             {
                 printAtoms(F_CROSS_BOND_BONDS);
-                fprintf(out, "  %10g  %10g  %10g ; %s\n",
+                fprintf(out, "  %12.9g  %12.9g  %12.9g ; %s\n",
                         params[cbaR1E], params[cbaR2E], params[cbaKRR],
                         entry->id().id().c_str());
             }
             if (params[cbaKUB] != 0)
             {
                 printAtoms(F_UREY_BRADLEY);
-                fprintf(out, "  %10g  %10g  %10g  %10g ; %s\n",
+                fprintf(out, "  %12.9g  %12.9g  %12.9g  %12.9g ; %s\n",
                         0.0, 0.0, params[cbaR3E], params[cbaKUB],
                         entry->id().id().c_str());
             }

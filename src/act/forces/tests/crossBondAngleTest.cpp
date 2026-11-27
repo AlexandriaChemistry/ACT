@@ -622,8 +622,9 @@ TEST(CrossBondAngleTest, GromacsTopology)
         ASSERT_EQ(expected[i].second.size(), lines[i].second.size()) << "type " << expected[i].first;
         for (size_t k = 0; k < expected[i].second.size(); k++)
         {
-            // Six digits in the file
-            EXPECT_NEAR(expected[i].second[k], lines[i].second[k], 1e-5*std::abs(expected[i].second[k]))
+            // Nine digits in the file, six would not do for the last
+            // force constant
+            EXPECT_NEAR(expected[i].second[k], lines[i].second[k], 1e-8*std::abs(expected[i].second[k]))
                 << "type " << expected[i].first << " parameter " << k;
         }
     }
